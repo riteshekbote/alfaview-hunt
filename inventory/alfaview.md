@@ -23,3 +23,11 @@ www.alfaview.com
 **CNAME review signals (2):**
 - `support.alfaview.com` -> `support-alfaview-com.ax4z.com`
 - `staging.alfaview.com` -> `staging-alfaview-com.ax4z.com`
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `staging.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `support.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
