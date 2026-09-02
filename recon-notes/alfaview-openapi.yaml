@@ -1,0 +1,4538 @@
+components:
+  schemas:
+    APICredentials:
+      additionalProperties: false
+      properties:
+        clientId:
+          description: The alias of the API key.
+          type: string
+        companyId:
+          description: The company ID.
+          type: string
+        key:
+          description: The API key to authenticate.
+          type: string
+      required:
+        - companyId
+        - clientId
+        - key
+      type: object
+    AccessToken:
+      additionalProperties: false
+      properties:
+        accessToken:
+          description: Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API.
+          type: string
+      required:
+        - accessToken
+      type: object
+    Attendance:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name of the user that was displayed in UIs at the time of the attendance.
+          type: string
+        from:
+          description: The start time.
+          examples:
+            - "2024-09-22T11:00:00Z"
+          format: date-time
+          type: string
+        to:
+          description: The end time.
+          examples:
+            - "2024-09-22T12:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - displayName
+        - from
+        - to
+      type: object
+    AuthenticateGroupLinkRequestBody:
+      additionalProperties: false
+      properties:
+        accessKey:
+          description: The access key from the group link.
+          type: string
+        companyId:
+          description: The company ID.
+          examples:
+            - 0123456789ABCDEFGHIJKLMNOP
+          type: string
+        displayName:
+          description: The name of the guest that is displayed in UIs.
+          maximum: 256
+          type: string
+        externalId:
+          description: The external ID can be used to derive a reproducible user ID to prevent simultaneous use. If that is desired, the caller is responsible for providing a unique value per user.
+          maximum: 256
+          minimum: 32
+          type:
+            - string
+            - "null"
+        roomId:
+          description: The room ID from the group link.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - companyId
+        - roomId
+        - accessKey
+        - displayName
+      type: object
+    AuthenticateGuestLinkRequestBody:
+      additionalProperties: false
+      properties:
+        accessKey:
+          description: The access key from the guest link.
+          type: string
+        companyId:
+          description: The company ID.
+          examples:
+            - 0123456789ABCDEFGHIJKLMNOP
+          type: string
+        displayName:
+          description: If set, this overrides the stored name of the guest that is displayed in UIs.
+          maximum: 256
+          type:
+            - string
+            - "null"
+        roomId:
+          description: The room ID from the guest link.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - companyId
+        - roomId
+        - accessKey
+      type: object
+    CreateGroupLinksRequestBody:
+      additionalProperties: false
+      properties:
+        create:
+          description: The group links.
+          items:
+            $ref: "#/components/schemas/GroupLinkCreate"
+          minItems: 1
+          type:
+            - array
+            - "null"
+        origin:
+          description: Specifies the creator or reason for the creation of the group links (e.g., 'my external tool' or 'initial meeting delayed').
+          type:
+            - string
+            - "null"
+      required:
+        - create
+      type: object
+    CreateGuestLinksRequestBody:
+      additionalProperties: false
+      properties:
+        create:
+          description: The guest links.
+          items:
+            $ref: "#/components/schemas/GuestLinkCreate"
+          minItems: 1
+          type:
+            - array
+            - "null"
+        origin:
+          description: Specifies the creator or reason for the creation of the guest links (e.g., 'my external tool' or 'initial meeting delayed').
+          type:
+            - string
+            - "null"
+        timezone:
+          description: The time zone to use in the notification emails. Can be 'UTC', 'Local' or a TZ identifier from the IANA time zone database. If empty, the default is 'Europe/Berlin'.
+          examples:
+            - Europe/Berlin
+          type:
+            - string
+            - "null"
+      required:
+        - create
+      type: object
+    ErrorDetail:
+      additionalProperties: false
+      properties:
+        location:
+          description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+          type: string
+        message:
+          description: Error message text
+          type: string
+        value:
+          description: The value at the given location
+      type: object
+    ErrorModel:
+      additionalProperties: false
+      properties:
+        detail:
+          description: A human-readable explanation specific to this occurrence of the problem.
+          examples:
+            - Property foo is required but is missing.
+          type: string
+        errors:
+          description: Optional list of individual error details
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+          type:
+            - array
+            - "null"
+        instance:
+          description: A URI reference that identifies the specific occurrence of the problem.
+          examples:
+            - https://example.com/error-log/abc123
+          format: uri
+          type: string
+        status:
+          description: HTTP status code
+          examples:
+            - 400
+          format: int64
+          type: integer
+        title:
+          description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+          examples:
+            - Bad Request
+          type: string
+        type:
+          default: about:blank
+          description: A URI reference to human-readable documentation for the error.
+          examples:
+            - https://example.com/errors/example
+          format: uri
+          type: string
+      type: object
+    GroupLink:
+      additionalProperties: false
+      properties:
+        accessKey:
+          description: The access key.
+          type: string
+        createdAt:
+          description: The creation timestamp.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        createdBy:
+          description: The creator user ID.
+          type: string
+        description:
+          description: A description of the group link.
+          type: string
+        dialInAllowed:
+          description: If true, the group link is allowed to be used via dial-in.
+          type: boolean
+        dialInCode:
+          description: The dial-in authentication code for the group link.
+          type: string
+        id:
+          description: The group link ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        joinLink:
+          deprecated: true
+          description: Deprecated. Use joinUrl instead.
+          type: string
+        joinUrl:
+          description: The URL of the room join page. That page allows the user to set a display name and to choose whether to join the room with the native client or the web client.
+          type: string
+        origin:
+          description: String that specifies the creator or reason for the creation of the group link (e.g., 'my external tool' or 'initial meeting delayed').
+          type: string
+        permissionGroupId:
+          description: The permission group ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        roomId:
+          description: The room ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        validFrom:
+          description: The group link is valid from this point in time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validUntil:
+          description: The group link is valid until this point in time.
+          examples:
+            - "2024-09-23T12:34:56Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - roomId
+        - description
+        - permissionGroupId
+        - createdBy
+        - createdAt
+        - joinLink
+        - joinUrl
+        - accessKey
+        - origin
+        - dialInAllowed
+        - dialInCode
+      type: object
+    GroupLinkAuthenticationInfo:
+      additionalProperties: false
+      properties:
+        accessToken:
+          description: "Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API. Note: Can be empty if the group link is not yet / no longer valid."
+          type: string
+        clientLaunchUrl:
+          description: The URL to join the room with the (installed) alfaview app. Can be empty if the group link is not yet / no longer valid.
+          examples:
+            - alfaview://apis.alfaview.com:443?companyId={company-id}&roomId={room-id}&token={token}
+          type: string
+        displayName:
+          description: The name of the guest that is displayed in UIs.
+          type: string
+        participantId:
+          description: The group link ID. Can be empty if the group link is not yet / no longer valid.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        tokenExpiresAt:
+          description: Time at which the access token expires. Can be empty if the group link is not yet / no longer valid.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validFrom:
+          description: Time at which the group link becomes valid, i.e., authentication becomes possible.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validUntil:
+          description: Time at which the group link becomes invalid, i.e., authentication is not possible anymore.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        webclientLaunchUrl:
+          description: The URL to join the room with the browser. Can be empty if the guest link is not yet / no longer valid.
+          examples:
+            - https://webclient.alfaview.com/?--url=alfaview%3A%2F%2Fapis.alfaview.com%3A443%3FcompanyId%3D{company-id}%26roomId%3D{room-id}%26token%3D{token}
+          type: string
+      required:
+        - validFrom
+        - validUntil
+        - displayName
+      type: object
+    GroupLinkCreate:
+      additionalProperties: false
+      properties:
+        description:
+          description: The group link description.
+          type: string
+        dialInAllowed:
+          description: If true, the group link is allowed to be used via dial-in.
+          type: boolean
+        permissionGroupId:
+          description: The permission group ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        validFrom:
+          description: The group link is valid from this point in time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type:
+            - string
+            - "null"
+        validUntil:
+          description: The group link is valid until this point in time.
+          examples:
+            - "2024-09-23T12:34:56Z"
+          format: date-time
+          type:
+            - string
+            - "null"
+      required:
+        - description
+        - permissionGroupId
+        - dialInAllowed
+      type: object
+    GroupLinkUpdate:
+      additionalProperties: false
+      properties:
+        description:
+          description: The group link description.
+          type:
+            - string
+            - "null"
+        dialInAllowed:
+          description: If true, the group link is allowed to be used via dial-in.
+          type:
+            - boolean
+            - "null"
+        permissionGroupId:
+          description: The permission group ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type:
+            - string
+            - "null"
+        validFrom:
+          description: The group link is valid from this point in time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type:
+            - string
+            - "null"
+        validUntil:
+          description: The group link is valid until this point in time.
+          examples:
+            - "2024-09-23T12:34:56Z"
+          format: date-time
+          type:
+            - string
+            - "null"
+      type: object
+    GuestLink:
+      additionalProperties: false
+      properties:
+        accessKey:
+          description: The access key.
+          type: string
+        createdAt:
+          description: The creation timestamp.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        createdBy:
+          description: The creator user ID.
+          type: string
+        dialInAllowed:
+          description: If true, the guest link is allowed to be used via dial-in.
+          type: boolean
+        dialInCode:
+          description: The dial-in authentication code.
+          type: string
+        displayName:
+          description: The name of the participant using the guest link that is displayed in UIs.
+          type: string
+        emailAddress:
+          description: The email address associated with the guest link.
+          format: email
+          type: string
+        id:
+          description: The guest link ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        joinUrl:
+          description: The URL of the room join page. That page allows to choose whether to join the room with the native client or the web client
+          type: string
+        locale:
+          description: The locale settings (e.g., UI language).
+          enum:
+            - de-DE
+            - en-US
+          type: string
+        origin:
+          description: String that specifies the creator or reason for the creation of the guest link (e.g., 'my external tool' or 'initial meeting delayed').
+          type: string
+        permissionGroupId:
+          description: The permission group ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        roomId:
+          description: The room ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        validFrom:
+          description: The guest link is valid from this point in time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validUntil:
+          description: The guest link is valid until this point in time.
+          examples:
+            - "2024-09-23T12:34:56Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - roomId
+        - createdBy
+        - createdAt
+        - permissionGroupId
+        - accessKey
+        - emailAddress
+        - locale
+        - origin
+        - dialInAllowed
+        - dialInCode
+        - joinUrl
+      type: object
+    GuestLinkAuthenticationInfo:
+      additionalProperties: false
+      properties:
+        accessToken:
+          description: "Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API. Note: Can be empty if the guest link is not yet / no longer valid."
+          type: string
+        clientLaunchUrl:
+          description: The URL to join the room with the (installed) alfaview app. Can be empty if the guest link is not yet / no longer valid.
+          examples:
+            - alfaview://apis.alfaview.com:443?companyId={company-id}&roomId={room-id}&token={token}
+          type: string
+        displayName:
+          description: The name of the guest that is displayed in UIs.
+          type: string
+        participantId:
+          description: The guest link ID. Can be empty if the guest link is not yet / no longer valid.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        tokenExpiresAt:
+          description: Time at which the access token expires. Can be empty if the guest link is not yet / no longer valid.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validFrom:
+          description: Time at which the guest link becomes valid, i.e., authentication becomes possible.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validUntil:
+          description: Time at which the guest link becomes invalid, i.e., authentication is not possible anymore.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        webclientLaunchUrl:
+          description: The URL to join the room with the browser. Can be empty if the guest link is not yet / no longer valid.
+          examples:
+            - https://webclient.alfaview.com/?--url=alfaview%3A%2F%2Fapis.alfaview.com%3A443%3FcompanyId%3D{company-id}%26roomId%3D{room-id}%26token%3D{token}
+          type: string
+      required:
+        - validFrom
+        - validUntil
+        - displayName
+      type: object
+    GuestLinkCreate:
+      additionalProperties: false
+      properties:
+        dialInAllowed:
+          description: If true, the guest link is allowed to be used via dial-in.
+          type: boolean
+        displayName:
+          description: The name of the guest that is displayed in UIs.
+          type: string
+        emailAddress:
+          description: The email address associated with the guest link.
+          format: email
+          type: string
+        locale:
+          description: The locale settings (e.g., UI language) for the guest link.
+          enum:
+            - de-DE
+            - en-US
+          type: string
+        permissionGroupId:
+          description: The permission group ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        sendEmail:
+          description: If true, an information email with the guest link will be sent to the associated email address.
+          type: boolean
+        validFrom:
+          description: The guest link is valid from this point in time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validUntil:
+          description: The guest link is valid until this point in time.
+          examples:
+            - "2024-09-23T12:34:56Z"
+          format: date-time
+          type: string
+      required:
+        - emailAddress
+        - displayName
+        - locale
+        - permissionGroupId
+        - dialInAllowed
+      type: object
+    GuestLinkUpdate:
+      additionalProperties: false
+      properties:
+        dialInAllowed:
+          description: If true, the guest link is allowed to be used via dial-in.
+          type: boolean
+        displayName:
+          description: The name of the guest that is displayed in UIs.
+          type: string
+        emailAddress:
+          description: The email address associated with the guest link.
+          format: email
+          type: string
+        locale:
+          description: The locale settings (e.g., UI language) for the guest link.
+          enum:
+            - de-DE
+            - en-US
+          type: string
+        permissionGroupId:
+          description: The permission group ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type:
+            - string
+            - "null"
+        sendEmail:
+          description: If true, an information email with the updated guest link information will be sent to the associated email address.
+          type: boolean
+        timezone:
+          description: The time zone to use in the notification emails. Can be 'UTC', 'Local' or a TZ identifier from the IANA time zone database. If empty, the default is 'Europe/Berlin'.
+          examples:
+            - Europe/Berlin
+          type:
+            - string
+            - "null"
+        validFrom:
+          description: The guest link is valid from this point in time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        validUntil:
+          description: The guest link is valid until this point in time.
+          examples:
+            - "2024-09-23T12:34:56Z"
+          format: date-time
+          type: string
+      required:
+        - displayName
+        - sendEmail
+      type: object
+    ID:
+      additionalProperties: false
+      properties:
+        id:
+          description: A unique identifier.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - id
+      type: object
+    InviteUserPermissions:
+      additionalProperties: false
+      properties:
+        manageCompany:
+          description: If true, the user can manage company settings. Implies userAdmin, roomAdmin and userShow.
+          type: boolean
+        roomAdmin:
+          description: If true, the user can create, update and delete any room. Implies roomList and roomCreate.
+          type: boolean
+        roomCreate:
+          description: If true, the user can create rooms for their company.
+          type: boolean
+        roomList:
+          description: If true, the user can list all rooms in their company.
+          type: boolean
+        userAdmin:
+          description: If true, the user can create, update and delete other users, send password reset mails and resend sign-up mails for new users. Implies userList.
+          type: boolean
+        userList:
+          description: If true, the user can list all users in their company.
+          type: boolean
+        userShow:
+          description: If true, the user can see the user names of all users in rooms they can access.
+          type: boolean
+      required:
+        - manageCompany
+        - userAdmin
+        - userList
+        - userShow
+        - roomAdmin
+        - roomList
+        - roomCreate
+      type: object
+    LanguageSettings:
+      additionalProperties: false
+      properties:
+        defaultSpokenLanguage:
+          description: The default spoken language.
+          type: string
+        targetTranscriptionLanguages:
+          description: The languages that the translation feature is translating the spoken words to. The translation into all of these languages is happening permanently as long as the feature is enabled, even if no participant has selected that language. To get the available transcription languages, refer to the 'List Available Languages' endpoint.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        transcriptionEnabled:
+          description: If true, the transcription feature is enabled in this room.
+          type: boolean
+        transcriptionType:
+          description: The type of transcription as selectable for room administrators in the client.
+          enum:
+            - simple_transcription
+            - digital_interpreter
+          type: string
+      required:
+        - transcriptionEnabled
+        - transcriptionType
+      type: object
+    LanguageSettingsEdit:
+      additionalProperties: false
+      properties:
+        defaultSpokenLanguage:
+          description: The default spoken language.
+          type:
+            - string
+            - "null"
+        targetTranscriptionLanguages:
+          description: The languages that the spoken words are translated into. The translation into all of these languages is happening continuously as long as the feature is enabled, even if no participant has selected that language. To get the available transcription languages, refer to the 'List Available Languages' endpoint.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        transcriptionEnabled:
+          description: If true, the transcription feature is enabled in this room.
+          type:
+            - boolean
+            - "null"
+        transcriptionType:
+          description: The type of transcription as selectable for room administrators in the client.
+          enum:
+            - simple_transcription
+            - digital_interpreter
+          type:
+            - string
+            - "null"
+      type: object
+    Languages:
+      additionalProperties: false
+      properties:
+        transcription:
+          description: The available transcription languages.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        translation:
+          description: The available language pairings for translation.
+          items:
+            $ref: "#/components/schemas/Translation"
+          type:
+            - array
+            - "null"
+      type: object
+    Meeting:
+      additionalProperties: false
+      properties:
+        agenda:
+          description: The meeting agenda. HTML is not allowed.
+          type: string
+        canJoin:
+          description: If true, participants can join the meeting at the time of the request.
+          type: boolean
+        canJoinAfter:
+          description: The timestamp of when participants can join the meeting. Will be omitted if the meeting has ended.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        canceledAt:
+          description: The timestamp of when the meeting was canceled (if it was canceled).
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        createdAt:
+          description: The creation timestamp.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        createdBy:
+          description: The creator user ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        earlyAccessMinutes:
+          description: The duration of the early access period to the meeting room in minutes. In this period, moderators or administrators can join the meeting. The meeting creator can always join 1 hour before the meeting starts. Regular invitees can never join early.
+          format: int64
+          type: integer
+        end:
+          description: The end time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        groupLinks:
+          additionalProperties:
+            type: string
+          description: The group links for the meeting.
+          type: object
+        guestLinks:
+          description: The guest links for the meeting.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        id:
+          description: The meeting ID. It can also be used as a 'roomId' to access the meeting room.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        roomAvailable:
+          description: If true, the meeting room is currently available.'
+          type: boolean
+        start:
+          description: The start time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        state:
+          description: The current state.
+          enum:
+            - scheduled
+            - ongoing
+            - ended
+            - canceled
+          type: string
+        timezone:
+          description: The time zone used for time information.
+          examples:
+            - Europe/Berlin
+          type: string
+        title:
+          description: The meeting.
+          type: string
+      required:
+        - id
+        - title
+        - start
+        - end
+        - timezone
+        - roomAvailable
+        - createdAt
+        - createdBy
+        - state
+        - canJoin
+      type: object
+    MeetingCancellation:
+      additionalProperties: false
+      properties:
+        reason:
+          description: The reason for the cancellation. HTML is not allowed.
+          type:
+            - string
+            - "null"
+        sendNotification:
+          description: If true, a notification email will be sent to the creator and all invitees.
+          type: boolean
+      required:
+        - sendNotification
+      type: object
+    MeetingCreate:
+      additionalProperties: false
+      properties:
+        agenda:
+          description: The meeting agenda. HTML is not allowed.
+          type:
+            - string
+            - "null"
+        earlyAccessMinutes:
+          description: The duration of the early access period to the meeting room in minutes. In this period, moderators or administrators can join the meeting. The meeting creator can always join 1 hour before the meeting starts. Regular invitees can never join early.
+          format: int64
+          maximum: 30
+          minimum: 0
+          type:
+            - integer
+            - "null"
+        end:
+          description: The end time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        groupLinks:
+          description: The group links for the meeting. If not provided, four default group links (moderator, participant, guest, spectator) will be created. If an empty list is provided, no links will be created.
+          items:
+            $ref: "#/components/schemas/GroupLinkCreate"
+          type:
+            - array
+            - "null"
+        guestLinks:
+          description: The guest links for the meeting.
+          items:
+            $ref: "#/components/schemas/GuestLinkCreate"
+          type:
+            - array
+            - "null"
+        passcodeRequired:
+          description: If true, a passcode is required to enter the meeting room.
+          type:
+            - boolean
+            - "null"
+        roomFeatures:
+          $ref: "#/components/schemas/RoomFeaturesEdit"
+          description: The feature configuration. If no state is specified for a feature, 'default' is assumed.
+        start:
+          description: The start time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        subroomDisplayNames:
+          description: The names of the subrooms of the meeting room that are displayed in UIs.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        timezone:
+          description: The time zone used for time information.
+          examples:
+            - Europe/Berlin
+          type: string
+        title:
+          description: The meeting title.
+          type: string
+        waitingRoomEnabled:
+          description: If true, participants will enter the waiting room when joining the room. A moderator can admit waiting participants to join the actual room.
+          type: boolean
+        waitingRoomWelcomeNote:
+          description: The welcome note that is shown to the participants as they join the waiting room.
+          type:
+            - string
+            - "null"
+      required:
+        - title
+        - start
+        - end
+        - timezone
+        - roomFeatures
+        - waitingRoomEnabled
+      type: object
+    MeetingUpdate:
+      additionalProperties: false
+      properties:
+        agenda:
+          description: The meeting agenda. HTML is not allowed.
+          type:
+            - string
+            - "null"
+        earlyAccessMinutes:
+          description: The duration of the early access period to the meeting room in minutes. In this period, moderators or administrators can join the meeting. The meeting creator can always join 1 hour before the meeting starts. Regular invitees can never join early.
+          format: int64
+          maximum: 30
+          minimum: 0
+          type:
+            - integer
+            - "null"
+        end:
+          description: The end time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type:
+            - string
+            - "null"
+        start:
+          description: The start time.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type:
+            - string
+            - "null"
+        timezone:
+          description: The time zone used for time information.
+          examples:
+            - Europe/Berlin
+          type:
+            - string
+            - "null"
+        title:
+          description: The meeting title.
+          type:
+            - string
+            - "null"
+      type: object
+    PaginatedBodyListGroupLink:
+      additionalProperties: false
+      properties:
+        data:
+          description: The actual data for a paginated request.
+          items:
+            $ref: "#/components/schemas/GroupLink"
+          type:
+            - array
+            - "null"
+        nextPageToken:
+          description: A token that can be used to obtain the next page of the requested data.
+          type: string
+      required:
+        - data
+      type: object
+    PaginatedBodyListGuestLink:
+      additionalProperties: false
+      properties:
+        data:
+          description: The actual data for a paginated request.
+          items:
+            $ref: "#/components/schemas/GuestLink"
+          type:
+            - array
+            - "null"
+        nextPageToken:
+          description: A token that can be used to obtain the next page of the requested data.
+          type: string
+      required:
+        - data
+      type: object
+    PaginatedBodyListRoom:
+      additionalProperties: false
+      properties:
+        data:
+          description: The actual data for a paginated request.
+          items:
+            $ref: "#/components/schemas/Room"
+          type:
+            - array
+            - "null"
+        nextPageToken:
+          description: A token that can be used to obtain the next page of the requested data.
+          type: string
+      required:
+        - data
+      type: object
+    Participant:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name that is displayed in UIs.
+          type: string
+        inWaitingRoom:
+          description: If true, the user is not yet in the subroom but in the waiting room.
+          type: boolean
+        isDialIn:
+          description: If true, the user is a dial-in user (connected via phone).
+          type: boolean
+        isGuest:
+          description: If true, the user is a guest user.
+          type: boolean
+        isSpectator:
+          description: If true, the user is a spectator.
+          type: boolean
+        onBreak:
+          description: If true, the user is currently on a break.
+          type: boolean
+        userId:
+          description: The user ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - userId
+        - displayName
+        - onBreak
+        - inWaitingRoom
+        - isGuest
+        - isSpectator
+        - isDialIn
+      type: object
+    ParticipantPermissions:
+      additionalProperties: false
+      properties:
+        participantId:
+          description: The user ID / guest link ID / group link ID to which the permissions apply.
+          type: string
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+          description: The assigned permissions.
+      required:
+        - participantId
+        - permissions
+      type: object
+    Passcode:
+      additionalProperties: false
+      properties:
+        passcode:
+          description: The passcode for a room.
+          type: string
+        required:
+          description: If true, a passcode is required to enter the room.
+          type: boolean
+      required:
+        - passcode
+        - required
+      type: object
+    PasswordCredentials:
+      additionalProperties: false
+      properties:
+        password:
+          description: The password.
+          type: string
+        username:
+          description: The username.
+          examples:
+            - user@provider.com
+          type: string
+      required:
+        - username
+        - password
+      type: object
+    PermissionGroup:
+      additionalProperties: false
+      properties:
+        id:
+          description: The permission group ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        name:
+          description: The name of the permission group.
+          examples:
+            - Admin
+          type: string
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+          description: The attached permissions.
+      required:
+        - id
+        - name
+        - permissions
+      type: object
+    Permissions:
+      additionalProperties: false
+      properties:
+        admin:
+          description: If true, the associated user is an admin.
+          type: boolean
+        chat:
+          description: Permission to chat.
+          type: boolean
+        join:
+          description: Permission to join the room.
+          type: boolean
+        promote:
+          description: Permission to promote permissions for other users.
+          type: boolean
+        screen:
+          description: Permission to share the screen.
+          type: boolean
+        upload:
+          description: Permission to upload files.
+          type: boolean
+        video:
+          description: Permission to stream video input.
+          type: boolean
+        vip:
+          description: Permission to mark users as VIP.
+          type: boolean
+        voice:
+          description: Permission to speak.
+          type: boolean
+      required:
+        - admin
+        - voice
+        - video
+        - promote
+        - join
+        - screen
+        - vip
+        - chat
+        - upload
+      type: object
+    PermissionsEdit:
+      additionalProperties: false
+      properties:
+        admin:
+          description: Permission to act as an administrator. Administrators are allowed to edit or delete rooms, change room settings or features and manage guests in the room.
+          type:
+            - boolean
+            - "null"
+        chat:
+          description: Permission to chat in the room.
+          type:
+            - boolean
+            - "null"
+        join:
+          description: Permission to join the room.
+          type:
+            - boolean
+            - "null"
+        promote:
+          description: Permission to promote permissions for other users for the room.
+          type:
+            - boolean
+            - "null"
+        screen:
+          description: Permission to share the screen in the room.
+          type:
+            - boolean
+            - "null"
+        upload:
+          description: Permission to upload files in the room.
+          type:
+            - boolean
+            - "null"
+        video:
+          description: Permission to stream video input in the room.
+          type:
+            - boolean
+            - "null"
+        vip:
+          description: Permission to mark users as VIP in the room.
+          type:
+            - boolean
+            - "null"
+        voice:
+          description: Permission to speak in the room.
+          type:
+            - boolean
+            - "null"
+      type: object
+    Room:
+      additionalProperties: false
+      properties:
+        createdAt:
+          description: The creation timestamp.
+          examples:
+            - "2024-09-22T12:34:56Z"
+          format: date-time
+          type: string
+        createdBy:
+          description: The creator user ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        defaultPermissions:
+          $ref: "#/components/schemas/Permissions"
+          description: Optional default permissions for every non-guest user. If empty, users will not have any permissions by default.
+        displayName:
+          description: The name of the room that is displayed in UIs.
+          type: string
+        features:
+          $ref: "#/components/schemas/RoomFeatures"
+          description: The feature configuration.
+        groupLinkPermissions:
+          description: The permissions of group links for this room.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+        guestLinkPermissions:
+          description: The guest links permissions for this room.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+        id:
+          description: The room ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        managed:
+          description: If true, the room cannot be edited or removed by a user.
+          type: boolean
+        parentId:
+          description: The parent room ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        passcodeRequired:
+          description: If true, a passcode is required to enter the room.
+          type:
+            - boolean
+            - "null"
+        quotas:
+          $ref: "#/components/schemas/RoomQuotas"
+          description: The quota information.
+        sort:
+          description: A sorting number that determines the position of the room in UI room lists.
+          format: int64
+          type: integer
+        subrooms:
+          description: The contained subrooms.
+          items:
+            $ref: "#/components/schemas/Subroom"
+          type:
+            - array
+            - "null"
+        type:
+          description: The room type. 'room' is used for normal rooms. Departments are unjoinable rooms that can hold multiple child rooms to help improving room structuring.
+          enum:
+            - department
+            - room
+            - meeting
+          type: string
+        userPermissions:
+          description: The user permissions.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+        waitingRoomEnabled:
+          description: If true, participants will enter the waiting room when joining the room. A moderator can admit waiting participants to join the actual room. Rooms of the type 'department' cannot have a waiting room.
+          type: boolean
+        waitingRoomWelcomeNote:
+          description: The welcome note that is shown to the participants as they join the waiting room. Rooms of the type 'department' cannot have a waiting room.
+          type: string
+      required:
+        - id
+        - displayName
+        - type
+        - features
+        - sort
+        - createdAt
+        - createdBy
+        - managed
+        - waitingRoomEnabled
+      type: object
+    RoomCreate:
+      additionalProperties: false
+      properties:
+        defaultPermissions:
+          $ref: "#/components/schemas/Permissions"
+          description: Optional default permissions for every non-guest user. If default permissions are empty, users will not have any permissions by default.
+        displayName:
+          description: The name of the room that is displayed in UIs.
+          type: string
+        features:
+          $ref: "#/components/schemas/RoomFeaturesEdit"
+          description: The feature configuration. If no state is specified for a feature, 'default' is assumed.
+        parentId:
+          description: The parent room ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type:
+            - string
+            - "null"
+        passcodeRequired:
+          description: If true, a passcode is required to enter the room.
+          type:
+            - boolean
+            - "null"
+        permissions:
+          description: The user permissions.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+        quotas:
+          $ref: "#/components/schemas/RoomQuotasEdit"
+          description: The requested quotas. These are checked against the company's available quotas, which are provided by its billing plan.
+        subrooms:
+          description: The contained subrooms.
+          items:
+            $ref: "#/components/schemas/SubroomCreateListItem"
+          type:
+            - array
+            - "null"
+        type:
+          description: The room type. 'room' is used for normal rooms. Departments are unjoinable rooms that can hold multiple child rooms to help improving room structuring.
+          enum:
+            - department
+            - room
+          type: string
+        waitingRoomEnabled:
+          description: If true, participants enter a waiting room when joining and must be admitted by a moderator. Rooms of the type 'department' cannot have a waiting room.
+          type: boolean
+        waitingRoomWelcomeNote:
+          description: The welcome note that is shown to the participants as they join the waiting room. Rooms of the type 'department' cannot have a waiting room.
+          type:
+            - string
+            - "null"
+      required:
+        - displayName
+        - type
+        - waitingRoomEnabled
+      type: object
+    RoomFeatures:
+      additionalProperties: false
+      properties:
+        allowCopyRoomInfo:
+          description: Allows moderators to copy the contents of the participant list to the clipboard.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        blockWebclient:
+          description: Prevents the button to join via browser from being displayed on the guest join page.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        centeredVideoGrid:
+          description: Centers participant videos on the stage.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        disableCameraOff:
+          description: Prevents the camera from being turned off.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        disableJoinAndLeaveNotifications:
+          description: Disables notifications when users join or leave the room.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        disableMiniWindow:
+          description: Prevents the display of the floating mini window when the alfaview window is minimized.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        examScreenshare:
+          description: All monitors of all participants in this room are shared with the moderators. Users with an incompatible version are not able to join the room. Linux users can always join the room due to technical limitations on Linux systems with this feature.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        liveStreaming:
+          description: Allows to live stream all video and audio in the alfaview room to external live streaming servers.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        localRecording:
+          description: Allows to record all video and audio in the alfaview room. Recorded video files are stored locally.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        raiseHands:
+          description: Allows participants and spectators to raise their hand to indicate that they want to say something.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        shareContentOnlyToModerators:
+          description: If enabled, only moderators can see active screen shares.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        showRaisedHandsOnlyToModerators:
+          description: If enabled, only moderators can see who is currently raising a hand.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        sixteenByNineVideos:
+          description: Uses 16:9 video aspect ratio for participant videos.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+        sortVideoGridAlphabetically:
+          description: Displays participant videos in alphabetical order. (Overrides the default order-by-join-time behavior.)
+          enum:
+            - enabled
+            - disabled
+            - default
+          type: string
+      required:
+        - disableCameraOff
+        - sixteenByNineVideos
+        - centeredVideoGrid
+        - allowCopyRoomInfo
+        - sortVideoGridAlphabetically
+        - raiseHands
+        - showRaisedHandsOnlyToModerators
+        - shareContentOnlyToModerators
+        - blockWebclient
+        - disableMiniWindow
+        - disableJoinAndLeaveNotifications
+        - localRecording
+        - liveStreaming
+        - examScreenshare
+      type: object
+    RoomFeaturesEdit:
+      additionalProperties: false
+      properties:
+        allowCopyRoomInfo:
+          description: Allows moderators to copy the contents of the participant list to the clipboard.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        blockWebclient:
+          description: Prevents the button to join via browser from being displayed on the guest join page.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        centeredVideoGrid:
+          description: Centers participant videos on the stage.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        disableCameraOff:
+          description: Prevents the camera from being turned off.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        disableJoinAndLeaveNotifications:
+          description: Disables notifications when users join or leave the room.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        disableMiniWindow:
+          description: Prevents the displaying of the floating mini window when the alfaview window is minimized.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        examScreenshare:
+          description: All monitors of all participants in this room are shared with the moderators. Users with an incompatible version are not able to join the room. Linux users can always join the room due to technical limitations on Linux systems with this feature.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        liveStreaming:
+          description: Allows to live stream all video and audio in the alfaview room to external live streaming servers.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        localRecording:
+          description: Allows to record all video and audio in the alfaview room. Recorded video files are stored locally.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        raiseHands:
+          description: Allows participants and spectators to raise their hand to indicate that they want to say something.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        shareContentOnlyToModerators:
+          description: If enabled, only moderators can see active screen shares.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        showRaisedHandsOnlyToModerators:
+          description: If enabled, only moderators can see who is currently raising a hand.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        sixteenByNineVideos:
+          description: Uses 16:9 video aspect ratio for participant videos.
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+        sortVideoGridAlphabetically:
+          description: Displays participant videos in alphabetical order. (Overrides the default order-by-join-time behavior.)
+          enum:
+            - enabled
+            - disabled
+            - default
+          type:
+            - string
+            - "null"
+      type: object
+    RoomLimits:
+      additionalProperties: false
+      properties:
+        maxFiles:
+          description: The maximum file count in a room.
+          format: int32
+          type: integer
+        maxTotalBytes:
+          description: The maximum total size of all files in a room.
+          format: int64
+          type: integer
+        remainingFiles:
+          description: The remaining allowed file count in a room.
+          format: int32
+          type: integer
+        remainingTotalBytes:
+          description: The remaining allowed total file size in a room.
+          format: int64
+          type: integer
+      required:
+        - maxTotalBytes
+        - maxFiles
+        - remainingTotalBytes
+        - remainingFiles
+      type: object
+    RoomPermissions:
+      additionalProperties: false
+      properties:
+        groupLinkPermissions:
+          description: The permissions of group links for this room.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+        guestLinkPermissions:
+          description: The permissions of guest links for this room.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+        userPermissions:
+          description: The permissions of users for this room.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+      type: object
+    RoomQuotas:
+      additionalProperties: false
+      properties:
+        activeParticipants:
+          description: The number of allowed active participants.
+          format: int32
+          minimum: 0
+          type: integer
+        maxVideoTilesPerPage:
+          description: The number of allowed video tiles displayed per page. If this value mismatches the defined options in the alfaview client, the next lower value will be chosen.
+          format: int32
+          minimum: 0
+          type: integer
+        spectatorOnlyParticipants:
+          description: The number of allowed spectator-only participants.
+          format: int32
+          minimum: 0
+          type: integer
+      required:
+        - activeParticipants
+        - spectatorOnlyParticipants
+        - maxVideoTilesPerPage
+      type: object
+    RoomQuotasEdit:
+      additionalProperties: false
+      properties:
+        activeParticipants:
+          description: The maximum number of active participants.
+          format: int32
+          minimum: 0
+          type: integer
+        maxVideoTilesPerPage:
+          description: The maximum number of video tiles displayed per page. If this value mismatches the defined options in the alfaview client, the next lower value will be chosen.
+          format: int32
+          minimum: 0
+          type: integer
+        spectatorOnlyParticipants:
+          description: The maximum number of spectator-only participants.
+          format: int32
+          minimum: 0
+          type: integer
+      required:
+        - activeParticipants
+        - spectatorOnlyParticipants
+        - maxVideoTilesPerPage
+      type: object
+    RoomSettings:
+      additionalProperties: false
+      properties:
+        defaultAccessLevel:
+          description: The default access level for new files.
+          enum:
+            - hidden
+            - visible
+            - downloadable
+          type: string
+        enabled:
+          description: If true, the file share feature is enabled in the room. This setting can be set regardless if the feature is activated in the company. If the feature is deactivated company-wide, the feature will not be available for rooms which have the feature enabled.
+          type: boolean
+        participantsCanUpload:
+          description: If true, participants are allowed to upload files.
+          type: boolean
+      required:
+        - enabled
+        - defaultAccessLevel
+        - participantsCanUpload
+      type: object
+    RoomSettingsUpdate:
+      additionalProperties: false
+      properties:
+        defaultAccessLevel:
+          description: The default access level for new files.
+          enum:
+            - hidden
+            - visible
+            - downloadable
+          type:
+            - string
+            - "null"
+        enabled:
+          description: If true, the file share feature is enabled in the room. This setting can be set regardless of whether the feature is activated in the company, but the feature activation can still be overruled by the company file share settings. Those are only accessible via the admin web application.
+          type: boolean
+        participantsCanUpload:
+          description: If true, participants are allowed to upload files.
+          type: boolean
+      type: object
+    RoomTypeData:
+      additionalProperties: false
+      properties:
+        maxActiveParticipants:
+          description: The maximum number of active participants.
+          format: int32
+          minimum: 0
+          type: integer
+        maxSpectatorOnlyParticipants:
+          description: The maximum number of spectator-only participants.
+          format: int32
+          minimum: 0
+          type: integer
+        maxSubRooms:
+          description: The maximum number of subrooms.
+          format: int32
+          minimum: 0
+          type: integer
+        name:
+          description: The room type name.
+          type: string
+        total:
+          description: The total quota of this room type.
+          format: int64
+          minimum: 0
+          type: integer
+        used:
+          description: The number of existing rooms using this room type.
+          format: int64
+          minimum: 0
+          type: integer
+      required:
+        - name
+        - maxActiveParticipants
+        - maxSpectatorOnlyParticipants
+        - maxSubRooms
+        - total
+        - used
+      type: object
+    RoomUpdate:
+      additionalProperties: false
+      properties:
+        defaultPermissions:
+          $ref: "#/components/schemas/Permissions"
+          description: Optional default permissions for every non-guest user. If default permissions are empty, users will not have any permissions by default.
+        displayName:
+          description: The name that is displayed in UIs.
+          type:
+            - string
+            - "null"
+        features:
+          $ref: "#/components/schemas/RoomFeaturesEdit"
+          description: The feature configuration. If no state is specified for a feature, 'default' is assumed.
+        passcodeRequired:
+          description: If true, a passcode is required to enter the room.
+          type:
+            - boolean
+            - "null"
+        permissions:
+          description: The user permissions. Permissions not present in this array will be deleted.
+          items:
+            $ref: "#/components/schemas/ParticipantPermissions"
+          type:
+            - array
+            - "null"
+        quotas:
+          $ref: "#/components/schemas/RoomQuotasEdit"
+          description: The quota information.
+        subrooms:
+          description: The contained subrooms. Subrooms not present in this list will be deleted.
+          items:
+            $ref: "#/components/schemas/SubroomEditListItem"
+          type:
+            - array
+            - "null"
+        waitingRoomEnabled:
+          description: If true, participants will enter the waiting room when joining the room. A moderator can admit waiting participants to join the actual room. Rooms of the type 'department' cannot have a waiting room
+          type:
+            - boolean
+            - "null"
+        waitingRoomWelcomeNote:
+          description: The welcome note that is shown to the participants as they join the waiting room. Rooms of the type 'department' cannot have a waiting room.
+          type:
+            - string
+            - "null"
+      type: object
+    Stats:
+      additionalProperties: false
+      properties:
+        activeCount:
+          description: The number of rooms with active users.
+          format: int64
+          minimum: 0
+          type: integer
+        roomOnlineSeconds:
+          description: The total duration of rooms having at least one person connected in seconds.
+          format: int64
+          minimum: 0
+          type: integer
+        sessionCount:
+          description: The number of active sessions. A session is a contiguous period of time the user was in the room (beginning with either a join or the start of the time period (if the user had joined before the start of the time period) and ending with a leave or the end of the time period (if the user was still in the room at the end of the time period).
+          format: int64
+          minimum: 0
+          type: integer
+        usersOnlineSeconds:
+          description: The total duration of users being connected to a room in seconds.
+          format: int64
+          minimum: 0
+          type: integer
+      required:
+        - activeCount
+        - sessionCount
+        - roomOnlineSeconds
+        - usersOnlineSeconds
+      type: object
+    StatsPeriod:
+      additionalProperties: false
+      properties:
+        from:
+          description: The start time of the considered time period.
+          examples:
+            - "2024-09-22T11:00:00Z"
+          format: date-time
+          type: string
+        meetings:
+          $ref: "#/components/schemas/Stats"
+          description: Statistics for meetings.
+        rooms:
+          $ref: "#/components/schemas/Stats"
+          description: Statistics for rooms.
+        to:
+          description: The end time of the considered time period.
+          examples:
+            - "2024-09-22T12:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - from
+        - to
+        - rooms
+        - meetings
+      type: object
+    Subroom:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name that is displayed in UIs. If left empty, generic localized names with incremental numbers will be used in the alfaview client (e.g., 'Group 1', 'Group 2', etc.).
+          type: string
+        id:
+          description: The subroom ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        sort:
+          description: A sorting number that determines the position of the subroom in UI room lists.
+          format: int32
+          minimum: 0
+          type: integer
+      required:
+        - id
+        - sort
+      type: object
+    SubroomCreateListItem:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name that is displayed in UIs. If left empty, generic localized names with incremental numbers will be used in the alfaview client (e.g., 'Group 1', 'Group 2', etc.)
+          type:
+            - string
+            - "null"
+      type: object
+    SubroomEdit:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name that is displayed in UIs. If left empty, generic localized names with incremental numbers will be used in the alfaview client (e.g., 'Group 1', 'Group 2', etc.).
+          type:
+            - string
+            - "null"
+      type: object
+    SubroomEditListItem:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name that is displayed in UIs. If left empty, generic localized names with incremental numbers will be used in the alfaview client (e.g., 'Group A', 'Group B', etc.)
+          type:
+            - string
+            - "null"
+        id:
+          description: The subroom ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type:
+            - string
+            - "null"
+      type: object
+    SubroomParticipants:
+      additionalProperties: false
+      properties:
+        participants:
+          description: The participants currently inside the subroom.
+          items:
+            $ref: "#/components/schemas/Participant"
+          type:
+            - array
+            - "null"
+        subRoomId:
+          description: The subroom ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - subRoomId
+        - participants
+      type: object
+    TokenInfo:
+      additionalProperties: false
+      properties:
+        active:
+          description: Denotes whether the token is still valid.
+          type: boolean
+        expiresAt:
+          description: Time at which the token expires.
+          format: date-time
+          type: string
+        permissions:
+          $ref: "#/components/schemas/TokenUserPermissions"
+          description: The user permissions of the token.
+      required:
+        - active
+        - expiresAt
+        - permissions
+      type: object
+    TokenUserPermissions:
+      additionalProperties: false
+      properties:
+        manageCompany:
+          description: If true, the user can manage company settings.
+          type: boolean
+        roomAdmin:
+          description: If true, the user can create, update and delete any room.
+          type: boolean
+        roomCreate:
+          description: If true, the user can create rooms for their company.
+          type: boolean
+        roomList:
+          description: If true, the user can list all rooms in their company.
+          type: boolean
+        userAdmin:
+          description: If true, the user can create, update and delete other users, send password reset mails and resend sign-up mails for new users.
+          type: boolean
+        userList:
+          description: If true, the user can list all users in their company.
+          type: boolean
+        userShow:
+          description: If true, the user can see the user names of all users in rooms they can access.
+          type: boolean
+      required:
+        - manageCompany
+        - userAdmin
+        - userList
+        - userShow
+        - roomAdmin
+        - roomList
+        - roomCreate
+      type: object
+    Translation:
+      additionalProperties: false
+      properties:
+        in:
+          description: The spoken language that should be translated.
+          type: string
+        out:
+          description: The available languages the translation feature can translate the spoken language into.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - in
+        - out
+      type: object
+    User:
+      additionalProperties: false
+      properties:
+        city:
+          description: The city the user is located in.
+          type: string
+        emailAddress:
+          description: The email address.
+          examples:
+            - user@provider.com
+          format: email
+          type: string
+        firstName:
+          description: The first name.
+          type: string
+        id:
+          description: The user ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        initials:
+          description: The initials.
+          type: string
+        lastName:
+          description: The last name.
+          type: string
+        locale:
+          description: The locale settings (e.g., UI language) for the user.
+          enum:
+            - de-DE
+            - en-US
+          type: string
+        title:
+          description: The title.
+          examples:
+            - Dr.
+          type: string
+      required:
+        - id
+        - emailAddress
+        - firstName
+        - lastName
+        - locale
+      type: object
+    UserAttendances:
+      additionalProperties: false
+      properties:
+        attendances:
+          description: The attendances.
+          items:
+            $ref: "#/components/schemas/Attendance"
+          type:
+            - array
+            - "null"
+        userId:
+          description: The user ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - userId
+        - attendances
+      type: object
+    UserInformation:
+      additionalProperties: false
+      properties:
+        emailAddress:
+          description: The email address.
+          examples:
+            - user@provider.com
+          format: email
+          type: string
+        firstName:
+          description: The first name.
+          type: string
+        lastName:
+          description: The last name.
+          type: string
+        locale:
+          description: The locale settings (e.g., UI language) for the user.
+          enum:
+            - de-DE
+            - en-US
+          type: string
+        title:
+          description: The title.
+          examples:
+            - Dr.
+          type: string
+      required:
+        - emailAddress
+        - firstName
+        - lastName
+      type: object
+    UserInvitation:
+      additionalProperties: false
+      properties:
+        permissions:
+          $ref: "#/components/schemas/InviteUserPermissions"
+          description: The user permissions.
+        user:
+          $ref: "#/components/schemas/UserInformation"
+          description: Data about the invited user.
+      required:
+        - user
+        - permissions
+      type: object
+    UserProfile:
+      additionalProperties: false
+      properties:
+        city:
+          description: The city, the user is located in.
+          type: string
+        emailAddress:
+          description: The email address.
+          examples:
+            - user@provider.com
+          format: email
+          type: string
+        firstName:
+          description: The first name.
+          type: string
+        id:
+          description: The user ID.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+        initials:
+          description: The initials.
+          type: string
+        lastName:
+          description: The last name.
+          type: string
+        locale:
+          description: The locale settings (e.g., UI language) for the user.
+          enum:
+            - de-DE
+            - en-US
+          type: string
+        title:
+          description: The title.
+          examples:
+            - Dr.
+          type: string
+      required:
+        - id
+        - emailAddress
+        - firstName
+        - lastName
+        - city
+        - initials
+        - locale
+      type: object
+    UserUpdate:
+      additionalProperties: false
+      properties:
+        city:
+          description: The city the user is located in.
+          type: string
+        firstName:
+          description: The first name.
+          type: string
+        initials:
+          description: The initials.
+          type: string
+        lastName:
+          description: The last name.
+          type: string
+        locale:
+          description: The locale settings (e.g., UI language) for the user.
+          enum:
+            - de-DE
+            - en-US
+          type: string
+        title:
+          description: The title.
+          examples:
+            - Dr.
+          type: string
+      type: object
+info:
+  description: |
+    ## Format information
+    * All time fields are returned in RFC3339 format and in UTC if not mentioned otherwise.
+
+    ## Authentication
+    ### API Key and Credentials
+    All API requests require an access token for authorization. Access tokens can be obtained by authenticating using any of the following endpoints:
+    - [Authenticate via API key](https://apis.alfaview.com/v2/docs/openapi#/operations/AuthenticateAPIKey)
+    - [Authenticate via password](https://apis.alfaview.com/v2/docs/openapi#/operations/AuthenticatePassword)
+    - [Authenticate a guest (guest link)](https://apis.alfaview.com/v2/docs/openapi#/operations/AuthenticateGuestLink)
+    - [Authenticate a guest (group link)](https://apis.alfaview.com/v2/docs/openapi#/operations/AuthenticateGroupLink)
+    The access token is returned as a base64-encoded string. It needs to be used as the value in the `Authorization` header in all subsequent API requests.
+
+    ### Token Time-To-Live (TTL)
+    Access tokens are valid for 1 hour. After this period, tokens will be expired and a new token must be obtained.
+
+    ## Permissions
+    Except for endpoints affecting "own" resources (e.g., "Get own Meeting"), returning static resources (e.g., "List Available Languages") and authentication endpoints, all endpoints require the caller to have specific permissions. There are two distinct types of permissions that can be applied to users independently.
+    ### Room permissions
+    Room permissions are the permissions of users in a particular room. If users have no permissions for a room, they cannot get any information about the room and it is excluded from room lists (except they have the user permissions to list all rooms).
+
+    To edit room properties or create resources (e.g., links, subrooms) for a room, users need room administrator permissions or user permissions that permit those actions.
+    For further information please refer to the [room permissions section in the support center](https://support.alfaview.com/en/administration/general/room-permissions/).
+    ### User permissions
+    User permissions are high level permissions applied to users independently from specific rooms.
+    For further information please refer to the [user permissions section in the support center](https://support.alfaview.com/en/administration/general/user-permissions/).
+  title: alfaview
+  version: "2"
+openapi: 3.1.0
+paths:
+  /v2/auth/api-key:
+    post:
+      description: Authenticates via an API key and returns an access token. Refer to the [related support article](https://support.alfaview.com/en/developers/request-your-api-credentials/) to generate API keys.
+      operationId: AuthenticateAPIKey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/APICredentials"
+        description: The API credentials.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessToken"
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The authentication did not succeed because of invalid credentials.
+        "403":
+          description: The authentication did not succeed because of the account's status or permissions (e.g., account is inactive).
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Authenticate via API Key
+      tags:
+        - Authentication
+      x-sort-index: 0
+  /v2/auth/group-link:
+    post:
+      description: Tries to authenticate a group link guest via access key. If the access key exists, information about the guest's authentication are returned. If the access key is also valid at the time of the request, the response additionally includes an access token and a token expiry time.
+      operationId: AuthenticateGroupLink
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthenticateGroupLinkRequestBody"
+        description: The authentication information for the guest.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupLinkAuthenticationInfo"
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: A guest with the provided information could not be found and authenticated.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met. This also applies if a guest link was used to authenticate. Please use the "Authenticate a guest (guest link)" endpoint instead.
+      summary: Authenticate a Guest (Group Link)
+      tags:
+        - Authentication
+        - Guests
+      x-sort-index: 13
+  /v2/auth/guest-link:
+    post:
+      description: Tries to authenticate a guest link guest via access key. If the access key exists, information about the guest's authentication are returned. If the access key is also valid at the time of the request, the response additionally includes an access token and a token expiry time.
+      operationId: AuthenticateGuestLink
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthenticateGuestLinkRequestBody"
+        description: The authentication information for the guest.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestLinkAuthenticationInfo"
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: A guest with the provided information could not be found and authenticated.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met. This also applies if a group link was used to authenticate. Please use the "Authenticate a guest (group link)" endpoint instead.
+      summary: Authenticate a Guest (Guest Link)
+      tags:
+        - Authentication
+        - Guests
+      x-sort-index: 6
+  /v2/auth/password:
+    post:
+      description: Authenticates a user via username and password and returns an access token.
+      operationId: AuthenticatePassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordCredentials"
+        description: The user credentials.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessToken"
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The authentication did not succeed because of invalid credentials.
+        "403":
+          description: The authentication did not succeed because of the account's status or permissions (e.g., account is inactive).
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Authenticate via Password
+      tags:
+        - Authentication
+      x-sort-index: 1
+  /v2/auth/token-info:
+    get:
+      description: Retrieves details about the access token provided in the Authorization header.
+      operationId: GetTokenInfo
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenInfo"
+          description: The request was processed successfully.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get Access Token Information
+      tags:
+        - Authentication
+      x-sort-index: 14
+  /v2/group-links:
+    get:
+      description: Lists group links.
+      operationId: ListGroupLinks
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+          explode: false
+          in: query
+          name: pageToken
+          schema:
+            description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+            type: string
+        - description: "For pagination: Limit the number of returned group links."
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 100
+            description: "For pagination: Limit the number of returned group links."
+            format: int32
+            maximum: 500
+            minimum: 0
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBodyListGroupLink"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+      summary: List Group Links
+      tags:
+        - Guests
+      x-sort-index: 6
+  /v2/group-links/{id}:
+    get:
+      description: Gets a single group link.
+      operationId: GetGroupLink
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The group link ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The group link ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupLink"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Group was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get Group Link
+      tags:
+        - Guests
+      x-sort-index: 8
+    patch:
+      description: Updates a group link.
+      operationId: UpdateGroupLink
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The group link ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The group link ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupLinkUpdate"
+        description: The updated group link.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Group link was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Group Link
+      tags:
+        - Guests
+      x-sort-index: 10
+  /v2/guest-links:
+    get:
+      description: Lists guest links.
+      operationId: ListGuestLinks
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+          explode: false
+          in: query
+          name: pageToken
+          schema:
+            description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+            type: string
+        - description: "For pagination: Limit the number of returned guest links."
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 100
+            description: "For pagination: Limit the number of returned guest links."
+            format: int32
+            maximum: 500
+            minimum: 0
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBodyListGuestLink"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+      summary: List Guest Links
+      tags:
+        - Guests
+      x-sort-index: 0
+  /v2/guest-links/{id}:
+    get:
+      description: Gets a single guest link.
+      operationId: GetGuestLink
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The guest link ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The guest link ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestLink"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Guest was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get Guest Link
+      tags:
+        - Guests
+      x-sort-index: 2
+    patch:
+      description: Updates a guest link.
+      operationId: UpdateGuestLink
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The guest link ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The guest link ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestLinkUpdate"
+        description: The updated guest link.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Guest link was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Guest Link
+      tags:
+        - Guests
+      x-sort-index: 4
+  /v2/languages:
+    get:
+      description: Lists the languages available for transcription and translation.
+      operationId: ListAvailableLanguages
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Languages"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+      summary: List Available Languages
+      tags:
+        - Rooms
+      x-sort-index: 21
+  /v2/meetings:
+    get:
+      description: Lists meetings created by the user authenticated via the access token in the Authorization header.
+      operationId: ListOwnMeetings
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The earliest time at which the meeting is scheduled to be ongoing.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The earliest time at which the meeting is scheduled to be ongoing.
+            examples:
+              - "2024-09-22T11:00:00Z"
+            format: date-time
+            type: string
+        - description: The latest time at which the meeting is scheduled to be ongoing.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The latest time at which the meeting is scheduled to be ongoing.
+            examples:
+              - "2024-09-22T12:00:00Z"
+            format: date-time
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Meeting"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+      summary: List own Meetings
+      tags:
+        - Meetings
+      x-sort-index: 0
+    post:
+      description: Creates a meeting.
+      operationId: CreateMeeting
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingCreate"
+        description: The meeting to create.
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ID"
+          description: The requested resource was created. The returned ID can also be used as a 'roomId' to access the meeting room.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Create Meeting
+      tags:
+        - Meetings
+      x-sort-index: 2
+  /v2/meetings/{id}:
+    get:
+      description: Gets a meeting created by the user authenticated via the access token in the Authorization header.
+      operationId: GetOwnMeeting
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The meeting ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The meeting ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Meeting was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get own Meeting
+      tags:
+        - Meetings
+      x-sort-index: 1
+    patch:
+      description: Updates a meeting.
+      operationId: UpdateMeeting
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The meeting ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The meeting ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingUpdate"
+        description: The updated meeting.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Meeting was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Meeting
+      tags:
+        - Meetings
+      x-sort-index: 3
+  /v2/meetings/{id}/cancellation:
+    post:
+      description: Cancels a meeting. Optionally, a notification email is sent to the creator and all invitees.
+      operationId: CancelMeeting
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The meeting ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The meeting ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingCancellation"
+        description: Additional data needed for the cancellation.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Meeting was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Cancel Meeting
+      tags:
+        - Meetings
+      x-sort-index: 4
+  /v2/permission-groups:
+    get:
+      description: Lists permission groups. Permission groups are predefined permissions that can be applied to users (e.g., Admin, Guest, etc.).
+      operationId: ListPermissionGroups
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/PermissionGroup"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "404":
+          description: Permission group or company was not found.
+      summary: List Permission Groups
+      tags:
+        - Permissions
+      x-sort-index: 13
+  /v2/room-types:
+    get:
+      description: Lists room types.
+      operationId: ListRoomTypes
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/RoomTypeData"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+      summary: List Room Types
+      tags:
+        - Rooms
+      x-sort-index: 12
+  /v2/rooms:
+    get:
+      description: Lists rooms.
+      operationId: ListRooms
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: |-
+            Filters the result by room type.
+             - 'room' is used for normal rooms.
+             - 'departments' are unjoinable rooms that can hold multiple child rooms to help improving room structuring.
+             - 'meeting' marks temporary meeting rooms.
+          explode: false
+          in: query
+          name: roomTypes
+          schema:
+            description: |-
+              Filters the result by room type.
+               - 'room' is used for normal rooms.
+               - 'departments' are unjoinable rooms that can hold multiple child rooms to help improving room structuring.
+               - 'meeting' marks temporary meeting rooms.
+            items:
+              enum:
+                - department
+                - room
+                - meeting
+              type: string
+            type:
+              - array
+              - "null"
+        - description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+          explode: false
+          in: query
+          name: pageToken
+          schema:
+            description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+            type: string
+        - description: "For pagination: Set a limit on the number of returned rooms."
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 50
+            description: "For pagination: Set a limit on the number of returned rooms."
+            format: int32
+            maximum: 50
+            minimum: 0
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBodyListRoom"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Rooms
+      tags:
+        - Rooms
+      x-sort-index: 0
+    post:
+      description: Creates a room.
+      operationId: CreateRoom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomCreate"
+        description: The room to create.
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ID"
+          description: The requested resource was created.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Create Room
+      tags:
+        - Rooms
+      x-sort-index: 2
+  /v2/rooms/{id}:
+    delete:
+      description: Deletes a room.
+      operationId: DeleteRoom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Delete Room
+      tags:
+        - Rooms
+      x-sort-index: 4
+    get:
+      description: Gets a single room.
+      operationId: GetRoom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get Room
+      tags:
+        - Rooms
+      x-sort-index: 1
+    patch:
+      description: Updates a room. There are additional endpoints to create, update or delete subrooms, permissions and room features. Nested objects and arrays can only be replaced as a whole, not partially.
+      operationId: UpdateRoom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomUpdate"
+        description: The updated room fields. Nested objects and arrays can only be replaced as a whole, not partially.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Room
+      tags:
+        - Rooms
+      x-sort-index: 3
+  /v2/rooms/{id}/participants:
+    get:
+      description: Lists data about the participants who are currently in a room.
+      operationId: ListParticipants
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/SubroomParticipants"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Participants
+      tags:
+        - Rooms
+      x-sort-index: 18
+  /v2/rooms/{roomId}/attendances:
+    get:
+      description: Lists attendances at a room during a time period.
+      operationId: ListAttendances
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: The start time of the time period to consider in the report.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: The start time of the time period to consider in the report.
+            examples:
+              - "2024-09-22T11:00:00Z"
+            format: date-time
+            type: string
+        - description: The end time of the time period to consider in the report.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: The end time of the time period to consider in the report.
+            examples:
+              - "2024-09-22T12:00:00Z"
+            format: date-time
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/UserAttendances"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Attendances
+      tags:
+        - Reports
+      x-sort-index: 1
+  /v2/rooms/{roomId}/features:
+    delete:
+      description: Sets all the room features of a room to default.
+      operationId: DeleteRoomFeatures
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Delete Room Features
+      tags:
+        - Rooms
+      x-sort-index: 11
+    get:
+      description: Gets the room features of a room.
+      operationId: GetRoomFeatures
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomFeatures"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get Room Features
+      tags:
+        - Rooms
+      x-sort-index: 9
+    patch:
+      description: Updates the room features of a room.
+      operationId: UpdateRoomFeatures
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomFeaturesEdit"
+        description: The updated room features.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Room Features
+      tags:
+        - Rooms
+      x-sort-index: 10
+  /v2/rooms/{roomId}/file-share-limits:
+    get:
+      description: Gets the storage limits for file sharing in a room.
+      operationId: GetRoomFileShareLimits
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomLimits"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get file share limits
+      tags:
+        - Rooms
+        - Files
+      x-sort-index: 29
+  /v2/rooms/{roomId}/file-share-settings:
+    get:
+      description: Gets the file share settings of a room.
+      operationId: GetRoomFileShareSettings
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomSettings"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get file share settings
+      tags:
+        - Rooms
+        - Files
+      x-sort-index: 27
+    patch:
+      description: Updates the file share settings of a room.
+      operationId: UpdateRoomFileShareSettings
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomSettingsUpdate"
+        description: The updated file share settings.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update file share settings
+      tags:
+        - Rooms
+        - Files
+      x-sort-index: 28
+  /v2/rooms/{roomId}/group-links:
+    get:
+      description: Lists group links for a room. Returns an empty array if the room does not exist.
+      operationId: ListGroupLinksForRoom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+          explode: false
+          in: query
+          name: pageToken
+          schema:
+            description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+            type: string
+        - description: "For pagination: Limit the number of returned group links."
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 100
+            description: "For pagination: Limit the number of returned group links."
+            format: int32
+            maximum: 500
+            minimum: 0
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBodyListGroupLink"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Group Links for Room
+      tags:
+        - Guests
+      x-sort-index: 7
+    post:
+      description: Creates group links for a room.
+      operationId: CreateGroupLink
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupLinksRequestBody"
+        description: The group links to create.
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ID"
+                type:
+                  - array
+                  - "null"
+          description: The requested resource was created.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Create Group Links
+      tags:
+        - Guests
+      x-sort-index: 9
+  /v2/rooms/{roomId}/group-links/{id}:
+    delete:
+      description: Deletes a group link.
+      operationId: DeleteGroupLink
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The group link ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The group link ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+      summary: Delete Group Link
+      tags:
+        - Guests
+      x-sort-index: 11
+  /v2/rooms/{roomId}/guest-links:
+    get:
+      description: Lists guest links for a room. Returns an empty array if the room does not exist.
+      operationId: ListGuestLinksForRoom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+          explode: false
+          in: query
+          name: pageToken
+          schema:
+            description: "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request."
+            type: string
+        - description: "For pagination: Limit the number of returned guest links."
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 100
+            description: "For pagination: Limit the number of returned guest links."
+            format: int32
+            maximum: 500
+            minimum: 0
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBodyListGuestLink"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Guest Links for a Room
+      tags:
+        - Guests
+      x-sort-index: 1
+    post:
+      description: Creates guest links for a room.
+      operationId: CreateGuestLinks
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGuestLinksRequestBody"
+        description: The guest links to create.
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ID"
+                type:
+                  - array
+                  - "null"
+          description: The requested resource was created.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Create Guest Links
+      tags:
+        - Guests
+      x-sort-index: 3
+  /v2/rooms/{roomId}/guest-links/{id}:
+    delete:
+      description: Deletes a guest link.
+      operationId: DeleteGuestLink
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The guest link ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The guest link ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+      summary: Delete Guest Link
+      tags:
+        - Guests
+      x-sort-index: 5
+  /v2/rooms/{roomId}/language-settings:
+    get:
+      description: Gets the language settings of a room.
+      operationId: GetLanguageSettings
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LanguageSettings"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get Language Settings
+      tags:
+        - Rooms
+      x-sort-index: 19
+    patch:
+      description: Updates the language settings of a room.
+      operationId: UpdateLanguageSettings
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LanguageSettingsEdit"
+        description: The updated settings for the transcription and translation features.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Language Settings
+      tags:
+        - Rooms
+      x-sort-index: 20
+  /v2/rooms/{roomId}/passcode:
+    get:
+      description: Gets the passcode for a room. Passcodes can be set regardless of whether a passcode is required for the room.
+      operationId: GetPasscode
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passcode"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found or has no passcode set.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Get Passcode
+      tags:
+        - Rooms
+      x-sort-index: 23
+    post:
+      description: Generates a new passcode for a room. Passcodes are always generated, regardless of whether a passcode is required for the room. To require a passcode for a room, update the room.
+      operationId: RegeneratePasscode
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passcode"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Regenerate Passcode
+      tags:
+        - Rooms
+      x-sort-index: 22
+  /v2/rooms/{roomId}/permissions:
+    get:
+      description: Lists permissions applied in a room.
+      operationId: ListPermissions
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomPermissions"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Room Permissions
+      tags:
+        - Rooms
+        - Permissions
+      x-sort-index: 14
+    post:
+      description: Creates permissions for a user that are applied in a room.
+      operationId: CreatePermissions
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantPermissions"
+        description: The permissions to apply.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "409":
+          description: The resource already exists.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Create Room Permissions
+      tags:
+        - Rooms
+        - Permissions
+      x-sort-index: 15
+  /v2/rooms/{roomId}/permissions/{userId}:
+    delete:
+      description: Deletes permissions of a user that are applied in a room.
+      operationId: DeletePermissions
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: The user ID.
+          in: path
+          name: userId
+          required: true
+          schema:
+            description: The user ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Delete Room Permissions
+      tags:
+        - Rooms
+        - Permissions
+      x-sort-index: 17
+    patch:
+      description: Updates permissions of a user that are applied in a room.
+      operationId: UpdatePermissions
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: The user ID.
+          in: path
+          name: userId
+          required: true
+          schema:
+            description: The user ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PermissionsEdit"
+        description: The updated permissions.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room or user permission was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Room Permissions
+      tags:
+        - Rooms
+        - Permissions
+      x-sort-index: 16
+  /v2/rooms/{roomId}/subrooms:
+    get:
+      description: Lists subrooms.
+      operationId: ListSubrooms
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID of the subrooms.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID of the subrooms.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Subroom"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Subrooms
+      tags:
+        - Rooms
+      x-sort-index: 5
+    post:
+      description: Creates a subroom.
+      operationId: CreateSubroom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID to assign the subroom to.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID to assign the subroom to.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubroomEdit"
+        description: The subroom to create.
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ID"
+          description: The requested resource was created.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Create Subroom
+      tags:
+        - Rooms
+      x-sort-index: 6
+  /v2/rooms/{roomId}/subrooms/{subroomId}:
+    delete:
+      description: Deletes a subroom.
+      operationId: DeleteSubroom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID the subroom is assigned to.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID the subroom is assigned to.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: The subroom ID.
+          in: path
+          name: subroomId
+          required: true
+          schema:
+            description: The subroom ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Delete Subroom
+      tags:
+        - Rooms
+      x-sort-index: 8
+    patch:
+      description: Updates a subroom.
+      operationId: UpdateSubroom
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The room ID the subroom is assigned to.
+          in: path
+          name: roomId
+          required: true
+          schema:
+            description: The room ID the subroom is assigned to.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+        - description: The subroom ID.
+          in: path
+          name: subroomId
+          required: true
+          schema:
+            description: The subroom ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubroomEdit"
+        description: The updated subroom fields.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "404":
+          description: Room or subroom was not found.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update Subroom
+      tags:
+        - Rooms
+      x-sort-index: 7
+  /v2/stats:
+    get:
+      description: Lists statistics for provided filters grouped by time periods depending on the corresponding query parameter.
+      operationId: ListStatistics
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The start time of the time period to consider in the report. The earliest start time can be exactly 62 days in the past.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: The start time of the time period to consider in the report. The earliest start time can be exactly 62 days in the past.
+            examples:
+              - "2024-09-22T11:00:00Z"
+            format: date-time
+            type: string
+        - description: The end time of the time period to consider in the report.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: The end time of the time period to consider in the report.
+            examples:
+              - "2024-09-22T12:00:00Z"
+            format: date-time
+            type: string
+        - description: The duration of the time periods to group the report results in hours.
+          explode: false
+          in: query
+          name: stepDurationHours
+          required: true
+          schema:
+            description: The duration of the time periods to group the report results in hours.
+            format: int64
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/StatsPeriod"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List Statistics
+      tags:
+        - Reports
+      x-sort-index: 0
+  /v2/users:
+    get:
+      description: Lists all users in the company.
+      operationId: ListUsers
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The email address.
+          explode: false
+          in: query
+          name: emailAddress
+          schema:
+            description: The email address.
+            examples:
+              - user@provider.com
+            format: email
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/User"
+                type:
+                  - array
+                  - "null"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: List users
+      tags:
+        - Users
+      x-sort-index: 1
+    patch:
+      description: Updates the requester's user information.
+      operationId: UpdateUser
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+        description: The updated user information.
+        required: true
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Update own user
+      tags:
+        - Users
+      x-sort-index: 3
+  /v2/users/invitation:
+    post:
+      description: Invites a user to the company of the requester.
+      operationId: InviteUser
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInvitation"
+        description: The user to invite.
+        required: true
+      responses:
+        "202":
+          description: The invitation request was successful. Note that the user might not be available immediately after the response was sent. This can take up to a few minutes.
+        "400":
+          description: The request was not valid.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "403":
+          description: The requesting user does not have the necessary permissions.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Invite User
+      tags:
+        - Users
+      x-sort-index: 0
+  /v2/users/me:
+    get:
+      description: Returns the profile of the requesting user.
+      operationId: GetOwnUser
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+      summary: Get own user
+      tags:
+        - Users
+      x-sort-index: 2
+  /v2/users/{id}:
+    delete:
+      description: Deletes a user. If the user is logged in at the time of the deletion, it can take up to an hour until the user is fully unable to access any part of the system.
+      operationId: DeleteUser
+      parameters:
+        - description: A valid access token (can be obtained by authenticating).
+          in: header
+          name: Authorization
+          schema:
+            description: A valid access token (can be obtained by authenticating).
+            type: string
+        - description: The user ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The user ID.
+            examples:
+              - 00000000-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "204":
+          description: The request was processed successfully.
+        "401":
+          description: The 'Authorization' header did not contain a valid API token.
+        "422":
+          description: An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met.
+      summary: Delete user
+      tags:
+        - Users
+      x-sort-index: 4
+servers:
+  - url: https://apis.alfaview.com
+tags:
+  - description: Authentication endpoints
+    name: Authentication
+  - description: Room endpoints
+    name: Rooms
+  - description: Meeting endpoints
+    name: Meetings
+  - description: Guest endpoints
+    name: Guests
+  - description: Report endpoints
+    name: Reports
+  - description: User endpoints
+    name: Users
+  - description: Permission endpoints
+    name: Permissions
+  - description: File endpoints
+    name: Files
