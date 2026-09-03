@@ -103,3 +103,11 @@ www.alfaview.com
 - CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
 - NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
 - NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+
+## 2026-09-03 18:48:37 UTC
+- NEW OpenAPI specs at `https://apis.alfaview.com/v2/docs/openapi.json` and `https://beta-apis.alfaview.com/v2/docs/openapi.json` are **identical** (same endpoints, schemas, auth requirements) — confirms ve
+- NEW `GET https://apis.alfaview.com/v2/languages` returns 404 (endpoint absent in production); `GET https://beta-apis.alfaview.com/v2/languages` returns 401 (endpoint exists, auth enforced) — confirmed API
+- NEW OpenAPI spec exposes `DELETE /v2/users/{id}` and `PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}` with UUID path params — direct evidence for IDOR hypothesis
+- NEW `demo-company.alfaview.com/api/v1/users` returns 302 redirect to `/` — no unauthenticated user enumeration
+- CHANGED Beta API weaker auth hypothesis **fully disproven** — OpenAPI specs identical, both enforce auth identically
+- CHANGED API version drift scope narrowed: only `/v2/languages` endpoint differs (beta has it, prod doesn't)

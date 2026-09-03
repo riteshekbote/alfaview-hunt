@@ -81,3 +81,42 @@ testability: PASSIVE (no auth needed)
 [LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
 [LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
 [RISK] alfaview: 62/100. Scope is broad but all high-value endpoints are auth-gated. Beta API disconfirmed as weaker. Demo company presents immediate passive test opportunity. Realistic path: obtain demo/test account, test IDOR and guest-link flows; meanwhile probe demo-company for exposed test data.
+## 2026-09-03 18:41:01 UTC [target] (model bigpickle)
+[PRIO] insider-webclient.alfaview.com, 7.2, a:8 b:9 t:7 g:8 c:3 f:4
+[PRIO] beta-webclient.alfaview.com, 6.4, a:6 b:7 t:7 g:7 c:3 f:4
+[PRIO] alfatraining.alfaview.com, 6.3, a:7 b:6 t:5 g:7 c:3 f:3
+[PRIO] demo-company.alfaview.com, 5.5, a:4 b:4 t:3 g:9 c:3 f:5 (SPA disconfirmed)
+[PRIO] bhc.alfaview.com, 5.0, a:5 b:5 t:3 g:5 c:3 f:3
+[HYP] Insider web client exposes internal admin panel without auth
+class: MISCONFIG
+asset: insider-webclient.alfaview.com
+confidence: 55
+reasoning: Returns HTTP 200 with no auth gate. Name explicitly says "insider" — likely internal tooling for employees/admins. Internal tools are frequently deployed with weaker auth controls, debug modes, or default sessions. If this is a React/Vue SPA, client-side routes may expose admin functionality hidden behind JS routing but accessible via direct path.
+evidence_needed: Response body content-type and HTML structure; presence of API base URL, admin routes, or debug flags in bundled JS; probe /api, /admin, /graphql, /internal paths.
+verify_steps: GET https://insider-webclient.alfaview.com/ — observe content-type, title, script tags. GET https://insider-webclient.alfaview.com/api/health or /api/config for exposed backend routes.
+impact: Exposure of internal admin tooling, potential access to user management, room administration, or meeting data; severity MEDIUM-HIGH.
+testability: PASSIVE
+[HYP] Beta web client exposes debug/test routes or weaker CSP
+class: MISCONFIG
+asset: beta-webclient.alfaview.com
+confidence: 45
+reasoning: Beta web clients often have debug flags, source maps, verbose error handling, or test accounts baked in. If the SPA bundles contain dev-mode conditionals (e.g., window.__DEV__, REACT_APP_ENV=beta), these may expose admin functions or API endpoints not present in production. Beta API version drift already confirmed (beta has /v2/languages, prod doesn't).
+evidence_needed: Response body inspection for env flags, source map URLs, test account references in JS bundles; compare CSP headers vs production app.alfaview.com.
+verify_steps: GET https://beta-webclient.alfaview.com/ — observe content-type, title, script src paths. GET https://beta-webclient.alfaview.com/asset-manifest.json or /manifest.json for build info.
+impact: Leaked beta API endpoints, debug functionality, or test credentials; severity MEDIUM.
+testability: PASSIVE
+[HYP] Training platform exposes user data or test accounts
+class: MISCONFIG
+asset: alfatraining.alfaview.com
+confidence: 40
+reasoning: Training platforms often contain test user accounts, course completion data, or internal employee information. Returns HTTP 200 without auth gate. If this is a standalone training LMS, it may have exposed user lists, admin panels, or API endpoints.
+evidence_needed: Response body content-type and structure; probe /api, /users, /admin, /courses paths; check for login page vs direct content access.
+verify_steps: GET https://alfatraining.alfaview.com/ — observe response. GET https://alfatraining.alfaview.com/api/v1/users or /admin.
+impact: Exposure of employee training data, user accounts; severity LOW-MEDIUM.
+testability: PASSIVE
+[NEXT] PROBE: GET https://insider-webclient.alfaview.com/ — observe response body, content-type, title tag, script src URLs. Then GET https://insider-webclient.alfaview.com/api/health or /api/config for exposed backend routes.
+[LEARN] REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+[LEARN] ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift confirmed — beta has /v2/languages absent in production.
+[RISK] alfaview: 60/100. Scope is broad but all high-value API endpoints are auth-gated. Beta API weaker auth disproven. Demo company is SPA shell. Insider-webclient is the most promising untested passive target — internal tooling naming strongly suggests exposed admin surface. Realistic path: probe insider-webclient/beta-webclient passively, then obtain credentials for IDOR/guest-link testing.

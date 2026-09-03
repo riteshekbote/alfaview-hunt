@@ -22,3 +22,18 @@
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
 - LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
 - LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+
+## RANKED HYPOTHESES 2026-09-03 18:48:37 UTC
+- [75] apis.alfaview.com: Cross-tenant IDOR on room permissions via UUID path params (from art/lead_nemotron3.txt)
+- [55] insider-webclient.alfaview.com: Insider web client exposes internal admin panel without auth (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET `https://beta-apis.alfaview.com/v2/debug`, `https://beta-apis.alfaview.com/v2/admin`, `https://beta-apis.alfaview.com/v2/internal`, `https://beta-api
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET https://insider-webclient.alfaview.com/ — observe response body, content-type, title tag, script src URLs. Then GET https://insider-webclient.alfavie
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Beta API weaker auth enforcement disproven — OpenAPI specs identical, both require auth (beta 401, prod 404 for /v2
+- LEARN: ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift confirmed — beta exposes /v2/languages endpoint absent in production (401 vs 404).
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately (but /api/v1/users redirects to /).
+- LEARN: REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- LEARN: ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift confirmed — beta has /v2/languages absent in production.
