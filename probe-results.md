@@ -44,3 +44,8 @@ https://insider-webclient.alfaview.com/internal` -> HTTP 404
 https://insider-webclient.alfaview.com/health` -> HTTP 404
 https://insider-webclient.alfaview.com/api/health -> HTTP 404
 https://insider-webclient.alfaview.com/api/config -> HTTP 404
+
+## 2026-09-03 23:25:03 UTC
+https://alfacheck-audio.alfaview.com/` -> ERR The read operation timed out
+https://alfacheck-engine.alfaview.com/` -> ERR The read operation timed out
+https://alfacheck-video.alfaview.com/` -> ERR The read operation timed out

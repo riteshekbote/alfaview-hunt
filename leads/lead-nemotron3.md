@@ -146,3 +146,54 @@ testability: PASSIVE
 [LEARN] REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
 [LEARN] ACCEPTED MISCONFIG @ insider-webclient.alfaview.com: Unauthenticated web surface (HTTP 200), testable immediately — NEW target.
 [RISK] alfaview: 68/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts. Production APIs auth-gated (401/404). High-value IDOR and AUTH classes confirmed in OpenAPI spec. 1 rps limit constrains brute-force. Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with version drift. New insider-webclient surface adds unauthenticated internal tooling exposure risk.
+## 2026-09-03 23:24:12 UTC [target] (model nemotron3)
+[CHANGED] Production API `apis.alfaview.com/v2/languages` now returns **401** (was 404) — endpoint added to production, aligns with beta; OpenAPI specs now identical including `/v2/languages` path
+[CHANGED] Beta API `beta-apis.alfaview.com/v2/languages` returns **401** (consistent) — both environments now enforce auth identically on this endpoint
+[NEW] `insider-webclient.alfaview.com` and `beta-webclient.alfaview.com` both serve identical SPA shells (4396 bytes, same HTML structure, `/health`=204, `/api|/admin|/debug|/internal|/v2|/docs`=404) — no internal admin/debug endpoints exposed
+[NEW] `demo-company.alfaview.com` serves SPA (HTTP 200) — unauthenticated web surface confirmed
+[NEW] 55 dedicated hosts confirmed after wildcard filtering; 48 remain HTTP-unprobed (e.g., `alfacheck-*`, `beta-hcloud-*`, `beta-ionoscloud-*`, `beta-noris-*`, `beta-ovh-*`, `consul-monitoring`, `equipment`, `appstats`)
+[PRIO] apis.alfaview.com, 8.5, a:9 b:10 t:9(OpenAPI+JWT+UUID-paths) g:4(auth-gate) c:4 f:5
+[PRIO] beta-apis.alfaview.com, 7.0, a:8 b:8 t:7(OpenAPI+identical-endpoints) g:4(auth-gate) c:4 f:5
+[PRIO] insider-webclient.alfaview.com, 6.0, a:6 b:6 t:5(SPA-shell) g:9(no-auth-gate) c:3 f:4
+[PRIO] beta-webclient.alfaview.com, 6.0, a:6 b:6 t:5(SPA-shell) g:9(no-auth-gate) c:3 f:4
+[PRIO] demo-company.alfaview.com, 5.5, a:6 b:5 t:4(web-app) g:9(no-auth-gate) c:3 f:3
+[PRIO] app.alfaview.com, 5.5, a:6 b:7 t:5(web-app) g:4(auth-gate) c:3 f:3
+[HYP] Cross-tenant IDOR on room permissions and user deletion via UUID path params
+class: IDOR
+asset: apis.alfaview.com
+confidence: 80
+reasoning: OpenAPI spec confirms DELETE /v2/users/{id} and PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId} with UUID path params. Auth uses company-scoped JWT; server-side authorization (room membership vs global admin) unverified. Cross-tenant IDOR if API trusts token-issued companyId without validating room-level grants.
+evidence_needed: Authenticated requests with valid token modifying roomId/userId from different company; 403 (enforced) vs 200/204 (broken) response difference
+verify_steps: POST /v2/auth/api-key → obtain token → PATCH /v2/rooms/{victim-roomId}/permissions/{victim-userId} with foreign userId; observe 403 vs 204. Also DELETE /v2/users/{foreign-userId}.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (OWASP A01:2021)
+testability: AUTH_HELPED
+[HYP] Guest link access key enumeration via missing rate limits on 3-field auth flow
+class: AUTH
+asset: apis.alfaview.com
+confidence: 65
+reasoning: OpenAPI spec shows guest link auth requires companyId+roomId+accessKey (POST /v2/guest-links/validate or similar). No rate-limit headers observed on auth endpoints. 1 rps global limit constrains brute-force but targeted enumeration of accessKey per room feasible if roomId known.
+evidence_needed: Valid companyId+roomId seed; repeated POST to guest-link validate endpoint with varying accessKey; observe 429 vs 401/404 response difference
+verify_steps: Obtain valid companyId+roomId (requires auth) → POST /v2/rooms/{roomId}/guest-links/validate (or similar) with incremental accessKey values; measure response codes and rate-limit headers
+impact: Guest link hijacking → unauthorized room access; severity MEDIUM-HIGH
+testability: AUTH_HELPED
+[HYP] Mass assignment on room/user create/update via over-permissive schemas
+class: OTHER
+asset: apis.alfaview.com
+confidence: 50
+reasoning: OpenAPI schemas for RoomCreate, RoomUpdate, UserInvitation, UserUpdate expose many fields. JWT is company-scoped; if server doesn't strip privileged fields (e.g., role, permissions, companyId, isAdmin), attacker could escalate via mass assignment on POST /v2/rooms, PATCH /v2/rooms/{id}, POST /v2/users/invitation.
+evidence_needed: Authenticated request with extra fields in body (e.g., "role": "admin", "companyId": "other-company"); observe 200/201 with reflected elevated privileges vs 400/422
+verify_steps: POST /v2/auth/api-key → obtain token → POST /v2/rooms with body including "role": "admin", "permissions": ["manage_users"]; observe response. Repeat for PATCH /v2/rooms/{id}, POST /v2/users/invitation with "role": "admin".
+impact: Privilege escalation within company or cross-tenant if companyId mutable; severity HIGH
+testability: AUTH_HELPED
+[PARKED] Guest link access key enumeration via missing rate limits on 3-field auth flow: confidence 65 but requires valid companyId+roomId seed (authenticated phase); speculative without credentials
+[PARKED] Mass assignment on room/user create/update via over-permissive schemas: confidence 50 < 60 threshold; schema analysis only, no evidence of missing field stripping
+[FINAL] Cross-tenant IDOR on room permissions and user deletion via UUID path params — **RANK 1**. Highest confidence (80), direct OpenAPI evidence, HIGH severity, clear verify steps with auth.
+[NEXT] PROBE: GET `https://alfacheck-audio.alfaview.com/`, `https://alfacheck-engine.alfaview.com/`, `https://alfacheck-video.alfaview.com/` — probe unprobed dedicated hosts for unauthenticated surfaces (health/metrics/debug endpoints)
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+[LEARN] ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift resolved — both beta and production now expose /v2/languages with identical auth enforcement (401).
+[LEARN] REJECTED MISCONFIG @ beta-apis.alfaview.com: Beta API weaker auth enforcement disproven — OpenAPI specs identical, both require auth identically.
+[LEARN] REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404.
+[LEARN] REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
+[LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface (SPA), testable immediately.
+[RISK] alfaview: 68/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts. Production APIs auth-gated (401/404). High-value IDOR and AUTH classes confirmed in OpenAPI spec. 1 rps limit constrains brute-force. Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. 48 unprobed hosts may reveal additional attack surface.
