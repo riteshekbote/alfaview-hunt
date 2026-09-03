@@ -1,0 +1,273 @@
+===== ANALYST nemotron3 2026-09-03 14:23:21 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/
+total 104
+drwxr-xr-x 11 runner runner 4096 Sep  3 14:03 .
+drwxr-xr-x  3 runner runner 4096 Sep  3 14:02 ..
+drwxr-xr-x  7 runner runner 4096 Sep  3 14:03 .git
+drwxr-xr-x  3 runner runner 4096 Sep  3 14:02 .github
+-rw-r--r--  1 runner runner 1883 Sep  3 14:02 README.md
+-rw-r--r--  1 runner runner   43 Sep  3 14:03 analyst-out.txt
+-rw-r--r--  1 runner runner 9146 Sep  3 14:03 analyst-prompt.txt
+-rw-r--r--  1 runner runner 5236 Sep  3 14:03 ctx.txt
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 inventory
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 knowledge
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 leads
+-rw-r--r--  1 runner runner   29 Sep  3 14:02 probe-results.md
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 recon-notes
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 reports
+-rw-r--r--  1 runner runner 3323 Sep  3 14:02 scope.yml
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 scripts
+-rw-r--r--  1 runner runner   32 Sep  3 14:02 state_bigpickle.json
+-rw-r--r--  1 runner runner   32 Sep  3 14:02 state_laguna.json
+-rw-r--r--  1 runner runner   32 Sep  3 14:02 state_ling3.json
+-rw-r--r--  1 runner runner   32 Sep  3 14:02 state_longcat.json
+-rw-r--r--  1 runner runner   37 Sep  3 14:02 state_mimo.json
+-rw-r--r--  1 runner runner   32 Sep  3 14:02 state_nemotron3.json
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 triage
+[0m
+[0m→ [0mRead scope.yml
+[0m→ [0mRead inventory/alfaview.md
+[0m→ [0mRead analyst-out.txt
+[0m→ [0mRead ctx.txt
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/ /home/runner/work/alfaview-hunt/alfaview-hunt/leads/ /home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/
+/home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 .
+drwxr-xr-x 11 runner runner 4096 Sep  3 14:03 ..
+-rw-r--r--  1 runner runner   24 Sep  3 14:02 index.md
+
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Sep  3 14:02 .
+drwxr-xr-x 11 runner runner 4096 Sep  3 14:03 ..
+-rw-r--r--  1 runner runner   18 Sep  3 14:02 lead-mimo.md
+
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/:
+total 192
+drwxr-xr-x  2 runner runner   4096 Sep  3 14:02 .
+drwxr-xr-x 11 runner runner   4096 Sep  3 14:03 ..
+-rw-r--r--  1 runner runner   4789 Sep  3 14:02 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Sep  3 14:02 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Sep  3 14:02 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Sep  3 14:02 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Sep  3 14:02 alfaview-openapi.yaml
+[0m
+[0m→ [0mRead recon-notes/CORPUS-ALFAVIEW.md
+[0m→ [0mRead recon-notes/DEEPER-FINDINGS.md
+[0m→ [0mRead recon-notes/SCOPE-CONFIRMATION.md
+[0m→ [0mRead leads/lead-mimo.md
+[0m
+[0m$ [0mhead -200 /home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/alfaview-openapi.yaml
+components:
+  schemas:
+    APICredentials:
+      additionalProperties: false
+      properties:
+        clientId:
+          description: The alias of the API key.
+          type: string
+        companyId:
+          description: The company ID.
+          type: string
+        key:
+          description: The API key to authenticate.
+          type: string
+      required:
+        - companyId
+        - clientId
+        - key
+      type: object
+    AccessToken:
+      additionalProperties: false
+      properties:
+        accessToken:
+          description: Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API.
+          type: string
+      required:
+        - accessToken
+      type: object
+    Attendance:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name of the user that was displayed in UIs at the time of the attendance.
+          type: string
+        from:
+          description: The start time.
+          examples:
+            - "2024-09-22T11:00:00Z"
+          format: date-time
+          type: string
+        to:
+          description: The end time.
+          examples:
+            - "2024-09-22T12:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - displayName
+        - from
+        - to
+      type: object
+    AuthenticateGroupLinkRequestBody:
+      additionalProperties: false
+      properties:
+        accessKey:
+          description: The access key from the group link.
+          type: string
+        companyId:
+          description: The company ID.
+          examples:
+            - 0123456789ABCDEFGHIJKLMNOP
+          type: string
+        displayName:
+          description: The name of the guest that is displayed in UIs.
+          maximum: 256
+          type: string
+        externalId:
+          description: The external ID can be used to derive a reproducible user ID to prevent simultaneous use. If that is desired, the caller is responsible for providing a unique value per user.
+          maximum: 256
+          minimum: 32
+          type:
+            - string
+            - "null"
+        roomId:
+          description: The room ID from the group link.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - companyId
+        - roomId
+        - accessKey
+        - displayName
+      type: object
+    AuthenticateGuestLinkRequestBody:
+      additionalProperties: false
+      properties:
+        accessKey:
+          description: The access key from the guest link.
+          type: string
+        companyId:
+          description: The company ID.
+          examples:
+            - 0123456789ABCDEFGHIJKLMNOP
+          type: string
+        displayName:
+          description: If set, this overrides the stored name of the guest that is displayed in UIs.
+          maximum: 256
+          type:
+            - string
+            - "null"
+        roomId:
+          description: The room ID from the guest link.
+          examples:
+            - 00000000-0000-0000-0000-000000000000
+          type: string
+      required:
+        - companyId
+        - roomId
+        - accessKey
+      type: object
+    CreateGroupLinksRequestBody:
+      additionalProperties: false
+      properties:
+        create:
+          description: The group links.
+          items:
+            $ref: "#/components/schemas/GroupLinkCreate"
+          minItems: 1
+          type:
+            - array
+            - "null"
+        origin:
+          description: Specifies the creator or reason for the creation of the group links (e.g., 'my external tool' or 'initial meeting delayed').
+          type:
+            - string
+            - "null"
+      required:
+        - create
+      type: object
+    CreateGuestLinksRequestBody:
+      additionalProperties: false
+      properties:
+        create:
+          description: The guest links.
+          items:
+            $ref: "#/components/schemas/GuestLinkCreate"
+          minItems: 1
+          type:
+            - array
+            - "null"
+        origin:
+          description: Specifies the creator or reason for the creation of the guest links (e.g., 'my external tool' or 'initial meeting delayed').
+          type:
+            - string
+            - "null"
+        timezone:
+          description: The time zone to use in the notification emails. Can be 'UTC', 'Local' or a TZ identifier from the IANA time zone database. If empty, the default is 'Europe/Berlin'.
+          examples:
+            - Europe/Berlin
+          type:
+            - string
+            - "null"
+      required:
+        - create
+      type: object
+    ErrorDetail:
+      additionalProperties: false
+      properties:
+        location:
+          description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+          type: string
+        message:
+          description: Error message text
+          type: string
+        value:
+          description: The value at the given location
+      type: object
+    ErrorModel:
+      additionalProperties: false
+      properties:
+        detail:
+          description: A human-readable explanation specific to this occurrence of the problem.
+          examples:
+            - Property foo is required but is missing.
+          type: string
+        errors:
+          description: Optional list of individual error details
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+          type:
+            - array
+            - "null"
+        instance:
+          description: A URI reference that identifies the specific occurrence of the problem.
+          examples:
+            - https://example.com/error-log/abc123
+          format: uri
+          type: string
+        status:
+          description: HTTP status code
+          examples:
+            - 400
+          format: int64
+          type: integer
+        title:
+          description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+          examples:
+            - Bad Request
+          type: string
+[0m
+[0m$ [0mgrep -n "paths:" /home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/alfaview-openapi.yaml
+2253:paths:
+[0m
+[0m→ [0mRead recon-notes/alfaview-openapi.yaml[90m [limit=500, offset=2250][0m
+[0m→ [0mRead recon-notes/alfaview-openapi.yaml[90m [offset=2750, limit=500][0m
+[0m→ [0mRead recon-notes/alfaview-openapi.yaml[90m [limit=500, offset=3250][0m
+[0m→ [0mRead recon-notes/alfaview-openapi.yaml[90m [limit=500, offset=3750][0m
+[0m→ [0mRead recon-notes/alfaview-openapi.yaml[90m [limit=300, offset=4250][0m
