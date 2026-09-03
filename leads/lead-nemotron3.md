@@ -102,3 +102,47 @@ testability: PASSIVE
 [LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
 [LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately (but /api/v1/users redirects to /).
 [RISK] alfaview: 68/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts. Production APIs auth-gated (401/404). High-value IDOR and AUTH classes confirmed in OpenAPI spec. 1 rps limit constrains brute-force. Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with version drift.
+## 2026-09-03 21:21:48 UTC [target] (model nemotron3)
+[PRIO] apis.alfaview.com, 8.5, a:9 b:10 t:9(OpenAPI+JWT+UUID-paths) g:4(auth-gate) c:4 f:5
+[PRIO] insider-webclient.alfaview.com, 7.5, a:8 b:7 t:7(internal-tool) g:9(no-auth-gate) c:3 f:4
+[PRIO] beta-apis.alfaview.com, 7.0, a:8 b:8 t:7(OpenAPI+divergent-endpoint) g:4(auth-gate) c:4 f:5
+[PRIO] beta-webclient.alfaview.com, 7.2, a:8 b:7 t:7(beta-web) g:6(partial-auth) c:3 f:5
+[PRIO] demo-company.alfaview.com, 6.8, a:8 b:6 t:5(web-app) g:9(no-auth-gate) c:3 f:4
+[HYP] Cross-tenant IDOR on room permissions and user deletion via UUID path params
+class: IDOR
+asset: apis.alfaview.com
+confidence: 80
+reasoning: OpenAPI spec at /v2/docs/openapi.json confirms DELETE /v2/users/{id} and PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId} with UUID path params. Auth uses company-scoped JWT; server-side authorization (room membership vs global admin) unverified. Classic cross-tenant IDOR if API trusts token-issued companyId without validating room-level grants.
+evidence_needed: Authenticated requests with valid token modifying roomId/userId from different company; 403 (enforced) vs 200/204 (broken) response差异
+verify_steps: POST /v2/auth/api-key → obtain token → PATCH /v2/rooms/{victim-roomId}/permissions/{victim-userId} with foreign userId; observe 403 vs 204. Also DELETE /v2/users/{foreign-userId}.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (OWASP A01:2021)
+testability: AUTH_HELPED
+[HYP] Insider web client exposes internal admin/debug endpoints without authentication
+class: MISCONFIG
+asset: insider-webclient.alfaview.com
+confidence: 65
+reasoning: Host returns HTTP 200 (4396 bytes) with no auth challenge. "Insider" naming suggests internal build. Unauthenticated access to internal tooling could leak debug endpoints, feature flags, or admin panels.
+evidence_needed: Response body analysis for admin/debug routes, API calls to internal endpoints, exposed config/feature flags
+verify_steps: GET https://insider-webclient.alfaview.com/ — analyze HTML/JS for API base URLs, admin routes, feature flags. Then GET https://insider-webclient.alfaview.com/api/*, /admin, /debug, /internal, /health
+impact: Internal tooling exposure → debug endpoints, config leakage, potential admin access; severity MEDIUM-HIGH
+testability: PASSIVE
+[HYP] Residual API version drift: beta /v2/languages endpoint logic differs from production (absent)
+class: MISCONFIG
+asset: beta-apis.alfaview.com
+confidence: 45
+reasoning: Only confirmed divergence is /v2/languages (beta had it returning 401, now 404; prod always 404). OpenAPI specs identical. Beta may have had newer/older implementation with different validation logic. Endpoint removal suggests drift but current surface shows no beta-only endpoints.
+evidence_needed: Historical comparison of beta vs prod /v2/languages response bodies; probe for other undocumented beta paths not in OpenAPI
+verify_steps: GET https://beta-apis.alfaview.com/v2/languages (confirm 404). Compare OpenAPI spec schemas for language-related models. Probe common beta paths: /v2/beta/*, /v2/experimental/*, /v2/preview/*
+impact: Undocumented/undertested beta endpoints may lack auth checks or input validation; severity MEDIUM
+testability: PASSIVE
+[PARKED] Residual API version drift: beta /v2/languages endpoint logic differs from production (absent): confidence 45 < 50, no current beta-only endpoints found, OpenAPI identical, low immediate exploitability
+[FINAL] Cross-tenant IDOR on room permissions and user deletion via UUID path params — **RANK 1**. Highest confidence (80), direct OpenAPI evidence, HIGH severity, clear verify steps with auth.
+[FINAL] Insider web client exposes internal admin/debug endpoints without authentication — **RANK 2**. PASSIVE testable, NEW surface (HTTP 200), MEDIUM-HIGH impact if internal tooling exposed.
+[NEXT] PROBE: GET `https://insider-webclient.alfaview.com/` — analyze response body for API base URLs, admin routes, feature flags, script src URLs. Then GET `https://insider-webclient.alfaview.com/api`, `https://insider-webclient.alfaview.com/admin`, `https://insider-webclient.alfaview.com/debug`, `https://insider-webclient.alfaview.com/internal`, `https://insider-webclient.alfaview.com/health`
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+[LEARN] ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift confirmed — beta exposes /v2/languages endpoint absent in production (401 vs 404 historically).
+[LEARN] REJECTED MISCONFIG @ beta-apis.alfaview.com: Beta API weaker auth enforcement disproven — OpenAPI specs identical, both require auth identically.
+[LEARN] REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+[LEARN] ACCEPTED MISCONFIG @ insider-webclient.alfaview.com: Unauthenticated web surface (HTTP 200), testable immediately — NEW target.
+[RISK] alfaview: 68/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts. Production APIs auth-gated (401/404). High-value IDOR and AUTH classes confirmed in OpenAPI spec. 1 rps limit constrains brute-force. Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with version drift. New insider-webclient surface adds unauthenticated internal tooling exposure risk.

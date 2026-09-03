@@ -111,3 +111,5 @@ www.alfaview.com
 - NEW `demo-company.alfaview.com/api/v1/users` returns 302 redirect to `/` — no unauthenticated user enumeration
 - CHANGED Beta API weaker auth hypothesis **fully disproven** — OpenAPI specs identical, both enforce auth identically
 - CHANGED API version drift scope narrowed: only `/v2/languages` endpoint differs (beta has it, prod doesn't)
+
+## 2026-09-03 21:22:00 UTC

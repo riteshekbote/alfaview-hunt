@@ -31,3 +31,16 @@ https://beta-apis.alfaview.com/v2/internal` -> HTTP 404
 https://beta-apis.alfaview.com/v2/test` -> HTTP 404
 https://beta-apis.alfaview.com/v2/health` -> HTTP 404
 https://insider-webclient.alfaview.com/ -> 200 len=4396
+
+## 2026-09-03 21:22:16 UTC
+https://insider-webclient.alfaview.com/ -> 200 len=4396
+https://insider-webclient.alfaview.com/api/* -> HTTP 404
+https://beta-apis.alfaview.com/v2/languages -> HTTP 401
+https://insider-webclient.alfaview.com/` -> HTTP 404
+https://insider-webclient.alfaview.com/api` -> HTTP 404
+https://insider-webclient.alfaview.com/admin` -> HTTP 404
+https://insider-webclient.alfaview.com/debug` -> HTTP 404
+https://insider-webclient.alfaview.com/internal` -> HTTP 404
+https://insider-webclient.alfaview.com/health` -> HTTP 404
+https://insider-webclient.alfaview.com/api/health -> HTTP 404
+https://insider-webclient.alfaview.com/api/config -> HTTP 404
