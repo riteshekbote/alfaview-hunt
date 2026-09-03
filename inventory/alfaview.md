@@ -94,3 +94,12 @@ www.alfaview.com
 ## 2026-09-03 11:40:30 UTC
 
 ## 2026-09-03 14:23:21 UTC
+
+## 2026-09-03 15:21:33 UTC
+- NEW 55 dedicated hosts confirmed after wildcard filtering (was 8 in initial recon) — inventory/alfaview.md:35-92
+- NEW Probe result: `GET https://beta-apis.alfaview.com/v2/languages` (no auth) → HTTP 401; `GET https://apis.alfaview.com/v2/languages` → HTTP 404 — probe-results.md:6-8
+- CHANGED Beta API weaker auth hypothesis **disproven** — beta returns 401 (endpoint exists, auth required), production returns 404 (endpoint missing) — version drift confirmed
+- CHANGED Production API lacks `/v2/languages` endpoint present in beta — API version divergence
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
