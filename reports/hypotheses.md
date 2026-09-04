@@ -231,3 +231,26 @@
 - LEARN: REJECTED MISCONFIG @ alfacheck-video.alfaview.com: UNREACHABLE — root probe timed out. Target exhausted.
 - LEARN: ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — auth-gated, requires credentials.
 - LEARN: ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
+
+## RANKED HYPOTHESES 2026-09-04 20:04:20 UTC
+- [85] apis.alfaview.com: Cross-tenant IDOR on room permissions and user deletion via UUID path params (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: HEAD `https://beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com/` → if 2xx/3xx/4xx (not timeout), follow with GET `/health`, `/metrics`, `/actuator/health
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 4-field combo (companyId+roomId+accessKey+displayName) — rate-limit testing needed.
+- LEARN: ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift resolved — both beta and production now expose /v2/languages with identical auth enforcement (401
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Beta API weaker auth enforcement disproven — OpenAPI specs identical, both require auth identically.
+- LEARN: REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only (4396B), /health=204, all common paths 404.
+- LEARN: REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
+- LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface (SPA), testable immediately.
+- LEARN: ACCEPTED MISCONFIG @ alfatraining.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+- LEARN: ACCEPTED MISCONFIG @ bhc.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+- LEARN: ACCEPTED MISCONFIG @ kh-freiburg.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+- LEARN: REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Media/signaling server ("Hi Client"), not OIDC/auth infrastructure. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — media server. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — media server. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: UNREACHABLE — all 3 probes timed out. Internal/firewalled. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: UNREACHABLE — all 3 probes timed out. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ alfacheck-video.alfaview.com: UNREACHABLE — root probe timed out. Target exhausted.
+- LEARN: ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — auth-gated, requires credentials.
+- LEARN: ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
+- LEARN: REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39...

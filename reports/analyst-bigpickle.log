@@ -945,3 +945,110 @@ No new testable unauthenticated surface exists. All live surface is auth-gated.
 
 **STEP 7 — RISK:**
 [RISK] alfaview: 45/100. All unauthenticated surfaces now exhausted: multi-tenant SPA shells (alfatraining/bhc/kh-freiburg) byte-identical to generic marketing shell; hydra hosts = media servers; alfacheck-* = unreachable; demo-company/insider/beta-webclient = SPA catch-all; beta-apis = auth identical to prod. Zero findings. The two surviving high-value hypotheses (IDOR conf 80, guest-link conf 65) both require an authenticated account. Without one, no further progress is possible via passive testing.
+===== ANALYST bigpickle 2026-09-04 20:04:20 UTC =====
+## 2026-09-04 STEP1 DELTA
+[NEW] clone.staging-wordpress.alfaview.com (was [HTTP 303], never deep-probed) -> Plesk Obsidian 18.0.80 control panel (IONOS skin) at /login_up.php (200 len=108k, sid-plesk, forgery_protection_token) — first genuine unauthenticated admin/control-panel surface. wp-admin/wp-login/wp-json all 404 (panel-fronted).
+[CHANGED] apis.alfaview.com/v2/docs/openapi.json still 200 (spec available); auth-gated endpoints unchanged.
+
+## STEP2 PRIORITIZE
+[PRIO] clone.staging-wordpress.alfaview.com, 7.2, a:6 b:6 t:8 g:8 c:7 f:9
+[PRIO] apis.alfaview.com, 5.5, a:7 b:8 t:6 g:2 c:6 f:6
+[PRIO] beta-apis.alfaview.com, 4.5, a:6 b:7 t:5 g:1 c:6 f:5
+[PRIO] app.alfaview.com, 4.5, a:6 b:7 t:5 g:1 c:6 f:5
+
+## STEP3 HYPOTHESES
+[HYP] Exposed Plesk control panel on staging clone host
+class: MISCONFIG
+asset: clone.staging-wordpress.alfaview.com/login_up.php
+confidence: 70
+reasoning: Host serves Plesk Obsidian 18.0.80 panel (IONOS theme, sid-plesk DOM, forgery_protection_token) at /login_up.php; /redirects into panel. "clone.staging-wordpress" naming implies a staging deployment clone (weaker hardening). Plesk 18.0.80 has historical CVE history (RCE/auth-bypass classes). Panel login is open unauthenticated surface; gate_ease high.
+evidence_needed: Confirm whether panel is only surface or fronts live staging WordPress/DB; pick applicable CVE for Plesk 18.0.80 (build 1800260901.22) with program-specific exploit; probe read-only info-disclosure endpoints.
+verify_steps: GET /login_up.php (200 len 108k done). GET / -> 303 /login.php. OPTIONS /login_up.php. HEAD /.well-known/*, /robots.txt. Correlate Plesk 18.0.80 vs public CVE/GHSA. No cred brute (REJECTED class).
+impact: Control-panel compromise via Plesk CVE or exposed staging data -> HIGH if exploitable, else LOW-MED.
+testability: AUTH_HELPED
+[HYP] Staging WordPress/DB exposure behind Plesk clone
+class: MISCONFIG
+asset: clone.staging-wordpress.alfaview.com
+confidence: 45
+reasoning: Hostname explicitly names "staging-wordpress"; staging clones often expose wp-config backups/SQL dumps/artifacts. Top-level wp-admin/wp-login/wp-json 404 (panel-fronted) but artifacts may sit under alternate paths.
+evidence_needed: Reachable WP artifact, SQL dump, config backup, or panel-internal path.
+verify_steps: Passive/HEAD-get on common staging artifact names (≤1 rps); confirm scope before more. No auth bypass/mutation.
+impact: Staging source/config/DB disclosure -> credentials/internal data. Severity MED.
+testability: PASSIVE
+
+## STEP4 SELF-CRITIQUE
+[FINAL] Plesk control panel exposure — 70. Rank1 testable surface; genuine, novel, previously unprobed.
+[FINAL] Cross-tenant IDOR (apis, ~85) — survives, auth-blocked (no account). Park as top authenticated target.
+[FINAL] Guest-link access-key oracle (apis, 65) — survives, auth/timing-blocked.
+[PARKED] Staging WP/DB behind Plesk: 45 (>40) needs panel/path probe to confirm; panel gates access.
+[PARKED] Multi-tenant SPA XSS: 35 (<40) — byte-identical shells, no reflections (confirmed).
+Rejected as proposed: any default-credential / brute-force / rate-limit on Plesk panel — REJECTED class per program rules.
+
+## STEP5 NEXT
+[NEXT] PROBE: re-verify GET https://clone.staging-wordpress.alfaview.com/login_up.php (done, 200 len 108k) then read-only HEAD/GET Plesk + staging artifact paths at ≤1 rps: /, /login.php, /login_up.php, /.well-known/openid-configuration, /robots.txt, /admin, and Plesk version endpoints; confirm host in-scope before further active testing.
+
+## STEP6 LEARNING
+[LEARN] ACCEPTED MISCONFIG @ clone.staging-wordpress.alfaview.com: Live Plesk Obsidian 18.0.80 control panel (IONOS, 108k) at /login_up.php — inventory had only [HTTP 303]; now confirmed unauthenticated admin/control-panel surface, unique in program.
+
+## STEP7 RISK
+[RISK] alfaview: 48/100. Novel unauthenticated surface found (Plesk control panel on staging clone). But data/function endpoints remain auth-gated; top hypotheses (IDOR ~85, guest-link 65) blocked by lack of test account. Panel value depends on version-CVE applicability and whether it fronts reachable staging deploy — unconfirmed.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       [0m← [0mWrite analyst-out.txt
+Wrote file successfully.
+[0m
+I have a solid new finding. Let me produce the structured analysis output.
+
+**STEP 1 — DELTA**
+- [NEW] `clone.staging-wordpress.alfaview.com` (inventory listed `[HTTP 303]`, never deep-probed) redirects via `/login.php` → `/login_up.php` and serves a live **Plesk Obsidian 18.0.80 control panel** (IONOS skin, sid-plesk, `forgery_protection_token` in page) — unauthenticated admin/control-panel surface, distinct from all previously exhausted SPA/API/hydra targets.
+- [CHANGED] `apis.alfaview.com/v2/docs/openapi.json` confirmed still HTTP 200 (spec available — but auth-gated endpoints; no change from prior).
+
+**STEP 2 — PRIORITIZE**
+- `clone.staging-wordpress.alfaview.com`, 7.2, a:6 b:6 t:8 g:8 c:7 f:9
+- `apis.alfaview.com`, 5.5, a:7 b:8 t:6 g:2 c:6 f:6
+- `beta-apis.alfaview.com`, 4.5, a:6 b:7 t:5 g:1 c:6 f:5
+- `app.alfaview.com`, 4.5, a:6 b:7 t:5 g:1 c:6 f:5
+
+**STEP 3 — HYPOTHESES**
+
+[HYP] Exposed Plesk control panel on staging clone host
+class: MISCONFIG
+asset: clone.staging-wordpress.alfaview.com/login_up.php
+confidence: 70
+reasoning: Host resolves and serves Plesk Obsidian 18.0.80 panel (identical IONOS theme, sid-plesk DOM, forgery_protection_token). A "clone.staging-wordpress" hostname strongly implies a staging deployment clone, which commonly carries weaker hardening, default panels, staging credentials, or a reachable WordPress/DB behind the panel. Plesk shipping revisions have historical CVE history (RCE / auth bypass classes). Panel login is unauthenticated surface — gate_ease high.
+evidence_needed: Confirm whether panel is the only surface or masks a live staging WordPress/DB; check CVE applicability for Plesk 18.0.80 (build 1800260901.22) and any unauthenticated info-disclosure endpoints; look for version-specific known-vuln with program-specific exploit.
+verify_steps: GET https://clone.staging-wordpress.alfaview.com/login_up.php (200, len 108k). GET / (303→login_up). OPTIONS /login_up.php. Check /.well-known, /robotstest.txt. Compare against public Plesk CVE DB for 18.0.80 (e.g., GHSA / exploitation notes). Passive JS bundle review for version-specific endpoints.
+impact: Unauthorized control-panel access → full server/panel compromise if default/weak creds or a Plesk CVE applies; staging data exposure. Severity HIGH if exploitable, otherwise LOW-MEDIUM.
+testability: AUTH_HELPED
+
+[HYP] Staging WordPress/Database exposure behind Plesk clone
+class: MISCONFIG
+asset: clone.staging-wordpress.alfaview.com
+confidence: 45
+reasoning: Hostname explicitly names "staging-wordpress". The Plesk panel fronts the host, but staging clones often also expose wp-login, wp-config backup artifacts (wp-config.php.bak, .php~), SQL dump files, or the panel's file manager. Top-level wp-admin/wp-login/wp-json already 404 — but artifacts may sit under alternate paths or be gated by the panel. Panel login may be the actual expected surface.
+evidence_needed: Any reachable WordPress artifact, SQL dump, config backup, or panel-internal path; version-specific Plesk CVE applicability.
+verify_steps: Passive/GET probes for common staging artifact names under the host and the panel (read-only HEAD/GET), respecting 1 rps; confirm scope before further. Do NOT attempt credential or auth bypass.
+impact: Staging source/config/DB exposure → credentials and internal data disclosure. Severity MEDIUM.
+testability: PASSIVE
+
+**STEP 4 — SELF-CRITIQUE**
+- IDOR (apes.alfaview.com, 85/80): [FINAL] survives but is auth-blocked — no account to test; park as highest-value authenticated target. No new evidence.
+- Guest-link auth oracle (65): [FINAL] survives, auth/timing-blocked. No new evidence.
+- Plesk control panel exposure (new, 70): [FINAL] Rank 1 among testable surfaces — genuine unauthenticated admin/control-panel surface, previously unprobed.
+- XSS multi-tenant SPA (35): already [PARKED] below threshold — confirmed byte-identical shells, no reflections.
+- [PARKED] Staging WordPress/DB exposure: confidence 45 (>40 but needs deeper/edge probe; panel gates access; PASSIVE until confirmed).
+- Clone.staging Plesk default-credential / brute-force testing: NOT proposed — brute-force is REJECTED class (program rules). The finding is the *exposed control panel surface* itself + CVE applicability, not credential brute.
+
+**STEP 5 — NEXT**
+[NEXT] PROBE: `GET https://clone.staging-wordpress.alfaview.com/login_up.php` (capture full body + version fingerprint already done) then enumerate read-only Plesk/panel and staging artifact paths (HEAD/GET, ≤1 rps): `/`, `/login.php`, `/login_up.php`, `/.well-known/openid-configuration`, `/robots.txt`, `/admin`, and Plesk-specific paths; check response headers for Plesk version. Confirm scope status of this host before any further active testing.
+
+**STEP 6 — LEARNING**
+- [LEARN] ACCEPTED MISCONFIG @ clone.staging-wordpress.alfaview.com: Live Plesk Obsidian 18.0.80 control panel (IONOS, len 108k) at /login_up.php — previously inventory-flagged [HTTP 303] but never deep-probed. First genuine unauthenticated admin/control-panel surface in the program.
+
+**STEP 7 — RISK**
+- [RISK] alfaview: 48/100. A novel unauthenticated surface (Plesk control panel on a staging clone host) was found, raising the addressable surface slightly, but all data/function-bearing API endpoints remain auth-gated and the two highest-impact hypotheses (IDOR conf ~85, guest-link conf 65) are still blocked by lack of a test account. Panel exposure value depends on version-CVE applicability and whether it fronts a reachable staging deploy — unconfirmed so far.
+
+I'll write this to the output file.
+Done. Key finding this cycle: **`clone.staging-wordpress.alfaview.com` was hiding a live Plesk Obsidian 18.0.80 control panel** — the inventory only ever recorded `[HTTP 303]` without probing through the redirect. `/` → `/login.php` → `/login_up.php` (200, 108 KB, IONOS-branded Plesk panel, `sid-plesk`, `forgery_protection_token`).
+
+This is the program's first genuine unauthenticated admin/control-panel surface — all prior targets were SPA shells, auth-gated APIs, or media servers. The hostname (`clone.staging-wordpress`) strongly suggests a staging clone, and Plesk 18.0.80 has a CVE history worth checking.
+
+Full structured analysis written to `analyst-out.txt`. Note I deliberately did **not** propose panel credential brute-force — that's REJECTED class per program rules; the finding is the exposed panel surface + CVE/staging-data applicability. The two highest-value hypotheses (IDOR ~85, guest-link 65) remain auth-blocked without a test account.

@@ -78,3 +78,9 @@ https://kh-freiburg.alfaview.com/ -> 200 len=1381
 
 ## 2026-09-04 17:51:06 UTC
 https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404
+
+## 2026-09-04 20:04:50 UTC
+https://beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com/ -> ERR <urlopen error timed out>
+https://alfaview.com/ -> 200 len=?
+https://sso.alfaview.com/ -> 200 len=0
+https://beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com/` -> ERR <urlopen error timed out>

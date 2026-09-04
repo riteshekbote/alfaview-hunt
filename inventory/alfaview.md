@@ -161,3 +161,9 @@ www.alfaview.com
 - CHANGED `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com` et al: confirmed media/signaling servers ("Hi Client") — no admin endpoints
 
 ## 2026-09-04 17:51:04 UTC
+
+## 2026-09-04 20:04:20 UTC
+- NEW beta-ionoscloud-21-* fleet (7 hosts): `beta-ionoscloud-21-beta-audio-65st7`, `beta-ionoscloud-21-beta-audio-bdtmf`, `beta-ionoscloud-21-beta-engine-gw4qw`, `beta-ionoscloud-21-beta-engine-kzmvv`, `bet
+- NEW Main domain set from initial recon (6 hosts): `alfaview.com`, `app.alfaview.com`, `dev.alfaview.com`, `sso.alfaview.com`, `test.alfaview.com`, `www.alfaview.com` — only `support`/`staging` probed (301
+- CHANGED `apis.alfaview.com/v2/languages` now 401 (was 404) — endpoint added, aligns with beta; OpenAPI specs identical
+- CHANGED `alfatraining`/`bhc`/`kh-freiburg` XSS hypothesis REJECTED — byte-identical SPA shells (1381B, MD5 554a39), no tenant-specific rendering
