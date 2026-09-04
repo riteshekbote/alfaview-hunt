@@ -60,3 +60,9 @@ https://alfacheck-audio.alfaview.com/ -> ERR The read operation timed out
 https://alfacheck-audio.alfaview.com/media -> ERR The read operation timed out
 https://alfacheck-audio.alfaview.com/recordings -> ERR The read operation timed out
 https://alfacheck-video.alfaview.com/ -> ERR The read operation timed out
+
+## 2026-09-04 06:01:02 UTC
+https://apis.alfaview.com/v2/docs/openapi.json` -> HTTP 404
+https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/ -> 200 len=9
+https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/.well-known/openid-configuration -> 200 len=9
+https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/health -> 200 len=9

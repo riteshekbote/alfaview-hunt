@@ -51,3 +51,17 @@
 - 2026-09-04 ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift resolved — both environments now expose /v2/languages with identical auth enforcement (401).
 - 2026-09-04 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI specs identical beta/prod. UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId}. Highest-priority authenticated test target — needs account.
 - 2026-09-04 ACCEPTED AUTH @ apis.alfaview.com: Guest link auth requires 3-field combo (companyId+roomId+accessKey). Rate-limit status unknown — needs authenticated probe.
+- 2026-09-04 REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: UNREACHABLE — all 3 probes (root, /health, /status) timed out. Host resolves in DNS but does not serve HTTP. Internal-only or firewalled. Target exhausted.
+- 2026-09-04 REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: UNREACHABLE — all 3 probes (root, /media, /recordings) timed out. Same as engine. Target exhausted.
+- 2026-09-04 REJECTED MISCONFIG @ alfacheck-video.alfaview.com: UNREACHABLE — root probe timed out. Same pattern. Target exhausted.
+- 2026-09-04 ACCEPTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: HTTP 200 with 9-byte body, trailing slash 400 — minimal health-check surface, likely OAuth/OIDC hydra service.
+- 2026-09-04 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target. Needs account.
+- 2026-09-04 ACCEPTED MISCONFIG @ alfatraining.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+- 2026-09-04 ACCEPTED MISCONFIG @ bhc.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+- 2026-09-04 ACCEPTED MISCONFIG @ kh-freiburg.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+- 2026-09-04 REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Hydra hosts are media/signaling servers returning "Hi Client" on all paths — no internal endpoints exposed.
+- 2026-09-04 REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same as above — media server, not admin panel.
+- 2026-09-04 REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same as above — media server, not admin panel.
+- 2026-09-04 REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: Unreachable/timeout — no surface.
+- 2026-09-04 REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: Unreachable/timeout — no surface.
+- 2026-09-04 REJECTED MISCONFIG @ alfacheck-video.alfaview.com: Unreachable/timeout — no surface.

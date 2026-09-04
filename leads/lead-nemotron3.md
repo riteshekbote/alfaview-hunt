@@ -273,3 +273,66 @@ testability: PASSIVE
 [LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — auth-gated, requires credentials.
 [LEARN] ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
 [RISK] alfaview: 70/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts, 17 now confirmed live HTTP. Production APIs auth-gated (401/404). High-value IDOR and AUTH classes confirmed in OpenAPI spec. 1 rps limit constrains brute-force. Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API. 6 hydra infrastructure nodes across 3 cloud providers expose unauthenticated HTTP 200 — potential internal tooling leak. 31 hosts remain unprobed/unreachable.
+## 2026-09-04 06:00:46 UTC [target] (model nemotron3)
+[PRIO] apis.alfaview.com,7.6,a:9 b:10 t:9 g:4 c:4 f:5
+[PRIO] beta-apis.alfaview.com,6.6,a:8 b:8 t:7 g:4 c:4 f:5
+[PRIO] beta-hcloud-19-beta-hydra-dzwx8.alfaview.com,4.2,a:5 b:5 t:4 g:9 c:2 f:3
+[PRIO] beta-noris-33-beta-hydra-2zm7t.alfaview.com,4.2,a:5 b:5 t:4 g:9 c:2 f:3
+[PRIO] beta-ovh-29-beta-hydra-z4tf8.alfaview.com,4.2,a:5 b:5 t:4 g:9 c:2 f:3
+[PRIO] alfatraining.alfaview.com,4.0,a:5 b:5 t:3 g:9 c:2 f:3
+[PRIO] bhc.alfaview.com,4.0,a:5 b:5 t:3 g:9 c:2 f:3
+[PRIO] kh-freiburg.alfaview.com,4.0,a:5 b:5 t:3 g:9 c:2 f:3
+[PRIO] demo-company.alfaview.com,3.8,a:5 b:4 t:3 g:9 c:2 f:2
+[PRIO] app.alfaview.com,5.2,a:6 b:7 t:5 g:4 c:3 f:3
+[PRIO] beta-app.alfaview.com,4.7,a:5 b:6 t:4 g:4 c:3 f:3
+[PRIO] internal.alfaview.com,4.2,a:5 b:5 t:3 g:4 c:3 f:3
+[HYP] Cross-tenant IDOR on room permissions and user deletion via UUID path params
+class: IDOR
+asset: apis.alfaview.com
+confidence: 80
+reasoning: OpenAPI spec confirms DELETE /v2/users/{id} and PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId} with UUID path params. Auth uses company-scoped JWT; server-side authorization (room membership vs global admin) unverified. Cross-tenant IDOR if API trusts token-issued companyId without validating room-level grants.
+evidence_needed: Authenticated requests with valid token modifying roomId/userId from different company; 403 (enforced) vs 200/204 (broken) response difference
+verify_steps: POST /v2/auth/api-key → obtain token → PATCH /v2/rooms/{victim-roomId}/permissions/{victim-userId} with foreign userId; observe 403 vs 204. Also DELETE /v2/users/{foreign-userId}.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (OWASP A01:2021)
+testability: AUTH_HELPED
+[HYP] Guest link auth rate-limit bypass on 3-field combo (companyId+roomId+accessKey)
+class: AUTH
+asset: apis.alfaview.com
+confidence: 65
+reasoning: Guest link auth flow requires 3-field combo (companyId+roomId+accessKey). Rate-limit status unknown. If no rate limiting on accessKey validation, attacker can brute-force valid accessKeys for known companyId/roomId pairs. AccessKey format/entropy unverified.
+evidence_needed: Repeated POST to guest auth endpoint with invalid accessKey; observe 429 vs consistent 401/403; measure requests/second before throttle
+verify_steps: Identify guest auth endpoint (likely POST /v2/auth/guest or similar via OpenAPI) → send 50+ rapid requests with fixed companyId/roomId, rotating accessKey → monitor status codes and response timing
+impact: Unauthorized room access via accessKey enumeration; severity MEDIUM-HIGH
+testability: AUTH_HELPED
+[HYP] Multi-tenant SaaS subdomain takeover via DNS misconfiguration on customer domains
+class: MISCONFIG
+asset: alfatraining.alfaview.com
+confidence: 45
+reasoning: Three customer subdomains (alfatraining, bhc, kh-freiburg) serve identical SPA shell with same etag/last-modified — confirms multi-tenant SaaS on alfaview.com subdomains. If any customer DNS points to decommissioned infrastructure (CNAME to expired cloud resource), subdomain takeover possible. No evidence of dangling CNAMEs yet.
+evidence_needed: DNS records for each customer subdomain showing CNAME to external/cloud resource that could be claimed; HTTP response from claimed resource serving attacker content
+verify_steps: dig +short CNAME alfatraining.alfaview.com bhc.alfaview.com kh-freiburg.alfaview.com → check target hosting provider → attempt registration if dangling
+impact: Full control of customer-branded alfaview subdomain → phishing, credential theft, brand damage; severity HIGH
+testability: PASSIVE
+[PARKED] Multi-tenant SaaS subdomain takeover via DNS misconfiguration on customer domains: confidence 45 < 60; no dangling CNAME evidence found, all three customer domains resolve to alfaview infrastructure (edge-proxy)
+[FINAL] Cross-tenant IDOR on room permissions and user deletion via UUID path params — **RANK 1**. Highest confidence (80), direct OpenAPI evidence, HIGH severity, clear verify steps with auth.
+[FINAL] Guest link auth rate-limit bypass on 3-field combo — **RANK 2**. Confidence 65, Auth class, testable with valid companyId/roomId pair, MEDIUM-HIGH impact.
+[NEXT] PROBE: GET `https://apis.alfaview.com/v2/docs/openapi.json` — fetch full OpenAPI spec to identify exact guest auth endpoint path and request schema for rate-limit testing.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+[LEARN] ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift resolved — both beta and production now expose /v2/languages with identical auth enforcement (401).
+[LEARN] REJECTED MISCONFIG @ beta-apis.alfaview.com: Beta API weaker auth enforcement disproven — OpenAPI specs identical, both require auth identically.
+[LEARN] REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only (4396B), /health=204, all common paths 404.
+[LEARN] REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
+[LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface (SPA), testable immediately.
+[LEARN] ACCEPTED MISCONFIG @ alfatraining.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+[LEARN] ACCEPTED MISCONFIG @ bhc.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+[LEARN] ACCEPTED MISCONFIG @ kh-freiburg.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+[LEARN] REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Hydra hosts are media/signaling servers returning "Hi Client" on all paths — no internal endpoints exposed.
+[LEARN] REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same as above — media server, not admin panel.
+[LEARN] REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same as above — media server, not admin panel.
+[LEARN] REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: Unreachable/timeout — no surface.
+[LEARN] REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: Unreachable/timeout — no surface.
+[LEARN] REJECTED MISCONFIG @ alfacheck-video.alfaview.com: Unreachable/timeout — no surface.
+[LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — auth-gated, requires credentials.
+[LEARN] ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
+[RISK] alfaview: 70/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts, 20 now confirmed live HTTP. Production APIs auth-gated (401). High-value IDOR (confidence 80) and AUTH (confidence 65) classes confirmed in OpenAPI spec. Multi-tenant SaaS on customer subdomains (3 confirmed identical SPA shells). 3 hydra media servers across 3 cloud providers expose unauthenticated HTTP 200 but serve only "Hi Client" — no sensitive endpoints. 31 hosts remain unprobed/unreachable. Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API.
