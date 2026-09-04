@@ -1052,3 +1052,274 @@ Done. Key finding this cycle: **`clone.staging-wordpress.alfaview.com` was hidin
 This is the program's first genuine unauthenticated admin/control-panel surface — all prior targets were SPA shells, auth-gated APIs, or media servers. The hostname (`clone.staging-wordpress`) strongly suggests a staging clone, and Plesk 18.0.80 has a CVE history worth checking.
 
 Full structured analysis written to `analyst-out.txt`. Note I deliberately did **not** propose panel credential brute-force — that's REJECTED class per program rules; the finding is the exposed panel surface + CVE/staging-data applicability. The two highest-value hypotheses (IDOR ~85, guest-link 65) remain auth-blocked without a test account.
+===== ANALYST bigpickle 2026-09-04 22:09:53 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && cat scope.yml 2>/dev/null; echo "---"; ls *.txt 2>/dev/null
+total 176
+drwxr-xr-x 12 runner runner  4096 Sep  4 22:01 .
+drwxr-xr-x  3 runner runner  4096 Sep  4 22:00 ..
+drwxr-xr-x  7 runner runner  4096 Sep  4 22:01 .git
+drwxr-xr-x  3 runner runner  4096 Sep  4 22:01 .github
+-rw-r--r--  1 runner runner  1883 Sep  4 22:01 README.md
+-rw-r--r--  1 runner runner    32 Sep  4 22:01 analyst-out.txt
+-rw-r--r--  1 runner runner 44044 Sep  4 22:01 analyst-prompt.txt
+-rw-r--r--  1 runner runner 40134 Sep  4 22:01 ctx.txt
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 inventory
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 knowledge
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 leads
+-rw-r--r--  1 runner runner  4107 Sep  4 22:01 probe-results.md
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 recon-notes
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 reports
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 reposcan-raw
+-rw-r--r--  1 runner runner  3323 Sep  4 22:01 scope.yml
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 scripts
+-rw-r--r--  1 runner runner    33 Sep  4 22:01 state_bigpickle.json
+-rw-r--r--  1 runner runner    33 Sep  4 22:01 state_laguna.json
+-rw-r--r--  1 runner runner    33 Sep  4 22:01 state_ling3.json
+-rw-r--r--  1 runner runner    33 Sep  4 22:01 state_longcat.json
+-rw-r--r--  1 runner runner    33 Sep  4 22:01 state_mimo.json
+-rw-r--r--  1 runner runner    33 Sep  4 22:01 state_nemotron3.json
+drwxr-xr-x  2 runner runner  4096 Sep  4 22:01 triage
+programs:
+  alfaview:
+    name: alfaview gmbh Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+  passive_first: false          # deep-hunt agent: active probes allowed when scoped
+  max_requests_per_second: 1    # never hammer live infra
+  no_doom: true                 # no DoS/DDoS, no account-lockout attacks
+  account_creation: restricted  # only on test/sandbox assets, never live customer data
+  no_data_modification: true    # no writes/deletes on live customer data
+  no_pre_disclosure: true       # never disclose before program response
+  poc_required: true            # scanner output alone is REJECTED
+  redact_secrets_in_commits: true
+
+models:
+  - { id: opencode/big-pickle, name: bigpickle }
+  - { id: opencode/nemotron-3-ultra-free, name: nemotron3 }
+  - { id: opencode/longcat-2.0-free, name: longcat }
+  - { id: opencode/ling-3.0-flash-free, name: ling3 }
+  - { id: opencode/laguna-s-2.1-free, name: laguna }
+---
+analyst-out.txt
+analyst-prompt.txt
+ctx.txt
+[0m
+[0m$ [0mfor h in beta-ionoscloud-21-beta-hydra-7x5d5 beta-ionoscloud-21-beta-audio-65st7 beta-ionoscloud-21-beta-engine-gw4qw beta-ionoscloud-21-beta-video-6pp2m; do echo "== $h =="; curl -s -o /dev/null -w "HEAD %{http_code} %{time_total}s len=%{size_download}\n" -I --max-time 12 "https://$h.alfaview.com/" ; done
+== beta-ionoscloud-21-beta-hydra-7x5d5 ==
+HEAD 000 12.002776s len=0
+== beta-ionoscloud-21-beta-audio-65st7 ==
+HEAD 000 12.002237s len=0
+== beta-ionoscloud-21-beta-engine-gw4qw ==
+HEAD 000 12.002175s len=0
+== beta-ionoscloud-21-beta-video-6pp2m ==
+HEAD 000 12.002554s len=0
+[0m
+[0m$ [0mfor h in beta-ionoscloud-21-beta-hydra-7x5d5 beta-ionoscloud-21-beta-audio-65st7; do echo "== $h DNS =="; getent hosts "$h.alfaview.com" || echo "no A record"; done
+== beta-ionoscloud-21-beta-hydra-7x5d5 DNS ==
+185.127.30.225  beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com
+== beta-ionoscloud-21-beta-audio-65st7 DNS ==
+185.127.30.215  beta-ionoscloud-21-beta-audio-65st7.alfaview.com
+[0m
+[0m$ [0mfor h in beta-ionoscloud-21-beta-audio-bdtmf beta-ionoscloud-21-beta-engine-kzmvv beta-ionoscloud-21-beta-video-l5mbv; do echo "== $h =="; curl -s -o /dev/null -w "HEAD %{http_code} %{time_total}s\n" -I --max-time 10 "https://$h.alfaview.com/"; done
+== beta-ionoscloud-21-beta-audio-bdtmf ==
+HEAD 000 10.002224s
+== beta-ionoscloud-21-beta-engine-kzmvv ==
+HEAD 000 10.002141s
+== beta-ionoscloud-21-beta-video-l5mbv ==
+HEAD 000 10.001949s
+[0m
+[0m$ [0mecho "== reachable beta-hcloud hydra for comparison =="; getent hosts beta-hcloud-19-beta-hydra-dzwx8.alfaview.com; echo "== ionoscloud hydra over http:80 =="; curl -s -o /dev/null -w "http %{http_code} %{time_total}s\n" --max-time 10 "http://beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com/"; echo "== ionoscloud via IP:443 with Host ==="; curl -s -o /dev/null -w "ip %{http_code} %{time_total}s\n" --max-time 10 -k --resolve beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com:443:185.127.30.225 "https://beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com/"
+== reachable beta-hcloud hydra for comparison ==
+195.201.44.186  beta-hcloud-19-beta-hydra-dzwx8.alfaview.com
+== ionoscloud hydra over http:80 ==
+http 000 10.002932s
+== ionoscloud via IP:443 with Host ===
+ip 000 10.002791s
+[0m
+[0m$ [0mfor h in www.alfaview.com app.alfaview.com dev.alfaview.com sso.alfaview.com test.alfaview.com; do echo "== $h =="; curl -s -o /dev/null -w "GET %{http_code} %{time_total}s %{redirect_url}\n" --max-time 12 "https://$h/"; sleep 1; done
+== www.alfaview.com ==
+GET 301 0.513684s https://alfaview.com/
+== app.alfaview.com ==
+GET 200 0.444488s 
+== dev.alfaview.com ==
+GET 000 0.070269s 
+== sso.alfaview.com ==
+GET 200 0.464472s 
+== test.alfaview.com ==
+GET 200 0.469813s
+[0m
+[0m$ [0mecho "=== sso.alfaview.com ==="; curl -s -D - --max-time 12 "https://sso.alfaview.com/" -o /tmp/sso_body.html; echo "--- body size+head ---"; wc -c /tmp/sso_body.html; head -c 600 /tmp/sso_body.html; echo; echo "=== test.alfaview.com ==="; curl -s -D - --max-time 12 "https://test.alfaview.com/" -o /tmp/test_body.html; echo "--- body size+head ---"; wc -c /tmp/test_body.html; head -c 600 /tmp/test_body.html
+=== sso.alfaview.com ===
+HTTP/2 200 
+set-cookie: fusionauth.sso=QkJCAEF0ZnlVb3Y2bGdIUWxvRFpIMmVpTFo0TVdoVGJpRFE1SkZQeG5KbDhKcTBwVnlkLTFneGVKY0Y2; HttpOnly; Max-Age=2147483647; Path=/; SameSite=Lax; Secure
+content-type: text/html; charset=UTF-8
+cache-control: no-store
+date: Fri, 04 Sep 2026 22:04:23 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+--- body size+head ---
+8526 /tmp/sso_body.html
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#
+=== test.alfaview.com ===
+HTTP/2 200 
+accept-ranges: bytes
+content-length: 494
+content-type: text/html; charset=utf-8
+last-modified: Tue, 18 Aug 2026 11:50:07 GMT
+date: Fri, 04 Sep 2026 22:04:24 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+--- body size+head ---
+494 /tmp/test_body.html
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>alfacheck</title>
+	</head>
+	<body>
+		<h1>alfacheck</h1>
+<a href="alfacheck.linux.amd64.470079.bin" download>alfacheck.linux.amd64.470079.bin</a></br>
+<a href="alfacheck.windows.amd64.470079.exe" download>alfacheck.windows.amd64.470079.exe</a></br>
+<a href="alfacheck.mac.amd64.470079.bin" download>alfacheck.mac.amd64.470079.bin</a></br>
+<a href="alfacheck.mac.arm64.470079.bin" download>alfacheck.mac.arm64.470079.bin</a></br>
+	</body>
+</html>
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mecho "=== full sso body ==="; cat /tmp/sso_body.html; echo; echo "=== check fusionauth version hints ==="; grep -oiE "version[^<]{0,40}|fusionauth-[0-9]+\.[0-9]+" /tmp/sso_body.html | sort -u | head failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+New live surfaces: `sso.alfaview.com` = **FusionAuth** IdP, and `test.alfaview.com` = **alfacheck binary download server**. Digging into both.
+[0m
+[0m$ [0mecho "=== openid-configuration ==="; curl -s --max-time 12 "https://sso.alfaview.com/.well-known/openid-configuration" | head -c 1500; echo; echo "=== oauth2 openid-config ==="; curl -s -o /dev/null -w "oauth2cd %{http_code}\n" --max-time 12 "https://sso.alfaview.com/oauth2/.well-known/openid-configuration"; curl -s -o /dev/null -w "admin %{http_code}\n" --max-time 12 "https://sso.alfaview.com/admin"; sleep 1
+=== openid-configuration ===
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oauth2/device_authorize",
+  "dpop_signing_alg_values_supported" : [
+    "Ed448",
+    "Ed25519",
+    "ES256",
+    "ES384",
+    "ES512",
+    "PS256",
+    "PS384",
+    "PS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "end_session_endpoint" : "https://sso.alfaview.com/oauth2/logout",
+  "frontchannel_logout_supported" : true,
+  "grant_types_supported" : [
+    "authorization_code",
+    "password",
+    "implicit",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "client_credentials"
+  ],
+  "id_token_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "HS256",
+    "HS384",
+    "HS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "issuer" : "acme.com",
+  "jwks_uri" : "https://sso.alfaview.com/.well-known/jwks.json",
+  "response_modes_supported" : [
+    "form_post",
+    "fragment",
+    "query"
+  ],
+  "response_types_supported" : [
+    "code"
+=== oauth2 openid-config ===
+oauth2cd 500
+admin 301
+[0m

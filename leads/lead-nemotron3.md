@@ -596,3 +596,77 @@ testability: PASSIVE
 [LEARN] ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
 [LEARN] REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39...). No tenant-specific rendering, no inline data, no reflections. Target exhausted.
 [RISK] alfaview: 70/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts + 6 main domains. Production APIs auth-gated (401). High-value IDOR (confidence 85) and AUTH (confidence 70) classes confirmed in OpenAPI spec. Multi-tenant SaaS on 3 customer subdomains (identical SPA shells). 3 hydra media servers across 3 clouds expose unauthenticated HTTP 200 but serve only "Hi Client" — no sensitive endpoints. 7 beta-ionoscloud hosts completely unprobed (new surface). 6 main domains (alfaview.com, app, dev, sso, test, www) largely unprobed. 31 hosts exhausted/rejected. Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API. JWT alg/key confusion (confidence 55) adds CRITICAL vector if JWKS misconfigured. Main domain OAuth/SSO flows untested.
+## 2026-09-04 22:09:41 UTC [target] (model nemotron3)
+[NEW] beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout (root + trailing slash) — unlike hcloud/noris/ovh hydra hosts which returned "Hi Client"
+[NEW] alfaview.com: HTTP 200 — main marketing/auth entry point now confirmed live
+[NEW] sso.alfaview.com: HTTP 200 len=0 — SSO endpoint live, empty body (likely redirects or SPA shell)
+[CHANGED] beta-ionoscloud-21-* fleet (7 hosts): Previously "HTTP unprobed" → now 1/7 probed (hydra=timeout), 6 remain unprobed
+[CHANGED] Main domain set (6 hosts): Previously only support/staging probed (301) → now alfaview.com + sso.alfaview.com confirmed HTTP 200, 4 remain unprobed (app, dev, test, www)
+[PRIO] beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com,7.2,a:9 b:8 t:7 g:9 c:6 f:5
+[PRIO] beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com,7.2,a:9 b:8 t:7 g:9 c:6 f:5
+[PRIO] beta-ionoscloud-21-beta-audio-65st7.alfaview.com,7.0,a:8 b:8 t:7 g:9 c:6 f:5
+[PRIO] beta-ionoscloud-21-beta-audio-bdtmf.alfaview.com,7.0,a:8 b:8 t:7 g:9 c:6 f:5
+[PRIO] beta-ionoscloud-21-beta-video-6pp2m.alfaview.com,7.0,a:8 b:8 t:7 g:9 c:6 f:5
+[PRIO] beta-ionoscloud-21-beta-video-l5mbv.alfaview.com,7.0,a:8 b:8 t:7 g:9 c:6 f:5
+[PRIO] alfaview.com,6.8,a:8 b:10 t:6 g:3 c:7 f:5
+[PRIO] sso.alfaview.com,6.5,a:7 b:9 t:7 g:3 c:7 f:5
+[PRIO] app.alfaview.com,6.3,a:8 b:9 t:6 g:2 c:7 f:5
+[PRIO] apis.alfaview.com,6.0,a:7 b:10 t:8 g:1 c:7 f:5
+[PRIO] beta-apis.alfaview.com,5.8,a:7 b:9 t:8 g:1 c:7 f:5
+[PRIO] dev.alfaview.com,5.5,a:6 b:7 t:5 g:4 c:6 f:4
+[PRIO] test.alfaview.com,5.5,a:6 b:7 t:5 g:4 c:6 f:4
+[PRIO] www.alfaview.com,5.5,a:6 b:7 t:5 g:4 c:6 f:4
+[PRIO] beta-app.alfaview.com,5.0,a:6 b:7 t:6 g:1 c:6 f:5
+[PRIO] internal.alfaview.com,5.0,a:6 b:7 t:6 g:1 c:6 f:5
+[HYP] OAuth redirect_uri validation bypass on main domain leading to code theft
+class: AUTH
+asset: alfaview.com
+confidence: 65
+reasoning: alfaview.com returns HTTP 200 (live), primary marketing/auth entry point per scope. OAuth initiate/login flows likely hosted here or on sso.alfaview.com. redirect_uri parameter validation and state parameter enforcement untested. Open redirect on OAuth authorize → code theft → ATO.
+evidence_needed: OAuth authorize endpoint location; redirect_uri acceptance of localhost/evil.com/open-redirect chains; state parameter optional vs required
+verify_steps: GET https://alfaview.com/ → identify login/OAuth links → GET https://sso.alfaview.com/ → probe /authorize, /login, /oauth/authorize with redirect_uri=https://evil.com, redirect_uri=http://localhost, redirect_uri=https://alfaview.com/@evil.com; check state parameter requirement
+impact: OAuth authorization code theft → full account takeover; severity CRITICAL (OWASP A07:2021)
+testability: PASSIVE
+[HYP] SSO endpoint OAuth authorize endpoint flaws — state parameter missing or redirect_uri over-permissive
+class: AUTH
+asset: sso.alfaview.com
+confidence: 60
+reasoning: sso.alfaview.com returns HTTP 200 len=0 (empty body), likely OAuth authorize endpoint or redirector. Dedicated SSO subdomain suggests centralized auth. State parameter enforcement and redirect_uri allowlist validation untested.
+evidence_needed: OAuth authorize endpoint response; redirect_uri parameter behavior with external domains; state parameter presence/enforcement; PKCE support
+verify_steps: GET https://sso.alfaview.com/ → if empty, probe /authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid → observe 302 location; test without state parameter; test with state=static; test PKCE challenge
+impact: OAuth code theft via missing state or redirect_uri bypass → ATO; severity CRITICAL
+testability: PASSIVE
+[HYP] Unprobed beta-ionoscloud engine host exposes debug/admin/metrics endpoints or SSRF vector
+class: MISCONFIG
+asset: beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com
+confidence: 55
+reasoning: 7-host beta-ionoscloud fleet entirely unprobed except hydra (timeout). Other cloud fleets (hcloud/noris/ovh) hydra hosts resolved to media servers ("Hi Client"). Engine hosts may expose different services (admin, metrics, actuator, debug). No HTTP probes = unknown surface.
+evidence_needed: Live HTTP response on root; service identification via headers/body; presence of /health, /metrics, /actuator/health, /debug, /admin, /v2/docs/openapi.json, /v2/languages
+verify_steps: HEAD https://beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com/ → if 2xx/3xx/4xx (not timeout), GET /health, /metrics, /actuator/health, /debug, /admin, /v2/docs/openapi.json, /v2/languages; repeat for beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com
+impact: Unauthenticated debug/metrics exposure, SSRF via internal endpoints, cloud metadata access (169.254.169.254); severity MEDIUM-HIGH
+testability: PASSIVE
+[FINAL] OAuth redirect_uri validation bypass on main domain leading to code theft — **RANK 1**. Confidence 65, primary auth entry point live, PASSIVE testability, CRITICAL impact if redirect_uri/state flaws exist.
+[FINAL] SSO endpoint OAuth authorize endpoint flaws — state parameter missing or redirect_uri over-permissive — **RANK 2**. Confidence 60, dedicated SSO subdomain live (empty body), PASSIVE testability, CRITICAL impact.
+[FINAL] Unprobed beta-ionoscloud engine host exposes debug/admin/metrics endpoints or SSRF vector — **RANK 3**. Confidence 55, 7-host fleet completely untested (1 hydra timeout), PASSIVE testability, MEDIUM-HIGH impact.
+[NEXT] PROBE: GET `https://alfaview.com/` → extract login/OAuth links → GET `https://sso.alfaview.com/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` → observe 302 Location header and state parameter handling. Rate: 1 rps.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 4-field combo (companyId+roomId+accessKey+displayName) — rate-limit testing needed.
+[LEARN] ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift resolved — both beta and production now expose /v2/languages with identical auth enforcement (401).
+[LEARN] REJECTED MISCONFIG @ beta-apis.alfaview.com: Beta API weaker auth enforcement disproven — OpenAPI specs identical, both require auth identically.
+[LEARN] REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only (4396B), /health=204, all common paths 404.
+[LEARN] REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
+[LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface (SPA), testable immediately.
+[LEARN] ACCEPTED MISCONFIG @ alfatraining.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+[LEARN] ACCEPTED MISCONFIG @ bhc.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+[LEARN] ACCEPTED MISCONFIG @ kh-freiburg.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
+[LEARN] REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Media/signaling server ("Hi Client"), not OIDC/auth infrastructure. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — media server. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — media server. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: UNREACHABLE — all 3 probes timed out. Internal/firewalled. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: UNREACHABLE — all 3 probes timed out. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-video.alfaview.com: UNREACHABLE — root probe timed out. Target exhausted.
+[LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — auth-gated, requires credentials.
+[LEARN] ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
+[LEARN] REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39). No tenant-specific rendering, no inline data, no reflections. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout on root and trailing slash — unlike other cloud hydra hosts, no "Hi Client" response. Target behavior unknown, fleet remains 6/7 unprobed.
+[RISK] alfaview: 72/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts + 6 main domains. Production APIs auth-gated (401). High-value IDOR (confidence 85) and AUTH (confidence 70) classes confirmed in OpenAPI spec. Multi-tenant SaaS on 3 customer subdomains (identical SPA shells). 3 hydra media servers across 3 clouds expose unauthenticated HTTP 200 but serve only "Hi Client" — no sensitive endpoints. 7 beta-ionoscloud hosts: 1 hydra timeout (behavior diverges from other clouds), 6 completely unprobed (engine/audio/video) — new attack surface. 6 main domains (alfaview.com, app, dev, sso, test, www): 2 now live (alfaview.com, sso.alfaview.com), 4 unprobed. 31 hosts exhausted/rejected. Realistic path: probe alfaview.com/sso.alfaview.com OAuth flows (PASSIVE, CRITICAL impact); probe beta-ionoscloud engine hosts (PASSIVE, MEDIUM-HIGH); obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API. JWT alg/key confusion (confidence 55) adds CRITICAL vector if JWKS misconfigured. Main domain OAuth/SSO flows untested — highest immediate ROI.

@@ -85,3 +85,5 @@
 - 2026-09-04 REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39...). No tenant-specific rendering, no inline data, no reflections. Target exhausted.
 - 2026-09-04 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated target. Needs account.
 - 2026-09-04 ACCEPTED AUTH @ apis.alfaview.com: Guest link auth requires 4-field combo (companyId+roomId+accessKey+displayName). Rate-limit status unknown — needs authenticated probe.
+- 2026-09-04 REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39). No tenant-specific rendering, no inline data, no reflections. Target exhausted.
+- 2026-09-04 REJECTED MISCONFIG @ beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout on root and trailing slash — unlike other cloud hydra hosts, no "Hi Client" response. Target behavior unknown, fleet remains 6/7 unprobed.

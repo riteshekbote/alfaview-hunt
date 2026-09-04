@@ -385,3 +385,4 @@ testability: PASSIVE
 [LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth requires 4-field combo (companyId+roomId+accessKey+displayName). Rate-limit status unknown — needs authenticated probe.
 [RISK] alfaview: 45/100. All unauthenticated surfaces now exhausted: multi-tenant SPA shells (alfatraining/bhc/kh-freiburg) byte-identical to generic marketing shell; hydra hosts = media servers; alfacheck-* = unreachable; demo-company/insider/beta-webclient = SPA catch-all; beta-apis = auth identical to prod. Zero findings. The two surviving high-value hypotheses (IDOR conf 80, guest-link conf 65) both require an authenticated account. Without one, no further progress is possible via passive testing.
 ## 2026-09-04 20:01:52 UTC [target] (model bigpickle)
+## 2026-09-04 22:04:47 UTC [target] (model bigpickle)

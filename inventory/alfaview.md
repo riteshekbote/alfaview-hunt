@@ -167,3 +167,10 @@ www.alfaview.com
 - NEW Main domain set from initial recon (6 hosts): `alfaview.com`, `app.alfaview.com`, `dev.alfaview.com`, `sso.alfaview.com`, `test.alfaview.com`, `www.alfaview.com` — only `support`/`staging` probed (301
 - CHANGED `apis.alfaview.com/v2/languages` now 401 (was 404) — endpoint added, aligns with beta; OpenAPI specs identical
 - CHANGED `alfatraining`/`bhc`/`kh-freiburg` XSS hypothesis REJECTED — byte-identical SPA shells (1381B, MD5 554a39), no tenant-specific rendering
+
+## 2026-09-04 22:09:53 UTC
+- NEW beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout (root + trailing slash) — unlike hcloud/noris/ovh hydra hosts which returned "Hi Client"
+- NEW alfaview.com: HTTP 200 — main marketing/auth entry point now confirmed live
+- NEW sso.alfaview.com: HTTP 200 len=0 — SSO endpoint live, empty body (likely redirects or SPA shell)
+- CHANGED beta-ionoscloud-21-* fleet (7 hosts): Previously "HTTP unprobed" → now 1/7 probed (hydra=timeout), 6 remain unprobed
+- CHANGED Main domain set (6 hosts): Previously only support/staging probed (301) → now alfaview.com + sso.alfaview.com confirmed HTTP 200, 4 remain unprobed (app, dev, test, www)
