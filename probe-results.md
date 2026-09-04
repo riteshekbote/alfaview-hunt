@@ -75,3 +75,6 @@ https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404
 https://alfatraining.alfaview.com/ -> 200 len=1381
 https://bhc.alfaview.com/ -> 200 len=1381
 https://kh-freiburg.alfaview.com/ -> 200 len=1381
+
+## 2026-09-04 17:51:06 UTC
+https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404

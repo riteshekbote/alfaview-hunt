@@ -1,10 +1,4 @@
-## 2026-09-04 14:24:40 UTC [target] (model nemotron3)
-[NEW] Production API `apis.alfaview.com/v2/languages` now returns 401 (was 404) — endpoint added, aligns with beta; OpenAPI specs identical
-[NEW] `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`: HTTP 200 with 9-byte body ("Hi Client"); trailing slash returns HTTP 400 — minimal health-check surface
-[NEW] Guest link auth flow updated to 4-field combo (companyId+roomId+accessKey+displayName) — rate-limit status unknown
-[CHANGED] API version drift **resolved** — both beta and production expose `/v2/languages` with identical auth enforcement (401)
-[CHANGED] `alfacheck-engine/audio/video.alfaview.com`: confirmed UNREACHABLE (timeout probes) — target exhausted
-[CHANGED] `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com` et al: confirmed media/signaling servers ("Hi Client") — no admin endpoints
+## 2026-09-04 17:50:54 UTC [target] (model nemotron3)
 [PRIO] apis.alfaview.com,8.5,a:9 b:10 t:9 g:2 c:9 f:9
 [PRIO] beta-apis.alfaview.com,8.2,a:9 b:9 t:9 g:2 c:8 f:9
 [PRIO] app.alfaview.com,7.5,a:8 b:10 t:8 g:3 c:8 f:8
@@ -14,6 +8,9 @@
 [PRIO] demo-company.alfaview.com,5.8,a:6 b:7 t:6 g:9 c:6 f:6
 [PRIO] beta-app.alfaview.com,5.5,a:6 b:8 t:7 g:2 c:6 f:6
 [PRIO] internal.alfaview.com,5.0,a:5 b:7 t:6 g:2 c:6 f:5
+[PRIO] beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com,4.5,a:5 b:6 t:5 g:9 c:5 f:5
+[PRIO] beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com,4.5,a:5 b:6 t:5 g:9 c:5 f:5
+[PRIO] consul-monitoring.alfaview.com,3.0,a:3 b:5 t:3 g:9 c:3 f:3
 [HYP] Cross-tenant IDOR on room permissions and user deletion via UUID path params
 class: IDOR
 asset: apis.alfaview.com
@@ -56,12 +53,12 @@ testability: PASSIVE (JWKS) + AUTH_HELPED (token capture)
 [LEARN] ACCEPTED MISCONFIG @ alfatraining.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
 [LEARN] ACCEPTED MISCONFIG @ bhc.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
 [LEARN] ACCEPTED MISCONFIG @ kh-freiburg.alfaview.com: Unauthenticated web surface (SPA), testable immediately — multi-tenant SaaS confirmed.
-[LEARN] REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Hydra hosts are media/signaling servers returning "Hi Client" on all paths — no internal endpoints exposed.
-[LEARN] REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same as above — media server, not admin panel.
-[LEARN] REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same as above — media server, not admin panel.
-[LEARN] REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: Unreachable/timeout — no surface.
-[LEARN] REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: Unreachable/timeout — no surface.
-[LEARN] REJECTED MISCONFIG @ alfacheck-video.alfaview.com: Unreachable/timeout — no surface.
+[LEARN] REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Media/signaling server ("Hi Client"), not OIDC/auth infrastructure. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — media server. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — media server. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: UNREACHABLE — all 3 probes timed out. Internal/firewalled. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: UNREACHABLE — all 3 probes timed out. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-video.alfaview.com: UNREACHABLE — root probe timed out. Target exhausted.
 [LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — auth-gated, requires credentials.
 [LEARN] ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
 [RISK] alfaview: 72/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts, 20+ confirmed live HTTP. Production APIs auth-gated (401). High-value IDOR (confidence 85) and AUTH (confidence 70) classes confirmed in OpenAPI spec. Multi-tenant SaaS on customer subdomains (3 confirmed identical SPA shells). 3 hydra media servers across 3 cloud providers expose unauthenticated HTTP 200 but serve only "Hi Client" — no sensitive endpoints. 31 hosts remain unprobed/unreachable (beta-ionoscloud-* fleet, etc.). Realistic path: obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API. JWT alg/key confusion (confidence 55) adds CRITICAL-severity vector if JWKS misconfigured.

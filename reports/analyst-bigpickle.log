@@ -889,3 +889,59 @@ testability: PASSIVE
 
 [RISK] alfaview: 52/100. Surface is largely exhausted for unauthenticated testing. All high-value API endpoints are auth-gated (401). Confirmed findings: zero. Eliminated surfaces: beta hydra (media servers), alfacheck-* (unreachable/firewalled), demo-company/insider/beta-webclient (SPA catch-all), beta-apis (auth identical to prod, version drift resolved). Remaining unauthenticated surface: 3 multi-tenant SPA shells (alfatraining, bhc, kh-freiburg) — low probability without JS analysis. Highest-impact hypothesis (IDOR, confidence 80) blocked by auth. Critical next step: obtain test account to unlock IDOR and guest-link testing.
 ```
+===== ANALYST bigpickle 2026-09-04 17:51:04 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll analyze the current state and decide on the next action. Let me review the delta and focus on the highest-value move.
+
+**STEP 1 — DELTA:**
+The surface is largely exhausted for unauthenticated testing. All high-value API endpoints are auth-gated (401). My confirmed findings remain zero. The IDOR hypothesis (confidence 80) is blocked by auth. The next scheduled probe was capturing the SPA shells for the 3 multi-tenant hosts (alfatraining, bhc, kh-freiburg).
+
+**STEP 2 — PRIORITIZE:**
+The 3 SPA shells remain the only testable unauthenticated surface. Let me execute the pending probe on them.
+
+**STEP 3-5 — ACTION:**
+Run the pending passive probe capturing full HTML bodies of the 3 multi-tenant SPA shells to check for tenant-specific data or reflections.
+
+Let me execute the probe.
+[0m$ [0mfor host in alfatraining bhc kh-freiburg; do echo "=== $host.alfaview.com ==="; curl -s -o /tmp/opencode/$host.html -w "HTTP %{http_code} | len %{size_download} | type %{content_type}\n" --max-time 20 "https://$host.alfaview.com/"; done
+=== alfatraining.alfaview.com ===
+HTTP 200 | len 1381 | type text/html; charset=UTF-8
+=== bhc.alfaview.com ===
+HTTP 200 | len 1381 | type text/html; charset=UTF-8
+=== kh-freiburg.alfaview.com ===
+HTTP 200 | len 1381 | type text/html; charset=UTF-8
+[0m
+All three return identical 1381-byte shells. Let me compare contents.
+[0m$ [0mmd5sum /tmp/opencode/alfatraining.html /tmp/opencode/bhc.html /tmp/opencode/kh-freiburg.html; echo "---"; cat /tmp/opencode/alfatraining.html
+554a3942c06ae10d55fa93c20c39e473  /tmp/opencode/alfatraining.html
+554a3942c06ae10d55fa93c20c39e473  /tmp/opencode/bhc.html
+554a3942c06ae10d55fa93c20c39e473  /tmp/opencode/kh-freiburg.html
+---
+<!doctype html><html lang="en"><head><meta content="text/html; charset=UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="description" content="High quality audio/video conferencing for professional online meetings and live classes."/><title>alfaview</title><link rel="icon" href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/production_alfaview_icon_web_favicon_96px.png"><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js"></script><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js"></script><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.5b3949112f0cf682adc8.js"></script><link href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/vendor-vue-vuetify.min.04d1ead8363afa7c651b.css" rel="stylesheet"><link href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/app.min.516b0e3a72fb94a8fec5.css" rel="stylesheet"></head><body><div id="app"><app></app></div><noscript>alfaview.com is heavily dependent on JavaScript. Please make sure you have JavaScript enabled.</noscript></body></html>
+[0m
+All three multi-tenant hosts serve the **identical** 1381-byte Vue SPA shell — same MD5, same static assets, no tenant-specific data, no inline JSON, no reflected parameters. This is the generic `alfaview.com` marketing/conferencing SPA shell, not a tenant-specific app. There's no per-tenant rendering or distinct surface to exploit.
+
+This confirms the XSS hypothesis is dead — the shells are byte-identical and contain no tenant-specific reflections. The entire remaining unauthenticated surface is exhausted.
+
+**STEP 1 — DELTA:**
+- [CHANGED] alfatraining/bhc/kh-freiburg.alfaview.com: Previously ACCEPTED as "unauthenticated multi-tenant SPA" — now confirmed to serve the **identical** generic alfaview.com marketing shell (1381B, same MD5 `554a39...`, same static assets). No tenant-specific data, no reflections, no distinct surface.
+
+**STEP 3-4 — HYPOTHESES & CRITIQUE:**
+- XSS on multi-tenant SPA shells: **dropped** — three shells byte-identical, no tenant data or reflections. Confirmed dead.
+- Cross-tenant IDOR: remains Rank 1 (confidence 80) — blocked by auth.
+- Guest link access key enumeration: remains Rank 2 (confidence 65) — needs auth probe.
+
+No new testable unauthenticated surface exists. All live surface is auth-gated.
+
+**STEP 5 — NEXT ACTION:**
+[HUMAN]: Obtain a test account to unlock the two surviving high-value hypotheses. Every remaining unauthenticated surface has been exhausted — the IDOR (conf 80) and guest-link (conf 65) tracks both require authenticated probing that no passive technique can substitute.
+
+**STEP 6 — LEARNING:**
+[LEARN] REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39...). No tenant-specific rendering, no inline data, no reflections. Target exhausted.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated target. Needs account.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth requires 4-field combo (companyId+roomId+accessKey+displayName). Rate-limit status unknown — needs authenticated probe.
+
+**STEP 7 — RISK:**
+[RISK] alfaview: 45/100. All unauthenticated surfaces now exhausted: multi-tenant SPA shells (alfatraining/bhc/kh-freiburg) byte-identical to generic marketing shell; hydra hosts = media servers; alfacheck-* = unreachable; demo-company/insider/beta-webclient = SPA catch-all; beta-apis = auth identical to prod. Zero findings. The two surviving high-value hypotheses (IDOR conf 80, guest-link conf 65) both require an authenticated account. Without one, no further progress is possible via passive testing.
