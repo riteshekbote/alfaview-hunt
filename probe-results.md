@@ -69,3 +69,9 @@ https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/health -> 200 len=9
 
 ## 2026-09-04 10:12:17 UTC
 https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404
+
+## 2026-09-04 14:25:13 UTC
+https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404
+https://alfatraining.alfaview.com/ -> 200 len=1381
+https://bhc.alfaview.com/ -> 200 len=1381
+https://kh-freiburg.alfaview.com/ -> 200 len=1381

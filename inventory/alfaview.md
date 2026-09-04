@@ -140,3 +140,22 @@ www.alfaview.com
 - NEW beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: HTTP 200 with 9-byte body; trailing slash returns HTTP 400 — minimal surface, likely health-check endpoint
 
 ## 2026-09-04 10:12:15 UTC
+
+## 2026-09-04 14:25:07 UTC
+- CHANGED beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Was ACCEPTED MISCONFIG (health-check surface) → now REJECTED after probing — "Hi Client" body on all paths confirms media/signaling server, not OIDC/auth 
+- CHANGED beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — media server, REJECTED.
+- CHANGED beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — media server, REJECTED.
+- CHANGED All 3 alfacheck-* hosts: Confirmed UNREACHABLE via timeout (root, /health, /status, /media, /recordings). Internal/firewalled. REJECTED.
+- CHANGED RISK score dropped from 58 → 55 — all hydra/alfacheck surfaces resolved (rejected). Remaining surface is auth-gated.
+- CHANGED beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: ACCEPTED MISCONFIG → REJECTED — media/signaling server ("Hi Client"), not OIDC.
+- CHANGED beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — REJECTED.
+- CHANGED beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — REJECTED.
+- CHANGED alfacheck-engine.alfaview.com: UNREACHABLE confirmed (3 timeout probes).
+- CHANGED alfacheck-audio.alfaview.com: UNREACHABLE confirmed (3 timeout probes).
+- CHANGED alfacheck-video.alfaview.com: UNREACHABLE confirmed (1 timeout probe).
+- NEW Production API `apis.alfaview.com/v2/languages` now returns 401 (was 404) — endpoint added, aligns with beta; OpenAPI specs identical
+- NEW `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`: HTTP 200 with 9-byte body ("Hi Client"); trailing slash returns HTTP 400 — minimal health-check surface
+- NEW Guest link auth flow updated to 4-field combo (companyId+roomId+accessKey+displayName) — rate-limit status unknown
+- CHANGED API version drift **resolved** — both beta and production expose `/v2/languages` with identical auth enforcement (401)
+- CHANGED `alfacheck-engine/audio/video.alfaview.com`: confirmed UNREACHABLE (timeout probes) — target exhausted
+- CHANGED `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com` et al: confirmed media/signaling servers ("Hi Client") — no admin endpoints
