@@ -65,3 +65,4 @@
 - 2026-09-04 REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: Unreachable/timeout — no surface.
 - 2026-09-04 REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: Unreachable/timeout — no surface.
 - 2026-09-04 REJECTED MISCONFIG @ alfacheck-video.alfaview.com: Unreachable/timeout — no surface.
+- 2026-09-04 ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 4-field combo (companyId+roomId+accessKey+displayName) — rate-limit testing needed.

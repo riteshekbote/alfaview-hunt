@@ -609,3 +609,43 @@ testability: PASSIVE
 [✓] Step 6-7: LEARNING + RISK assessment
 [0m
 Summary: Alfacheck hosts confirmed dead (all timeout). Hydra endpoints return minimal 9-byte body — need exact content to assess. Passive surface largely exhausted. IDOR at `apis.alfaview.com` remains the single highest-value target but is AUTH_HELPED only.
+===== ANALYST bigpickle 2026-09-04 10:12:15 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/hydra_body.txt -w "HTTP %{http_code} | CT: %{content_type} | Size: %{size_download} | Time: %{time_total}s" https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/ 2>&1
+HTTP 200 | CT: text/plain; charset=utf-8 | Size: 9 | Time: 0.335595s
+[0m
+[0m$ [0mcurl -s -o /tmp/openapi.json -w "HTTP %{http_code} | CT: %{content_type} | Size: %{size_download}" https://apis.alfaview.com/v2/docs/openapi.json 2>&1
+HTTP 200 | CT: application/openapi+json | Size: 127532
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcat /tmp/hydra_body.txt | xxd | head -5 failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[0m
+[0m$ [0mcurl -s https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/.well-known/openid-configuration -w "\nHTTP %{http_code}" 2>&1
+Hi Client
+HTTP 200
+[0m
+[0m$ [0mcurl -s https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/health -w "\nHTTP %{http_code}" 2>&1
+Hi Client
+HTTP 200
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcat /tmp/openapi.json | python3 -c "
+import json, sys
+spec = json.load(sys.stdin)
+paths = list(spec.get('paths', {}).keys())
+print('Total paths:', len(paths))
+for p in sorted(paths):
+    methods = list(spec['paths'][p].keys())
+    print(f'  {p} [{\" \".join(methods)}]')
+# Find guest/auth endpoints
+auth_paths = [p for p in paths if 'auth' in p.lower() or 'guest' in p.lower() or 'group-link' in p.lower()]
+print('\nAuth paths:', auth_paths)
+# Find endpoints with path params
+import re
+uuid_params = [p for p in paths if '{' in p and ('id' in p.lower() or 'userId' in p or 'roomId' in p)]
+print('UUID-param endpoints:', uuid_params)
+" 2>&1 failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.

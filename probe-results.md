@@ -66,3 +66,6 @@ https://apis.alfaview.com/v2/docs/openapi.json` -> HTTP 404
 https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/ -> 200 len=9
 https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/.well-known/openid-configuration -> 200 len=9
 https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/health -> 200 len=9
+
+## 2026-09-04 10:12:17 UTC
+https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404
