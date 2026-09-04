@@ -64,3 +64,35 @@
 - LEARN: REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404.
 - LEARN: REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
 - LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface (SPA), testable immediately.
+
+## RANKED HYPOTHESES 2026-09-04 01:12:26 UTC
+- [80] apis.alfaview.com: Cross-tenant IDOR on room permissions and user deletion via UUID path params (from art/lead_nemotron3.txt)
+- [55] alfacheck-engine.alfaview.com: Alfacheck engineering service exposes internal health/debug endpoints (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET `https://beta-hcloud-19-beta-hydra-dzwx8.alfaview.com/` — capture response body, Content-Type, headers. Then GET `/health`, `/metrics`, `/debug`, `/a
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET https://alfacheck-engine.alfaview.com/ — capture status, Content-Type, body. GET https://alfacheck-audio.alfaview.com/ — same. GET https://alfacheck-
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- LEARN: ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift resolved — both beta and production now expose /v2/languages with identical auth enforcement (401
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Beta API weaker auth enforcement disproven — OpenAPI specs identical, both require auth identically.
+- LEARN: REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404.
+- LEARN: REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
+- LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface (SPA), testable immediately.
+- LEARN: ACCEPTED MISCONFIG @ alfatraining.alfaview.com: Unauthenticated web surface (HTTP 200), testable immediately — NEW target.
+- LEARN: ACCEPTED MISCONFIG @ bhc.alfaview.com: Unauthenticated web surface (HTTP 200), testable immediately — NEW target.
+- LEARN: ACCEPTED MISCONFIG @ kh-freiburg.alfaview.com: Unauthenticated web surface (HTTP 200), testable immediately — NEW target.
+- LEARN: ACCEPTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Unauthenticated infrastructure surface (HTTP 200) — NEW target.
+- LEARN: ACCEPTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Unauthenticated infrastructure surface (HTTP 200) — NEW target.
+- LEARN: ACCEPTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Unauthenticated infrastructure surface (HTTP 200) — NEW target.
+- LEARN: REJECTED MISCONFIG @ appstats.alfaview.com: Unreachable/timeout — no surface.
+- LEARN: REJECTED MISCONFIG @ consul-monitoring.alfaview.com: Unreachable/timeout — no surface.
+- LEARN: REJECTED MISCONFIG @ equipment.alfaview.com: Unreachable/timeout — no surface.
+- LEARN: REJECTED MISCONFIG @ ip-185-245-101-240.alfaview.com: Unreachable/timeout — no surface.
+- LEARN: ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — auth-gated, requires credentials.
+- LEARN: ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
+- LEARN: REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only (4396B), /health=204, all common paths 404. Tar
+- LEARN: REJECTED MISCONFIG @ beta-webclient.alfaview.com: Identical SPA shell to insider, no internal endpoints. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root. No unauthenticated data exposure.
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Undocumented endpoints (/v2/debug, /v2/admin, /v2/internal, /v2/test, /v2/health) all 404. Surface fully enumerated
+- LEARN: ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift resolved — both environments now expose /v2/languages with identical auth enforcement (401).
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI specs identical beta/prod. UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth requires 3-field combo (companyId+roomId+accessKey). Rate-limit status unknown — needs authenticated probe.
