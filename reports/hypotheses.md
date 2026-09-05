@@ -321,3 +321,7 @@
 - LEARN: REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
 - LEARN: ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
 - LEARN: REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+
+## RANKED HYPOTHESES 2026-09-05 12:20:10 UTC
+- [80] apis.alfaview.com/v2: Cross-tenant IDOR on REST user/room/permission ops via UUID path params (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Create one throwaway free alfaview company via the documented self-service flow ("Create your free alfaview company now" on app.alfaview.com login page) 

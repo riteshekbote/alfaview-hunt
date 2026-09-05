@@ -123,3 +123,8 @@ https://app.alfaview.com/` -> 200 len=1381
 https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` -> HTTP 400
 https://app.alfaview.com/graphql` -> 200 len=1381
 https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404
+
+## 2026-09-05 12:20:14 UTC
+https://apis.alfaview.com/v2/auth/password -> HTTP 405
+https://apis.alfaview.com/v2/users/me -> HTTP 401
+https://apis.alfaview.com/v2/rooms/{victimRoomId -> HTTP 401

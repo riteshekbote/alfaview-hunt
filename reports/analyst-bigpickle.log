@@ -3288,3 +3288,922 @@ testability: AUTH_HELPED
 
 ## STEP 7 — RISK
 [RISK] alfaview: 58/100. Passive yield re-expanded this session: the public bundle exposes the entire multi-tenant admin GraphQL schema and proves unauthenticated guest mutations exist with an accessKey-less signature — a concrete, testable Authz divergence from REST, plus the still-unchallenged cross-tenant IDOR pattern (conf 80) and FusionAuth redirect_uri surface (65). Risk is tempered by per-resolver auth gating on all PII ops and the fact that every exploit still resolves to obtaining a valid test tenant (HUMAN) or the desktop-only client_id; passive avenues are now essentially exhausted.
+===== ANALYST bigpickle 2026-09-05 12:20:10 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la
+total 192
+drwxr-xr-x 12 runner runner  4096 Sep  5 11:59 .
+drwxr-xr-x  3 runner runner  4096 Sep  5 11:59 ..
+drwxr-xr-x  7 runner runner  4096 Sep  5 11:59 .git
+drwxr-xr-x  3 runner runner  4096 Sep  5 11:59 .github
+-rw-r--r--  1 runner runner  1883 Sep  5 11:59 README.md
+-rw-r--r--  1 runner runner    32 Sep  5 11:59 analyst-out.txt
+-rw-r--r--  1 runner runner 51984 Sep  5 11:59 analyst-prompt.txt
+-rw-r--r--  1 runner runner 48074 Sep  5 11:59 ctx.txt
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 inventory
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 knowledge
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 leads
+-rw-r--r--  1 runner runner  6576 Sep  5 11:59 probe-results.md
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 recon-notes
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 reports
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 reposcan-raw
+-rw-r--r--  1 runner runner  3323 Sep  5 11:59 scope.yml
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 scripts
+-rw-r--r--  1 runner runner    33 Sep  5 11:59 state_bigpickle.json
+-rw-r--r--  1 runner runner    33 Sep  5 11:59 state_laguna.json
+-rw-r--r--  1 runner runner    33 Sep  5 11:59 state_ling3.json
+-rw-r--r--  1 runner runner    33 Sep  5 11:59 state_longcat.json
+-rw-r--r--  1 runner runner    33 Sep  5 11:59 state_mimo.json
+-rw-r--r--  1 runner runner    33 Sep  5 11:59 state_nemotron3.json
+drwxr-xr-x  2 runner runner  4096 Sep  5 11:59 triage
+[0m
+[0m$ [0mfind . -name "*.md" -o -name "*.txt" -o -name "*.yml" | head -50
+./analyst-out.txt
+./triage/run-2026-09-03-11-41.md
+./triage/run-2026-09-03-15-37.md
+./triage/run-2026-09-05-01-01.md
+./triage/run-2026-09-05-05-48.md
+./triage/run-2026-09-04-01-20.md
+./triage/run-2026-09-04-18-27.md
+./triage/run-2026-09-03-23-30.md
+./triage/run-2026-09-04-23-04.md
+./triage/run-2026-09-04-21-00.md
+./triage/run-2026-09-04-15-05.md
+./triage/run-2026-09-04-11-23.md
+./triage/run-2026-09-03-18-51.md
+./triage/run-2026-09-04-06-01.md
+./triage/run-2026-09-03-21-32.md
+./triage/run-2026-09-05-09-49.md
+./recon-notes/DEDICATED-DEEP.md
+./recon-notes/CORPUS-ALFAVIEW.md
+./recon-notes/DEEPER-FINDINGS.md
+./recon-notes/SCOPE-CONFIRMATION.md
+./inventory/alfaview.md
+./knowledge/index.md
+./analyst-prompt.txt
+./probe-results.md
+./reports/hypotheses-ling3.txt
+./reports/hypotheses-bigpickle.txt
+./reports/hypotheses-longcat.txt
+./reports/hypotheses-laguna.txt
+./reports/hypotheses-nemotron3.txt
+./reports/hypotheses.md
+./reports/valid-bugs.md
+./scope.yml
+./leads/reposcan-alfaview.md
+./leads/lead-nemotron3.md
+./leads/lead-bigpickle.md
+./leads/lead-laguna.md
+./leads/lead-ling3.md
+./leads/lead-mimo.md
+./leads/lead-longcat.md
+./reposcan-raw/summary.txt
+./README.md
+./ctx.txt
+./.github/workflows/reposcan.yml
+./.github/workflows/sync-issues.yml
+./.github/workflows/triage.yml
+./.github/workflows/hunt.yml
+[0m
+[0m→ [0mRead state_bigpickle.json
+[0m→ [0mRead triage/run-2026-09-05-09-49.md
+[0m→ [0mRead analyst-out.txt
+[0m→ [0mRead reports/hypotheses.md
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead reports/valid-bugs.md
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead knowledge/index.md
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code}" --max-time 15 https://apis.alfaview.com/v2/docs/openapi.json; echo; curl -s --max-time 15 https://apis.alfaview.com/v2/docs/openapi.json | head -c 600
+200
+{"components":{"schemas":{"APICredentials":{"additionalProperties":false,"properties":{"clientId":{"description":"The alias of the API key.","type":"string"},"companyId":{"description":"The company ID.","type":"string"},"key":{"description":"The API key to authenticate.","type":"string"}},"required":["companyId","clientId","key"],"type":"object"},"AccessToken":{"additionalProperties":false,"properties":{"accessToken":{"description":"Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API.","ty
+[0m
+[0m$ [0mcurl -s --max-time 20 https://apis.alfaview.com/v2/docs/openapi.json -o /tmp/opencode/apis-openapi.json && python3 -c "
+import json
+d=json.load(open('/tmp/opencode/apis-openapi.json'))
+for p in sorted(d['paths'].keys()):
+    for m in d['paths'][p]:
+        print(m.upper(), p)
+"
+POST /v2/auth/api-key
+POST /v2/auth/group-link
+POST /v2/auth/guest-link
+POST /v2/auth/password
+GET /v2/auth/token-info
+GET /v2/group-links
+GET /v2/group-links/{id}
+PATCH /v2/group-links/{id}
+GET /v2/guest-links
+GET /v2/guest-links/{id}
+PATCH /v2/guest-links/{id}
+GET /v2/languages
+GET /v2/meetings
+POST /v2/meetings
+GET /v2/meetings/{id}
+PATCH /v2/meetings/{id}
+POST /v2/meetings/{id}/cancellation
+GET /v2/permission-groups
+GET /v2/room-types
+GET /v2/rooms
+POST /v2/rooms
+DELETE /v2/rooms/{id}
+GET /v2/rooms/{id}
+PATCH /v2/rooms/{id}
+GET /v2/rooms/{id}/participants
+GET /v2/rooms/{roomId}/attendances
+DELETE /v2/rooms/{roomId}/features
+GET /v2/rooms/{roomId}/features
+PATCH /v2/rooms/{roomId}/features
+GET /v2/rooms/{roomId}/file-share-limits
+GET /v2/rooms/{roomId}/file-share-settings
+PATCH /v2/rooms/{roomId}/file-share-settings
+GET /v2/rooms/{roomId}/group-links
+POST /v2/rooms/{roomId}/group-links
+DELETE /v2/rooms/{roomId}/group-links/{id}
+GET /v2/rooms/{roomId}/guest-links
+POST /v2/rooms/{roomId}/guest-links
+DELETE /v2/rooms/{roomId}/guest-links/{id}
+GET /v2/rooms/{roomId}/language-settings
+PATCH /v2/rooms/{roomId}/language-settings
+GET /v2/rooms/{roomId}/passcode
+POST /v2/rooms/{roomId}/passcode
+GET /v2/rooms/{roomId}/permissions
+POST /v2/rooms/{roomId}/permissions
+DELETE /v2/rooms/{roomId}/permissions/{userId}
+PATCH /v2/rooms/{roomId}/permissions/{userId}
+GET /v2/rooms/{roomId}/subrooms
+POST /v2/rooms/{roomId}/subrooms
+DELETE /v2/rooms/{roomId}/subrooms/{subroomId}
+PATCH /v2/rooms/{roomId}/subrooms/{subroomId}
+GET /v2/stats
+GET /v2/users
+PATCH /v2/users
+POST /v2/users/invitation
+GET /v2/users/me
+DELETE /v2/users/{id}
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/apis-openapi.json'))
+for p in ['/v2/auth/guest-link','/v2/auth/group-link','/v2/rooms/{roomId}/passcode','/v2/rooms/{roomId}/guest-links']:
+    print('===',p)
+    try:
+        print(json.dumps(d['paths'][p], indent=0)[:1400])
+    except Exception as e:
+        print('ERR',e)
+"
+=== /v2/auth/guest-link
+{
+"post": {
+"description": "Tries to authenticate a guest link guest via access key. If the access key exists, information about the guest's authentication are returned. If the access key is also valid at the time of the request, the response additionally includes an access token and a token expiry time.",
+"operationId": "AuthenticateGuestLink",
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/AuthenticateGuestLinkRequestBody"
+}
+}
+},
+"description": "The authentication information for the guest.",
+"required": true
+},
+"responses": {
+"200": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/GuestLinkAuthenticationInfo"
+}
+}
+},
+"description": "The request was processed successfully."
+},
+"400": {
+"description": "The request was not valid."
+},
+"401": {
+"description": "A guest with the provided information could not be found and authenticated."
+},
+"422": {
+"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met. This also applies if a group link was used to authenticate. Please use the \"Authenticate a guest (group link)\" endpoint instead."
+}
+},
+"summary": "Authenticate a Guest (Guest Link)",
+"tags": [
+"Authentication",
+"Guests"
+],
+"x-sort-index": 6
+}
+}
+=== /v2/auth/group-link
+{
+"post": {
+"description": "Tries to authenticate a group link guest via access key. If the access key exists, information about the guest's authentication are returned. If the access key is also valid at the time of the request, the response additionally includes an access token and a token expiry time.",
+"operationId": "AuthenticateGroupLink",
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/AuthenticateGroupLinkRequestBody"
+}
+}
+},
+"description": "The authentication information for the guest.",
+"required": true
+},
+"responses": {
+"200": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/GroupLinkAuthenticationInfo"
+}
+}
+},
+"description": "The request was processed successfully."
+},
+"400": {
+"description": "The request was not valid."
+},
+"401": {
+"description": "A guest with the provided information could not be found and authenticated."
+},
+"422": {
+"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met. This also applies if a guest link was used to authenticate. Please use the \"Authenticate a guest (guest link)\" endpoint instead."
+}
+},
+"summary": "Authenticate a Guest (Group Link)",
+"tags": [
+"Authentication",
+"Guests"
+],
+"x-sort-index": 13
+}
+}
+=== /v2/rooms/{roomId}/passcode
+{
+"get": {
+"description": "Gets the passcode for a room. Passcodes can be set regardless of whether a passcode is required for the room.",
+"operationId": "GetPasscode",
+"parameters": [
+{
+"description": "A valid access token (can be obtained by authenticating).",
+"in": "header",
+"name": "Authorization",
+"schema": {
+"description": "A valid access token (can be obtained by authenticating).",
+"type": "string"
+}
+},
+{
+"description": "The room ID.",
+"in": "path",
+"name": "roomId",
+"required": true,
+"schema": {
+"description": "The room ID.",
+"examples": [
+"00000000-0000-0000-0000-000000000000"
+],
+"type": "string"
+}
+}
+],
+"responses": {
+"200": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/Passcode"
+}
+}
+},
+"description": "The request was processed successfully."
+},
+"401": {
+"description": "The 'Authorization' header did not contain a valid API token."
+},
+"403": {
+"description": "The requesting user does not have the necessary permissions."
+},
+"404": {
+"description": "Room was not found or has no passcode set."
+},
+"422": {
+"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."
+}
+},
+"summary": "Get Passcode",
+"tags": [
+"Rooms"
+],
+"x-sort-index": 23
+},
+"post": {
+"description": "Generates a new passcode for a room. Passcodes are always generated, regardless of whether
+=== /v2/rooms/{roomId}/guest-links
+{
+"get": {
+"description": "Lists guest links for a room. Returns an empty array if the room does not exist.",
+"operationId": "ListGuestLinksForRoom",
+"parameters": [
+{
+"description": "A valid access token (can be obtained by authenticating).",
+"in": "header",
+"name": "Authorization",
+"schema": {
+"description": "A valid access token (can be obtained by authenticating).",
+"type": "string"
+}
+},
+{
+"description": "The room ID.",
+"in": "path",
+"name": "roomId",
+"required": true,
+"schema": {
+"description": "The room ID.",
+"examples": [
+"00000000-0000-0000-0000-000000000000"
+],
+"type": "string"
+}
+},
+{
+"description": "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request.",
+"explode": false,
+"in": "query",
+"name": "pageToken",
+"schema": {
+"description": "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request.",
+"type": "string"
+}
+},
+{
+"description": "For pagination: Limit the number of returned guest links.",
+"explode": false,
+"in": "query",
+"name": "limit",
+"schema": {
+"default": 100,
+"description": "For pagination: Limit the number of returned guest links.",
+"format": "int32",
+"maximum": 500,
+"minimum": 0,
+"type": "integer"
+}
+}
+],
+"responses": {
+"200": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/PaginatedBodyListGuestLink"
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/apis-openapi.json'))
+s=d['components']['schemas']
+for name in ['AuthenticateGuestLinkRequestBody','AuthenticateGroupLinkRequestBody','GuestLinkAuthenticationInfo','AccessToken','GroupLink','GuestLink','Passcode']:
+    if name in s:
+        print('===',name)
+        print(json.dumps(s[name], indent=1)[:1200])
+"
+=== AuthenticateGuestLinkRequestBody
+{
+ "additionalProperties": false,
+ "properties": {
+  "accessKey": {
+   "description": "The access key from the guest link.",
+   "type": "string"
+  },
+  "companyId": {
+   "description": "The company ID.",
+   "examples": [
+    "0123456789ABCDEFGHIJKLMNOP"
+   ],
+   "type": "string"
+  },
+  "displayName": {
+   "description": "If set, this overrides the stored name of the guest that is displayed in UIs.",
+   "maximum": 256,
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "roomId": {
+   "description": "The room ID from the guest link.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "companyId",
+  "roomId",
+  "accessKey"
+ ],
+ "type": "object"
+}
+=== AuthenticateGroupLinkRequestBody
+{
+ "additionalProperties": false,
+ "properties": {
+  "accessKey": {
+   "description": "The access key from the group link.",
+   "type": "string"
+  },
+  "companyId": {
+   "description": "The company ID.",
+   "examples": [
+    "0123456789ABCDEFGHIJKLMNOP"
+   ],
+   "type": "string"
+  },
+  "displayName": {
+   "description": "The name of the guest that is displayed in UIs.",
+   "maximum": 256,
+   "type": "string"
+  },
+  "externalId": {
+   "description": "The external ID can be used to derive a reproducible user ID to prevent simultaneous use. If that is desired, the caller is responsible for providing a unique value per user.",
+   "maximum": 256,
+   "minimum": 32,
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "roomId": {
+   "description": "The room ID from the group link.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "companyId",
+  "roomId",
+  "accessKey",
+  "displayName"
+ ],
+ "type": "object"
+}
+=== GuestLinkAuthenticationInfo
+{
+ "additionalProperties": false,
+ "properties": {
+  "accessToken": {
+   "description": "Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API. Note: Can be empty if the guest link is not yet / no longer valid.",
+   "type": "string"
+  },
+  "clientLaunchUrl": {
+   "description": "The URL to join the room with the (installed) alfaview app. Can be empty if the guest link is not yet / no longer valid.",
+   "examples": [
+    "alfaview://apis.alfaview.com:443?companyId={company-id}&roomId={room-id}&token={token}"
+   ],
+   "type": "string"
+  },
+  "displayName": {
+   "description": "The name of the guest that is displayed in UIs.",
+   "type": "string"
+  },
+  "participantId": {
+   "description": "The guest link ID. Can be empty if the guest link is not yet / no longer valid.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  },
+  "tokenExpiresAt": {
+   "description": "Time at which the access token expires. Can be empty if the guest link is not yet / no longer valid.",
+   "examples": [
+    "2024-09-22T12:34:56Z"
+   ],
+   "format": "date-time",
+   "ty
+=== AccessToken
+{
+ "additionalProperties": false,
+ "properties": {
+  "accessToken": {
+   "description": "Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API.",
+   "type": "string"
+  }
+ },
+ "required": [
+  "accessToken"
+ ],
+ "type": "object"
+}
+=== GroupLink
+{
+ "additionalProperties": false,
+ "properties": {
+  "accessKey": {
+   "description": "The access key.",
+   "type": "string"
+  },
+  "createdAt": {
+   "description": "The creation timestamp.",
+   "examples": [
+    "2024-09-22T12:34:56Z"
+   ],
+   "format": "date-time",
+   "type": "string"
+  },
+  "createdBy": {
+   "description": "The creator user ID.",
+   "type": "string"
+  },
+  "description": {
+   "description": "A description of the group link.",
+   "type": "string"
+  },
+  "dialInAllowed": {
+   "description": "If true, the group link is allowed to be used via dial-in.",
+   "type": "boolean"
+  },
+  "dialInCode": {
+   "description": "The dial-in authentication code for the group link.",
+   "type": "string"
+  },
+  "id": {
+   "description": "The group link ID.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  },
+  "joinLink": {
+   "deprecated": true,
+   "description": "Deprecated. Use joinUrl instead.",
+   "type": "string"
+  },
+  "joinUrl": {
+   "description": "The URL of the room join page. That page allows the user to set a display name and to choose whether to join the room with the native client or the web client.",
+   "type": "string"
+  },
+  
+=== GuestLink
+{
+ "additionalProperties": false,
+ "properties": {
+  "accessKey": {
+   "description": "The access key.",
+   "type": "string"
+  },
+  "createdAt": {
+   "description": "The creation timestamp.",
+   "examples": [
+    "2024-09-22T12:34:56Z"
+   ],
+   "format": "date-time",
+   "type": "string"
+  },
+  "createdBy": {
+   "description": "The creator user ID.",
+   "type": "string"
+  },
+  "dialInAllowed": {
+   "description": "If true, the guest link is allowed to be used via dial-in.",
+   "type": "boolean"
+  },
+  "dialInCode": {
+   "description": "The dial-in authentication code.",
+   "type": "string"
+  },
+  "displayName": {
+   "description": "The name of the participant using the guest link that is displayed in UIs.",
+   "type": "string"
+  },
+  "emailAddress": {
+   "description": "The email address associated with the guest link.",
+   "format": "email",
+   "type": "string"
+  },
+  "id": {
+   "description": "The guest link ID.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  },
+  "joinUrl": {
+   "description": "The URL of the room join page. That page allows to choose whether to join the room with the native client or the web client",
+   "type": "string"
+
+=== Passcode
+{
+ "additionalProperties": false,
+ "properties": {
+  "passcode": {
+   "description": "The passcode for a room.",
+   "type": "string"
+  },
+  "required": {
+   "description": "If true, a passcode is required to enter the room.",
+   "type": "boolean"
+  }
+ },
+ "required": [
+  "passcode",
+  "required"
+ ],
+ "type": "object"
+}
+[0m
+[0m$ [0mfor q in '{__typename}' '{getPasscode(roomId:"00000000-0000-0000-0000-000000000000")}' '{listRoomLinks}' '{guestAuthenticate}'; do
+  curl -s --max-time 15 -G "https://app.alfaview.com/graphql" --data-urlencode "query=$q" -w " | HTTP=%{http_code}" | head -c 900; echo; sleep 1.2
+done
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+ | HTTP=400
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+ | HTTP=400
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+ | HTTP=400
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+ | HTTP=400
+[0m
+[0m$ [0mcurl -s --max-time 40 "https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js" -o /tmp/opencode/bundle.js && wc -c /tmp/opencode/bundle.js && rg -o -i '.{60}(accessKey|guestAuthenticate|guestJoin|generateGuestLink|generateGroupLink|listRoomLinks).{60}' /tmp/opencode/bundle.js | head -30
+1090319 /tmp/opencode/bundle.js
+/bin/bash: line 1: rg: command not found
+[0m
+[0m$ [0mgrep -oE '.{80}(accessKey|guestAuthenticate|guestJoin|AccessKey).{80}' /tmp/opencode/bundle.js | head -40
+eCompany",RESET_PASSWORD:"resetPassword",SET_PASSWORD:"setPassword",GUEST_JOIN:"guestJoin",WELCOME:"welcome",SETTINGS:"settings",MEETINGS:"meetings",MEETINGS_REGISTERED_
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"guestJoin"},arguments:[{kind:"Argument",name:{kind:"Name",value:"userId"},value:{kind:"Va
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"guestAuthenticate"},arguments:[{kind:"Argument",name:{kind:"Name",value:"userId"},value:{kind:"Va
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+Id: String!, $companyId: String!, $roomId: String!, $displayName: String!) {\n  guestJoin(userId: $userId, companyId: $companyId, roomId: $roomId, displayName: $displayN
+on FetchGuestInfo($userId: String!, $companyId: String!, $roomId: String!) {\n  guestAuthenticate(userId: $userId, companyId: $companyId, roomId: $roomId) {\n    accessToken\n  
+ialIn\n    startDate: $startDate\n    expiry: $expiry\n  ) {\n    link {\n      accessKey\n      guestId\n      validFrom\n      expiry\n      displayName\n      role\n 
+ $expiry, timeZone: $timeZone) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n     
+ linkSettings: $linkSettings) {\n    links {\n      ... on GuestLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n     
+uestId: $guestId, role: $role) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        jo
+Id, allowDialIn: $allowDialIn) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        jo
+  dialInAllowed\n        dialInCode\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        jo
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"roomId"},a
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"roomId"},a
+roomId: String!) {\n  listRoomLinks(roomId: $roomId) {\n    guestLinks {\n      accessKey\n      guestId\n      expiry\n      validFrom\n      displayName\n      email\n
+roomId: String!) {\n  listRoomLinks(roomId: $roomId) {\n    groupLinks {\n      accessKey\n      guestId\n      validFrom\n      expiry\n      displayName\n      managed
+}\n}\n\nquery ListCompanyLinks {\n  listCompanyLinks {\n    guestLinks {\n      accessKey\n      roomId\n      roomName\n      guestId\n      expiry\n      validFrom\n  
+email\n      locale\n      role\n      joinLink\n    }\n    groupLinks {\n      accessKey\n      roomId\n      roomName\n      managed\n      guestId\n      expiry\n
+[0m
+[0m$ [0mgrep -oE '.{60}(joinLink|joinUrl|clientLaunchUrl).{80}' /tmp/opencode/bundle.js | head -20; echo ---; grep -oE '.{40}(guestId|participantId).{60}' /tmp/opencode/bundle.js | grep -iE 'uuid|generate|create|new |random' | head -10
+tionSet",selections:[{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"expiry"},a
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"dialInAllo
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]}]}},{kind:"InlineFragment",typeCondition:{kind:"Na
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]}]}}]}}]}}]}},{kind:"OperationDefinition",operation
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]}]}},{kind:"InlineFragment",typeCondition:{kind:"Na
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]}]}}]}}]}}]}},{kind:"OperationDefinition",operation
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]}]}},{kind:"InlineFragment",typeCondition:{kind:"Na
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]}]}}]}}]}}]}},{kind:"OperationDefinition",operation
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"dialInAllo
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"dialInAllo
+mpanyId, roomId: $roomId, displayName: $displayName) {\n    joinLink\n    expiry\n  }\n}\n\nmutation FetchGuestInfo($userId: String!, $companyId: St
+lidFrom\n      expiry\n      displayName\n      role\n      joinLink\n      dialInAllowed\n      dialInCode\n    }\n  }\n}\nmutation SetGroupLinkNam
+n        expiry\n        displayName\n        role\n        joinLink\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n       
+n        expiry\n        displayName\n        role\n        joinLink\n      }\n    }\n  }\n}\n\nmutation MassUpdateRoomLinks($selectedRoomLinks: [JS
+n        expiry\n        displayName\n        role\n        joinLink\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n       
+n        expiry\n        displayName\n        role\n        joinLink\n      }\n    }\n  }\n}\n\nmutation SetRoomLinkRole($guestId: String!, $role: S
+n        expiry\n        displayName\n        role\n        joinLink\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n       
+n        expiry\n        displayName\n        role\n        joinLink\n        dialInAllowed\n        dialInCode\n      }\n      ... on GroupLink {\n
+n        expiry\n        displayName\n        role\n        joinLink\n        dialInAllowed\n        dialInCode\n      }\n    }\n  }\n}\n\nmutation 
+ts:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"joinLink"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"dialInAllo
+---
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/apis-openapi.json'))
+s=d['components']['schemas']
+for name in ['AuthenticateWithAPIKeyRequestBody','AuthenticateWithPasswordRequestBody','GroupLinkAuthenticationInfo']:
+    if name in s:
+        print('===',name, json.dumps(s[name])[:700])
+"; sleep 1; curl -s --max-time 15 -o /dev/null -w "GET /v2/users/me no-auth -> HTTP=%{http_code}\n" https://apis.alfaview.com/v2/users/me
+=== GroupLinkAuthenticationInfo {"additionalProperties": false, "properties": {"accessToken": {"description": "Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API. Note: Can be empty if the group link is not yet / no longer valid.", "type": "string"}, "clientLaunchUrl": {"description": "The URL to join the room with the (installed) alfaview app. Can be empty if the group link is not yet / no longer valid.", "examples": ["alfaview://apis.alfaview.com:443?companyId={company-id}&roomId={room-id}&token={token}"], "type": "string"}, "displayName": {"description": "The name of the guest that is displayed in UIs.", "type": "s
+GET /v2/users/me no-auth -> HTTP=401
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/apis-openapi.json'))
+for p in ['/v2/auth/api-key','/v2/auth/password']:
+    rb=d['paths'][p]['post'].get('requestBody',{})
+    ref=rb.get('content',{}).get('application/json',{}).get('schema',{}).get('\$ref') or rb.get('content',{}).get('application/json',{}).get('schema',{}).get('properties')
+    print(p, '->', json.dumps(ref)[:600])
+"
+/v2/auth/api-key -> "#/components/schemas/APICredentials"
+/v2/auth/password -> "#/components/schemas/PasswordCredentials"
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/apis-openapi.json'))
+s=d['components']['schemas']
+print(json.dumps(s['PasswordCredentials'], indent=1)[:700])
+print(json.dumps(s['APICredentials'], indent=1)[:700])
+"
+{
+ "additionalProperties": false,
+ "properties": {
+  "password": {
+   "description": "The password.",
+   "type": "string"
+  },
+  "username": {
+   "description": "The username.",
+   "examples": [
+    "user@provider.com"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "username",
+  "password"
+ ],
+ "type": "object"
+}
+{
+ "additionalProperties": false,
+ "properties": {
+  "clientId": {
+   "description": "The alias of the API key.",
+   "type": "string"
+  },
+  "companyId": {
+   "description": "The company ID.",
+   "type": "string"
+  },
+  "key": {
+   "description": "The API key to authenticate.",
+   "type": "string"
+  }
+ },
+ "required": [
+  "companyId",
+  "clientId",
+  "key"
+ ],
+ "type": "object"
+}
+[0m
+[0m$ [0mfor q in '{__typename}' '{guestAuthenticate}' '{getPasscode(roomId:"00000000-0000-0000-0000-000000000000")}' '{listRoomLinks(roomId:"00000000-0000-0000-0000-000000000000")}' '{searchCompanies}' '{listAllUserIds}'; do
+  curl -s --max-time 15 -G "https://app.alfaview.com/graphql" -H "X-Apollo-Operation-Name: probe" --data-urlencode "query=$q" -w " | HTTP=%{http_code}" | head -c 500; echo; sleep 1.2
+done
+{"data":{"__typename":"Query"}}
+ | HTTP=200
+{"errors":[{"message":"Cannot query field \"guestAuthenticate\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Field \"getPasscode\" of type \"GetPasscodeReply!\" must have a selection of subfields. Did you mean \"getPasscode { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Field \"listRoomLinks\" of type \"ListLinksReply!\" must have a selection of subfields. Did you mean \"listRoomLinks { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Field \"searchCompanies\" of type \"SearchCompaniesReply!\" must have a selection of subfields. Did you mean \"searchCompanies { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":2}],"path":["listAllUserIds"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":{"listAllUserIds":null}}
+ | HTTP=200
+[0m
+[0m$ [0mprobe(){ curl -s --max-time 15 -G "https://app.alfaview.com/graphql" -H "X-Apollo-Operation-Name: probe" --data-urlencode "query=$1" -w " | HTTP=%{http_code}" | head -c 420; echo; sleep 1.2; }
+probe '{getPasscode(roomId:"00000000-0000-0000-0000-000000000000"){passcode}}'
+probe '{listIdentityProviders}'
+probe '{listComponents}'
+probe '{listCompanyLinks}'
+probe '{fetchUserPermissions}'
+probe '{generateFileDownloadURL}'
+probe '{searchCompanies{results}}'
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":2}],"path":["getPasscode"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+ | HTTP=200
+{"errors":[{"message":"Field \"listIdentityProviders\" of type \"ListIdentityProvidersReply!\" must have a selection of subfields. Did you mean \"listIdentityProviders { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Field \"listComponents\" of type \"ListComponentsReply!\" must have a selection of subfields. Did you mean \"listComponents { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Field \"listCompanyLinks\" of type \"ListLinksReply!\" must have a selection of subfields. Did you mean \"listCompanyLinks { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Field \"fetchUserPermissions\" of type \"FetchUserPermissionsReply!\" must have a selection of subfields. Did you mean \"fetchUserPermissions { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Field \"fetchUserPermissions\" argument \"userId\" of type \"String!\" is required, but it was not provided.","locations":[{"line":1,"column":2}
+{"errors":[{"message":"Field \"generateFileDownloadURL\" of type \"GenerateFileDownloadURLReply!\" must have a selection of subfields. Did you mean \"generateFileDownloadURL { ... }\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Field \"generateFileDownloadURL\" argument \"roomId\" of type \"String!\" is required, but it was not provided.","locations":[{"line":1
+{"errors":[{"message":"Cannot query field \"results\" on type \"SearchCompaniesReply\".","locations":[{"line":1,"column":18}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+[0m
+[0m$ [0mprobe(){ curl -s --max-time 15 -G "https://app.alfaview.com/graphql" -H "X-Apollo-Operation-Name: probe" --data-urlencode "query=$1" -w " | HTTP=%{http_code}" | head -c 420; echo; sleep 1.2; }
+probe '{searchCompanies{companies}}'
+probe '{searchCompanies{company}}'
+probe '{listIdentityProviders{providers}}'
+probe '{listComponents{components}}'
+probe '{guestAuthenticate{accessToken}}'
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":2}],"path":["searchCompanies"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+ | HTTP=200
+{"errors":[{"message":"Cannot query field \"company\" on type \"SearchCompaniesReply\". Did you mean \"companies\"?","locations":[{"line":1,"column":18}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"data":{"listIdentityProviders":{"providers":[]}}}
+ | HTTP=200
+{"errors":[{"message":"Cannot return null for non-nullable field Query.listComponents.","locations":[{"line":1,"column":2}],"path":["listComponents"],"extensions":{"code":"INTERNAL_SERVER_ERROR"}}],"data":null}
+ | HTTP=200
+{"errors":[{"message":"Cannot query field \"guestAuthenticate\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+[0m
+[0m$ [0mprobe(){ curl -s --max-time 15 -G "https://app.alfaview.com/graphql" -H "X-Apollo-Operation-Name: probe" --data-urlencode "query=$1" -w " | HTTP=%{http_code}" | head -c 420; echo; sleep 1.2; }
+probe 'mutation{createMagicToken}'
+probe 'mutation{magicTokenAuthenticate}'
+probe 'mutation{guestAuthenticate}'
+probe 'mutation{guestJoin}'
+{"errors":[{"message":"Field \"createMagicToken\" of type \"CreateMagicTokenReply!\" must have a selection of subfields. Did you mean \"createMagicToken { ... }\"?","locations":[{"line":1,"column":10}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Field \"magicTokenAuthenticate\" of type \"TokenAuthenticateReply!\" must have a selection of subfields. Did you mean \"magicTokenAuthenticate { ... }\"?","locations":[{"line":1,"column":10}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Field \"magicTokenAuthenticate\" argument \"magicToken\" of type \"String!\" is required, but it was not provided.","locations":[{"line":1,"co
+{"errors":[{"message":"Field \"guestAuthenticate\" of type \"GuestAuthenticateReply!\" must have a selection of subfields. Did you mean \"guestAuthenticate { ... }\"?","locations":[{"line":1,"column":10}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Field \"guestAuthenticate\" argument \"userId\" of type \"String!\" is required, but it was not provided.","locations":[{"line":1,"column":10}],"extensi
+{"errors":[{"message":"Field \"guestJoin\" of type \"GuestJoinReply!\" must have a selection of subfields. Did you mean \"guestJoin { ... }\"?","locations":[{"line":1,"column":10}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Field \"guestJoin\" argument \"userId\" of type \"String!\" is required, but it was not provided.","locations":[{"line":1,"column":10}],"extensions":{"code":"GRAPHQL_VALIDATION
+[0m
+[0m$ [0mprobe(){ curl -s --max-time 15 -G "https://app.alfaview.com/graphql" -H "X-Apollo-Operation-Name: probe" --data-urlencode "query=$1" -w " | HTTP=%{http_code}" | head -c 420; echo; sleep 1.2; }
+probe 'mutation{magicTokenAuthenticate(magicToken:"00000000-0000-0000-0000-000000000000"){accessToken joinLink}}'
+probe 'mutation{guestAuthenticate(userId:"00000000-0000-0000-0000-000000000000",companyId:"00000000-0000-0000-0000-000000000000",roomId:"00000000-0000-0000-0000-000000000000"){accessToken joinLink}}'
+{"errors":[{"message":"Cannot query field \"joinLink\" on type \"TokenAuthenticateReply\".","locations":[{"line":1,"column":96}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+{"errors":[{"message":"Cannot query field \"joinLink\" on type \"GuestAuthenticateReply\".","locations":[{"line":1,"column":182}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ | HTTP=400
+[0m
+[0m$ [0mprobe(){ curl -s --max-time 15 -G "https://app.alfaview.com/graphql" -H "X-Apollo-Operation-Name: probe" --data-urlencode "query=$1" -w " | HTTP=%{http_code}" | head -c 420; echo; sleep 1.2; }
+probe 'mutation{magicTokenAuthenticate(magicToken:"00000000-0000-0000-0000-000000000000"){accessToken}}'
+probe 'mutation{guestAuthenticate(userId:"00000000-0000-0000-0000-000000000000",companyId:"00000000-0000-0000-0000-000000000000",roomId:"00000000-0000-0000-0000-000000000000"){accessToken}}'
+{"errors":[{"message":"GET requests only support query operations, not mutation operations","extensions":{"code":"BAD_REQUEST"}}]}
+ | HTTP=405
+{"errors":[{"message":"GET requests only support query operations, not mutation operations","extensions":{"code":"BAD_REQUEST"}}]}
+ | HTTP=405
+[0m
+STEP 1 — DELTA
+- [NEW] app.alfaview.com/graphql: `GET /graphql` + `X-Apollo-Operation-Name` header satisfies Apollo CSRF preflight and executes anonymous queries read-only — recovered 9 reply types via validation-error oracle (`GetPasscodeReply`, `ListLinksReply`, `SearchCompaniesReply`→field `companies`, `FetchUserPermissionsReply`→arg `userId:String!`, `GenerateFileDownloadURLReply`→arg `roomId:String!`, `CreateMagicTokenReply`, `TokenAuthenticateReply`→arg `magicToken:String!`, `GuestAuthenticateReply`, `GuestJoinReply`). Mutations over GET rejected `405` ("GET requests only support query operations").
+- [NEW] GraphQL resolver auth re-tested anonymously: `searchCompanies`, `listAllUserIds`, `getPasscode` all → `UNAUTHENTICATED` (enforced); `listIdentityProviders` → open `{"providers":[]}`; `listComponents` → anonymous `INTERNAL_SERVER_ERROR`. Sensitive admin resolvers are gated — per-resolver-auth is stricter than the previous session's sample suggested.
+- [NEW] REST OpenAPI reconfirmed live (GET /v2/docs/openapi.json, 44 endpoints): `AuthenticateGuestLinkRequestBody` requires `{companyId,roomId,accessKey}` (accessKey untyped string); `GroupLink`/`GuestLink` expose `dialInCode` + `externalId`(min 32) secrets; `/v2/rooms/{roomId}/passcode` GET returns passcode to any authed caller with permission.
+- [NEW] Bundle op-AST parse (1.09MB, re-fetched GET) confirms `guestJoin(userId,companyId,roomId,displayName)` and `guestAuthenticate(userId,companyId,roomId)` carry NO accessKey arg; admin ops `listRoomLinks`/`listCompanyLinks` return `accessKey`+`guestId`+`joinLink`+`dialInCode`.
+- [CHANGED] Guest "accessKey-bypass" reframed: `joinLink` is itself the shared secret carrier — the web join flow is triple-based by design and REST `accessKey` is the dial-in/API secret. Triple-only guestAuth is design, not divergence; the residual risk is guest-authz (lifecycle/cross-tenant), not secret bypass.
+
+STEP 2 — PRIORITIZE
+- [PRIO] apis.alfaview.com/v2, 7.3, a:9 b:10 t:9 g:2 c:3 f:6
+- [PRIO] app.alfaview.com/graphql, 7.2, a:8 b:9 t:9 g:4 c:3 f:7
+- [PRIO] sso.alfaview.com, 6.7, a:7 b:8 t:9 g:6 c:1 f:6
+
+STEP 3 — HYPOTHESES
+[HYP] Cross-tenant IDOR on REST user/room/permission ops via UUID path params
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: Live OpenAPI (this session) confirms `DELETE /v2/users/{id}`, `PATCH|DELETE /v2/rooms/{roomId}/permissions/{userId}`, plus read-heavy `GET /v2/rooms/{roomId}/passcode` (returns passcode string), `GET /v2/stats`, `GET /v2/users` — all token-authed, company-scoped, cross-tenant authz unverified. `GET /v2/users/me` unauth → 401 opaque-token gate reconfirmed. Same schema exposed by GraphQL resolvers (fetchUserPermissions/generateFileDownloadURL/getPasscode) which are auth-gated (verified this session).
+evidence_needed: token of tenant A returns 200/204 for tenant B's userId/roomId where 403 is expected (esp. passcode + permissions + stats).
+verify_steps: (AUTH) signup free tenant → POST /v2/auth/password `{"username","password"}` (or api-key) → keep opaque base64 bearer → GET /v2/users/me baseline 200 → GET /v2/rooms/{victimUUID}/passcode + PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → 403 vs 200/204 verdict.
+impact: cross-tenant PII read, room passcode/recording access, permission/account mutation, user deletion; HIGH.
+testability: AUTH_HELPED
+
+[HYP] Guest-authz gap: expired/disabled or cross-tenant guest triples still authenticate via GraphQL guest path
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(guestId,companyId,roomId) is anonymous-executing (previous session: BAD_USER_INPUT not UNAUTHENTICATED; mutation-over-GET now verified blocked, so classification stands from POST). Database lookup is by ID triple only (no secret), per confirmed op signature. Two distinct flaw candidates survive design analysis: (1) lifecycle — revoked/expired guestIDs still mint tokens; (2) cross-tenant — companyId/roomId from tenant B accepted with tenant A triple (tuple splicing).
+evidence_needed: with own tenant guest triple, expired/re-keyed link still returns accessToken; BAD_USER_INPUT→rejects wrong-pair (already seen) vs cross-pair accepts.
+verify_steps: (AUTH) GenerateGroupLink/guest-link in own tenant → guestAuthenticate with own triple (token issued?) → delete/expire link → repeat (still token?) → splice roomId of second tenant → compare BAD_USER_INPUT vs accessToken.
+impact: unauthorized room entry by dead/re-keyed or cross-tenant links; MEDIUM-HIGH.
+testability: AUTH_HELPED
+
+[HYP] OAuth redirect_uri validation bypass → authorization-code theft
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 65
+reasoning: FusionAuth 1.63.0 OIDC source; `invalid_client` (reason `invalid_client_id`) precedes redirect_uri handling, so bypass variants (path/query template confusion, fragment carriage) only testable with a registered client_id; web bundle carries no client_id (verified prior sessions); desktop installer S3 (production-alfaview-assets) is the remaining source, buckets return 403 (not enumerable).
+evidence_needed: registered client_id + its exact registered redirect_uri, then 302 Location on `...&redirect_uri=<registered>/../evil` vs exact-match.
+verify_steps: harvest client_id from desktop installer resources → GET /oauth2/authorize?client_id&response_type=code&redirect_uri=<reg-uri>/../evil → compare 302 target.
+impact: code theft → ATO of any alfaview user; HIGH.
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Guest triple-only token issuance as "accessKey bypass" (was 62): refuted — joinLink IS the shared secret; triple-only flow is by design. Recast as lifecycle/cross-tenant authz (55) and kept.
+- [PARKED] Magic-token replay (48): `magicTokenAuthenticate(magicToken:String!)` exists and is likely anonymous-by-design like guest auth; token format/entropy unknown without AUTH; Drop below keep-threshold without evidence.
+- [PARKED] JWT alg-confusion (REJECTED earlier): opaque base64 tokens confirmed; closed.
+- [FINAL] Cross-tenant REST IDOR — 80 (rank 1, needs account)
+- [FINAL] FusionAuth redirect_uri bypass — 65 (needs client_id)
+- [FINAL] GraphQL guest-authz (lifecycle/cross-tenant splicing) — 55 (needs own-tenant link)
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Create one throwaway free alfaview company via the documented self-service flow ("Create your free alfaview company now" on app.alfaview.com login page) — unlock rank-1 (REST IDOR) and the guest-authz splice test. Baseline on acceptance: POST https://apis.alfaview.com/v2/auth/password {"username","password"} → store opaque bearer → GET https://apis.alfaview.com/v2/users/me (expect 200, own user/company IDs) → then GET https://apis.alfaview.com/v2/rooms/{victimRoomId}/passcode (expect 403 = enforced vs 200 = IDOR). Anything below that signup resolves all remaining live hypotheses (also unblocks POSTing GET-blocked GraphQL mutations magicTokenAuthenticate/guestAuthenticate).
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: Apollo CSRF preflight bypassed on GET with X-Apollo-Operation-Name header; anonymous GET queries execute validation (type-leak oracle), mutations rejected 405 on GET.
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: Resolver auth enforced anonymously on searchCompanies/listAllUserIds/getPasscode (UNAUTHENTICATED); listIdentityProviders open-empty; listComponents anonymous 500.
+- [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/graphql: introspection disabled but anonymous validation errors enumerate the reply-type map (GetPasscodeReply, ListLinksReply, SearchCompaniesReply{companies}, FetchUserPermissionsReply, GenerateFileDownloadURLReply, CreateMagicTokenReply, TokenAuthenticateReply, GuestAuthenticateReply, GuestJoinReply).
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com: OpenAPI live at /v2/docs/openapi.json reconfirmed (44 endpoints); guest-link auth body is {companyId,roomId,accessKey} only (accessKey untyped string); passcode GET returns passcode to permitted caller; /v2/users/me unauth → 401.
+
+STEP 7 — RISK
+[RISK] alfaview: 48/100. Anonymous GraphQL surface now fully mapped and largely closed (sensitive resolvers verified auth-gated; only empty listIdentityProviders and crashing listComponents are anonymously reachable). Remaining exposure concentrates on the two auth-gated chains — REST cross-tenant IDOR (80) and guest-authz splicing (55) — plus the plausible FusionAuth redirect_uri surface (65) that only a valid client_id unlocks. No live bug is yet proven; every remaining path requires either a self-service tenant (HUMAN) or a harvested desktop client_id, so probability-weighted risk is pulled down by those gates while upside stays constant if either resolves.

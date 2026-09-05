@@ -4399,3 +4399,924 @@ testability: PASSIVE
 
 **STEP 7 — RISK**
 [RISK] alfaview: 80/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in OpenAPI — needs account. OAuth/SSO surface live: sso.alfaview.com (FusionAuth 1.63.0) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256 support vs RSA-only JWKS (alg confusion vector). app.alfaview.com is primary client but client_id not yet discovered. test.alfaview.com distributes unsigned binaries (supply chain risk). 7-host beta-ionoscloud fleet largely unprobed (1/7 hydra timeout, 6 unprobed). 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com network traffic → probe OAuth redirect_uri/state on sso.alfaview.com (AUTH_HELPED, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account → test IDOR cross-tenant + guest-link rate limits. JWT alg confusion (confidence 70) adds CRITICAL vector if token validation flawed.
+===== ANALYST nemotron3 2026-09-05 12:20:10 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mcurl -s https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js | grep -oE '"client_id"\s*:\s*"[^"]+"' | head -5
+(no output)
+[0m
+[0m$ [0mcurl -s https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js | grep -oE 'client_id[^"]*"[^"]+"' | head -10
+(no output)
+[0m
+[0m$ [0mcurl -s https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js | grep -oE '(oauth|authorize|redirect_uri|clientId|client_id)[^"]*"[^"]*"' | head -20
+authorized registered users",copy_link_button:"
+authorize/:principal/:token",component:function(){return t.e(8413).then(t.bind(t,60399))},meta:{authHiddenRoute:!0,navHidden:!0,pageNameLocaleKey:"
+[0m
+[0m$ [0mcurl -s https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js | grep -oE '(fusionauth|sso\.alfaview|acme\.com|issuer)[^"]*"[^"]*"' | head -20
+issuer"},arguments:[],directives:[]},{kind:"
+issuer\n    accountName\n    otpauthURL\n  }\n}\n\nmutation VerifyMFASetup($enrollmentSessionToken: String!, $totpCode: String!) {\n  verifyMFASetup(enrollmentSessionToken: $enrollmentSessionToken, totpCode: $totpCode) {\n    recoveryCodes\n  }\n}\n\nmutation RegenerateRecoveryCodes {\n  regenerateRecoveryCodes {\n    recoveryCodes\n  }\n}\n\nmutation AdminSwitchCompany($nextCompanyId: String!) {\n  adminSwitchCompany(nextCompanyId: $nextCompanyId) {\n    companyId\n    accessToken\n    permissions\n  }\n}\n\nmutation AssignCompanyAdminPermission($userId: String!) {\n  assignCompanyAdminPermission(userId: $userId)\n}\nmutation UnassignCompanyAdminPermission($userId: String!) {\n  unassignCompanyAdminPermission(userId: $userId)\n}\n\nmutation AssignGrantCompanyAdminPermission($userId: String!) {\n  assignGrantCompanyAdminPermission(userId: $userId)\n}\nmutation UnassignGrantCompanyAdminPermission($userId: String!) {\n  unassignGrantCompanyAdminPermission(userId: $userId)\n}\n\n# businessLogicService\nmutation Signup(\n  $displayName: String\n  $user: UserInput\n  $agreedToTerms: Boolean\n  $agreedToPrivacyPolicy: Boolean\n  $planId: String\n) {\n  signup(\n    displayName: $displayName\n    user: $user\n    agreedToTerms: $agreedToTerms\n    agreedToPrivacyPolicy: $agreedToPrivacyPolicy\n    planId: $planId\n  )\n}\n\nmutation CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {\n  createCompany(companyName: $companyName, user: $user, planId: $planId) {\n    companyId\n  }\n}\n\nmutation InviteAndAssignUsers($csvUserInvitations: [JSONObject!], $locale: String!, $isDryRun: Boolean) {\n  inviteAndAssignUsers(csvUserInvitations: $csvUserInvitations, locale: $locale, isDryRun: $isDryRun) {\n    taskId\n    assignedInMs\n  }\n}\n\nmutation InviteExternalMembers($roomId: String!, $invitations: [ExternalMemberInvitationInput!], $timeZone: String) {\n  inviteExternalMembers(roomId: $roomId, invitations: $invitations, timeZone: $timeZone) {\n    taskId\n  }\n}\n\nmutation UpdateFavoriteRooms($roomIdsChanges: JSONObject) {\n  updateFavoriteRooms(roomIdsChanges: $roomIdsChanges)\n}\n\nmutation BatchInviteExternalMembers(\n  $invitations: [BatchExternalMemberInvitationInput!]\n  $isDryRun: Boolean\n  $timeZone: String\n  $roomId: String\n) {\n  batchInviteExternalMembers(invitations: $invitations, isDryRun: $isDryRun, timeZone: $timeZone, roomId: $roomId) {\n    taskIds\n  }\n}\n\nmutation UpdatePermissionGroups($input: UpdatePermissionGroupsInput!) {\n  updatePermissionGroups(input: $input) {\n    taskId\n  }\n}\n\n# companyService\nmutation DeleteCompany($companyId: String!) {\n  deleteCompany(companyId: $companyId) {\n    deletedId\n    taskId\n  }\n}\n\nmutation SendDeleteCompanyConfirmation {\n  sendDeleteCompanyConfirmation\n}\n\nmutation RemoveCompanyBrandingLogo($fileTypes: [String]!) {\n  removeCompanyBrandingLogo(fileTypes: $fileTypes) {\n    companyLogoList {\n      type\n      url\n    }\n  }\n}\n\nmutation UpdateCompany($companyId: String!, $plan: String, $displayName: String) {\n  updateCompany(companyId: $companyId, plan: $plan, displayName: $displayName) {\n    branding\n    companyId\n    createdAt\n    customerId\n    displayName\n    ownerId\n    plan\n  }\n}\n\nmutation UpdateCompanyBranding($branding: JSONObject) {\n  updateCompanyBranding(branding: $branding) {\n    branding\n  }\n}\n\nmutation UpdateCompanyOwnerId($newOwnerID: String) {\n  updateCompanyOwnerId(newOwnerID: $newOwnerID)\n}\n\nmutation UpdateCompanyName($displayName: String!) {\n  updateCompanyName(displayName: $displayName)\n}\n\nmutation SetPrivacyPolicyUrl($companyId: String!, $privacyUrl: String!) {\n  setPrivacyPolicyUrl(companyId: $companyId, privacyUrl: $privacyUrl)\n}\n\n# roomService\nmutation CreateRoom($room: JSONObject!) {\n  createRoom(room: $room) {\n    room\n    roomId\n  }\n}\n\nmutation UpdateRoom($roomId: String!, $room: JSONObject!, $removeDefaultPermissions: Boolean) {\n  updateRoom(roomId: $roomId, room: $room, removeDefaultPermissions: $removeDefaultPermissions) {\n    room\n  }\n}\n\nmutation UpdateRoomWaitingRoomState($roomId: String!, $isWaitingRoomEnabled: Boolean!) {\n  updateRoomWaitingRoomState(roomId: $roomId, isWaitingRoomEnabled: $isWaitingRoomEnabled)\n}\n\nmutation UpdateRoomWaitingRoomWelcomeNote($roomId: String!, $waitingRoomWelcomeNote: String!) {\n  updateRoomWaitingRoomWelcomeNote(roomId: $roomId, waitingRoomWelcomeNote: $waitingRoomWelcomeNote)\n}\n\nmutation RegeneratePasscode($roomId: String!) {\n  regeneratePasscode(roomId: $roomId) {\n    passcode\n  }\n}\n\nmutation DeleteRoom($roomId: String!) {\n  deleteRoom(roomId: $roomId) {\n    deletedId\n  }\n}\n\nmutation DuplicateRoom($roomId: String!, $numberOfDuplications: Int) {\n  duplicateRoom(roomId: $roomId, numberOfDuplications: $numberOfDuplications) {\n    duplicatedIds\n  }\n}\nmutation SortRooms($moves: [RoomMoveInput]!) {\n  sortRooms(moves: $moves) {\n    rooms\n  }\n}\n\nmutation CreateGroupLink(\n  $roomId: String!\n  $role: String!\n  $displayName: String\n  $allowDialIn: Boolean\n  $startDate: Number\n  $expiry: Number\n) {\n  createGroupLink(\n    roomId: $roomId\n    role: $role\n    displayName: $displayName\n    allowDialIn: $allowDialIn\n    startDate: $startDate\n    expiry: $expiry\n  ) {\n    link {\n      accessKey\n      guestId\n      validFrom\n      expiry\n      displayName\n      role\n      joinLink\n      dialInAllowed\n      dialInCode\n    }\n  }\n}\nmutation SetGroupLinkName($guestId: String!, $displayName: String!) {\n  setGroupLinkName(guestId: $guestId, displayName: $displayName) {\n    displayName\n  }\n}\n\nmutation SetRoomLinkValidityPeriod($guestId: String!, $startDate: Number, $expiry: Number, $timeZone: String) {\n  setRoomLinkValidityPeriod(guestId: $guestId, startDate: $startDate, expiry: $expiry, timeZone: $timeZone) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n        role\n        joinLink\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n        role\n        joinLink\n      }\n    }\n  }\n}\n\nmutation MassUpdateRoomLinks($selectedRoomLinks: [JSONObject!], $linkSettings: JSONObject!) {\n  massUpdateRoomLinks(selectedRoomLinks: $selectedRoomLinks, linkSettings: $linkSettings) {\n    links {\n      ... on GuestLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n        role\n        joinLink\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n        role\n        joinLink\n      }\n    }\n  }\n}\n\nmutation SetRoomLinkRole($guestId: String!, $role: String!) {\n  setRoomLinkRole(guestId: $guestId, role: $role) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        joinLink\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        joinLink\n      }\n    }\n  }\n}\n\nmutation SetRoomLinkDialIn($guestId: String!, $allowDialIn: Boolean!) {\n  setRoomLinkDialIn(guestId: $guestId, allowDialIn: $allowDialIn) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        joinLink\n        dialInAllowed\n        dialInCode\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        joinLink\n        dialInAllowed\n        dialInCode\n      }\n    }\n  }\n}\n\nmutation ResendGuestInviteEmail($roomId: String!, $guestId: String!, $timeZone: String) {\n  resendGuestInviteEmail(roomId: $roomId, guestId: $guestId, timeZone: $timeZone) {\n    taskId\n  }\n}\n\nmutation DeleteRoomLinks($roomId: String!, $guestIds: [String]) {\n  deleteRoomLinks(roomId: $roomId, guestIds: $guestIds) {\n    deletedIds\n  }\n}\n\nmutation BatchUpdateRoomsCapacity(\n  $numOfParticipants: Int!\n  $numOfSpectators: Int\n  $numOfSubrooms: Int\n  $maxVideoGridTiles: Int\n) {\n  batchUpdateRoomsCapacity(\n    numOfParticipants: $numOfParticipants\n    numOfSpectators: $numOfSpectators\n    numOfSubrooms: $numOfSubrooms\n    maxVideoGridTiles: $maxVideoGridTiles\n  )\n}\n\nmutation BatchUpdateRoomsDefaultUserRole($defaultPermission: String!) {\n  batchUpdateRoomsDefaultUserRole(defaultPermission: $defaultPermission)\n}\n\nmutation BatchUpdateRoomsTranscriptionSettings(\n  $isEnabled: Boolean!\n  $transcriptionProvider: String!\n  $spokenLanguage: String!\n  $transcriptionLanguages: [String!]\n  $roomIds: [String!]\n  $translationProvider: String\n) {\n  batchUpdateRoomsTranscriptionSettings(\n    isEnabled: $isEnabled\n    transcriptionProvider: $transcriptionProvider\n    spokenLanguage: $spokenLanguage\n    transcriptionLanguages: $transcriptionLanguages\n    roomIds: $roomIds\n    translationProvider: $translationProvider\n  )\n}\n\nmutation BatchCreateRooms($roomNames: [String!], $options: JSONObject!) {\n  batchCreateRooms(roomNames: $roomNames, options: $options)\n}\n\nmutation BatchCreateRoomStructure($roomStructure: JSONObject!, $options: JSONObject!) {\n  batchCreateRoomStructure(roomStructure: $roomStructure, options: $options)\n}\n\nmutation BatchAssignUsers($assignments: [JSONObject!], $isDryRun: Boolean) {\n  batchAssignUsers(assignments: $assignments, isDryRun: $isDryRun)\n}\n\nmutation BatchUnassignUsers($userEmails: [String!], $isDryRun: Boolean) {\n  batchUnassignUsers(userEmails: $userEmails, isDryRun: $isDryRun)\n}\n\nmutation BatchCreateGroupLinks(\n  $roomIds: [String]!\n  $linkName: String!\n  $role: String!\n  $startDate: Number\n  $endDate: Number\n) {\n  batchCreateGroupLinks(roomIds: $roomIds, linkName: $linkName, role: $role, startDate: $startDate, endDate: $endDate) {\n    groupLinks\n  }\n}\n\nmutation BatchUpdateRoomsFeatures(\n  $roomIds: [String!]\n  $features: [JSONObject!]\n  $waitingRoomFeature: JSONObject\n  $fileSettings: JSONObject\n) {\n  batchUpdateRoomsFeatures(\n    roomIds: $roomIds\n    features: $features\n    waitingRoomFeature: $waitingRoomFeature\n    fileSettings: $fileSettings\n  )\n}\n\n# userService\nmutation UpdateUser($userId: String!, $user: JSONObject!) {\n  updateUser(userId: $userId, user: $user)\n}\n\nmutation UpdateUserPermissions($userId: String!, $grantPermissions: [Number!], $revokePermissions: [Number!]) {\n  updateUserPermissions(userId: $userId, grantPermissions: $grantPermissions, revokePermissions: $revokePermissions) {\n    permissions\n  }\n}\n\nmutation DeleteUser($userId: String!) {\n  deleteUser(userId: $userId) {\n    deletedId\n  }\n}\n\nmutation BatchDeleteUsers($userEmails: [String!], $isDryRun: Boolean) {\n  batchDeleteUsers(userEmails: $userEmails, isDryRun: $isDryRun)\n}\n\nmutation InviteUsers($userInvitations: [UserInvitationInput!], $userPermissions: JSONObject!) {\n  inviteUsers(userInvitations: $userInvitations, userPermissions: $userPermissions) {\n    taskId\n  }\n}\n\n# transcriptionService\nmutation UpdateTranscriptionSettings(\n  $roomId: String!\n  $enabled: Boolean!\n  $translationLanguages: [String!]\n  $defaultSpokenLanguage: String!\n  $allowUserOverride: Boolean!\n) {\n  updateTranscriptionSettings(\n    roomId: $roomId\n    translationLanguages: $translationLanguages\n    defaultSpokenLanguage: $defaultSpokenLanguage\n    allowUserOverride: $allowUserOverride\n    enabled: $enabled\n  ) {\n    active\n    enabled\n    languages\n    provider\n    spokenLanguage\n    userSettings\n    translationProvider\n  }\n}\n\nmutation UpdateTranscriptionProvider($roomId: String!, $provider: String!) {\n  updateTranscriptionProvider(roomId: $roomId, provider: $provider) {\n    active\n    enabled\n    languages\n    provider\n    spokenLanguage\n    userSettings\n    translationProvider\n  }\n}\n\nmutation UpdateTranslationProvider($roomId: String!, $translationProvider: String!) {\n  updateTranslationProvider(roomId: $roomId, translationProvider: $translationProvider) {\n    active\n    enabled\n    languages\n    provider\n    spokenLanguage\n    userSettings\n    translationProvider\n  }\n}\n\n# internalQuotaService\nmutation UpdateCompanyQuotas($companyId: String!, $upsertQuotas: [JSONObject!], $removeQuotas: [JSONObject!]) {\n  updateCompanyQuotas(companyId: $companyId, upsertQuotas: $upsertQuotas, removeQuotas: $removeQuotas) {\n    quotas\n  }\n}\n\n# meetingService\nmutation CreateMeeting(\n  $meetingTitle: String!\n  $invitations: [JSONObject]\n  $startDate: Number!\n  $endDate: Number!\n  $locale: String!\n  $timeZone: String!\n  $agenda: String\n  $subroomCount: Int!\n  $earlyAccessMinutes: Int\n  $initialWaitingRoomOptions: JSONObject\n  $requiresPasscode: Boolean\n  $userPermissions: JSONObject\n) {\n  createMeeting(\n    meetingTitle: $meetingTitle\n    invitations: $invitations\n    startDate: $startDate\n    endDate: $endDate\n    locale: $locale\n    timeZone: $timeZone\n    agenda: $agenda\n    subroomCount: $subroomCount\n    earlyAccessMinutes: $earlyAccessMinutes\n    initialWaitingRoomOptions: $initialWaitingRoomOptions\n    requiresPasscode: $requiresPasscode\n    userPermissions: $userPermissions\n  ) {\n    groupLinks\n    meetingId\n  }\n}\n\nmutation UpdateMeeting(\n  $id: String!\n  $meetingTitle: String\n  $agenda: String\n  $startDate: Number\n  $endDate: Number\n  $duration: Number\n  $recurrence: JSONObject\n  $timeZone: String\n  $earlyAccessMinutes: Int\n) {\n  updateMeeting(\n    id: $id\n    meetingTitle: $meetingTitle\n    agenda: $agenda\n    startDate: $startDate\n    endDate: $endDate\n    duration: $duration\n    recurrence: $recurrence\n    timeZone: $timeZone\n    earlyAccessMinutes: $earlyAccessMinutes\n  )\n}\nmutation CancelMeeting($id: String!, $reason: String, $creatorLocale: String, $skipNotification: Boolean) {\n  cancelMeeting(id: $id, reason: $reason, creatorLocale: $creatorLocale, skipNotification: $skipNotification)\n}\n\n# groupService\nmutation CreateGroup(\n  $name: String!\n  $externalId: String!\n  $permissions: JSONObject!\n  $createUserProfiles: Boolean!\n  $accessWebApp: Boolean!\n) {\n  createGroup(\n    name: $name\n    externalId: $externalId\n    permissions: $permissions\n    createUserProfiles: $createUserProfiles\n    accessWebApp: $accessWebApp\n  )\n}\n\nmutation UpdateGroup(\n  $name: String!\n  $externalId: String!\n  $permissions: JSONObject!\n  $createUserProfiles: Boolean!\n  $accessWebApp: Boolean!\n  $id: String!\n) {\n  updateGroup(\n    name: $name\n    externalId: $externalId\n    permissions: $permissions\n    createUserProfiles: $createUserProfiles\n    accessWebApp: $accessWebApp\n    id: $id\n  ) {\n    group\n  }\n}\n\nmutation DeleteGroup($id: String!) {\n  deleteGroup(id: $id)\n}\n\n# companyCacheService\nmutation UpdateCompanySearchCache {\n  updateCompanySearchCache\n}\n\n# fileService\nmutation UpdateFileCompanySettings($active: String!) {\n  updateFileCompanySettings(active: $active)\n}\nmutation UpdateFileRoomSettings($roomId: String!, $settings: JSONObject!) {\n  updateFileRoomSettings(roomId: $roomId, settings: $settings)\n}\nmutation DeleteFiles($roomId: String!, $fileIds: [String]!) {\n  deleteFiles(roomId: $roomId, fileIds: $fileIds)\n}\nmutation UpdateFiles($roomId: String!, $fileIds: [String]!, $accessLevel: String!, $category: String!) {\n  updateFiles(roomId: $roomId, fileIds: $fileIds, accessLevel: $accessLevel, category: $category)\n}\n\nmutation Checkout($planId: String!, $products: [CheckoutProductInput!]!, $customer: CheckoutCustomerInput!) {\n  checkout(planId: $planId, products: $products, customer: $customer) {\n    paymentRedirectUrl\n  }\n}\n",name:"
+[0m
+[0m$ [0mcurl -s https://sso.alfaview.com/.well-known/openid-configuration
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oauth2/device_authorize",
+  "dpop_signing_alg_values_supported" : [
+    "Ed448",
+    "Ed25519",
+    "ES256",
+    "ES384",
+    "ES512",
+    "PS256",
+    "PS384",
+    "PS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "end_session_endpoint" : "https://sso.alfaview.com/oauth2/logout",
+  "frontchannel_logout_supported" : true,
+  "grant_types_supported" : [
+    "authorization_code",
+    "password",
+    "implicit",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "client_credentials"
+  ],
+  "id_token_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "HS256",
+    "HS384",
+    "HS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "issuer" : "acme.com",
+  "jwks_uri" : "https://sso.alfaview.com/.well-known/jwks.json",
+  "response_modes_supported" : [
+    "form_post",
+    "fragment",
+    "query"
+  ],
+  "response_types_supported" : [
+    "code",
+    "id_token",
+    "token id_token"
+  ],
+  "scopes_supported" : [
+    "openid",
+    "offline_access",
+    "email",
+    "phone",
+    "profile"
+  ],
+  "subject_types_supported" : [
+    "public"
+  ],
+  "token_endpoint" : "https://sso.alfaview.com/oauth2/token",
+  "token_endpoint_auth_methods_supported" : [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "userinfo_endpoint" : "https://sso.alfaview.com/oauth2/userinfo",
+  "userinfo_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "RS256",
+    "RS384",
+    "RS512",
+    "HS256",
+    "HS384",
+    "HS512"
+  ]
+}
+[0m
+[0m$ [0mcurl -s https://sso.alfaview.com/.well-known/jwks.json
+{
+  "keys" : [
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "kty" : "RSA",
+      "n" : "qT_xytJqFqGysh3-OWpKQAwzzeTwXg8TJs3qI7A0yhe-xkBue5vsyyfT47MIGkVIY9R3kbhY7ysjjv8FV6bbvDk1NyND66QlraPeyJtDoNF6AdBr5d6Zy4zU21aSubgW-OXTf-M-bwqYCpjVn8xU0F0BfXsQeNgO4k3nKG7FME-BKREsyE-5PZRkVpZ7TzFWDhXJ4Vm1Oxut0Vh4OvJdTrX_yji71BSlm65pryVWZ0XSnf12opRFNgMNcDHdDjnRFeQimoT9aN2Ce_cMdrXYazhtu5Hvirb97lnGqXsM5OozheaZgo9iVOUYwstTGd_GZPOzuHUOgM5Xo-bvz3l25w",
+      "use" : "sig",
+      "x5c" : [
+        "MIICrzCCAZegAwIBAQIRAL1bz9UQtEiHnHR4oy8p5yMwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjExMjAzMTQwMDQ0WhcNMzExMjAzMTQwMDQ0WjATMREwDwYDVQQDEwhhY21lLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKk/8crSahahsrId/jlqSkAMM83k8F4PEybN6iOwNMoXvsZAbnub7Msn0+OzCBpFSGPUd5G4WO8rI47/BVem27w5NTcjQ+ukJa2j3sibQ6DRegHQa+XemcuM1NtWkrm4Fvjl03/jPm8KmAqY1Z/MVNBdAX17EHjYDuJN5yhuxTBPgSkRLMhPuT2UZFaWe08xVg4VyeFZtTsbrdFYeDryXU61/8o4u9QUpZuuaa8lVmdF0p39dqKURTYDDXAx3Q450RXkIpqE/Wjdgnv3DHa12Gs4bbuR74q2/e5Zxql7DOTqM4XmmYKPYlTlGMLLUxnfxmTzs7h1DoDOV6Pm7895ducCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAZokpTeSFu0pUavb5JWBOmHWdFWlVAM+ae0dFODeyjs0a3XzjRrOMhHLsA73Ubn9y5BQ0SaNe/qPAYA2hLA3DfwHUyqx9tD2ubWLXYadXHSTET4oJ9TgVpPctRNaFwjysHXrudh5R0WYAYTr9xeeFxJ5gJx5Lxdom2t+e2UeddcKdFLl5qhx5AYcUkpfg1OU27sS/JPYsy7P7tAEiajuADbu36jf8Gz1ffPmuCJyWdnj7OUFtz+RgpWnKhxiVvNOJBlk8ZxefFBpUCoomvudavVa0eEVMnF7RZ+UepVdQgvyhdIdnPYZycH0nec4Bgkxvuies3sz1Yqsezo30gzmNMA=="
+      ],
+      "x5t" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "x5t#S256" : "aLyCb0zVEdHKyDlDvL3ou0k5FvUpJ7Q4BxirZuEUICQ"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "MyYL4tkdByeJy8TYsH9uVDAVfgw",
+      "kty" : "RSA",
+      "n" : "xnTecdsOXkQem8V_9TyjVx2BX_YKxctfjyeIawzclehzDbLHaTvWiJVlUdMalys1b19vhK760cmeA-cpI_pbJd3wy5IW66tbijHeDgnSDizvlV_5K1BbvQSXp1V0md6cdetvcWdcgYg2KXNwf9xXZzYOzeF81UAsdJzdSIMqx5YuTJJcQDoB09I-OFUY-Y5PlC43DVho1uiHDaPHh56dI17rSXo3h1TnjsvhR8mo6rBFeObd9nBaxM6H2kBq97JztLkWzWxfrgoAigptH54pIpxugq54HCWk8_Owfh1a7cpH_iXdJhYiJP2HYY6vzYGs_eSOgPI5KTqq38m9k00tPoCyWnd-uG7phOLKDAeB7zWnsEB1VyPBUduYClqZRbv_awbQuRP5N-FDbaK_snhz5OJblK47MnfRmu2EQpVJqOplO6ML4AKABAhhvAifa8rq8Uu7Vkj7dfnaQBckW1gObC-gi-IrLgcTMAU6TzS_9Wguq4EIBaC2BBffGpYw5yAWN31WJg9aeaikmTkI4lwzeHtqSn9Mu5ZXi95AUNkv3BXxsSCmFQvnl2OmsfcW0I44rkC1A6y6lCzXnRsE8ychiu5IKlFsSj-3ksrtPe5Gsa2zPHkmeS6OW0IGSlgRae-qdusl6XgNMHL2oxPQLM9-TD48sZ_JJhuFKNzoP9FlaOE",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAKmS4nFpqEtEparlQ/2aPOMwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjIwNTI1MTUyOTAwWhcNMzIwNTI1MTUyOTAwWjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMZ03nHbDl5EHpvFf/U8o1cdgV/2CsXLX48niGsM3JXocw2yx2k71oiVZVHTGpcrNW9fb4Su+tHJngPnKSP6WyXd8MuSFuurW4ox3g4J0g4s75Vf+StQW70El6dVdJnenHXrb3FnXIGINilzcH/cV2c2Ds3hfNVALHSc3UiDKseWLkySXEA6AdPSPjhVGPmOT5QuNw1YaNbohw2jx4eenSNe60l6N4dU547L4UfJqOqwRXjm3fZwWsTOh9pAaveyc7S5Fs1sX64KAIoKbR+eKSKcboKueBwlpPPzsH4dWu3KR/4l3SYWIiT9h2GOr82BrP3kjoDyOSk6qt/JvZNNLT6Aslp3frhu6YTiygwHge81p7BAdVcjwVHbmApamUW7/2sG0LkT+TfhQ22iv7J4c+TiW5SuOzJ30ZrthEKVSajqZTujC+ACgAQIYbwIn2vK6vFLu1ZI+3X52kAXJFtYDmwvoIviKy4HEzAFOk80v/VoLquBCAWgtgQX3xqWMOcgFjd9ViYPWnmopJk5COJcM3h7akp/TLuWV4veQFDZL9wV8bEgphUL55djprH3FtCOOK5AtQOsupQs150bBPMnIYruSCpRbEo/t5LK7T3uRrGtszx5JnkujltCBkpYEWnvqnbrJel4DTBy9qMT0CzPfkw+PLGfySYbhSjc6D/RZWjhAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAIjis2BC56ZXl8BghQysMPp08aO9jKDMtjPoNdU8MUtszJaJcReGNhuAIky9dZnAPkK83/GAX64KbHGjovhBnYeNKyr5JIWZ6fcBrfX9q9V6zGHmCsZJ5mmnQdp3AhrS2FUhfhpOQXjOg48IC6rwbh1TBYh0fTaByX5OIvE37sn3glGr89Syw+t6hHAI5rXvFSz3fPTL26jAXGfw4i+e+nrO6zuyAqpwQPeTo/rKpzTm4HicM2BZuHGAC3BbqYEvXm0t/Lk2Hjt8W77s8vk45VcZtDLWqhLGIElJG3WFtIjq9/ba7Ng6oIpDJZ3q0HG9PWhpYlWDY3jJ6iVw7lctd93UtTq6Vg3vQdOSfOt6WfaHuMfPxauT+Q+7v77jhDh33ThO8ErGGDapFhXkE7s/uePsYc6pmVPVGC1HRQfCtCcTolrcYyKiGPlKcEOwLK+TuP8HgjkFCZH8Sn9vD9XIHyAPm0sz4hYvd5nXveFkrzZbGRheJAib+xKKOcjisrZPelERfWRqy+YVeNWvr7KjPhui88lWSSv1JeD3Ei3RHvB7UIu0jA6SE4GF8tsUyW6SV7rj/15Icw2vileTbMqBIDfdV/M/4zIIQSXpyUuzpi2OzR55VwySYDXoE++xopkZyZrBieIUyZBVH4+RmRzEmFFdrZRKyRnNztVzOafnDzff"
+      ],
+      "x5t" : "MyYL4tkdByeJy8TYsH9uVDAVfgw",
+      "x5t#S256" : "rmi_KwpezuADHvfT4yYh2hCjB4SLxwrrKl3Pu4CZehs"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "9exxjB5QmH0DtbhMn4qTBxcw24E",
+      "kty" : "RSA",
+      "n" : "r-rqp4-GbwvwwPjLFObnV5k5w2uxLuzzY6uSIRJfk0ntBTbP1Czwi4QbSk0POtNtKsuXIAy2BvK43fwzWMqhTCQhETbF7_EoqMYDsbbJBiEpUVO4PL7bG3fyizw73_07SonHY-T3cvCZapY8TI2LiaJJLeEPeCVlaGXw6jSe1HzsxDsJwsJ17mAzruzy4S58VScoTv6_HpotboFyBY-2KoeesEOh8Vh9zNaMa9nayGGfuvX7BU0IoDxwD5VoV7wXQzwJK1vXusPUbfNLMJAz_ZINauOL3Su7SXH3AZE_2WA43VTs0ciarnqIrqRY_dxAdqp0zTAqAGOeQJjss2VRNUwOesQIAysP0PauZuTIxwv257nb36XGzhoIFH87SvtTrdaGBtItu8hYwT6o9cw5p4WFUTH1A34rQuGLa5ySnVAXhzYgDcIqsjz__ztYNrXqo1nEdwQES-C782yLeMBAo6GsilRosANFrFCM6iYwwPc6gxb_rbNp1t945MHWuGBoK_l9sEdpJEwbhdMuMp-ZGvpeVAlcRzmarDq2oq6RU1W2uGymQONmbuIjHfe1kYj6fYzzDRaa0R0wUb8qgBu2YGVxAuZbB6nEFuABi4l9xDX3GA7GAhfLwTqF0KbLjPARxibWXhlMRm7nCPLuOsFj1jaarcjRkGCqxrYPGz8Bo-8",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAOMh+2Pk9E0UqfJgalnHuIAwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjIwNzA2MDk1NzE1WhcNMzIwNzA2MDk1NzE1WjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK/q6qePhm8L8MD4yxTm51eZOcNrsS7s82OrkiESX5NJ7QU2z9Qs8IuEG0pNDzrTbSrLlyAMtgbyuN38M1jKoUwkIRE2xe/xKKjGA7G2yQYhKVFTuDy+2xt38os8O9/9O0qJx2Pk93LwmWqWPEyNi4miSS3hD3glZWhl8Oo0ntR87MQ7CcLCde5gM67s8uEufFUnKE7+vx6aLW6BcgWPtiqHnrBDofFYfczWjGvZ2shhn7r1+wVNCKA8cA+VaFe8F0M8CStb17rD1G3zSzCQM/2SDWrji90ru0lx9wGRP9lgON1U7NHImq56iK6kWP3cQHaqdM0wKgBjnkCY7LNlUTVMDnrECAMrD9D2rmbkyMcL9ue529+lxs4aCBR/O0r7U63WhgbSLbvIWME+qPXMOaeFhVEx9QN+K0Lhi2uckp1QF4c2IA3CKrI8//87WDa16qNZxHcEBEvgu/Nsi3jAQKOhrIpUaLADRaxQjOomMMD3OoMW/62zadbfeOTB1rhgaCv5fbBHaSRMG4XTLjKfmRr6XlQJXEc5mqw6tqKukVNVtrhspkDjZm7iIx33tZGI+n2M8w0WmtEdMFG/KoAbtmBlcQLmWwepxBbgAYuJfcQ19xgOxgIXy8E6hdCmy4zwEcYm1l4ZTEZu5wjy7jrBY9Y2mq3I0ZBgqsa2Dxs/AaPvAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAHxFsUX/nvjWPlxHAaHFLRC3IJ/wBgfM3IlXvXoT6/2fPcm9e3m6gtbNUWmzl4Sjq+IxtBaNwnQpwwzB/nBQCmnAXLnOq0T2co9ssSMnCDYImJwXeU4b1oDZkMJ4m2899yVBTlFgq0xWqsqOdK9nJk9szXQAg3IsBt5FW9XkxSLuJnM5UDIfFEkHYQezpvYa+/CvGAUbl1bIOjjdQ5GR7W6CgpscFEdPvT+QIxA65fL3OgDByJ0VtEOSa3xKeaB6UWamqiEJUXt4ZwBraw9apOgxpRN0G+XFxANGdRRBXxr+9eqC42A6mWrU+kmYrWTD+3ozrOaMODimmy0G39TZUiC0QZWFFxk85ru/dOVpBGZxDJIQBmdgtgXXx/obOIpxZ7x9ZthXb/RD/HJe5FFv6Tw2Y9CRMP3ndNC0xzbI97C+e2btYUfIaNBg9PLRvsVw122vjGe3Hq2/JmVTrgrHR6Wnb6cYax9QQETexmrA5Xl7+rX4IXLA+8KYJZbWL2gc5J6LS7GMi+v797FVwtzpAj4PldgOIgRD5Ez/K1bJQKMH5Pu3eW4Uj749U5ezT0XXs6Jn7ucfKki4bXty+H2GMeN8AP+xAl6CkcbFV1n3o9xh1Hy+Luvvm7KAJJG9z2eXtm7sXUwUfk6Yv39anFNw1WGpol4Rxn3luhnY9wx3ovnU"
+      ],
+      "x5t" : "9exxjB5QmH0DtbhMn4qTBxcw24E",
+      "x5t#S256" : "uPB4p8P09fchza4FFWwyWS-CoXllhCjqDstvPMPRRd8"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "reKNTTsoGH_Ed8P4u0ArlPnLoVc",
+      "kty" : "RSA",
+      "n" : "vrBfpx2Tp6aus0dfylst400kqxtwPyoVVPDDg30qFa77uS2dfQ5YxYZV_m35J2mZmH-FRVpDxCg3ULEG3l7zszYYNbSlf-WkUNwZBZw_cAUdJ4Gj5WmrBw-tIXFq-fmNjLjMnxdCniH87Cp4PwDYAYdzPGvGC9tFuDNiydCpTyK0C-PZ8lef9l1-8l_zVcAnUZl-ih0I_wxqD0IN1-dDB8Wyl7OWeyQNqKo6kCU0LxpdLg47aooEWBE4bqCpGjUJwA0oLVPiNS8IHHHA4rlw0mkHDiqQEuEVm0NKe1jeSyM8vNcOtni8cCEz1XAjJLH5G7l9cA3u8yVBG_3qq9c6BFEK2q1eGVyAqfeWHdmZBvxBdb-X77-xCv4AQzlcah0R6vQrMulEFIN8n1-fUiDY80_6wIdAICrz6OEh4y50UkXI04uxNy5RxQTo5vgkg7fH2V8CNxVwLaj58kWikUyA545ZUNrYnS6yene4__wpHLgx8hT87WbpSPhUjIwpZsDqrlwK3oOWq85dxL71i5UBfXYmWCUc7HpfOnCVYGqASIIJWs27sHsRXNV5qGKNhdRsmV3DbFaZ_tNgpKVRc9YOYxQv4B9bnQvHk85WFYzrhswnvYmcUaiOcvZY4x3NhxE-IPbqUyrBZUETYfOm_NNAXOn8jSikPT7ILdxI8-ui6UE",
+      "use" : "sig",
+      "x5c" : [
+        "MIIFFDCCAvygAwIBAgIUU12rjOshhiM2VyPxUi6B2wbjiAIwDQYJKoZIhvcNAQELBQAwGzEZMBcGA1UEAwwQc3NvLmFsZmF2aWV3LmNvbTAeFw0yMzAyMjgxMTI0NThaFw0yODAyMjcxMTI0NThaMBsxGTAXBgNVBAMMEHNzby5hbGZhdmlldy5jb20wggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQC+sF+nHZOnpq6zR1/KWy3jTSSrG3A/KhVU8MODfSoVrvu5LZ19DljFhlX+bfknaZmYf4VFWkPEKDdQsQbeXvOzNhg1tKV/5aRQ3BkFnD9wBR0ngaPlaasHD60hcWr5+Y2MuMyfF0KeIfzsKng/ANgBh3M8a8YL20W4M2LJ0KlPIrQL49nyV5/2XX7yX/NVwCdRmX6KHQj/DGoPQg3X50MHxbKXs5Z7JA2oqjqQJTQvGl0uDjtqigRYEThuoKkaNQnADSgtU+I1LwgcccDiuXDSaQcOKpAS4RWbQ0p7WN5LIzy81w62eLxwITPVcCMksfkbuX1wDe7zJUEb/eqr1zoEUQrarV4ZXICp95Yd2ZkG/EF1v5fvv7EK/gBDOVxqHRHq9Csy6UQUg3yfX59SINjzT/rAh0AgKvPo4SHjLnRSRcjTi7E3LlHFBOjm+CSDt8fZXwI3FXAtqPnyRaKRTIDnjllQ2tidLrJ6d7j//CkcuDHyFPztZulI+FSMjClmwOquXAreg5arzl3EvvWLlQF9diZYJRzsel86cJVgaoBIgglazbuwexFc1XmoYo2F1GyZXcNsVpn+02CkpVFz1g5jFC/gH1udC8eTzlYVjOuGzCe9iZxRqI5y9ljjHc2HET4g9upTKsFlQRNh86b800Bc6fyNKKQ9Psgt3Ejz66LpQQIDAQABo1AwTjAdBgNVHQ4EFgQUI7Gq3gwaKpuBWfZPqP75HdiVNrYwHwYDVR0jBBgwFoAUI7Gq3gwaKpuBWfZPqP75HdiVNrYwDAYDVR0TAQH/BAIwADANBgkqhkiG9w0BAQsFAAOCAgEAetG/oJJTmCs1rex4Y1NE2MI+6F8xGKRzQllBaQOrk5ktb+BcAOx7jEaPTIldh9jYcbYOuS+2vwNzbxw3dhNW9vwk4KAHT+3qrK+NhkBA3+eKroKOqt7NzqYY2e4lYBnR0gL0JyAoevOVBL9b8RNrF+r3xTD3qOx8MPSfoFmkzCrf/uQeFZWPuRGrWujTNoWEza7c992RNY1vAEAJPYBM4ctPoMJTBylnvX1e9qpl7T9AZtCmzglQeUEzUYsCj/xSswNm5McDRHNx+1eBDylQC+sq/2X6FZoVurAESYLQNvD93RIC86G+YjgFumjyr0dAHdbVW3c5INHfRTH8ET6AY/Xq3CN8qoil2d51BBgZwpWO+JAf36Mxi9qBF/La3mocyW2cMrcbFwTpByvMoghRpWJrfmyXOD/W9ILGyLo8oa7yrphmvvl0MDRfhcip8BIvKYgGDFPMm8+eIILc4eQBufoPn+RsN9JBPyqwQ+rajZjVAQMqQQTAFnfPIPbjiUk7ERd9iCeIe82cJl20HE9iODJ3JqMW7jhX5mmPwYqbLjBN5wDWiGc3tElm2gG33bnaWsH365VPDiw8PCzuGaH43LVU5CagGLKa1LFWwhFFdtYVLVfvsr9o7af54P2oUZeON+ffQw7nDaJ03RApGMaUBtNxJsAuya0BpF1aaMHkOmg="
+      ],
+      "x5t" : "reKNTTsoGH_Ed8P4u0ArlPnLoVc",
+      "x5t#S256" : "nEUU7LJIJ3Xv9DMYIDi0Op793_NmgC4Hz-cPfJu4D90"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "Wt8BxbYdoVmNkFX6kRhBc8loIVc",
+      "kty" : "RSA",
+      "n" : "j2uYpLEOuDjEV92D9BwfmZZyMyem2Ix8A6ED_ffbuopLRZVdTHcRua_XS9TyCubSO48ZNeTJPMQF1d4rgrgSHq0nNF8AhPlRqsImkwGSWawyD-0TFFnHXjjFZVYvVgtnW4PG3Af9wVFVzdI1sT5f3CBpKQjSFNRbytBdzHINOXs9Y9yLBmdW8e5X7Es2lWMPP5rSdGNdHzoLGTHFjsS6iNT28bNyin3V9eDsjEOGZSw7KDOwGxCswDEkh_R7aOmu0Qjx3zJWZn9D8ybKkRz4UcphOGkuX_xAbtpbYDaWdm8ZwrDXt9rVMOjHjkVJNo20QDR0ueAL8nDFNdp3khLVoLAZ8gDUCVH9Zt66cWk_Dgza9mSTENBBn73ngHRu6mgYMphO8iJusk0PJkdszliz5ScJQhtcZWFV-LbDOUjybSGoMLINIHNC_QwSM-Zx8SLtspM7YHott-XrVn_RHGiK8HuuIdmMRzCcs9ClXGMJbgBIrTwBWHv_2FosPxIZv0ds5VUld4IphwiHGJ0fp1DeUx4DxatOE9KZ53NJ9zYZWztXUzyvDIhgsgO9tO2DV1ck6QlHakQLiLQC0k8c3vr-NRMl8K3G_ECSx-5VWbvkjBc_xkq-rp9GmnMpzXBUM7ZKOLPfich2EOTh_7FBg9ju7F-7-663AzPDqwLHqMi_YuU",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAMLf5SLh/0jFhjBM+8JaboQwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjQwMzI2MTA1OTM1WhcNMzQwMzI2MTA1OTM1WjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAI9rmKSxDrg4xFfdg/QcH5mWcjMnptiMfAOhA/3327qKS0WVXUx3Ebmv10vU8grm0juPGTXkyTzEBdXeK4K4Eh6tJzRfAIT5UarCJpMBklmsMg/tExRZx144xWVWL1YLZ1uDxtwH/cFRVc3SNbE+X9wgaSkI0hTUW8rQXcxyDTl7PWPciwZnVvHuV+xLNpVjDz+a0nRjXR86CxkxxY7EuojU9vGzcop91fXg7IxDhmUsOygzsBsQrMAxJIf0e2jprtEI8d8yVmZ/Q/MmypEc+FHKYThpLl/8QG7aW2A2lnZvGcKw17fa1TDox45FSTaNtEA0dLngC/JwxTXad5IS1aCwGfIA1AlR/WbeunFpPw4M2vZkkxDQQZ+954B0bupoGDKYTvIibrJNDyZHbM5Ys+UnCUIbXGVhVfi2wzlI8m0hqDCyDSBzQv0MEjPmcfEi7bKTO2B6Lbfl61Z/0RxoivB7riHZjEcwnLPQpVxjCW4ASK08AVh7/9haLD8SGb9HbOVVJXeCKYcIhxidH6dQ3lMeA8WrThPSmedzSfc2GVs7V1M8rwyIYLIDvbTtg1dXJOkJR2pEC4i0AtJPHN76/jUTJfCtxvxAksfuVVm75IwXP8ZKvq6fRppzKc1wVDO2Sjiz34nIdhDk4f+xQYPY7uxfu/uutwMzw6sCx6jIv2LlAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAARbI+KUUdhgA5ChLJOoJOyYmHsc4+czX3qWn0kxeb6H0l+EFPmRxYFIKi4m1sO3PxSxyqHvuf+2wb2aEibG4SUYRkL28Wvaq7m9+0kbD6MFCQoFCrG0Oz8wD5DhCTUT1RxnyGzoGoNPsv2ehg2ZlMGsop2O9+4IfvdN9yYist1v/MuVzEWy2OjebgwlcrSfOAsTJfxxlBbArL5DfjHkoJAGKoOYGM+unp+mzL/JvQOxeojddaPtFQGgeXcCkGDhoW7hFh0dfna2viBp6F+2fqI177IiZJu7xUbkadeSbLCoqw3JM7ptLOJ62MhgxFQK8CHl5SzQLhLxlzQvv+raLssiVGee8lQbz8vaTgazYC22nsfq+j+xvrNKpbej82kl6pkw8N91HVfEjmKFXiA0DlSPnOLJ+JqUz7gDULSiv5O0Jzp5sD2aIxN28Kt8gKa8sO9zpLKGv3XBXCUfbqD2/TSu88xbEg5y0zr/TIha9HWlphK+FhEuFFWoDD6IZDRzmvwI371vCkhzohtfUTAxlHkbUJSzDt/LYZYzmW5yu37bGfJjEJVFViUbpsrkBc1SlM/9qvTB22W3YEabgGbWBiu7bwiA4gbBJ2DxuA7Dox+AHrVBvLY5jQeR3WESAqpStxkFOixbsq/jFvTC6UurK7QYuCkBQZbjBBg6WXKm50Nb"
+      ],
+      "x5t" : "Wt8BxbYdoVmNkFX6kRhBc8loIVc",
+      "x5t#S256" : "KxZCJuyfj-NkiKl1sIEIIvWvK-6TdP5X_dE9JT6VIHo"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "KrAseHBJPFZAWUGd6owW3xqKJDo",
+      "kty" : "RSA",
+      "n" : "1fEFewYalYZQ4lf3mS4u6Y6_7jB84GNT1MNTc9VqiCgZi3NJVXsZPgjfJSRlk95ofuBDwoisMydr_DD4DU9Y85b2acCSWd23D20BBo2W8iLICiuU961E6Wr1y_g5KULBDUcXrdAw6gCeA0ttqNHBf9j_iYDkrruHbR3Uqs3PybCUoFoDvw4d8w3ZOPqAn-muW_0Mq-VBmdLToUqejcY0TNb5euKkQphLk92Saj8pTSzj8QZeijMzIcgVTKMrq97mQ7iXF7IBuolEwo5RDAInpgWf6AXmrTDoMeWmg63oTvphzB1Z6OuFalOyXDVxRtnBCCJushQLTWVvmILsXxNMzw",
+      "use" : "sig",
+      "x5c" : [
+        "MIICrzCCAZegAwIBAQIRANXOF98hAknrgmHQMEgyyawwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjUwNDIzMTM1MjMxWhcNMzUwNDIzMTM1MjMxWjATMREwDwYDVQQDEwhhY21lLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANXxBXsGGpWGUOJX95kuLumOv+4wfOBjU9TDU3PVaogoGYtzSVV7GT4I3yUkZZPeaH7gQ8KIrDMna/ww+A1PWPOW9mnAklndtw9tAQaNlvIiyAorlPetROlq9cv4OSlCwQ1HF63QMOoAngNLbajRwX/Y/4mA5K67h20d1KrNz8mwlKBaA78OHfMN2Tj6gJ/prlv9DKvlQZnS06FKno3GNEzW+XripEKYS5Pdkmo/KU0s4/EGXoozMyHIFUyjK6ve5kO4lxeyAbqJRMKOUQwCJ6YFn+gF5q0w6DHlpoOt6E76YcwdWejrhWpTslw1cUbZwQgibrIUC01lb5iC7F8TTM8CAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAr9B1iaWmOWWeFCDIDbzebmtuj6xJqavXublR8xy58HCmrRkTIUAgpkdmOnmH/j6FAfWr51b+UklbNMo/VCEImMofuMsSh2M0KRHjAuEYWG0cUNFcLC5WRNhgwAUw5vu4sYuTkCWVUPSYo+ErFl9DJ0oiC+8xxlMPbiDq5NWP/GLH6xe9i7pD2g5eAkcDT/XE0CmFipXrRpWCpxuDdLlNARlR3a1bPU3b6DMu3ptxFidkdWiaLMaj6Pa6GJPEDKoUPsd13z1mQMMJjMkxvpS7F0cOUqeZDXQh4IKXQATWEjEtAJU4H7T8Z5tp/dWgTS5anUjYh+zQzp030WdnRjNrFw=="
+      ],
+      "x5t" : "KrAseHBJPFZAWUGd6owW3xqKJDo",
+      "x5t#S256" : "JOWaPs7uY_DpjRrhbaAzeals3GE06r1LR8U8jACNE1c"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "hgU3GWoYlxkkAL18h3t0kOib2Q4",
+      "kty" : "RSA",
+      "n" : "raHbRlwM5_casFA20CsZ7iVhUPO2txTYjxVYOcjJrVxHNrYFHIFse5kml4anWHEAdd1P0Io1JZhVJ4rYiZhj7tICOz7EGQxfK6-SzEvdZWZF---ZDiA5oOrcWrMW-H96jfFklojdn_OVoh7crTRghU8GeIhNuO3WSFxWNjsC4ZKfnhha18ZTxLVa6-QhbK2YSiqy82Qbe6RKyLxCH7jo0U08BRGGCbySkyIBfMBa86uMLAWdABiYRwszNybeQbX4l1mQGsDHqmgsl5al43pcIArgVMWhvYTJF8uDy-J2yQ7BQEn6i-0m4eyFu4mXMyU_6AIudlNPnUNkJW0K7PqCXyVhgu8lBB-v-6_tlXZEHQRPZOVq3fM9_0z74S26i54LRW1pC5mbXuhZpMxnkVs86GVtlvI8-PIt3qGqYih_ymegJkM9HV7NXZniAM7QkkJ9SXRXB29OD7IwBD1CydIg-j3DX5ucTW2DY_dpSDzOao-Lb3rZ0DaOCKsrZOhleOpNw2SV2t1oyVdMemJd5ZcgxKlTsWDbKIH0J-97t2GFZh8zwHqnJEzzxtTmvNpiLk9p_pRLFw7fVmpIYeAHQDU3VvRQpd35OhTl4TF_dxsT9f4hLQhBPUhpGPJnpukoW583MMKnQ5rKmMbKUh7m4Pf2E3etQ3hOk5hZEa1o9CC80vM",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAOdPD1zOUUEgop6ISylAAqkwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjYwNjAyMTMzNzA2WhcNMzYwNjAyMTMzNzA2WjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK2h20ZcDOf3GrBQNtArGe4lYVDztrcU2I8VWDnIya1cRza2BRyBbHuZJpeGp1hxAHXdT9CKNSWYVSeK2ImYY+7SAjs+xBkMXyuvksxL3WVmRfvvmQ4gOaDq3FqzFvh/eo3xZJaI3Z/zlaIe3K00YIVPBniITbjt1khcVjY7AuGSn54YWtfGU8S1WuvkIWytmEoqsvNkG3ukSsi8Qh+46NFNPAURhgm8kpMiAXzAWvOrjCwFnQAYmEcLMzcm3kG1+JdZkBrAx6poLJeWpeN6XCAK4FTFob2EyRfLg8vidskOwUBJ+ovtJuHshbuJlzMlP+gCLnZTT51DZCVtCuz6gl8lYYLvJQQfr/uv7ZV2RB0ET2Tlat3zPf9M++EtuoueC0VtaQuZm17oWaTMZ5FbPOhlbZbyPPjyLd6hqmIof8pnoCZDPR1ezV2Z4gDO0JJCfUl0VwdvTg+yMAQ9QsnSIPo9w1+bnE1tg2P3aUg8zmqPi2962dA2jgirK2ToZXjqTcNkldrdaMlXTHpiXeWXIMSpU7Fg2yiB9Cfve7dhhWYfM8B6pyRM88bU5rzaYi5Paf6USxcO31ZqSGHgB0A1N1b0UKXd+ToU5eExf3cbE/X+IS0IQT1IaRjyZ6bpKFufNzDCp0OaypjGylIe5uD39hN3rUN4TpOYWRGtaPQgvNLzAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAIy9xO6gWpoWBIZwT3qA4bq7XnYyhxN0lIjSuZDNKEqJxj6kH1xc40Y06PbeU1Ko5VmAMaM2BqQ7QA+MRaClFzW+tkbobhc3Dmyvv5KP2feE7Fi+OgbCLlO87x6MvREXLBk9DnmFuVpXSKxKV1APbX+7jOZgTHDldd85imiNjbY/3wNxXcwP0k+S9juysn7UnAKAMmovQ5oYQcaGvNsRhAjfyoJ3sL1SaLBpRWbxzhM1ueSXSHoLB0pdEjWPk/CgbTdvB0KErDumUv1ssCwpQyY5Om4zZZcRwCGRfzpPczHrjBixnRauRJV7sVZ2oyw0s0UH5s67r2dupdnfyXhACucJagsrKlUPb1xm74mJcT28ViMMVJybmPEOSKD6/g4STBYahFNxNcdDd2p5NifMHGJ7GAjpFYmOBlQUXOmSG/3CYawyK1riCDTtJVHa0QX1UN+bZ6TVNIEAvPjQMe7vNZJhLdv7GobWva5lnLtGa+UXf1FNcw3WZPaxEiocT5QuIpoEnF87gJdVHWU0+MZqjbtlnEW05ctL2NhyZffIT8WElFX/YWB78R5Q4HMG1kEJP9zwQkKFjYLHB9b+Bzpbz6rqyseFYsWYSydb77bEq8OYBaZFl3S3+oSt6YIsFfZAUcEa+nKaDq8+GALBrnnFcIqF6OHpYPX0l8wIBuy7yJRE"
+      ],
+      "x5t" : "hgU3GWoYlxkkAL18h3t0kOib2Q4",
+      "x5t#S256" : "8DIcFv8ggW78ZGiMqpIKgbc1Kp1qTUFUXtnfAmk2UW0"
+    }
+  ]
+}
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/authorize?client_id=alfaview&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" -v 2>&1 | head -30
+* Host sso.alfaview.com:443 was resolved.
+* IPv6: (none)
+* IPv4: 195.201.44.171, 185.127.28.101, 185.245.100.52
+*   Trying 195.201.44.171:443...
+* Connected to sso.alfaview.com (195.201.44.171) port 443
+* ALPN: curl offers h2,http/1.1
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [15 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [6231 bytes data]
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+{ [264 bytes data]
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+} [52 bytes data]
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519 / RSASSA-PSS
+* ALPN: server accepted h2
+* Server certificate:
+*  subject: CN=sso.alfaview.com
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/authorize?client_id=alfaview&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" -v 2>&1 | tail -20
+</select>
+      <svg aria-hidden="true" class="pointer-events-none text-input-text/50 col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end sm:size-4" data-slot="icon" fill="currentColor" viewBox="0 0 16 16">
+        <path clip-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" fill-rule="evenodd"/>
+      </svg>
+    </div>
+  </label>
+</div>
+    </div>
+  </main>
+
+
+  <div id="fa-footer" class="footer-display fixed bottom-2 right-2 flex items-center gap-2 px-2.5 py-1">
+    <span class="text-sm text-text">Powered by</span>
+    <a href="https://fusionauth.io" title="The best developer IAM in the universe!">
+      <img src="/images/footer-logo.svg" alt="FusionAuth" class="h-6 w-auto">
+    </a>
+  </div>
+
+  </body>
+</html>
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/authorize?client_id=invalid_client_id_12345&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" -v 2>&1 | grep -E "(invalid_client|HTTP|Location:)" | head -10
+* using HTTP/2
+* [HTTP/2] [1] OPENED stream for https://sso.alfaview.com/oauth2/authorize?client_id=invalid_client_id_12345&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123
+* [HTTP/2] [1] [:method: GET]
+* [HTTP/2] [1] [:scheme: https]
+* [HTTP/2] [1] [:authority: sso.alfaview.com]
+* [HTTP/2] [1] [:path: /oauth2/authorize?client_id=invalid_client_id_12345&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123]
+* [HTTP/2] [1] [user-agent: curl/8.5.0]
+* [HTTP/2] [1] [accept: */*]
+> GET /oauth2/authorize?client_id=invalid_client_id_12345&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 HTTP/2
+< HTTP/2 200
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/authorize?client_id=invalid_client_id_12345&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" | grep -i "invalid_client"
+&quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: invalid_client_id_12345 is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+[0m
+[0m$ [0mfor id in "app" "web" "spa" "client" "alfaview.com" "app.alfaview.com" "alfaview-app" "alfaview-web" "web-client" "webclient"; do
+  echo "Testing: $id"
+  curl -s "https://sso.alfaview.com/oauth2/authorize?client_id=$id&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" | grep -q "invalid_client" && echo "  -> INVALID" || echo "  -> POSSIBLY VALID (no invalid_client error)"
+done
+Testing: app
+  -> INVALID
+Testing: web
+  -> INVALID
+Testing: spa
+  -> INVALID
+Testing: client
+  -> INVALID
+Testing: alfaview.com
+  -> INVALID
+Testing: app.alfaview.com
+  -> INVALID
+Testing: alfaview-app
+  -> INVALID
+Testing: alfaview-web
+  -> INVALID
+Testing: web-client
+  -> INVALID
+Testing: webclient
+  -> INVALID
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/device_authorize" -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=alfaview" -v 2>&1 | head -30
+* Host sso.alfaview.com:443 was resolved.
+* IPv6: (none)
+* IPv4: 185.245.100.52, 185.127.28.101, 195.201.44.171
+*   Trying 185.245.100.52:443...
+* Connected to sso.alfaview.com (185.245.100.52) port 443
+* ALPN: curl offers h2,http/1.1
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [15 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [6224 bytes data]
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+{ [264 bytes data]
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+} [52 bytes data]
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519 / RSASSA-PSS
+* ALPN: server accepted h2
+* Server certificate:
+*  subject: CN=sso.alfaview.com
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/device_authorize" -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=alfaview"
+{"error":"invalid_client","error_description":"client_id: alfaview is not valid.","error_reason":"invalid_client_id"}
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/register" -v 2>&1 | head -30
+* Host sso.alfaview.com:443 was resolved.
+* IPv6: (none)
+* IPv4: 195.201.44.171, 185.127.28.101, 185.245.100.52
+*   Trying 195.201.44.171:443...
+* Connected to sso.alfaview.com (195.201.44.171) port 443
+* ALPN: curl offers h2,http/1.1
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [15 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [6231 bytes data]
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+{ [264 bytes data]
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+} [52 bytes data]
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519 / RSASSA-PSS
+* ALPN: server accepted h2
+* Server certificate:
+*  subject: CN=sso.alfaview.com
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/register"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-128.png">
+
+
+    <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+
+    <link rel="stylesheet" href="/css/entrypoints/fusionauth-hosted.css?version=1.63.0"/>
+
+    <style>
+    
+    </style>
+
+    <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+    <script src="/js/Util.js?version=1.63.0"></script>
+    <script src="/js/oauth2/LocaleSelect.js?version=1.63.0"></script>
+    <script>
+      "use strict";
+      Prime.Document.onReady(function() {
+        Prime.Document.query('.alert').each(function(e) {
+          var dismissButton = e.queryFirst('.dismiss-button');
+          if (dismissButton !== null) {
+            new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+          }
+        });
+        document.querySelectorAll('.date-picker').forEach(datePicker => {
+          datePicker.onfocus = () => datePicker.type = 'date';
+          datePicker.onblur = () => {
+            if (datePicker.value === '') {
+              datePicker.type = 'text';
+            }
+          };
+        });
+        var localeSelect = Prime.Document.queryById('locale-select');
+        if (localeSelect !== null) {
+          new FusionAuth.OAuth2.LocaleSelect(localeSelect);
+        }
+        document.querySelectorAll('button.show-password-button').forEach(button => {
+          button.classList.remove('hidden');
+          button.addEventListener('click', () => FusionAuth.Util.togglePasswordMasking(button));
+        });
+      });
+      FusionAuth.Version = "1.63.0";
+    </script>
+
+
+  </head>
+  <body class="min-h-screen font-theme text-font text-text text-xs bg-page-bg">
+
+
+
+  <main class="min-h-screen bg-page-bg flex flex-col items-center px-5 py-15 bg-(image:--img-background) bg-(repeat:--background-repeat) bg-(size:--background-size)">
+    <div class="w-full max-w-[352px] rounded-theme">
+      <div class="bg-panel-bg border-1 border-panel-border rounded-panel shadow-sm">
+        <div class="p-8" data-in-progress>
+          <div class="logo-container img-display justify-center">
+          </div>
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+          <main>
+      <p class="text-sm">We're sorry, your request was malformed or was unable to be completed for some reason. Try hitting the back button and restarting the process to see if it fixes the problem.</p>
+
+      <p class="mt-4 mb-4">If you want the nerdy explanation, review the following JSON body.</p>
+      <div class="overflow-auto text-xs full">
+        <pre>{
+  &quot;error&quot; : &quot;invalid_request&quot;,
+  &quot;error_description&quot; : &quot;The request is missing a required parameter: redirect_uri&quot;,
+  &quot;error_reason&quot; : &quot;missing_redirect_uri&quot;
+}</pre>
+      </div>
+          </main>
+        </div>
+      </div>
+    </div>
+    <div class="w-full flex justify-center max-w-[352px] mt-8">
+      <div class="w-min-content">  <label class="select">
+    <div class="grid grid-cols-1 rounded-theme outline-1 -outline-offset-1 outline-input-text/25 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
+      <select id="locale-select" name="locale" class="col-start-1 row-start-1 appearance-none rounded-theme bg-input-bg py-1.5 pr-8 pl-3 text-base text-input-text outline-none focus:outline-none sm:text-sm/6">
+        <option value="en" >English</option>
+      </select>
+      <svg aria-hidden="true" class="pointer-events-none text-input-text/50 col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end sm:size-4" data-slot="icon" fill="currentColor" viewBox="0 0 16 16">
+        <path clip-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" fill-rule="evenodd"/>
+      </svg>
+    </div>
+  </label>
+</div>
+    </div>
+  </main>
+
+
+  <div id="fa-footer" class="footer-display fixed bottom-2 right-2 flex items-center gap-2 px-2.5 py-1">
+    <span class="text-sm text-text">Powered by</span>
+    <a href="https://fusionauth.io" title="The best developer IAM in the universe!">
+      <img src="/images/footer-logo.svg" alt="FusionAuth" class="h-6 w-auto">
+    </a>
+  </div>
+
+  </body>
+</html>
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/register?redirect_uri=https://evil.com"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-128.png">
+
+
+    <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+
+    <link rel="stylesheet" href="/css/entrypoints/fusionauth-hosted.css?version=1.63.0"/>
+
+    <style>
+    
+    </style>
+
+    <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+    <script src="/js/Util.js?version=1.63.0"></script>
+    <script src="/js/oauth2/LocaleSelect.js?version=1.63.0"></script>
+    <script>
+      "use strict";
+      Prime.Document.onReady(function() {
+        Prime.Document.query('.alert').each(function(e) {
+          var dismissButton = e.queryFirst('.dismiss-button');
+          if (dismissButton !== null) {
+            new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+          }
+        });
+        document.querySelectorAll('.date-picker').forEach(datePicker => {
+          datePicker.onfocus = () => datePicker.type = 'date';
+          datePicker.onblur = () => {
+            if (datePicker.value === '') {
+              datePicker.type = 'text';
+            }
+          };
+        });
+        var localeSelect = Prime.Document.queryById('locale-select');
+        if (localeSelect !== null) {
+          new FusionAuth.OAuth2.LocaleSelect(localeSelect);
+        }
+        document.querySelectorAll('button.show-password-button').forEach(button => {
+          button.classList.remove('hidden');
+          button.addEventListener('click', () => FusionAuth.Util.togglePasswordMasking(button));
+        });
+      });
+      FusionAuth.Version = "1.63.0";
+    </script>
+
+
+  </head>
+  <body class="min-h-screen font-theme text-font text-text text-xs bg-page-bg">
+
+
+
+  <main class="min-h-screen bg-page-bg flex flex-col items-center px-5 py-15 bg-(image:--img-background) bg-(repeat:--background-repeat) bg-(size:--background-size)">
+    <div class="w-full max-w-[352px] rounded-theme">
+      <div class="bg-panel-bg border-1 border-panel-border rounded-panel shadow-sm">
+        <div class="p-8" data-in-progress>
+          <div class="logo-container img-display justify-center">
+          </div>
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+          <main>
+      <p class="text-sm">We're sorry, your request was malformed or was unable to be completed for some reason. Try hitting the back button and restarting the process to see if it fixes the problem.</p>
+
+      <p class="mt-4 mb-4">If you want the nerdy explanation, review the following JSON body.</p>
+      <div class="overflow-auto text-xs full">
+        <pre>{
+  &quot;error&quot; : &quot;invalid_request&quot;,
+  &quot;error_description&quot; : &quot;The request is missing a required parameter: client_id&quot;,
+  &quot;error_reason&quot; : &quot;missing_client_id&quot;
+}</pre>
+      </div>
+          </main>
+        </div>
+      </div>
+    </div>
+    <div class="w-full flex justify-center max-w-[352px] mt-8">
+      <div class="w-min-content">  <label class="select">
+    <div class="grid grid-cols-1 rounded-theme outline-1 -outline-offset-1 outline-input-text/25 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
+      <select id="locale-select" name="locale" class="col-start-1 row-start-1 appearance-none rounded-theme bg-input-bg py-1.5 pr-8 pl-3 text-base text-input-text outline-none focus:outline-none sm:text-sm/6">
+        <option value="en" >English</option>
+      </select>
+      <svg aria-hidden="true" class="pointer-events-none text-input-text/50 col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end sm:size-4" data-slot="icon" fill="currentColor" viewBox="0 0 16 16">
+        <path clip-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" fill-rule="evenodd"/>
+      </svg>
+    </div>
+  </label>
+</div>
+    </div>
+  </main>
+
+
+  <div id="fa-footer" class="footer-display fixed bottom-2 right-2 flex items-center gap-2 px-2.5 py-1">
+    <span class="text-sm text-text">Powered by</span>
+    <a href="https://fusionauth.io" title="The best developer IAM in the universe!">
+      <img src="/images/footer-logo.svg" alt="FusionAuth" class="h-6 w-auto">
+    </a>
+  </div>
+
+  </body>
+</html>
+[0m
+[0m$ [0mcurl -s -X POST "https://sso.alfaview.com/oauth2/register" \
+  -H "Content-Type: application/json" \
+  -d '{"redirect_uris":["https://evil.com"],"client_name":"test","grant_types":["authorization_code"],"response_types":["code"]}'
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-128.png">
+
+
+    <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+
+    <link rel="stylesheet" href="/css/entrypoints/fusionauth-hosted.css?version=1.63.0"/>
+
+    <style>
+    
+    </style>
+
+    <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+    <script src="/js/Util.js?version=1.63.0"></script>
+    <script src="/js/oauth2/LocaleSelect.js?version=1.63.0"></script>
+    <script>
+      "use strict";
+      Prime.Document.onReady(function() {
+        Prime.Document.query('.alert').each(function(e) {
+          var dismissButton = e.queryFirst('.dismiss-button');
+          if (dismissButton !== null) {
+            new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+          }
+        });
+        document.querySelectorAll('.date-picker').forEach(datePicker => {
+          datePicker.onfocus = () => datePicker.type = 'date';
+          datePicker.onblur = () => {
+            if (datePicker.value === '') {
+              datePicker.type = 'text';
+            }
+          };
+        });
+        var localeSelect = Prime.Document.queryById('locale-select');
+        if (localeSelect !== null) {
+          new FusionAuth.OAuth2.LocaleSelect(localeSelect);
+        }
+        document.querySelectorAll('button.show-password-button').forEach(button => {
+          button.classList.remove('hidden');
+          button.addEventListener('click', () => FusionAuth.Util.togglePasswordMasking(button));
+        });
+      });
+      FusionAuth.Version = "1.63.0";
+    </script>
+
+
+  </head>
+  <body class="min-h-screen font-theme text-font text-text text-xs bg-page-bg">
+
+
+
+  <main class="min-h-screen bg-page-bg flex flex-col items-center px-5 py-15 bg-(image:--img-background) bg-(repeat:--background-repeat) bg-(size:--background-size)">
+    <div class="w-full max-w-[352px] rounded-theme">
+      <div class="bg-panel-bg border-1 border-panel-border rounded-panel shadow-sm">
+        <div class="p-8" data-in-progress>
+          <div class="logo-container img-display justify-center">
+          </div>
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+          <main>
+      <p class="text-sm">We're sorry, your request was malformed or was unable to be completed for some reason. Try hitting the back button and restarting the process to see if it fixes the problem.</p>
+
+      <p class="mt-4 mb-4">If you want the nerdy explanation, review the following JSON body.</p>
+      <div class="overflow-auto text-xs full">
+        <pre>{
+  &quot;error&quot; : &quot;invalid_request&quot;,
+  &quot;error_description&quot; : &quot;The request is missing a required parameter: redirect_uri&quot;,
+  &quot;error_reason&quot; : &quot;missing_redirect_uri&quot;
+}</pre>
+      </div>
+          </main>
+        </div>
+      </div>
+    </div>
+    <div class="w-full flex justify-center max-w-[352px] mt-8">
+      <div class="w-min-content">  <label class="select">
+    <div class="grid grid-cols-1 rounded-theme outline-1 -outline-offset-1 outline-input-text/25 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
+      <select id="locale-select" name="locale" class="col-start-1 row-start-1 appearance-none rounded-theme bg-input-bg py-1.5 pr-8 pl-3 text-base text-input-text outline-none focus:outline-none sm:text-sm/6">
+        <option value="en" >English</option>
+      </select>
+      <svg aria-hidden="true" class="pointer-events-none text-input-text/50 col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end sm:size-4" data-slot="icon" fill="currentColor" viewBox="0 0 16 16">
+        <path clip-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" fill-rule="evenodd"/>
+      </svg>
+    </div>
+  </label>
+</div>
+    </div>
+  </main>
+
+
+  <div id="fa-footer" class="footer-display fixed bottom-2 right-2 flex items-center gap-2 px-2.5 py-1">
+    <span class="text-sm text-text">Powered by</span>
+    <a href="https://fusionauth.io" title="The best developer IAM in the universe!">
+      <img src="/images/footer-logo.svg" alt="FusionAuth" class="h-6 w-auto">
+    </a>
+  </div>
+
+  </body>
+</html>
+[0m
+[0m$ [0mcurl -s -X POST "https://sso.alfaview.com/oauth2/register" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "redirect_uri=https://evil.com&client_name=test&grant_types=authorization_code&response_types=code"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-128.png">
+
+
+    <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+
+    <link rel="stylesheet" href="/css/entrypoints/fusionauth-hosted.css?version=1.63.0"/>
+
+    <style>
+    
+    </style>
+
+    <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+    <script src="/js/Util.js?version=1.63.0"></script>
+    <script src="/js/oauth2/LocaleSelect.js?version=1.63.0"></script>
+    <script>
+      "use strict";
+      Prime.Document.onReady(function() {
+        Prime.Document.query('.alert').each(function(e) {
+          var dismissButton = e.queryFirst('.dismiss-button');
+          if (dismissButton !== null) {
+            new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+          }
+        });
+        document.querySelectorAll('.date-picker').forEach(datePicker => {
+          datePicker.onfocus = () => datePicker.type = 'date';
+          datePicker.onblur = () => {
+            if (datePicker.value === '') {
+              datePicker.type = 'text';
+            }
+          };
+        });
+        var localeSelect = Prime.Document.queryById('locale-select');
+        if (localeSelect !== null) {
+          new FusionAuth.OAuth2.LocaleSelect(localeSelect);
+        }
+        document.querySelectorAll('button.show-password-button').forEach(button => {
+          button.classList.remove('hidden');
+          button.addEventListener('click', () => FusionAuth.Util.togglePasswordMasking(button));
+        });
+      });
+      FusionAuth.Version = "1.63.0";
+    </script>
+
+
+  </head>
+  <body class="min-h-screen font-theme text-font text-text text-xs bg-page-bg">
+
+
+
+  <main class="min-h-screen bg-page-bg flex flex-col items-center px-5 py-15 bg-(image:--img-background) bg-(repeat:--background-repeat) bg-(size:--background-size)">
+    <div class="w-full max-w-[352px] rounded-theme">
+      <div class="bg-panel-bg border-1 border-panel-border rounded-panel shadow-sm">
+        <div class="p-8" data-in-progress>
+          <div class="logo-container img-display justify-center">
+          </div>
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+          <main>
+      <p class="text-sm">We're sorry, your request was malformed or was unable to be completed for some reason. Try hitting the back button and restarting the process to see if it fixes the problem.</p>
+
+      <p class="mt-4 mb-4">If you want the nerdy explanation, review the following JSON body.</p>
+      <div class="overflow-auto text-xs full">
+        <pre>{
+  &quot;error&quot; : &quot;invalid_request&quot;,
+  &quot;error_description&quot; : &quot;The request is missing a required parameter: client_id&quot;,
+  &quot;error_reason&quot; : &quot;missing_client_id&quot;
+}</pre>
+      </div>
+          </main>
+        </div>
+      </div>
+    </div>
+    <div class="w-full flex justify-center max-w-[352px] mt-8">
+      <div class="w-min-content">  <label class="select">
+    <div class="grid grid-cols-1 rounded-theme outline-1 -outline-offset-1 outline-input-text/25 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
+      <select id="locale-select" name="locale" class="col-start-1 row-start-1 appearance-none rounded-theme bg-input-bg py-1.5 pr-8 pl-3 text-base text-input-text outline-none focus:outline-none sm:text-sm/6">
+        <option value="en" >English</option>
+      </select>
+      <svg aria-hidden="true" class="pointer-events-none text-input-text/50 col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end sm:size-4" data-slot="icon" fill="currentColor" viewBox="0 0 16 16">
+        <path clip-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" fill-rule="evenodd"/>
+      </svg>
+    </div>
+  </label>
+</div>
+    </div>
+  </main>
+
+
+  <div id="fa-footer" class="footer-display fixed bottom-2 right-2 flex items-center gap-2 px-2.5 py-1">
+    <span class="text-sm text-text">Powered by</span>
+    <a href="https://fusionauth.io" title="The best developer IAM in the universe!">
+      <img src="/images/footer-logo.svg" alt="FusionAuth" class="h-6 w-auto">
+    </a>
+  </div>
+
+  </body>
+</html>
+[0m

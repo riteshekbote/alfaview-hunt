@@ -196,3 +196,5 @@ www.alfaview.com
 - CHANGED beta-app.alfaview.com: HTTP 401 with WWW-Authenticate: Basic (not OAuth) — different auth mechanism than main app
 - CHANGED alfaview.com: Marketing page now 301→/en with nginx + Accept-Language vary, 177KB, strict CSP, matomo analytics — no SSO login links
 - CHANGED www.alfaview.com: 301→alfaview.com/en (no independent surface)
+
+## 2026-09-05 12:20:10 UTC

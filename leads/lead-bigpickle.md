@@ -494,3 +494,33 @@ impact: cross-tenant PII read, file download, permission/account mod, user delet
 testability: AUTH_HELPED
 [NEXT] PROBE: POST `https://app.alfaview.com/graphql` with `{"query":"mutation{guestAuthenticate(userId:\"<own-tenant-guestId>\",companyId:\"<own-companyId>\",roomId:\"<own-roomId>\"){accessToken expiry}}"}` — repeat with the identical triple on REST `POST https://apis.alfaview.com/v2/auth/guest-link` (with and without accessKey); the 200+accessToken-vs-401 delta is the one-shot proof of the accessKey-bypass. Requires own-tenant guest triple: obtain via `[NEXT] HUMAN` — create one throwaway free alfaview company via the self-service signup ("Create your free alfaview company now" on app.alfaview.com login / `createCompany` mutation), which also unlocks the rank-1 IDOR test suite (GET /v2/users/{ownUserId} baseline, then fetchUserPermissions with a victim ID).
 [RISK] alfaview: 58/100. Passive yield re-expanded this session: the public bundle exposes the entire multi-tenant admin GraphQL schema and proves unauthenticated guest mutations exist with an accessKey-less signature — a concrete, testable Authz divergence from REST, plus the still-unchallenged cross-tenant IDOR pattern (conf 80) and FusionAuth redirect_uri surface (65). Risk is tempered by per-resolver auth gating on all PII ops and the fact that every exploit still resolves to obtaining a valid test tenant (HUMAN) or the desktop-only client_id; passive avenues are now essentially exhausted.
+## 2026-09-05 12:06:17 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR on REST user/room/permission ops via UUID path params
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: Live OpenAPI (this session) confirms `DELETE /v2/users/{id}`, `PATCH|DELETE /v2/rooms/{roomId}/permissions/{userId}`, plus read-heavy `GET /v2/rooms/{roomId}/passcode` (returns passcode string), `GET /v2/stats`, `GET /v2/users` — all token-authed, company-scoped, cross-tenant authz unverified. `GET /v2/users/me` unauth → 401 opaque-token gate reconfirmed. Same schema exposed by GraphQL resolvers (fetchUserPermissions/generateFileDownloadURL/getPasscode) which are auth-gated (verified this session).
+evidence_needed: token of tenant A returns 200/204 for tenant B's userId/roomId where 403 is expected (esp. passcode + permissions + stats).
+verify_steps: (AUTH) signup free tenant → POST /v2/auth/password `{"username","password"}` (or api-key) → keep opaque base64 bearer → GET /v2/users/me baseline 200 → GET /v2/rooms/{victimUUID}/passcode + PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → 403 vs 200/204 verdict.
+impact: cross-tenant PII read, room passcode/recording access, permission/account mutation, user deletion; HIGH.
+testability: AUTH_HELPED
+[HYP] Guest-authz gap: expired/disabled or cross-tenant guest triples still authenticate via GraphQL guest path
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(guestId,companyId,roomId) is anonymous-executing (previous session: BAD_USER_INPUT not UNAUTHENTICATED; mutation-over-GET now verified blocked, so classification stands from POST). Database lookup is by ID triple only (no secret), per confirmed op signature. Two distinct flaw candidates survive design analysis: (1) lifecycle — revoked/expired guestIDs still mint tokens; (2) cross-tenant — companyId/roomId from tenant B accepted with tenant A triple (tuple splicing).
+evidence_needed: with own tenant guest triple, expired/re-keyed link still returns accessToken; BAD_USER_INPUT→rejects wrong-pair (already seen) vs cross-pair accepts.
+verify_steps: (AUTH) GenerateGroupLink/guest-link in own tenant → guestAuthenticate with own triple (token issued?) → delete/expire link → repeat (still token?) → splice roomId of second tenant → compare BAD_USER_INPUT vs accessToken.
+impact: unauthorized room entry by dead/re-keyed or cross-tenant links; MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] OAuth redirect_uri validation bypass → authorization-code theft
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 65
+reasoning: FusionAuth 1.63.0 OIDC source; `invalid_client` (reason `invalid_client_id`) precedes redirect_uri handling, so bypass variants (path/query template confusion, fragment carriage) only testable with a registered client_id; web bundle carries no client_id (verified prior sessions); desktop installer S3 (production-alfaview-assets) is the remaining source, buckets return 403 (not enumerable).
+evidence_needed: registered client_id + its exact registered redirect_uri, then 302 Location on `...&redirect_uri=<registered>/../evil` vs exact-match.
+verify_steps: harvest client_id from desktop installer resources → GET /oauth2/authorize?client_id&response_type=code&redirect_uri=<reg-uri>/../evil → compare 302 target.
+impact: code theft → ATO of any alfaview user; HIGH.
+testability: AUTH_HELPED
+[NEXT] HUMAN: Create one throwaway free alfaview company via the documented self-service flow ("Create your free alfaview company now" on app.alfaview.com login page) — unlock rank-1 (REST IDOR) and the guest-authz splice test. Baseline on acceptance: POST https://apis.alfaview.com/v2/auth/password {"username","password"} → store opaque bearer → GET https://apis.alfaview.com/v2/users/me (expect 200, own user/company IDs) → then GET https://apis.alfaview.com/v2/rooms/{victimRoomId}/passcode (expect 403 = enforced vs 200 = IDOR). Anything below that signup resolves all remaining live hypotheses (also unblocks POSTing GET-blocked GraphQL mutations magicTokenAuthenticate/guestAuthenticate).
+[RISK] alfaview: 48/100. Anonymous GraphQL surface now fully mapped and largely closed (sensitive resolvers verified auth-gated; only empty listIdentityProviders and crashing listComponents are anonymously reachable). Remaining exposure concentrates on the two auth-gated chains — REST cross-tenant IDOR (80) and guest-authz splicing (55) — plus the plausible FusionAuth redirect_uri surface (65) that only a valid client_id unlocks. No live bug is yet proven; every remaining path requires either a self-service tenant (HUMAN) or a harvested desktop client_id, so probability-weighted risk is pulled down by those gates while upside stays constant if either resolves.
