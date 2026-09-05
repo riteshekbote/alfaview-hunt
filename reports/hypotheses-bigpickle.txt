@@ -1,30 +1,37 @@
-## 2026-09-05 04:33:59 UTC [target] (model bigpickle)
-[HYP] Authz-gap on guest-link/company GraphQL ops after free-tenant self-signup
-class: IDOR
-asset: app.alfaview.com/graphql
-confidence: 70
-reasoning: Bundle proves designed free-tier signup (`signup(displayName,user,agreedToTerms,agreedToPrivacyPolicy,planId)` mutation, `# businessLogicService` SDL) and cross-tenant-shaped ops (`FetchUserPermissions($userId)`, `listCompanyLinks`, `FetchGuestInfo($userId,$companyId,$roomId)`). GraphQL reachable unauthenticated (__typename=Query); introspection off so schema/field enforcement must be tested via known op names. A created low-privilege tenant is the standard IDOR baseline for the confirmed DELETE /v2/users/{id} REST pattern.
-evidence_needed: 2nd tenant's userId/roomId accessible or their permission set readable from the 1st tenant's session token.
-verify_steps: (AUTH) signup own tenant → CredentialsAuthenticate → Authorization bearer → run FetchUserPermissions against victim-tenant userId; GET apis.alfaview.com/v2/users/{id} with same bearer; observe cross-tenant 200 vs 403.
-impact: cross-tenant user/room permission read and user deletion — PII exposure, account takeover; severity HIGH.
-testability: AUTH_HELPED
-[HYP] OAuth register/authorize client_id harvest from desktop bundle unlocks redirect_uri + device-flow
+## 2026-09-05 08:39:12 UTC [target] (model bigpickle)
+[NEW] app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js (1.09MB) leaks FULL admin/company GraphQL schema: 60+ mutations + 45+ queries with exact args. Not just SDL strings — includes CreateCompany($companyName,$user,$planId), CredentialsAuthenticate($username,$password,$companyId), adminSwitchCompany, assignGrantCompanyAdminPermission, FetchUserPermissions, generateFileDownloadURL, getPasscode, listRoomLinks(accessKey,guestId), searchCompanies, listUsersByIds, listAllUserIds, GetPendingUserAccount, CreateMagicToken, MagicTokenAuthenticate, guestAuthenticate, guestJoin.
+[NEW] GraphQL live at app.alfaview.com/graphql: __typename OK unauth; introspection disabled; sensitive ops return UNAUTHENTICATED. Resolver auth is INCONSISTENT: listIdentityProviders returns data unauth (empty), listComponents executes resolver unauth (INTERNAL_SERVER_ERROR), **guestAuthenticate + guestJoin mutations return BAD_USER_INPUT (NOT UNAUTHENTICATED)** — both reachable without any access token.
+[NEW] CRITICAL DELTA: GraphQL guest path guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) take NO accessKey — while REST guest-link flow requires 4-field combo incl. accessKey. GraphQL guest auth may bypass the designed secret check if guest records resolve by ID tuple only.
+[NEW] Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview-assets stable+beta buckets=403 (not enumerable); webviewer.dev.alfaview.com=timeout; app.alfaview.com/web/join=302->/.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Full GraphQL admin schema in public bundle; per-resolver auth (listIdentityProviders unauth data, listComponents unauth 500).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST accessKey combo.
+[RISK] alfaview: 58/100. GraphQL surface now fully mapped passively with exact op names for the self-signup→IDOR chain; unauth guest mutations identified as the highest-value AUTH_HELPED target. Everything else auth-gated. Next blocker remains: valid IDs/token (create throwaway free tenant) to test guestAuthenticate ID-tuple authz and cross-tenant IDOR.
+[HYP] Unauthenticated guest-token issuance via GraphQL ID-tuple guest path (accessKey omitted)
 class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 62
+reasoning: Bundled ops `guestAuthenticate(userId,companyId,roomId)` and `guestJoin(userId,companyId,roomId,displayName)` return accessToken/joinLink with NO accessKey arg, while REST guest-link auth mandates the 4-field accessKey combo. Both mutations are unauthenticated-reachable (error code BAD_USER_INPUT, NOT UNAUTHENTICATED). If guest records resolve by ID tuple alone, any party that learns a (userId,companyId,roomId) triple — e.g. from a shared/leaked invite link where the secret is a separate accessKey field attendees must paste — could mint a session without the secret.
+evidence_needed: A real guest triple; observe guestAuthenticate returning accessToken with wrong/absent accessKey (vs REST rejecting same triple without accessKey).
+verify_steps: (AUTH) create own tenant → GenerateGroupLink → take returned userId/companyId/roomId → call mutation guestAuthenticate (NO accessKey) vs POST REST /v2/auth/guest-link (same triple, no accessKey) → compare 200+accessToken vs 401. Then cross-tenant roomId variant.
+impact: unauthorized room entry / guest-token mint without accessKey — MEDIUM-HIGH; if guest IDs predictable, enumeration up to session hijack.
+testability: AUTH_HELPED
+[HYP] OAuth redirect_uri validation bypass on FusionAuth authorize → authorization-code theft
+class: OATH
 asset: sso.alfaview.com/oauth2/authorize
-confidence: 60
-reasoning: `invalid_client` gate reconfirmed; `oauth2/register` live requires redirect_uri. Web bundle carries no client_id (`clientId` absent), so desktop client (S3 `stable/{mac,win,linux}/`) is the only public source. No versioned file names leaked — filename discovery needed before download.
-evidence_needed: real client_id + its registered redirect_uri from desktop client resources; then 302-to-attacker on mismatched redirect_uri.
-verify_steps: obtain installer → strings/extract config for client_id/issuer → GET /oauth2/authorize?...&redirect_uri=https://evil.example/ → compare 302 target vs exact-match registered URI.
-impact: authorization-code theft → ATO of any alfaview user; severity HIGH.
+confidence: 65
+reasoning: FusionAuth 1.63.0 confirmed; `invalid_client` gate precedes redirect_uri handling; standard FusionAuth redirect_uri = exact-match registry, but path/query substitution bugs exist. Desktop client (S3 buckets) is the only client_id source; buckets 403 so harvest requires installer URL discovery.
+evidence_needed: registered client_id + its USP; then 302-to-attacker on mutated URI.
+verify_steps: harvest client_id → GET /oauth2/authorize?client_id&response_type=code&redirect_uri=<registered-uri>/../attacker|?extra= → compare 302 Location vs exact-match.
+impact: ATO of any alfaview user; HIGH.
 testability: AUTH_HELPED
-[HYP] Magic-token / guest-link bearer strength in unauthenticated join flow
-class: AUTH
-asset: app.alfaview.com/graphql
-confidence: 45
-reasoning: `MagicTokenAuthenticate($magicToken)` and `GuestJoin(userId,companyId,roomId,dialIn...)` exist; guest join is designed-unauthenticated with 4-field accessKey combo. If accessKey/guestId sequence space is small/guessable or magic tokens replay, unauthorized room entry follows.
-evidence_needed: create guest link in own tenant; observe accessKey entropy + whether room-scoped; test cross-tenant roomId with wrong accessKey (rejects) vs correct (accepts).
-verify_steps: (AUTH) GenerateGroupLink in own tenant → inspect accessKey format/entropy → attempt GuestJoin against a second tenant's roomId without their accessKey.
-impact: unauthorized room access / replay across tenants; severity MEDIUM-HIGH if guessable.
+[HYP] Cross-tenant IDOR on GraphQL/REST user+room ops after free-tenant signup
+class: IDOR
+asset: apis.alfaview.com/v2 + app.alfaview.com/graphql
+confidence: 80
+reasoning: OpenAPI UUID path params (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}); bundle exposes matching GraphQL ops (fetchUserPermissions, generateFileDownloadURL, getPasscode, listRoomLinks, listUsersByIds, searchCompanies) — schema is the same multi-tenant admin surface. Company-scoped tokens; cross-tenant authz unverified. All data resolvers auth-gated (UNAUTHENTICATED) so a low-privilege token is the test baseline.
+evidence_needed: token of tenant A reads/alters tenant B's userId/roomId → 200 vs 403/204.
+verify_steps: (AUTH) signup free tenant → credentialsAuthenticate → bearer → GET /v2/users/{victimId} + query fetchUserPermissions(victimId) → observe cross-tenant 200 vs 403.
+impact: cross-tenant PII read, file download, permission/account mod, user delete; HIGH.
 testability: AUTH_HELPED
-[NEXT] HUMAN: Create one throwaway free alfaview company via the documented self-service flow ("Create your free alfaview company now" on app.alfaview.com login page) or supply a test account — this single action unlocks all three live high-value hypotheses (REST IDOR id 80, GraphQL authz-gap id 70, guest-link testing id 45) that are otherwise permanently gated. Then run: GET apis.alfaview.com/v2/users/{ownUserId} with the issued opaque bearer as the IDOR baseline.
-[RISK] alfaview: 55/100. New, previously-unmapped high-value surface exposed: production Apollo GraphQL on app.alfaview.com with a feature-complete guest-link/company admin schema and a designed self-service free-tenant path that would unlock the top IDOR hypotheses. Offsetting positives: introspection disabled, CSRF-preflight enforced, FusionAuth `/oauth2/register` still client-gated, desktop download bucket not enumerable. Every remaining exploit path still resolves to a created account or a desktop-only client_id; passive yield is exhausted and risk is now conditional on the signup unblock, which needs human/decision authorization to mutate live infrastructure.
+[NEXT] PROBE: POST `https://app.alfaview.com/graphql` with `{"query":"mutation{guestAuthenticate(userId:\"<own-tenant-guestId>\",companyId:\"<own-companyId>\",roomId:\"<own-roomId>\"){accessToken expiry}}"}` — repeat with the identical triple on REST `POST https://apis.alfaview.com/v2/auth/guest-link` (with and without accessKey); the 200+accessToken-vs-401 delta is the one-shot proof of the accessKey-bypass. Requires own-tenant guest triple: obtain via `[NEXT] HUMAN` — create one throwaway free alfaview company via the self-service signup ("Create your free alfaview company now" on app.alfaview.com login / `createCompany` mutation), which also unlocks the rank-1 IDOR test suite (GET /v2/users/{ownUserId} baseline, then fetchUserPermissions with a victim ID).
+[RISK] alfaview: 58/100. Passive yield re-expanded this session: the public bundle exposes the entire multi-tenant admin GraphQL schema and proves unauthenticated guest mutations exist with an accessKey-less signature — a concrete, testable Authz divergence from REST, plus the still-unchallenged cross-tenant IDOR pattern (conf 80) and FusionAuth redirect_uri surface (65). Risk is tempered by per-resolver auth gating on all PII ops and the fact that every exploit still resolves to obtaining a valid test tenant (HUMAN) or the desktop-only client_id; passive avenues are now essentially exhausted.

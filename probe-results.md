@@ -111,3 +111,15 @@ https://sso.alfaview.com/.well-known/jwks.json -> 200 len=0
 https://test.alfaview.com/ -> 200 len=494
 https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js` -> 200 len=1381
 https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` -> HTTP 400
+
+## 2026-09-05 08:51:14 UTC
+https://sso.alfaview.com/oauth2/authorize -> 200 len=0
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://sso.alfaview.com/.well-known/openid-configuration -> 200 len=0
+https://sso.alfaview.com/.well-known/jwks.json -> 200 len=0
+https://test.alfaview.com/ -> 200 len=494
+https://app.alfaview.com/` -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` -> HTTP 400
+https://app.alfaview.com/graphql` -> 200 len=1381
+https://apis.alfaview.com/v2/auth/guest-link` -> HTTP 404

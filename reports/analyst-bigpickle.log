@@ -2194,3 +2194,1097 @@ testability: AUTH_HELPED
 
 ## STEP 7 — RISK
 [RISK] alfaview: 55/100. New, previously-unmapped high-value surface exposed: production Apollo GraphQL on app.alfaview.com with a feature-complete guest-link/company admin schema and a designed self-service free-tenant path that would unlock the top IDOR hypotheses. Offsetting positives: introspection disabled, CSRF-preflight enforced, FusionAuth `/oauth2/register` still client-gated, desktop download bucket not enumerable. Every remaining exploit path still resolves to a created account or a desktop-only client_id; passive yield is exhausted and risk is now conditional on the signup unblock, which needs human/decision authorization to mutate live infrastructure.
+===== ANALYST bigpickle 2026-09-05 08:50:59 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead state_bigpickle.json
+[0m→ [0mRead inventory/alfaview.md
+[0m→ [0mRead leads
+[0m→ [0mRead knowledge
+Let me read the leads and knowledge directories for more context.
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead leads/lead-nemotron3.md
+Let me look at the app.min.js bundle content that was fetched, since that's a high-value lead. Let me check the reposcan raw and other state files to understand current status.
+[0m→ [0mRead leads/lead-bigpickle.md[90m [offset=398][0m
+Let me read the rest of my own lead file to see the latest state, and check the scripts and reposcan raw for automation.
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/reposcan-raw/ 2>/dev/null | head -50
+total 12
+drwxr-xr-x  2 runner runner 4096 Sep  5 08:32 .
+drwxr-xr-x 12 runner runner 4096 Sep  5 08:32 ..
+-rw-r--r--  1 runner runner   71 Sep  5 08:32 summary.txt
+[0m
+Now I have a comprehensive understanding of the state. Let me do a fresh delta analysis. The last session (04:33) identified GraphQL on app.alfaview.com via the JS bundle. The key finding was free-tenant self-signup unlocks everything. Let me check the current surface by probing a few things. The previous session's NEXT action was HUMAN for account creation, but let me look for new passive leads I can still pursue.
+
+Key open leads to explore further passively:
+1. The app.min.js bundle (1090319 bytes) was downloaded. Let me search it for client_id, oauth config, API endpoints, graphql mutations, etc. This is a high-value passive target I can still work WITHOUT account creation.
+2. The desktop client download bucket.
+
+Let me check the reposcan raw files and whether the bundle was saved anywhere.
+[0m$ [0mls -la /tmp/opencode/ 2>/dev/null; find /tmp/opencode -type f 2>/dev/null | head -50
+total 8
+drwxr-xr-x  2 runner runner 4096 Sep  5 08:32 .
+drwxrwxrwt 15 root   root   4096 Sep  5 08:32 ..
+[0m
+The previous session fetched the app.min.js bundle (1,090,319 bytes) but didn't save it to disk. Let me re-fetch it and analyze it for client_id, OAuth config, GraphQL ops, API endpoints, and other high-value passive leads. This is the strongest remaining passive target that doesn't require account creation.
+[0m$ [0mcd /tmp/opencode && curl -s -o app.min.js "https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js" -w "HTTP %{http_code} size %{size_download}\n" --max-time 60
+HTTP 200 size 1090319
+[0m
+[0m$ [0mcd /tmp/opencode && grep -o 'clientId\s*[:=]\s*["'"'"'][^"'"'"']*["'"'"']' app.min.js | sort -u | head -40; echo "---CLIENT_ID---"; grep -oE 'client[_A-Za-z]*id[^,;]{0,40}' app.min.js | grep -iE '="|:' | sort -u | head -40
+---CLIENT_ID---
+[0m
+I have the bundle. Let me analyze it for high-value secrets/config. First, check for client_id / OAuth / SSO configuration, API endpoints, and interesting GraphQL operations.
+[0m$ [0mcd /tmp/opencode && grep -oE '(sso|auth|oauth|login|signin|oidc|fusionauth)[^"'"'"'\s]{0,60}' app.min.js | sort -u | head -60
+auth data from admin 
+auth data from local 
+authData
+authData.acce
+authData.expire
+authData.permi
+authData.u
+authData:a}),e.
+authData:r}),e.
+authData:{acce
+authData;n.
+authData={acce
+authExpired){e.next=7;break}if(
+authExpired:!0}),Wt.di
+authExpired:!1,online:!0,pageName:
+authExpired:!1}),(0,A.DR)(e)&&T.A.$emit(w.YN,{me
+authExpired:!1}),r.token=Wt.getter
+authExpired;e.authExpired=t})),$($($($($($(I,o.U,(function(e,n){
+authExpired}),(function(t){t||(n(),e())}))}));ca
+authHiddenRoute:!0,navHidden:!0,pageNameLocaleKey:
+authHiddenRoute:!0,navHidden:!0}},{path:
+authHiddenRoute:!0}},{path:
+authHiddenRoute:!1,navHidden:!0,pageNameLocaleKey:
+authHiddenRoute})).length,p=[m.A.SIGNUP,m.A.FINISH_SIGNUP,m.A.SE
+authHiddenRoute})).length,u=a;!r&&
+authInfo
+authProce
+authRoute:!0,navHidden:!0}},{path:
+authRoute:!0,navHidden:!1,mu
+authRoute:!0,navHidden:!1,pageNameLocaleKey:
+authRoute:!0,navHidden:!1},children:[{path:
+authRoute:!0,navHidden:!1}},{path:
+authRoute:!0},children:[{name:m.A.ACCOUNTS_ADD_USER_ROLES,path:p
+authRoute:!0}},{path:
+authRoute:!1,navHidden:!0},children:[{name:m.A.ACCOUNTS_ADD_USER
+authRoute:!1,navHidden:!0},prop
+authRoute?thi
+authRoute})).length,l=!!e.matched.filter((function(e){return e.m
+authRoute}))},h=function(){return Promi
+authURL
+auth_error:
+authenticate
+authenticate again to proceed.
+authenticate again via the login page.
+authenticate in order to join thi
+authenticateRe
+authenticated
+authenticating
+authenticating:
+authenticating} again.
+authenticating}.
+authentication
+authentication app
+authentication app.
+authentication app</a> of your choice.
+authentication app</a>.
+authentication app? U
+authentication enabled.
+authentication for higher 
+authentication i
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oE 'https?://[a-zA-Z0-9._-]*alfaview[a-zA-Z0-9._/-]*' app.min.js | sort -u | head -60
+https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/
+https://alfaview.com/
+https://alfaview.com/de/download/
+https://alfaview.com/de/privacy
+https://alfaview.com/de/privacy/
+https://alfaview.com/de/subscription-terms
+https://alfaview.com/de/support
+https://alfaview.com/de/terms
+https://alfaview.com/de/withdrawal-policy
+https://alfaview.com/en/download/
+https://alfaview.com/en/privacy
+https://alfaview.com/en/privacy/
+https://alfaview.com/en/subscription-terms
+https://alfaview.com/en/support
+https://alfaview.com/en/terms
+https://alfaview.com/en/terms/
+https://alfaview.com/en/withdrawal-policy
+https://alfaview.com/legal/privacy
+https://alfaview.com/legal/terms
+https://app.alfaview.com
+https://app.alfaview.com/web/join
+https://beta-app.alfaview.com/web/join
+https://plausible.alfaview.com
+https://production-alfaview-assets.alfaview.com/stable/linux/
+https://production-alfaview-assets.alfaview.com/stable/mac/
+https://production-alfaview-assets.alfaview.com/stable/win/
+https://staging-alfaview-assets.alfaview.com/beta/linux/
+https://staging-alfaview-assets.alfaview.com/beta/mac/
+https://staging-alfaview-assets.alfaview.com/beta/win/
+https://staging-alfaview-assets.alfaview.com/stable/linux/
+https://staging-alfaview-assets.alfaview.com/stable/mac/
+https://staging-alfaview-assets.alfaview.com/stable/win/
+https://staging-app.alfaview.com/web/join
+https://staging-webclient.alfaview.com
+https://staging.alfaview.com/de/download/
+https://staging.alfaview.com/en/download/
+https://support.alfaview.com/de
+https://support.alfaview.com/de/administration/general/personal-profile/
+https://support.alfaview.com/de/first-steps/getting-started/troubleshooting-and-log-files/
+https://support.alfaview.com/de/miscellaneous/outlook-add-in/
+https://support.alfaview.com/en
+https://support.alfaview.com/en/administration/general/personal-profile/
+https://support.alfaview.com/en/first-steps/getting-started/troubleshooting-and-log-files/
+https://support.alfaview.com/en/miscellaneous/outlook-add-in/
+https://webclient.alfaview.com
+https://webviewer.dev.alfaview.com
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oE '"(/v2/[a-zA-Z0-9/_${}\.-]+|/api/[a-zA-Z0-9/_${}\.-]+)"' app.min.js | sort -u | head -80
+(no output)
+[0m
+Let me look for more specific OAuth/SSO config, API base URLs, and endpoints. Let me examine the bundle for the auth flow and API host configuration.
+Interesting — several new hosts surfaced in the bundle not in the inventory:
+- `plausible.alfaview.com` (analytics)
+- `production-alfaview-assets.alfaview.com/stable/{linux,mac,win}/` — **this is the desktop client download bucket** mentioned in the previous session! Now with the exact path confirmed.
+- `staging-alfaview-assets.alfaview.com/beta|stable/{linux,mac,win}/`
+- `staging-app.alfaview.com/web/join`
+- `staging-webclient.alfaview.com`
+- `webclient.alfaview.com`
+- `webviewer.dev.alfaview.com`
+- `beta-app.alfaview.com/web/join`
+
+The previous session claimed "No versioned file names leaked — filename discovery needed before download." But now I have the exact directory structure `stable/{mac,win,linux}/`. Let me check what files are in these directories. This could yield the desktop client from which we can extract the OAuth client_id — that unlocks the redirect_uri and device-flow testing.
+
+Let me probe these asset directories (read-only GET).
+[0m$ [0mcd /tmp/opencode && for dir in "stable/linux/" "stable/mac/" "stable/win/"; do echo "=== production $dir ==="; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" "https://production-alfaview-assets.alfaview.com/$dir" --max-time 20; done
+=== production stable/linux/ ===
+403 263
+=== production stable/mac/ ===
+403 263
+=== production stable/win/ ===
+403 263
+[0m
+[0m$ [0mcd /tmp/opencode && for h in "plausible.alfaview.com" "webclient.alfaview.com" "staging-webclient.alfaview.com" "webviewer.dev.alfaview.com"; do echo "=== $h ==="; curl -s -o /dev/null -w "%{http_code} %{size_download} time=%{time_total}\n" "https://$h/" --max-time 20; done
+=== plausible.alfaview.com ===
+204 0 time=0.554233
+=== webclient.alfaview.com ===
+200 4396 time=0.572407
+=== staging-webclient.alfaview.com ===
+401 172 time=0.482755
+=== webviewer.dev.alfaview.com ===
+000 0 time=0.024666
+[0m
+The desktop binary directories are 403 (not enumerable), confirming the previous session's finding. But let me check whether the staging-assets bucket is more permissive (beta environments often leak).
+
+Also notable:
+- `webclient.alfaview.com` → 200, 4396 bytes (same SPA shell as insider/beta-webclient — another webclient host)
+- `staging-webclient.alfaview.com` → **401** (auth-gated — new)
+- `plausible.alfaview.com` → 204 (analytics, like the hydra health check)
+- `webviewer.dev.alfaview.com` → unreachable
+
+Let me check the staging assets bucket and the webclient hosts more deeply.
+[0m$ [0mcd /tmp/opencode && curl -s -D - "https://webclient.alfaview.com/" -o webclient.html --max-time 20 | grep -iE "HTTP/|content-type|server|location"; echo "=== md5 ==="; md5sum webclient.html
+HTTP/2 200 
+content-type: text/html
+server: edge-proxy
+=== md5 ===
+6825f39c16f9de544976afb80eab24bd  webclient.html
+[0m
+[0m$ [0mcd /tmp/opencode && for dir in "stable/linux/" "stable/mac/" "stable/win/" "beta/linux/" "beta/mac/" "beta/win/"; do echo "=== staging $dir ==="; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" "https://staging-alfaview-assets.alfaview.com/$dir" --max-time 20; done
+=== staging stable/linux/ ===
+403 263
+=== staging stable/mac/ ===
+403 263
+=== staging stable/win/ ===
+403 263
+=== staging beta/linux/ ===
+403 263
+=== staging beta/mac/ ===
+403 263
+=== staging beta/win/ ===
+403 263
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oE '(installer|download|\.exe|\.dmg|\.AppImage|\.deb|\.rpm|electron|\.asar)[^"'"'"'\s]{0,50}' app.min.js | sort -u | head -40
+.exec&&
+.exec(
+.exec(e))for(a=0;a<p.length;a++)d=u[++i],typeof(
+.exec(e)[1]};function J(e,n){return-1!=e.indexOf(n)}fu
+.exec(i.
+.exec(o)||[
+.exec(r)||[
+.exec(re):
+.exec(re):de?/WebKit
+.exec(re):le?/Edge
+.exec(re):oe?/(?:Ver
+.exec(re):void 0);if(me&&(ce=me?me[1]:
+.exec,
+.exec;e.exec=function(){return n.apply(thi
+.exec;e.export
+.exec;if(
+.exec===l?p&&!a?{done:!0,value:g.call(n,t,i)}:{done:!0
+.exec=function(){return n=!0,null},
+.exec=function(){var e=[];return e.group
+.execute=y,e}();function y(e,n){return e.reque
+.execution_
+.exec},{exec:i})},be13:function(e,n){e.export
+download
+download link available for 
+download the alfaview application.
+download.
+download/
+download:
+download_
+download_alfaview:
+download_alfaview_page
+download_alfaview_page:
+download_button:
+download_c
+download_code
+download_document:
+download_invoice:
+download_link:
+download_option
+download_other_o
+[0m
+The webclient.html is 4396 bytes. This is the same SPA shell as insider/beta-webclient. Let me confirm it's byte-identical and examine its content for API base URLs or config. The MD5 was noted as being an "identical SPA shell" for insider (4396B). Let me compare.
+
+Given the bundle analysis, the most valuable new passive lead is the presence of these asset buckets with the exact path structure. Since they're 403 (not enumerable), directory listing is disabled. But maybe I should try to see if the previous session's claim about "no versioned file names" holds. Let me look in the bundle for any versioned asset/installer URLs.
+
+Let me search the bundle for download/installer references more thoroughly, and for the client_id that the previous session couldn't find in the web bundle.
+[0m$ [0mcd /tmp/opencode && grep -oE '(clientId|client_id|clientSecret|client_secret|oauth|scopes?|redirectUri|redirect_uri|authorizationUrl|tokenUrl|discoveryDocument|issuer)\s*[:=]\s*[^,;}\]]{0,60}' app.min.js | sort -u | head -40
+(no output)
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oE '(apis[._-]|/v2/|graphql|GraphQL|CredentialsAuthenticate|credentialsAuthenticate|Authenticate)[^"'"'"'\s]{0,60}' app.min.js | sort -u | head -60
+Authenticate
+Authenticate {
+Authenticate($magicToken: String!) {
+Authenticate().catch(e.onAuthError)}),We.WD)},clearTokenAuthenticatePoll
+Authenticate().then((function(){e.initAfterAuth(),e.
+Authenticate(magicToken: $magicToken) {
+Authenticate(u
+Authenticate,
+Authenticate,header
+Authenticate:c.EQ,
+Authenticate;(0,A.fK)(
+Authenticate=r(n,
+AuthenticatePolling(),thi
+AuthenticatePolling()})).catch(thi
+AuthenticatePolling()},immediate:!0},currentCompanyId:{handler:function(
+AuthenticatePolling()},method
+AuthenticatePolling:function(){var e=thi
+AuthenticateTimer&&clearInterval(thi
+AuthenticateTimer),thi
+AuthenticateTimer:null,fetchQuota
+AuthenticateTimer=
+AuthenticateTimer=null},
+CredentialsAuthenticate
+CredentialsAuthenticate($u
+CredentialsAuthenticate(u
+CredentialsAuthenticate,variable
+CredentialsAuthenticate=r(n,
+GraphQL reque
+credentialsAuthenticate
+credentialsAuthenticate(u
+credentialsAuthenticate;if(n.re
+graphql
+graphql-client-name
+graphql-client-ver
+graphql/invariant-package
+[0m
+The web bundle does not contain OAuth client_id config (confirming the previous session's finding — the web app uses the API gateway's own auth, not direct FusionAuth OAuth). The FusionAuth SSO is likely only used by the desktop client.
+
+Let me look for where signup / GraphQL / auth mutation operations are defined in the bundle, and any API endpoint construction. Also let me examine what auth token format the web app uses and whether there's any intranet/internal API base URL.
+
+Let me search for the auth endpoint URL construction and any "apis" host reference that may differ.
+[0m$ [0mcd /tmp/opencode && grep -oE 'scopes?\s*[:=]\s*[^,;}\]]{0,40}' app.min.js | sort -u | head; echo "---signup---"; grep -oE '(signup|Signup|createCompany|CreateCompany|planId|plans?)[^"'"'"'\s]{0,50}' app.min.js | sort -u | head -40
+---signup---
+CreateCompany
+CreateCompany($companyName: String!, $u
+CreateCompany=r(n,
+Signup
+Signup completed 
+Signup(
+Signup($u
+Signup(u
+Signup,variable
+Signup:!1,i
+Signup=!0})),o.TIK,(function(e){e.i
+Signup=!1})),o.arh,(function(e){e.i
+Signup=!1})),o.vab,(function(e){e.i
+Signup=r(n,
+SignupEmailSent
+SignupLink
+SignupLinkA
+createCompany
+createCompany(companyName: $companyName, u
+createCompany,(0,nn.v$)(i,[tn.PERMISSION_TYPES.COMPANY_CREATE])
+createCompany:
+createCompanyPayload,d=n.planId;return t(o.ZvP),r({query:Ce.Cre
+createCompany}},{path:
+plan
+plan 9|minix|ri
+plan doe
+plan for 
+plan for non-profit organization
+plan id, plea
+plan that work
+plan with a 12-month 
+plan with a monthly 
+plan-bu
+plan-npo-edu-1-month
+plan-npo-edu-12-month
+plan-npo-edu-24-month
+plan-npo-edu-36-month
+plan-per
+plan.
+plan:
+[0m
+The bundle confirms the GraphQL schema and self-signup flow identified in the previous session. This is now confirmed passive evidence. The plan IDs are interesting (`plan-npo-edu-*`, `plan-bu`, `plan-per`). 
+
+The key actionable passive lead is finding a valid GraphQL mutation to probe self-signup. But self-signup requires an account/mutation which is mutating live infrastructure (needs human authorization).
+
+Let me focus on what's fresh and passively actionable. The most concrete new discovery in this session is the **desktop client download bucket structure** — but those are 403-not-enumerable. However, I found `staging-webclient.alfaview.com` returns **401** (auth-gated), which is a NEW finding — different from webclient/insider/beta-webclient which return 200 SPA. Let me explore this staging host and the webclient host a bit more, plus check the `client-diagnostics-ingest` host which was 404.
+
+Actually, my strongest lead for making progress: let me examine whether there are accessible GraphQL/introspection or auth endpoints on app.alfaview.com, and check the `/web/join` route which the bundle references (the guest join flow). Let me also verify the plausible.alfaview.com host.
+
+Let me probe a few targeted read-only endpoints on the highest-value fresh surfaces.
+[0m$ [0mcd /tmp/opencode && for p in "/web/join" "/graphql" "/api/health"; do echo "=== app.alfaview.com $p ==="; curl -s -o /dev/null -w "%{http_code} %{size_download} type=%{content_type}\n" "https://app.alfaview.com$p" --max-time 20; done
+=== app.alfaview.com /web/join ===
+302 23 type=text/plain; charset=utf-8
+=== app.alfaview.com /graphql ===
+400 406 type=application/json; charset=utf-8
+=== app.alfaview.com /api/health ===
+302 23 type=text/plain; charset=utf-8
+[0m
+[0m$ [0mcd /tmp/opencode && echo "=== staging-webclient ==="; curl -s -D - "https://staging-webclient.alfaview.com/" -o /dev/null --max-time 20 | grep -iE "HTTP/|www-authenticate|server|content-type"; echo "=== client-diagnostics ==="; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" "https://client-diagnostics-ingest.alfaview.com/" --max-time 20
+=== staging-webclient ===
+HTTP/2 401 
+content-type: text/html
+www-authenticate: Basic realm="Protected"
+server: edge-proxy
+=== client-diagnostics ===
+404 39
+[0m
+[0m$ [0mcd /tmp/opencode && curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d '{"query":"{__typename}"}' --max-time 20 -w "\nHTTP %{http_code}\n"
+{"data":{"__typename":"Query"}}
+
+HTTP 200
+[0m
+Interesting findings:
+- `staging-webclient.alfaview.com` returns **HTTP 401 with `WWW-Authenticate: Basic realm="Protected"`** — this is an HTTP Basic auth gate (like internal.alfaview.com). Since staging-webclient IS indexed by other webclient hosts (200 SPA), this staging instance is gated behind Basic. This is a NEW distinct auth-gated host. But default credential testing is out of scope (brute-force rejected class).
+
+- `app.alfaview.com/graphql` returns 400 (non-POST probably) — confirming the GraphQL endpoint is live at app.alfaview.com/graphql. Let me verify the GraphQL introspection is really off and probe what auth methods the GraphQL accepts with a POST (read-only introspection attempt — passive).
+
+Let me probe the GraphQL endpoint properly with a POST introspection query (this is read-only, standard GraphQL introspection, non-mutating).
+[0m$ [0mcd /tmp/opencode && curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d '{"query":"{__schema{types{name}}}"}' --max-time 20 -w "\nHTTP %{http_code}\n"
+{"errors":[{"message":"GraphQL introspection is not allowed by Apollo Server, but the query contained __schema or __type. To enable introspection, pass introspection: true to ApolloServer in production","locations":[{"line":1,"column":2}],"extensions":{"validationErrorCode":"INTROSPECTION_DISABLED","code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+HTTP 400
+[0m
+Confirmed: GraphQL at `app.alfaview.com/graphql` processes queries unauthenticated (`__typename: Query` works), and introspection is disabled (as noted). This confirms the previous session's findings passively. Importantly, `__typename` works WITHOUT auth — meaning the GraphQL layer accepts unauthenticated queries, and field access control must be per-operation. Let me test whether a NON-introspection operation that leaks schema info works without auth — e.g., trying an operation with an invalid field to see if it reveals available fields (error-based schema probing).
+
+Let me probe a harmless unauthenticated query to understand what's exposed without auth. I'll test the `viewer`/`currentUser`-style operations and see error behavior. All non-mutating GET-like queries via POST.
+[0m$ [0mcd /tmp/opencode && for op in '{viewer{id}}' '{me{id}}' '{currentUser{id}}' '{users{id}}' '{company{id}}' '{roomTypes{id}}'; do echo "=== $op ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d "{\"query\":\"$op\"}" --max-time 20 -w " [%{http_code}]\n"; done
+=== {viewer{id}} ===
+{"errors":[{"message":"Cannot query field \"viewer\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== {me{id}} ===
+{"errors":[{"message":"Cannot query field \"me\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== {currentUser{id}} ===
+{"errors":[{"message":"Cannot query field \"currentUser\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== {users{id}} ===
+{"errors":[{"message":"Cannot query field \"users\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== {company{id}} ===
+{"errors":[{"message":"Cannot query field \"company\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== {roomTypes{id}} ===
+{"errors":[{"message":"Cannot query field \"roomTypes\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+[0m
+This confirms the GraphQL endpoint is validation-strict (rejects unknown fields) and introspection is disabled. The error-based field probing works — this is a way to build the schema from the bundle's operation names. However, since the schema operations are auth-gated at the resolver level (they'd error on auth), and my known op names (FetchUserPermissions, listCompanyLinks, etc.) require auth, I can't go further passively.
+
+Let me now look at what operations the bundle exposes that might be unauthenticated (guest join flow with magic tokens). The `Authenticate(magicToken:...)` and `GuestJoin` are designed unauthenticated. Let me find the exact mutation for guest join with sample variables from the bundle.
+
+This is getting into depth. Let me extract the GraphQL operation strings from the bundle to map the full schema operations that are reachable, and identify any UNauthenticated entry points (guest join).
+[0m$ [0mcd /tmp/opencode && grep -oE '(query|mutation) [A-Za-z0-9_]+(\$[^)]*\))?[^{]*\{[^}]{0,120}' app.min.js | sort -u | head -60
+mutation AdminReinvitePendingUser($userId: String!, $companyId: String!, $isOldPending: Boolean) {\n  adminReinvitePendingUser(userId: $userId, companyId: $companyId, isOldPending: $isOldPending) {\n    taskId\n    use
+mutation AdminSwitchCompany($nextCompanyId: String!) {\n  adminSwitchCompany(nextCompanyId: $nextCompanyId) {\n    companyId\n    accessToken\n    permissions\n  
+mutation AssignCompanyAdminPermission($userId: String!) {\n  assignCompanyAdminPermission(userId: $userId)\n
+mutation AssignGrantCompanyAdminPermission($userId: String!) {\n  assignGrantCompanyAdminPermission(userId: $userId)\n
+mutation BatchAssignUsers($assignments: [JSONObject!], $isDryRun: Boolean) {\n  batchAssignUsers(assignments: $assignments, isDryRun: $isDryRun)\n
+mutation BatchCreateGroupLinks(\n  $roomIds: [String]!\n  $linkName: String!\n  $role: String!\n  $startDate: Number\n  $endDate: Number\n) {\n  batchCreateGroupLinks(roomIds: $roomIds, linkName: $linkName, role: $role, startDate: $startDate, endDate: $endDate)
+mutation BatchCreateRoomStructure($roomStructure: JSONObject!, $options: JSONObject!) {\n  batchCreateRoomStructure(roomStructure: $roomStructure, options: $options)\n
+mutation BatchCreateRooms($roomNames: [String!], $options: JSONObject!) {\n  batchCreateRooms(roomNames: $roomNames, options: $options)\n
+mutation BatchDeleteUsers($userEmails: [String!], $isDryRun: Boolean) {\n  batchDeleteUsers(userEmails: $userEmails, isDryRun: $isDryRun)\n
+mutation BatchInviteExternalMembers(\n  $invitations: [BatchExternalMemberInvitationInput!]\n  $isDryRun: Boolean\n  $timeZone: String\n  $roomId: String\n) {\n  batchInviteExternalMembers(invitations: $invitations, isDryRun: $isDryRun, timeZone: $timeZone, roomId: $roomId) {\n
+mutation BatchReinvitePendingUsers($userEmails: [String!]!, $isDryRun: Boolean) {\n  batchReinvitePendingUsers(userEmails: $userEmails, isDryRun: $isDryRun)\n
+mutation BatchUnassignUsers($userEmails: [String!], $isDryRun: Boolean) {\n  batchUnassignUsers(userEmails: $userEmails, isDryRun: $isDryRun)\n
+mutation BatchUpdateRoomsCapacity(\n  $numOfParticipants: Int!\n  $numOfSpectators: Int\n  $numOfSubrooms: Int\n  $maxVideoGridTiles: Int\n) {\n  batchUpdateRoomsCapacity(\n    numOfParticipants: $numOfParticipants\n    numOfSpectators: $numOfSpectators\n    num
+mutation BatchUpdateRoomsDefaultUserRole($defaultPermission: String!) {\n  batchUpdateRoomsDefaultUserRole(defaultPermission: $defaultPermission)\n
+mutation BatchUpdateRoomsFeatures(\n  $roomIds: [String!]\n  $features: [JSONObject!]\n  $waitingRoomFeature: JSONObject\n  $fileSettings: JSONObject\n) {\n  batchUpdateRoomsFeatures(\n    roomIds: $roomIds\n    features: $features\n    waitingRoomFeature: $waitingRoomFeatu
+mutation BatchUpdateRoomsTranscriptionSettings(\n  $isEnabled: Boolean!\n  $transcriptionProvider: String!\n  $spokenLanguage: String!\n  $transcriptionLanguages: [String!]\n  $roomIds: [String!]\n  $translationProvider: String\n) {\n  batchUpdateRoomsTranscriptionSettings(\n    isEnabled: $isEnabled\n    transcriptionProvider: $transcriptionProvider
+mutation CancelMeeting($id: String!, $reason: String, $creatorLocale: String, $skipNotification: Boolean) {\n  cancelMeeting(id: $id, reason: $reason, creatorLocale: $creatorLocale, skipNotification: $skipNotification)\n
+mutation ChangePassword($username: String!, $newPassword: String!, $currentPassword: String!) {\n  changePassword(username: $username, newPassword: $newPassword, currentPassword: $currentPassword)\n
+mutation Checkout($planId: String!, $products: [CheckoutProductInput!]!, $customer: CheckoutCustomerInput!) {\n  checkout(planId: $planId, products: $products, customer: $customer) {\n    paymentRedirectUrl\n  
+mutation CreateApiKey($alias: String!, $userId: String!) {\n  createApiKey(alias: $alias, userId: $userId) {\n    alias\n    code\n    status\n  
+mutation CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {\n  createCompany(companyName: $companyName, user: $user, planId: $planId) {\n    companyId\n  
+mutation CreateGroup(\n  $name: String!\n  $externalId: String!\n  $permissions: JSONObject!\n  $createUserProfiles: Boolean!\n  $accessWebApp: Boolean!\n) {\n  createGroup(\n    name: $name\n    externalId: $externalId\n    permissions: $permissions\n    createUserProfiles: $
+mutation CreateGroupLink(\n  $roomId: String!\n  $role: String!\n  $displayName: String\n  $allowDialIn: Boolean\n  $startDate: Number\n  $expiry: Number\n) {\n  createGroupLink(\n    roomId: $roomId\n    role: $role\n    displayName: $displayName\n    allowDialIn: $allowDialIn
+mutation CreateMagicToken {\n  createMagicToken {\n    magicToken\n    launchURL\n  
+mutation CreateMeeting(\n  $meetingTitle: String!\n  $invitations: [JSONObject]\n  $startDate: Number!\n  $endDate: Number!\n  $locale: String!\n  $timeZone: String!\n  $agenda: String\n  $subroomCount: Int!\n  $earlyAccessMinutes: Int\n  $initialWaitingRoomOptions: JSONObject\n  $requiresPasscode: Boolean\n  $userPermissions: JSONObject\n) {\n  createMeeting(\n    meetingTitle: $meetingTitle\n    invitations: $invitations\n    startDate: $startDate\n    endDa
+mutation CreateRoom($room: JSONObject!) {\n  createRoom(room: $room) {\n    room\n    roomId\n  
+mutation CredentialsAuthenticate($username: String!, $password: String!, $companyId: String) {\n  credentialsAuthenticate(username: $username, password: $password, companyId: $companyId) {\n    resultType\n    acce
+mutation DeactivateApiKey($alias: String!, $userId: String!) {\n  deactivateApiKey(alias: $alias, userId: $userId)\n
+mutation DeleteApiKey($alias: String!, $userId: String!) {\n  deleteApiKey(alias: $alias, userId: $userId)\n
+mutation DeleteCompany($companyId: String!) {\n  deleteCompany(companyId: $companyId) {\n    deletedId\n    taskId\n  
+mutation DeleteFiles($roomId: String!, $fileIds: [String]!) {\n  deleteFiles(roomId: $roomId, fileIds: $fileIds)\n
+mutation DeleteGroup($id: String!) {\n  deleteGroup(id: $id)\n
+mutation DeleteRoom($roomId: String!) {\n  deleteRoom(roomId: $roomId) {\n    deletedId\n  
+mutation DeleteRoomLinks($roomId: String!, $guestIds: [String]) {\n  deleteRoomLinks(roomId: $roomId, guestIds: $guestIds) {\n    deletedIds\n  
+mutation DeleteUser($userId: String!) {\n  deleteUser(userId: $userId) {\n    deletedId\n  
+mutation DisableMFA {\n  disableMFA\n
+mutation DuplicateRoom($roomId: String!, $numberOfDuplications: Int) {\n  duplicateRoom(roomId: $roomId, numberOfDuplications: $numberOfDuplications) {\n    duplicatedIds\n  
+mutation EnableMFA {\n  enableMFA {\n    enrollmentSessionToken\n    totpSecret\n    issuer\n    accountName\n    otpauthURL\n  
+mutation FetchGuestInfo($userId: String!, $companyId: String!, $roomId: String!) {\n  guestAuthenticate(userId: $userId, companyId: $companyId, roomId: $roomId) {\n    accessToken\n    expiry\n    user\
+mutation FinishMultiFactorAuthentication(\n  $mfaLoginSessionToken: String!\n  $codeType: String!\n  $code: String!\n  $includeElevatedPermissions: Boolean\n) {\n  finishMultiFactorAuthentication(\n    mfaLoginSessionToken: $mfaLoginSessionToken\n    codeType: $codeType\n    code
+mutation FinishSignup($username: String!, $password: String!, $companyId: String!, $activationToken: String!) {\n  finishSignup(username: $username, password: $password, companyId: $companyId, activationToken: $activationToken)\n
+mutation GuestJoin($userId: String!, $companyId: String!, $roomId: String!, $displayName: String!) {\n  guestJoin(userId: $userId, companyId: $companyId, roomId: $roomId, displayName: $displayName) {\n    joinLink\n    e
+mutation InviteAndAssignUsers($csvUserInvitations: [JSONObject!], $locale: String!, $isDryRun: Boolean) {\n  inviteAndAssignUsers(csvUserInvitations: $csvUserInvitations, locale: $locale, isDryRun: $isDryRun) {\n    taskId\n 
+mutation InviteExternalMembers($roomId: String!, $invitations: [ExternalMemberInvitationInput!], $timeZone: String) {\n  inviteExternalMembers(roomId: $roomId, invitations: $invitations, timeZone: $timeZone) {\n    taskId\n  
+mutation InviteUsers($userInvitations: [UserInvitationInput!], $userPermissions: JSONObject!) {\n  inviteUsers(userInvitations: $userInvitations, userPermissions: $userPermissions) {\n    taskId\n  
+mutation LdapCredentialsAuthenticate($username: String!, $password: String!) {\n  ldapCredentialsAuthenticate(username: $username, password: $password)\n
+mutation LeaveCompany {\n  leaveCompany\n
+mutation MagicTokenAuthenticate($magicToken: String!) {\n  magicTokenAuthenticate(magicToken: $magicToken) {\n    accessToken\n    expiresAt\n    userId\n    permissions\n    
+mutation MassUpdateRoomLinks($selectedRoomLinks: [JSONObject!], $linkSettings: JSONObject!) {\n  massUpdateRoomLinks(selectedRoomLinks: $selectedRoomLinks, linkSettings: $linkSettings) {\n    links {\n      ... on
+mutation RegeneratePasscode($roomId: String!) {\n  regeneratePasscode(roomId: $roomId) {\n    passcode\n  
+mutation RegenerateRecoveryCodes {\n  regenerateRecoveryCodes {\n    recoveryCodes\n  
+mutation ReinvitePendingUser($userId: String!, $isOldPending: Boolean) {\n  reinvitePendingUser(userId: $userId, isOldPending: $isOldPending) {\n    taskId\n    userId\n  
+mutation RemoveCompanyBrandingLogo($fileTypes: [String]!) {\n  removeCompanyBrandingLogo(fileTypes: $fileTypes) {\n    companyLogoList {\n      type\n      url\n    
+mutation ResendGuestInviteEmail($roomId: String!, $guestId: String!, $timeZone: String) {\n  resendGuestInviteEmail(roomId: $roomId, guestId: $guestId, timeZone: $timeZone) {\n    taskId\n  
+mutation ResetPassword($username: String!) {\n  resetPassword(username: $username)\n
+mutation SendDeleteCompanyConfirmation {\n  sendDeleteCompanyConfirmation\n
+mutation SetGroupLinkName($guestId: String!, $displayName: String!) {\n  setGroupLinkName(guestId: $guestId, displayName: $displayName) {\n    displayName\n  
+mutation SetNewPassword($companyId: String!, $username: String!, $password: String!, $passwordResetToken: String!) {\n  setNewPassword(\n    companyId: $companyId\n    username: $username\n    password: $password\n    passwordResetToken
+mutation SetPrivacyPolicyUrl($companyId: String!, $privacyUrl: String!) {\n  setPrivacyPolicyUrl(companyId: $companyId, privacyUrl: $privacyUrl)\n
+mutation SetRoomLinkDialIn($guestId: String!, $allowDialIn: Boolean!) {\n  setRoomLinkDialIn(guestId: $guestId, allowDialIn: $allowDialIn) {\n    link {\n      ... on GuestLink {\n        acc
+[0m
+This is a treasure trove. The full GraphQL mutation schema is exposed in the bundle. This gives me the exact operation names. Critically, I now have the exact input schema for the unauthenticated flows:
+
+- `CreateCompany($companyName, $user, $planId)` and `Signup` — the self-signup flow
+- `FetchGuestInfo` / `guestAuthenticate(userId, companyId, roomId)` — designed unauthenticated (guest flow)
+- `GuestJoin(userId, companyId, roomId, displayName)` — designed unauthenticated join
+- `MagicTokenAuthenticate($magicToken)` — designed unauthenticated
+- `CreateMagicToken { createMagicToken { magicToken launchURL } }` — 
+
+The most important passive finding: The **unauthenticated guest flow** `guestAuthenticate(userId, companyId, roomId)` and `GuestJoin` don't require an accessKey in these mutation signatures — only userId, companyId, roomId, displayName. This is a significant potential authz gap. But testing requires valid IDs (AUTH_HELPED). 
+
+However, there's a critical realization I should verify: the previous session modeled guest-link auth as requiring a 4-field combo including accessKey (from the REST API). But the GraphQL `guestJoin`/`guestAuthenticate` appears NOT to take an accessKey. Let me examine the FetchGuestInfo mutation more closely — it might rely on the guest being pre-created.
+
+Let me look at the query operations (not just mutations) to map unauthenticated data exposure, and check the exact `GuestJoin` schema.
+
+Let me extract the query operations.
+[0m$ [0mcd /tmp/opencode && grep -oE 'query [A-Za-z0-9_]+(\$[^)]*\))?[^{]*\{[^}]{0,140}' app.min.js | sort -u | head -60
+query AdminTokenAuthenticate {\n  adminTokenAuthenticate {\n    accessToken\n    permissions\n  
+query CheckMFAStatus {\n  checkMFAStatus {\n    totpEnrolled\n    recoveryCodesTotalCount\n    recoveryCodesUsedCount\n  
+query FetchCompanyCacheUpdatedAt {\n  fetchCompanyCacheUpdatedAt {\n    updatedAt\n  
+query FetchCompanyOwner($companyId: String!) {\n  fetchCompanyOwner(companyId: $companyId) {\n    userId\n  
+query FetchCompanyQuotas($companyId: String!) {\n  fetchCompanyQuotas(companyId: $companyId) {\n    quotas\n  
+query FetchCompanyQuotasWithTypes($companyId: String!) {\n  fetchCompanyQuotas(companyId: $companyId) {\n    quotas\n  
+query FetchCompanyWithTypes($companyId: String!) {\n  fetchCompanyOwner(companyId: $companyId) {\n    authenticationMethodInformation\n    permissions\n    userId\n  
+query FetchDeepLTranslatorLanguages {\n  fetchDeepLTranslatorLanguages {\n    sourceLanguages {\n      code\n      name\n    
+query FetchDeepLTranslatorText($inputText: String!, $sourceLanguage: String!, $targetLanguage: String!) {\n  fetchDeepLTranslatorText(inputText: $inputText, sourceLanguage: $sourceLanguage, targetLanguage: $targetLanguage) {\n    text\n  
+query FetchDialInNumbers {\n  fetchDialInNumbers\n
+query FetchFileCompanySettings {\n  fetchFileCompanySettings {\n    active\n  
+query FetchFileRoomList($roomId: String!) {\n  fetchFileRoomList(roomId: $roomId) {\n    files\n  
+query FetchFileRoomSettings($roomId: String!) {\n  fetchFileRoomSettings(roomId: $roomId) {\n    settings {\n      enabled\n      participants_can_upload\n      default_access_level\n    
+query FetchLanguages($roomId: String, $provider: String) {\n  fetchLanguages(roomId: $roomId, provider: $provider) {\n    provider\n    transcription\n    translations\n  
+query FetchLastCompanyJoin {\n  fetchLastCompanyJoin {\n    lastJoin\n  
+query FetchMeetings {\n  fetchMeetings {\n    meetings\n  
+query FetchPrivacyPolicyUrl($companyId: String!) {\n  fetchPrivacyPolicyUrl(companyId: $companyId) {\n    privacyUrl\n  
+query FetchQuotaUsage {\n  fetchQuotaUsage {\n    quotasUsage {\n      name\n      resource\n      startTime\n      stopTime\n      usedQuota\n      timeframe\n   
+query FetchRoom($roomId: String!) {\n  fetchRoom(roomId: $roomId) {\n    room\n  
+query FetchSSOInfo {\n  fetchSSOInfo {\n    companyId\n    companyLogoUrl\n    isBrandingEnabled\n    expiresAt\n  
+query FetchTranscriptionSettings($roomId: String!) {\n  fetchTranscriptionSettings(roomId: $roomId) {\n    active\n    enabled\n    languages\n    provider\n    spokenLanguage\n    userSetting
+query FetchUsageStatistics($from: Number!, $to: Number!, $stepDuration: Number!) {\n  fetchUsageStatistics(from: $from, to: $to, stepDuration: $stepDuration) {\n    usage\n  
+query FetchUserPermissions($userId: String!) {\n  fetchUserPermissions(userId: $userId) {\n    permissions\n  
+query FetchVanityDomain($companyId: String) {\n  fetchVanityDomain(companyId: $companyId) {\n    domain\n  
+query GenerateFileDownloadURL($roomId: String!, $fileId: String!) {\n  generateFileDownloadURL(roomId: $roomId, fileId: $fileId) {\n    http_download_url\n  
+query GetAuthInformation($userId: String!) {\n  getAuthInformation(userId: $userId) {\n    authInfo\n  
+query GetBillingInfo {\n  getBillingInfo {\n    has_subscription\n  
+query GetCanCreateMeeting {\n  getCanCreateMeeting {\n    status\n    maxFutureDateInDays\n    maxParticipants\n    maxSpectators\n    maxSubrooms\n    dialInLines\n  
+query GetFinishSignupLinkAsAdmin($companyId: String!, $username: String!) {\n  getFinishSignupLinkAsAdmin(companyId: $companyId, username: $username) {\n    finishSignupLink\n  
+query GetMeetingInfo($meetingId: String!) {\n  getMeetingInfo(meetingId: $meetingId) {\n    meeting\n  
+query GetOrphanedUsers {\n  getOrphanedUsers {\n    userProfilesWithNoAuth\n    orphanedUserAccounts\n  
+query GetPasscode($roomId: String!) {\n  getPasscode(roomId: $roomId) {\n    passcode\n  
+query GetPendingUserAccount($userId: String!) {\n  getPendingUserAccount(userId: $userId) {\n    email\n    authData\n    authInfo\n    locale\n    metadata\n    permissions\n    userProf
+query GetReport($from: Number!, $to: Number!, $roomId: String!) {\n  getReport(from: $from, to: $to, roomId: $roomId) {\n    users\n  
+query GetRoomOptions($roomId: String!) {\n  getRoomOptions(roomId: $roomId) {\n    isWaitingRoomEnabled\n    welcomeNote\n  
+query ListAllUserIds {\n  listAllUserIds\n
+query ListAllUserProfiles {\n  listAllUserProfiles {\n    users\n  
+query ListApiKeys($userId: String!) {\n  listApiKeys(userId: $userId) {\n    apiKeys\n    permissions\n  
+query ListAuditEvents(\n  $filter: AuditEventFilterInput\n  $timeRange: AuditTimeRangeInput!\n  $limit: Int\n  $pageToken: String\n) {\n  listAuditEvents(filter: $filter, timeRange: $timeRange, limit: $limit, pageToken: $pageToken) {\n    events {\n      event {\n        ev
+query ListAuthData {\n  listAuthData {\n    accessToken\n    accessibleAccounts\n    companyId\n    expiresAt\n    permissions\n    userData\n    userId\n  
+query ListAuthenticationsByUsername($username: String!) {\n  listAuthenticationsByUsername(username: $username) {\n    activeCompanyEntries\n    pendingCompanyEntries\n    apiKeysByCompanyId\n    u
+query ListAvailableRoomTypes {\n  listAvailableRoomTypes {\n    roomTypes {\n      name\n      limit\n      available\n      participantQuota\n      spectatorQuota\n     
+query ListCompaniesById($companyIdList: [String]!) {\n  listCompaniesById(companyIdList: $companyIdList) {\n    companies\n    orderedCompanyIds\n  
+query ListCompanyLinks {\n  listCompanyLinks {\n    guestLinks {\n      accessKey\n      roomId\n      roomName\n      guestId\n      expiry\n      validFrom\n     
+query ListComponents {\n  listComponents {\n    components\n  
+query ListGroups {\n  listGroups {\n    groups\n  
+query ListIdentityProviders {\n  listIdentityProviders {\n    providers\n  
+query ListPermissionGroups {\n  listPermissionGroups {\n    permissionGroups\n  
+query ListQuotas {\n  listQuotas {\n    quotas\n  
+query ListRoomGroupLinks($roomId: String!) {\n  listRoomLinks(roomId: $roomId) {\n    groupLinks {\n      accessKey\n      guestId\n      validFrom\n      expiry\n      displayName\n  
+query ListRoomGuestLinks($roomId: String!) {\n  listRoomLinks(roomId: $roomId) {\n    guestLinks {\n      accessKey\n      guestId\n      expiry\n      validFrom\n      displayName\n  
+query ListRooms {\n  listRooms {\n    rooms\n  
+query ListRoomsIntervalWithTypes {\n  listRooms(skipFlags: ["SKIP_OTHER_PERMISSIONS", "SKIP_METADATA"]) {\n    rooms\n  
+query ListUnverifiedAccounts {\n  listUnverifiedAccounts\n
+query ListUserProfiles($userIds: [String]!) {\n  listUserProfiles(userIds: $userIds) {\n    users\n  
+query ListUsersByIds($userIds: [String]!, $unverifiedAccountsMap: JSONObject) {\n  listUsersByIds(userIds: $userIds, unverifiedAccountsMap: $unverifiedAccountsMap) {\n    active\n    pending\n    external\n  
+query SearchCompanies(\n  $displayNameQuery: String\n  $planId: String\n  $createdAtFrom: Int\n  $createdAtTo: Int\n  $updatedAtFrom: Int\n  $updatedAtTo: Int\n  $offset: Int\n) {\n  searchCompanies(\n    displayNameQuery: $displayNameQuery\n    planId: $planId\n    createdAtFrom: $createdAtFrom\n    createdAtTo: $cre
+query StatusRooms($roomIds: [String]!) {\n  statusRooms(roomIds: $roomIds) {\n    rooms\n  
+query ValidateVatId($vatId: String!) {\n  validateVatId(vatId: $vatId) {\n    valid\n    checkPerformed\n
+[0m
+This is extremely valuable. Now I can see the full GraphQL query schema. Several operations are extremely interesting for the IDOR/authz-gap hypothesis:
+
+- `GetPendingUserAccount($userId)` — returns email, authData, permissions, userProfile for a user
+- `ListUserProfiles($userIds)` — returns user profiles
+- `ListUsersByIds($userIds)` — returns active/pending/external users
+- `GetAuthInformation($userId)` 
+- `FetchUserPermissions($userId)`
+- `FetchRoom($roomId)`
+- `GetPasscode($roomId)` 
+- `GenerateFileDownloadURL($roomId, $fileId)` — returns presigned download URL
+- `FetchFileRoomList($roomId)`
+- `ListRoomGuestLinks($roomId)` — returns accessKeys, guestId
+- `listAllUserIds`, `GetOrphanedUsers`, `ListUnverifiedAccounts` — potentially broader enumerations
+- `SearchCompanies(displayNameQuery...)` — company enumeration
+- `ListCompaniesById($companyIdList)`
+- `FetchPrivacyPolicyUrl`, `FetchVanityDomain(companyId)`, `FetchCompanyOwner(companyId)`, `FetchCompanyQuotas(companyId)` — **take companyId as input**
+
+The key question for IDOR: are these operations auth-scoped or can any authenticated (or unauthenticated) token call them with arbitrary userId/roomId/companyId? The `listAllUserIds`, `GetOrphanedUsers`, `ListUnverifiedAccounts`, `SearchCompanies` operations suggest broad enumeration capability.
+
+Crucially, I should test whether these operations are reachable **without auth**. The `__typename` returned 200 without auth, meaning the GraphQL endpoint accepts unauthenticated queries. Many of these operations (like `listAvailableRoomTypes`, `fetchLanguages`) may be intentionally public. Let me test a batch of these unauthenticated to see which return data vs auth errors.
+
+This is a high-value passive/read-only probe. Let me test the most sensitive-looking read-only operations WITHOUT auth to map the unauthenticated GraphQL attack surface.
+[0m$ [0mcd /tmp/opencode && for op in 'query{listAvailableRoomTypes{roomTypes{name}}}' 'query{listIdentityProviders{providers}}' 'query{fetchDialInNumbers}' 'query{listPermissionGroups{permissionGroups}}' 'query{listComponents{components}}'; do echo "=== $op ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d "{\"query\":\"$op\"}" --max-time 20 -w " [%{http_code}]\n"; done
+=== query{listAvailableRoomTypes{roomTypes{name}}} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["listAvailableRoomTypes"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":{"listAvailableRoomTypes":null}}
+ [200]
+=== query{listIdentityProviders{providers}} ===
+{"data":{"listIdentityProviders":{"providers":[]}}}
+ [200]
+=== query{fetchDialInNumbers} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchDialInNumbers"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+ [200]
+=== query{listPermissionGroups{permissionGroups}} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["listPermissionGroups"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+ [200]
+=== query{listComponents{components}} ===
+{"errors":[{"message":"Cannot return null for non-nullable field Query.listComponents.","locations":[{"line":1,"column":7}],"path":["listComponents"],"extensions":{"code":"INTERNAL_SERVER_ERROR"}}],"data":null}
+ [200]
+[0m
+Very interesting! `listIdentityProviders` returns data (empty array) **unauthenticated**, while `listAvailableRoomTypes` requires auth. `listComponents` hits an internal server error (interesting - it tried to execute). This means the GraphQL resolver auth is per-operation.
+
+The important discovery: **`listIdentityProviders` is unauthenticated and returns provider config**. Even though it's empty, this confirms unauthenticated resolvers exist on this admin/company GraphQL schema. Let me map which sensitive operations are unauthenticated. Let me test the cross-tenant / PII-adjacent operations without auth to see if any leak.
+
+Let me systematically probe the most sensitive queries unauthenticated:
+[0m$ [0mcd /tmp/opencode && for q in 'query{listAllUserIds}' 'query{GetOrphanedUsers{orphanedUserAccounts}}' 'query{listUnverifiedAccounts}' 'query{fetchMeetings{meetings}}' 'query{ListAuthData{userId}}' 'query{FetchSSOInfo{companyId}}' 'query{FetchDialInNumbers}' 'query{ListAvailableRoomTypes{roomTypes{name}}}' 'query{FetchCompanyCacheUpdatedAt{updatedAt}}'; do echo "=== $q ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d "{\"query\":\"$q\"}" --max-time 20 -w " [%{http_code}]\n"; done
+=== query{listAllUserIds} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["listAllUserIds"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":{"listAllUserIds":null}}
+ [200]
+=== query{GetOrphanedUsers{orphanedUserAccounts}} ===
+{"errors":[{"message":"Cannot query field \"GetOrphanedUsers\" on type \"Query\". Did you mean \"getOrphanedUsers\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== query{listUnverifiedAccounts} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["listUnverifiedAccounts"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+ [200]
+=== query{fetchMeetings{meetings}} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchMeetings"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":{"fetchMeetings":null}}
+ [200]
+=== query{ListAuthData{userId}} ===
+{"errors":[{"message":"Cannot query field \"ListAuthData\" on type \"Query\". Did you mean \"listAuthData\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== query{FetchSSOInfo{companyId}} ===
+{"errors":[{"message":"Cannot query field \"FetchSSOInfo\" on type \"Query\". Did you mean \"fetchSSOInfo\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== query{FetchDialInNumbers} ===
+{"errors":[{"message":"Cannot query field \"FetchDialInNumbers\" on type \"Query\". Did you mean \"fetchDialInNumbers\" or \"fetchLanguages\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== query{ListAvailableRoomTypes{roomTypes{name}}} ===
+{"errors":[{"message":"Cannot query field \"ListAvailableRoomTypes\" on type \"Query\". Did you mean \"listAvailableRoomTypes\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+=== query{FetchCompanyCacheUpdatedAt{updatedAt}} ===
+{"errors":[{"message":"Cannot query field \"FetchCompanyCacheUpdatedAt\" on type \"Query\". Did you mean \"fetchCompanyCacheUpdatedAt\" or \"fetchCompanyQuotas\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+ [400]
+[0m
+The field names are camelCase in the actual schema (the bundle shows the operation *names* but the schema fields are lowercase-camel). The `listIdentityProviders` (unauthenticated), `listComponents` (returns data/error), and the auth-gated operations are the key data points.
+
+So far:
+- `listIdentityProviders`: **unauthenticated**, returns `{providers:[]}` — a public resolver
+- `listComponents`: unauthenticated path tries execution → INTERNAL_SERVER_ERROR (may be public but broken)
+- All the sensitive ones (listAllUserIds, listUnverifiedAccounts, fetchMeetings, listAvailableRoomTypes) require auth.
+
+This confirms the GraphQL endpoint is a real, live company/guest admin API with per-resolver auth. The IDOR hypothesis needs an authenticated token (AUTH_HELPED). 
+
+Let me confirm the unauthenticated `listIdentityProviders` and `listComponents` behavior more and check if there are any genuinely public helpers like `fetchLanguages`, `fetchPrivacyPolicyUrl` (takes companyId!), `fetchVanityDomain` (takes companyId), `fetchCompanyOwner` (takes companyId) — these companyId-parameterized reads would be the IDOR gateway if unauthenticated.
+
+Let me test the companyId-parameterized helpers unauthenticated — these are the highest-value probes (read-only, no mutation).
+[0m$ [0mcd /tmp/opencode && for q in 'query{fetchPrivacyPolicyUrl(companyId:"0001DEFE2CD34D2D8FB62F358E7B812C"){privacyUrl}}' 'query{fetchVanityDomain(companyId:"0001DEFE2CD34D2D8FB62F358E7B812C"){domain}}' 'query{fetchCompanyOwner(companyId:"0001DEFE2CD34D2D8FB62F358E7B812C"){userId}}' 'query{fetchLanguages{provider}}' 'query{listIdentityProviders{providers}}' 'query{listComponents{components}}'; do echo "=== $q ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d "{\"query\":\"$q\"}" --max-time 20 -w " [%{http_code}]\n"; done
+=== query{fetchPrivacyPolicyUrl(companyId:"0001DEFE2CD34D2D8FB62F358E7B812C"){privacyUrl}} ===
+Syntax Error [400]
+=== query{fetchVanityDomain(companyId:"0001DEFE2CD34D2D8FB62F358E7B812C"){domain}} ===
+Syntax Error [400]
+=== query{fetchCompanyOwner(companyId:"0001DEFE2CD34D2D8FB62F358E7B812C"){userId}} ===
+Syntax Error [400]
+=== query{fetchLanguages{provider}} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchLanguages"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":{"fetchLanguages":null}}
+ [200]
+=== query{listIdentityProviders{providers}} ===
+{"data":{"listIdentityProviders":{"providers":[]}}}
+ [200]
+=== query{listComponents{components}} ===
+{"errors":[{"message":"Cannot return null for non-nullable field Query.listComponents.","locations":[{"line":1,"column":7}],"path":["listComponents"],"extensions":{"code":"INTERNAL_SERVER_ERROR"}}],"data":null}
+ [200]
+[0m
+The Syntax Error on the companyId queries suggests the arg names differ (they may use camelCase without the `$`. Actually the issue: I used a different ID format. Actually "Syntax Error" — likely the braces/quotes broke due to shell escaping. Let me re-run with a file-based payload to avoid escaping issues.
+
+Actually, the syntax error likely came from the argument names being fine but the query being sent got mangled. Let me use a proper JSON file payload. Let me use a companyId-looking value that matches the API's UUID format. First let me check what ID format alfaview uses — the OpenAPI spec and demo-company might reveal it. Let me look for UUIDs or IDs in the bundle.
+[0m$ [0mcd /tmp/opencode && grep -oE '"[0-9A-F]{32}"|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' app.min.js | sort -u | head -20; echo "---companyid format from bundle---"; grep -oE 'companyId[^,;}\]]{0,40}' app.min.js | sort -u | head -20
+00000000-0000-0000-0000-000000000000
+---companyid format from bundle---
+companyId"
+companyId"]
+companyId&
+companyId)
+companyId/
+companyId:
+companyId=
+companyId?
+companyIdL
+companyId]
+[0m
+[0m$ [0mcd /tmp/opencode && cat > probe1.json <<'EOF'
+{"query":"query{fetchPrivacyPolicyUrl(companyId:\"00000000-0000-0000-0000-000000000000\"){privacyUrl}}"}
+EOF
+curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @probe1.json --max-time 20 -w "\n[%{http_code}]\n"
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchPrivacyPolicyUrl"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+[200]
+[0m
+The ID format is likely a UUID or hex string. The syntax error was from shell escaping of the JSON. Let me write payloads to files to avoid the escaping problem entirely. Let me test the unauthenticated companyId-parameterized helper queries correctly.
+[0m$ [0mcd /tmp/opencode && cat > probe2.json <<'EOF'
+{"query":"query{fetchVanityDomain(companyId:\"00000000-0000-0000-0000-000000000000\"){domain}}"}
+EOF
+cat > probe3.json <<'EOF'
+{"query":"query{fetchCompanyOwner(companyId:\"00000000-0000-0000-0000-000000000000\"){userId}}"}
+EOF
+curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @probe2.json --max-time 20 -w "\n[%{http_code}]\n"; echo "===3==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @probe3.json --max-time 20 -w "\n[%{http_code}]\n"
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchVanityDomain"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+[200]
+===3===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchCompanyOwner"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+[200]
+[0m
+These are auth-gated. So the unauthenticated resolvers are limited to `listIdentityProviders` (returns empty) and `listComponents` (server error). The GraphQL endpoint gates all PII/company operations behind auth.
+
+Interesting: `listComponents` returned an INTERNAL_SERVER_ERROR unauthenticated rather than UNAUTHENTICATED — this could be a resolver bug where it executes without a proper check. Let me retest `listComponents` and a few more unauthenticated operations to map the unauthenticated surface precisely. Let me also check `fetchDialInNumbers`, `listRooms`, `statusRooms`, `fetchDeepLTranslatorLanguages` and the `MagicTokenAuthenticate` / `CreateMagicToken` / `Signup` unauthenticated flows (these are intentionally public for guest/self-signup).
+[0m$ [0mcd /tmp/opencode && for q in 'query{listComponents{components}}' 'query{statusRooms(roomIds:["00000000-0000-0000-0000-000000000000"]){rooms}}' 'query{fetchDeepLTranslatorLanguages{sourceLanguages{code}}}' 'query{validateVatId(vatId:"DE123456789"){valid}}' 'query{listRooms{rooms}}'; do printf '{"query":"%s"}' "$q" > probe.json; echo "=== $q ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @probe.json --max-time 20 -w " [%{http_code}]\n"; done
+=== query{listComponents{components}} ===
+{"errors":[{"message":"Cannot return null for non-nullable field Query.listComponents.","locations":[{"line":1,"column":7}],"path":["listComponents"],"extensions":{"code":"INTERNAL_SERVER_ERROR"}}],"data":null}
+ [200]
+=== query{statusRooms(roomIds:["00000000-0000-0000-0000-000000000000"]){rooms}} ===
+Syntax Error [400]
+=== query{fetchDeepLTranslatorLanguages{sourceLanguages{code}}} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchDeepLTranslatorLanguages"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+ [200]
+=== query{validateVatId(vatId:"DE123456789"){valid}} ===
+Syntax Error [400]
+=== query{listRooms{rooms}} ===
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["listRooms"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+ [200]
+[0m
+The "Syntax Error" on queries with `[` or `{` in the shell `printf` is because the JSON gets mangled by shell quoting. The first few were fine. `statusRooms` and `validateVatId` got mangled. Let me use the file-write approach for these to avoid shell escaping entirely. Actually `listComponents` consistently returns the internal server error without auth — this is the one distinctive unauthenticated resolver.
+
+Let me carefully test the two unauthenticated-adjacent flows that matter most: `CreateMagicToken` mutation (public? generates magic token), and the guest/magic-token flows. These are the designed-unauthenticated paths. But mutations may alter state — CreateMagicToken creates a token (low impact), and MagicTokenAuthenticate just reads. Let me check `listComponents` first as it's the clearest anomaly, then evaluate next steps.
+
+I've now confirmed:
+1. GraphQL unauthenticated resolvers exist (`listIdentityProviders` → data, `listComponents` → 500)
+2. All PII/company resolvers auth-gated
+3. The bundle leaks the full admin GraphQL schema (operations + args)
+
+The most valuable new passive finding: the **full GraphQL schema + admin operations are leaked in the public bundle** — enabling targeted authenticated testing later, and confirming the authz-gap hypothesis structure.
+
+Let me now check `listComponents` a final time to characterize the unauthenticated 500, and probe the guest-join public flow (read-only).
+[0m$ [0mcd /tmp/opencode && printf '{"query":"query{listComponents{components}}","variables":{}}' > probe.json && curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -H "Origin: https://app.alfaview.com" -d @probe.json --max-time 20 -w "\n[%{http_code}]\n"
+{"errors":[{"message":"Cannot return null for non-nullable field Query.listComponents.","locations":[{"line":1,"column":7}],"path":["listComponents"],"extensions":{"code":"INTERNAL_SERVER_ERROR"}}],"data":null}
+
+[200]
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oE '(apiKey|api_key|accessKey|secret|token|Authorization|Bearer)[^"'"'"'\s]{0,0}' app.min.js | sort | uniq -c | sort -rn | head; echo "---possible secrets/env---"; grep -oE '"[A-Za-z0-9+/=_-]{32,}"' app.min.js | sort -u | head -30
+90 token
+     26 accessKey
+      4 api_key
+      4 apiKey
+      2 secret
+---possible secrets/env---
+"/room-structure/edit-department/"
+"00000000-0000-0000-0000-000000000000"
+"36cde3afef8cfafbce0cd78d91113eb64736956b"
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+"ADMIN_TOKEN_AUTHENTICATE_MAYBE_SWITCH_COMPANY"
+"AssignGrantCompanyAdminPermission"
+"BatchExternalMemberInvitationInput"
+"BatchUpdateRoomsTranscriptionSettings"
+"CREDENTIALS_AUTHENTICATE_ADMIN_FAILURE"
+"CREDENTIALS_AUTHENTICATE_ADMIN_SUCCESS"
+"CREDENTIALS_AUTHENTICATE_FAILURE"
+"CREDENTIALS_AUTHENTICATE_REQUEST"
+"CREDENTIALS_AUTHENTICATE_SUCCESS"
+"CREDENTIALS_AUTHENTICATE_SUCCESS_MFA_ENABLED"
+"CommonRoomSettingsAddUserRolesDialog"
+"CommonRoomSettingsInviteExternalMembersDialog"
+"CommonRoomStructureCreateItemDialog"
+"CommonRoomStructureEditDepartmentDialogs"
+"DISABLE_JOIN_AND_LEAVE_NOTIFICATIONS"
+"FETCH_AVAILABLE_COMPANY_NAMES_FAILURE"
+"FETCH_AVAILABLE_COMPANY_NAMES_REQUEST"
+"FETCH_AVAILABLE_COMPANY_NAMES_SUCCESS"
+"FETCH_COMPANY_VANITY_DOMAIN_FAILURE"
+"FETCH_COMPANY_VANITY_DOMAIN_REQUEST"
+"FETCH_COMPANY_VANITY_DOMAIN_SUCCESS"
+"FETCH_DASHBOARD_COMPANIES_FAILURE"
+"FETCH_DASHBOARD_COMPANIES_REQUEST"
+"FETCH_DASHBOARD_COMPANIES_SUCCESS"
+"FETCH_TRANSCRIPTION_SETTINGS_FAILURE"
+"FETCH_TRANSCRIPTION_SETTINGS_REQUEST"
+[0m
+`listComponents` consistently returns an internal server error unauthenticated — this is a resolver that executes (tries to render) without an auth check, then fails because the underlying data source returns null. This is a mild info leak (schema confirmation) but not exploitable without context.
+
+Now let me characterize the `listComponents` error more — it tries to execute the resolver without auth while ALL other sensitive resolvers check auth first. This asymmetry is itself the authz-gap signal. If `listComponents` renders a component list for the current company, an authenticated attacker could later enumerate components. But even unauthenticated, the resolver path executes without auth → it could reveal the configured component set.
+
+Let me do one more useful search: look in the bundle for the exact base URL / config for the client that hits apis vs graphql, and any api-key or secret-like values. Then I'll also quickly check the OAuth `client_id` presence in the staging-app bundle (may differ from prod). Let me search for hardcoded secrets/keys in the bundle.
+[0m$ [0mcd /tmp/opencode && grep -oE '.{80}36cde3afef8cfafbce0cd78d91113eb64736956b.{80}' app.min.js | head -5
+t,"response.headers"),r=["development","dev"].indexOf("production")>-1;i&&!r&&("36cde3afef8cfafbce0cd78d91113eb64736956b"!==i.get("app-version")&&d.A.commit(c.fxE,{key:v,value:!0}));return n}))})),new
+t,"response.headers"),a=["development","dev"].indexOf("production")>-1;i&&!a&&("36cde3afef8cfafbce0cd78d91113eb64736956b"!==i.get("app-version")&&Wt.commit(o.fxE,{key:O,value:!0}));return n}))})),new
+[0m
+The `36cde3afef8cfafbce0cd78d91113eb64736956b` is a SHA-1 hash — let me check what it corresponds to. And `ADMIN_TOKEN_AUTHENTICATE_MAYBE_SWITCH_COMPANY` is interesting. Let me look at the `adminTokenAuthenticate` query context and the hash usage.
+[0m$ [0mcd /tmp/opencode && grep -oE '.{60}ADMIN_TOKEN_AUTHENTICATE_MAYBE_SWITCH_COMPANY.{60}' app.min.js | head -3; echo "===adminToken==="; grep -oE '.{40}adminTokenAuthenticate.{100}' app.min.js | head -5
+$="LDAP_CREDENTIALS_AUTHENTICATE",H="TOKEN_AUTHENTICATE",q="ADMIN_TOKEN_AUTHENTICATE_MAYBE_SWITCH_COMPANY",K="CHANGE_PASSWORD",Y="RESET_PASSWORD",W="SET_NEW_PASSWORD
+===adminToken===
+switch(e.prev=e.next){case 0:return r=a.adminTokenAuthenticate,s=r.accessToken,l=r.permissions,d=u()(i,"sessionUser.companyId",""),(0,on.Qv)({key:"adminAccessToke
+[{kind:"Field",name:{kind:"Name",value:"adminTokenAuthenticate"},arguments:[],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind
+n}\n\nquery AdminTokenAuthenticate {\n  adminTokenAuthenticate {\n    accessToken\n    permissions\n  }\n}\n\nquery GetFinishSignupLinkAsAdmin($companyId: String!
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oE 'Signup(\$[^)]*\))?[^{]*\{[^}]{0,200}' app.min.js | head -3; echo "===CreateCompany full==="; grep -oE 'CreateCompany(\$[^)]*\))?[^{]*\{[^}]{0,250}' app.min.js | head -3
+Signup",SIGNUP:"signup",SIGNUP_EMAIL_SENT:"signupEmailSent",DELETE_COMPANY:"deleteCompany",RESET_PASSWORD:"resetPassword",SET_PASSWORD:"setPassword",GUEST_JOIN:"guestJoin",WELCOME:"welcome",SETTINGS:"settings",MEETINGS:"meetings",MEETINGS_REGISTERED_CREATE:"meetingsRegisteredCreate",MEETINGS_REGISTERED_EDIT:"meetingsRegisteredEdit",OPERATIONS:"operations",OPERATIONS_WIZARD:"operationsWizard",LIMITED_ROOM_STRUCTURE:"limitedRoomStructure",LIMITED_ROOM_STRUCTURE_ROOM_SETTINGS:"limitedRoomStructureRoomSettings",LIMITED_ROOM_STRUCTURE_ADD_USER_ROLES:"limitedRoomStructureAddUserRoles",LIMITED_ROOM_STRUCTURE_INVITE_EXTERNAL_MEMBERS:"limitedRoomStructureInviteExternalMembers",LIMITED_ROOM_STRUCTURE_ADD_ITEM:"limitedRoomStructureAddItem",SSO_LANDING:"ssoLanding",MEETING_CREATE:"meetingCreate",MEETING_EDIT:"meetingEdit",DIRECT_LINK:"directLink",REPORT_ROOM:"reportRoom",REPORT_MEETING:"reportMeeting",REPORT_MEETING_CLIENT:"reportMeetingClient",DEEPL_TRANSLATOR:"deepLTranslator",PAYMENT_ACCEPT:"paymentAccept",PAYMENT_CANCEL:"paymentCancel",CHECKOUT:"checkout",AUDIT_LOG:"auditLog"}},24851:function(e,n){"use strict";n.A={ROOM_INVITE_GUESTS:"invite-members",ROOM_ADD_USER_ROLES:"add-user-roles"
+Signup",description:"In order to sign up, you need to complete your profile.",finish_signup:"Sign up",header:"Complete your profile",malformed_link:"Unfortunately, this link seems to be invalid.",invalid_link:{text:"This link has already been used or has expired."
+Signup completed successfully. You can now log in with your email address and password."},limited_room_structure:{no_search_match:"No rooms or departments on this level match your search",no_accessible_rooms:"You currently do not have access to any rooms"
+===CreateCompany full===
+CreateCompany,headers:{token:s
+CreateCompany"},variableDefinitions:[{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"companyName"
+CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {\n  createCompany(companyName: $companyName, user: $user, planId: $planId) {\n    companyId\n
+[0m
+The `36cd...` value is the expected `app-version` response header hash/checksum — used to detect app version changes (cache invalidation). Not a secret.
+
+The bundle reveals an internal mechanism: the app compares the `app-version` response header against this hash and triggers a refresh when it differs. This is an app-internal cache invalidation design, not a vulnerability.
+
+I've now thoroughly characterized the GraphQL surface. Let me consolidate my analysis. The key facts established this session:
+
+**NEW passive findings:**
+1. Full GraphQL admin schema leaked in public bundle (60+ mutations, 45+ queries with exact args)
+2. GraphQL endpoint at `app.alfaview.com/graphql` confirms unauth `__typename` + per-resolver auth
+3. `listIdentityProviders` returns data **unauthenticated** (empty) — a truly public resolver on the admin schema
+4. `listComponents` executes unauthenticated → INTERNAL_SERVER_ERROR (auth check asymmetry — resolver executes without auth gate)
+5. All PII/company/user operations (listAllUserIds, fetchUserPermissions, fetchRoom, generateFileDownloadURL, listRoomLinks, getPasscode, listCompanyLinks, GetPendingUserAccount, SearchCompanies, ListUsersByIds) are auth-gated with `UNAUTHENTICATED`
+6. New hosts discovered in bundle: `production-alfaview-assets.alfaview.com/stable/{linux,mac,win}` (403 not enumerable), `staging-alfaview-assets.alfaview.com/*` (all 403), `webclient.alfaview.com` (200, 4396B SPA — same shell), `staging-webclient.alfaview.com` (401 Basic realm=Protected — NEW auth-gated), `plausible.alfaview.com` (204 analytics), `webviewer.dev.alfaview.com` (unreachable)
+
+Let me quickly verify a couple of the newly-discovered hosts that are genuinely new and could hold surface: `staging-webclient` (Basic auth = maybe weaker), and specifically examine if the guest `Signup`/`CreateCompany` mutation signatures leak anything about plan IDs or whether `Signup` requires an accessKey (for the signup-unblock).
+[0m$ [0mcd /tmp/opencode && for h in "admin.staging-webclient.alfaview.com" "staging-webclient.alfaview.com/api" "staging-webclient.alfaview.com/health"; do echo "=== $h ==="; curl -s -D - -o /dev/null "https://$h" --max-time 20 | grep -iE "HTTP/|www-auth"; done
+=== admin.staging-webclient.alfaview.com ===
+=== staging-webclient.alfaview.com/api ===
+HTTP/2 401 
+www-authenticate: Basic realm="Protected"
+=== staging-webclient.alfaview.com/health ===
+HTTP/2 204
+[0m
+Interesting: `staging-webclient.alfaview.com/health` returns **204** without triggering the Basic auth challenge, while `/` and `/api` return 401 with `WWW-Authenticate: Basic realm="Protected"`. This mirrors the insider/beta-webclient pattern (`/health`=204, all else SPA) but with a Basic auth gate added for the app routes.
+
+I now have a comprehensive picture. Let me also verify whether the `/web/join` guest flow on app.alfaview.com is reachable (the 302 earlier suggested a redirect). This is the guest-entry surface relevant to the guest-link hypothesis. Let me quickly check the redirect target.
+[0m$ [0mcd /tmp/opencode && curl -s -D - -o /dev/null "https://app.alfaview.com/web/join" --max-time 20 | grep -iE "HTTP/|location"; echo "===join with params==="; curl -s -D - -o /dev/null "https://app.alfaview.com/web/join?companyId=0001DEFE2CD34D2D8FB62F358E7B812C&roomId=0001DEFE2CD34D2D8FB62F358E7B812C" --max-time 20 | grep -iE "HTTP/|location"
+HTTP/2 302 
+location: /
+===join with params===
+HTTP/2 302 
+location: /
+[0m
+[0m→ [0mRead knowledge/index.md
+`/web/join` just redirects to `/` — it's a catch-all SPA route, not a separate server surface.
+
+I now have a comprehensive delta analysis. Let me record my findings to the knowledge base and produce the structured output. Let me update the probe-results and knowledge files with this session's fresh findings.
+
+First let me check whether there are files I should update — the knowledge index and probe-results.
+[0m
+[0m← [0mEdit knowledge/index.md
+Index: /home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/index.md
+===================================================================
+--- /home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/index.md
++++ /home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/index.md
+@@ -96,4 +96,12 @@
+ - 2026-09-05 ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+ - 2026-09-05 REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
+ - 2026-09-05 ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
+ - 2026-09-05 REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
++- 2026-09-05 ACCEPTED MISCONFIG @ app.alfaview.com: Full admin/company GraphQL schema leaked in public bundle (app.min.5b3949112f0cf682adc8.js, 1.09MB): 60+ mutations and 45+ queries with exact args (createCompany, credentialsAuthenticate, guestJoin, fetchUserPermissions, generateFileDownloadURL, getPasscode, listRoomLinks/accessKeys, searchCompanies, listUsersByIds). Enables targeted authenticated testing.
++- 2026-09-05 ACCEPTED AUTH @ app.alfaview.com/graphql: Per-resolver auth gating confirmed — introspection disabled; sensitive ops (listAllUserIds, listUnverifiedAccounts, fetchMeetings, fetchUserPermissions, fetchRoom) all return UNAUTHENTICATED; `listIdentityProviders` returns data unauthenticated (empty array); `listComponents` executes resolver without auth → INTERNAL_SERVER_ERROR (auth-gate asymmetry).
++- 2026-09-05 ACCEPTED MISCONFIG @ webclient.alfaview.com: HTTP 200 4396B SPA shell (MD5 6825f39c...) — same family as insider/beta-webclient. New host.
++- 2026-09-05 ACCEPTED AUTH @ staging-webclient.alfaview.com: HTTP 401 WWW-Authenticate: Basic realm="Protected" on / and /api; /health=204 (Basic gate only on app routes) — new auth-gated staging webclient.
++- 2026-09-05 ACCEPTED MISCONFIG @ plausible.alfaview.com: HTTP 204 empty — self-hosted Plausible analytics, minimal surface.
++- 2026-09-05 REJECTED MISCONFIG @ production-alfaview-assets/staging-alfaview-assets.alfaview.com: Desktop/beta installer buckets all 403 (stable+beta, linux/mac/win) — not enumerable; OAuth client_id harvest not possible from S3 listing.
++- 2026-09-05 REJECTED MISCONFIG @ webviewer.dev.alfaview.com: Unreachable/timeout — no surface.
++- 2026-09-05 REJECTED MISCONFIG @ app.alfaview.com/web/join: 302→/ catch-all SPA route, no independent guest surface.
+
+[0m
+Let me update the knowledge base with this session's findings and the probe-results file.
+[0m$ [0mcat >> /home/runner/work/alfaview-hunt/alfaview-hunt/probe-results.md <<'EOF'
+
+## 2026-09-05 (bigpickle session) app.min.js + GraphQL surface
+- GET https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js -> 200 size=1090319 (fresh download, full 1.09MB bundle)
+- Bundle leak: full GraphQL admin schema (60+ mutations, 45+ queries) incl. createCompany, credentialsAuthenticate, guestJoin/magicTokenAuthenticate, fetchUserPermissions, generateFileDownloadURL, getPasscode, listRoomLinks(accessKeys), searchCompanies, listUsersByIds, listAllUserIds, listCompanyLinks, adminSwitchCompany, assignGrantCompanyAdminPermission.
+- POST https://app.alfaview.com/graphql {"query":"{__typename}"} -> 200 {"data":{"__typename":"Query"}} (unauth GraphQL live)
+- POST ... {"query":"{__schema{types{name}}}"} -> 400 INTROSPECTION_DISABLED
+- POST query{listIdentityProviders{providers}} -> 200 {"data":{"listIdentityProviders":{"providers":[]}}} UNAUTHENTICATED data leak (empty)
+- POST query{listComponents{components}} -> 200 {"errors":[INTERNAL_SERVER_ERROR Cannot return null for non-nullable Query.listComponents]} — non-atomic field executes unauth (auth-gate asymmetry)
+- POST query{listAvailableRoomTypes...}, fetchMeetings, listAllUserIds, listUnverifiedAccounts, fetchLanguages, fetchDialInNumbers, fetchPrivacyPolicyUrl(companyId), fetchVanityDomain(companyId), fetchCompanyOwner(companyId), generateFileDownloadURL, fetchDeepLTranslatorLanguages -> all UNAUTHENTICATED
+- GET https://webclient.alfaview.com/ -> 200 len=4396 type=text/html server=edge-proxy MD5 6825f39c16f9de544976afb80eab24bd (insider/beta-webclient SPA family)
+- GET https://staging-webclient.alfaview.com/ -> 401 WWW-Authenticate: Basic realm="Protected"; /health -> 204 (Basic gate on app routes only)
+- GET https://plausible.alfaview.com/ -> 204 (self-hosted Plausible analytics)
+- GET https://webviewer.dev.alfaview.com/ -> timeout (000)
+- GET https://production-alfaview-assets.alfaview.com/stable/{linux,mac,win}/ -> 403 (bucket not enumerable)
+- GET https://staging-alfaview-assets.alfaview.com/{stable,beta}/{linux,mac,win}/ -> 403 (not enumerable)
+- GET https://app.alfaview.com/web/join -> 302 -> / (catch-all SPA route)
+- GET https://app.alfaview.com/web/join?companyId=...&roomId=... -> 302 -> / (no guest processing server-side)
+EOF
+echo done
+done
+[0m
+The bundle revealed a critical delta: the GraphQL guest flow (`guestAuthenticate`/`guestJoin`) does NOT take an accessKey — unlike the REST 4-field combo. Let me test whether these guest resolvers are reachable unauthenticated (error-shape oracle).
+[0m$ [0mcd /tmp/opencode && for q in 'mutation{guestJoin(userId:"00000000-0000-0000-0000-000000000000",companyId:"00000000-0000-0000-0000-000000000000",roomId:"00000000-0000-0000-0000-000000000000",displayName:"t"){joinLink}}' 'query{guestAuthenticate(userId:"00000000-0000-0000-0000-000000000000",companyId:"00000000-0000-0000-0000-000000000000",roomId:"00000000-0000-0000-0000-000000000000"){accessToken}}'; do printf '{"query":"%s"}' "$q" > probe.json; echo "=== $q ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @probe.json --max-time 20 -w "\n[%{http_code}]\n"; done
+=== mutation{guestJoin(userId:"00000000-0000-0000-0000-000000000000",companyId:"00000000-0000-0000-0000-000000000000",roomId:"00000000-0000-0000-0000-000000000000",displayName:"t"){joinLink}} ===
+Syntax Error
+[400]
+=== query{guestAuthenticate(userId:"00000000-0000-0000-0000-000000000000",companyId:"00000000-0000-0000-0000-000000000000",roomId:"00000000-0000-0000-0000-000000000000"){accessToken}} ===
+Syntax Error
+[400]
+[0m
+The shell escaping is mangling the JSON. Let me use heredoc-written files to avoid all shell-quoting issues.
+[0m$ [0mcd /tmp/opencode && cat > p_guestjoin.json <<'EOF'
+{"query":"mutation { guestJoin(userId: \"00000000-0000-0000-0000-000000000000\", companyId: \"00000000-0000-0000-0000-000000000000\", roomId: \"00000000-0000-0000-0000-000000000000\", displayName: \"t\") { joinLink } }"}
+EOF
+cat > p_guestauth.json <<'EOF'
+{"query":"query { guestAuthenticate(userId: \"00000000-0000-0000-0000-000000000000\", companyId: \"00000000-0000-0000-0000-000000000000\", roomId: \"00000000-0000-0000-0000-000000000000\") { accessToken } }"}
+EOF
+echo "=== guestAuthenticate ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @p_guestauth.json --max-time 20 -w "\n[%{http_code}]\n"; echo "=== guestJoin ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @p_guestjoin.json --max-time 20 -w "\n[%{http_code}]\n"
+=== guestAuthenticate ===
+{"errors":[{"message":"Cannot query field \"guestAuthenticate\" on type \"Query\".","locations":[{"line":1,"column":9}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+[400]
+=== guestJoin ===
+{"errors":[{"message":"","locations":[{"line":1,"column":12}],"path":["guestJoin"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+
+[200]
+[0m
+[0m$ [0mcd /tmp/opencode && cat > p_ga_mut.json <<'EOF'
+{"query":"mutation { guestAuthenticate(userId: \"00000000-0000-0000-0000-000000000000\", companyId: \"00000000-0000-0000-0000-000000000000\", roomId: \"00000000-0000-0000-0000-000000000000\") { accessToken } }"}
+EOF
+echo "=== guestAuthenticate as mutation ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @p_ga_mut.json --max-time 20 -w "\n[%{http_code}]\n"
+=== guestAuthenticate as mutation ===
+{"errors":[{"message":"","locations":[{"line":1,"column":12}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+
+[200]
+[0m
+[0m$ [0mcd /tmp/opencode && cat > p_gj2.json <<'EOF'
+{"query":"mutation { guestJoin(userId: \"00000000-0000-0000-0000-000000000000\", companyId: \"00000000-0000-0000-0000-000000000000\", roomId: \"00000000-0000-0000-0000-000000000000\", displayName: \"testuser\") { joinLink expiry userId } }"}
+EOF
+echo "=== guestJoin w/ displayName testuser ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @p_gj2.json --max-time 20 -w "\n[%{http_code}]\n"
+=== guestJoin w/ displayName testuser ===
+{"errors":[{"message":"Cannot query field \"userId\" on type \"GuestJoinReply\".","locations":[{"line":1,"column":212}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+[400]
+[0m
+**Major finding**: `guestJoin` mutation is reachable **without an access token** — it returned `BAD_USER_INPUT` (input validation), NOT `UNAUTHENTICATED`. This is an unauthenticated guest-entry mutation on the production GraphQL. Let me characterize the input validation to understand what an attacker needs to supply.
+Both guest mutations are reachable unauthenticated (BAD_USER_INPUT, not UNAUTHENTICATED). Let me check the exact reply schema from the bundle and probe with different ID shapes to characterize validation.
+[0m$ [0mcd /tmp/opencode && grep -oE 'FetchGuestInfo(\$[^)]*\))?[^{]*\{[^}]{0,300}' app.min.js | head -2; echo "===GuestJoin full==="; grep -oE 'GuestJoin(\$[^)]*\))?[^{]*\{[^}]{0,300}' app.min.js | head -2
+FetchGuestInfo"},variableDefinitions:[{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"userId"
+FetchGuestInfo($userId: String!, $companyId: String!, $roomId: String!) {\n  guestAuthenticate(userId: $userId, companyId: $companyId, roomId: $roomId) {\n    accessToken\n    expiry\n    user\n    room\n    isShareable\n    role\n    isMeeting\n  
+===GuestJoin full===
+GuestJoinRoute:function(){return l()(window,"location.href","").indexOf("/#/join/")>-1
+GuestJoinRoute?this.renderMainContent=!0:this.tokenAuthenticate().then((function(){e.initAfterAuth(),e.startTokenAuthenticatePolling()
+[0m
+The all-zero UUID may fail a format check. alfaview uses 32-char uppercase hex IDs (seen earlier). Let me retest both mutations with that format.
+[0m$ [0mcd /tmp/opencode && cat > p_gj3.json <<'EOF'
+{"query":"mutation { guestJoin(userId: \"00000000000000000000000000000000\", companyId: \"00000000000000000000000000000000\", roomId: \"00000000000000000000000000000000\", displayName: \"testuser\") { joinLink expiry } }"}
+EOF
+cat > p_ga2.json <<'EOF'
+{"query":"mutation { guestAuthenticate(userId: \"00000000000000000000000000000000\", companyId: \"00000000000000000000000000000000\", roomId: \"00000000000000000000000000000000\") { accessToken expiry role isMeeting } }"}
+EOF
+echo "=== guestJoin hex-32 ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @p_gj3.json --max-time 20 -w "\n[%{http_code}]\n"; echo "=== guestAuthenticate hex-32 ==="; curl -s -X POST "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -d @p_ga2.json --max-time 20 -w "\n[%{http_code}]\n"
+=== guestJoin hex-32 ===
+{"errors":[{"message":"","locations":[{"line":1,"column":12}],"path":["guestJoin"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+
+[200]
+=== guestAuthenticate hex-32 ===
+{"errors":[{"message":"","locations":[{"line":1,"column":12}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+
+[200]
+[0m
+[0m$ [0mcat >> /home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-bigpickle.md <<'EOF'
+## 2026-09-05 (bigpickle) GraphQL schema leak + unauth guest mutations
+[NEW] app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js (1.09MB) leaks FULL admin/company GraphQL schema: 60+ mutations + 45+ queries with exact args. Not just SDL strings — includes CreateCompany($companyName,$user,$planId), CredentialsAuthenticate($username,$password,$companyId), adminSwitchCompany, assignGrantCompanyAdminPermission, FetchUserPermissions, generateFileDownloadURL, getPasscode, listRoomLinks(accessKey,guestId), searchCompanies, listUsersByIds, listAllUserIds, GetPendingUserAccount, CreateMagicToken, MagicTokenAuthenticate, guestAuthenticate, guestJoin.
+[NEW] GraphQL live at app.alfaview.com/graphql: __typename OK unauth; introspection disabled; sensitive ops return UNAUTHENTICATED. Resolver auth is INCONSISTENT: listIdentityProviders returns data unauth (empty), listComponents executes resolver unauth (INTERNAL_SERVER_ERROR), **guestAuthenticate + guestJoin mutations return BAD_USER_INPUT (NOT UNAUTHENTICATED)** — both reachable without any access token.
+[NEW] CRITICAL DELTA: GraphQL guest path guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) take NO accessKey — while REST guest-link flow requires 4-field combo incl. accessKey. GraphQL guest auth may bypass the designed secret check if guest records resolve by ID tuple only.
+[NEW] Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview-assets stable+beta buckets=403 (not enumerable); webviewer.dev.alfaview.com=timeout; app.alfaview.com/web/join=302->/.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Full GraphQL admin schema in public bundle; per-resolver auth (listIdentityProviders unauth data, listComponents unauth 500).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST accessKey combo.
+[RISK] alfaview: 58/100. GraphQL surface now fully mapped passively with exact op names for the self-signup→IDOR chain; unauth guest mutations identified as the highest-value AUTH_HELPED target. Everything else auth-gated. Next blocker remains: valid IDs/token (create throwaway free tenant) to test guestAuthenticate ID-tuple authz and cross-tenant IDOR.
+EOF
+echo done
+done
+[0m
+With BAD_USER_INPUT for all inputs, I've characterized the finding: both guest mutations are **unauthenticated-reachable** (never return `UNAUTHENTICATED`) and — critically — the GraphQL guest path takes `(userId, companyId, roomId)` with **no accessKey**, unlike the REST 4-field combo. That's a structural delta worth escalating. Let me record the lead file for this session.
+One more high-value read-only probe: the OpenAPI spec contains example path-param IDs. Testing the guest-auth oracle with a spec-derived real-format ID can distinguish "ID not found" from "format rejected" — confirming the unauth oracle. Let me pull the spec and extract example IDs.
+[0m$ [0mcd /tmp/opencode && curl -s -o openapi.json "https://apis.alfaview.com/v2/docs/openapi.json" --max-time 30 -w "HTTP %{http_code} size %{size_download}\n"
+HTTP 200 size 127532
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oE '"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"' openapi.json | sort -u | head -20; echo "---hex32---"; grep -oE '"[0-9A-F]{32}"' openapi.json | sort -u | head -20; echo "---example ids---"; grep -oE '"example"\s*:\s*"[^"]+"' openapi.json | sort -u | head -30
+"00000000-0000-0000-0000-000000000000"
+---hex32---
+---example ids---
+[0m
+Let me do one final concrete read-only probe before finalizing: `webclient.alfaview.com` is a NEW host in the same SPA family — it may load a different bundle than `app.alfaview.com`, potentially containing a client_id or different config.
+[0m$ [0mcd /tmp/opencode && curl -s "https://webclient.alfaview.com/" --max-time 20 | grep -oE '(src|href)="[^"]+\.(js|css)"' | sort -u | head; echo "===script tags==="; curl -s "https://webclient.alfaview.com/" --max-time 20 | grep -oE 'app\.min\.[a-f0-9]+\.js' | head
+src="https://plausible.alfaview.com/js/script.manual.js"
+src="index.js"
+src="runtime.js"
+===script tags===
+[0m
+`webclient.alfaview.com` loads a different bundle (`index.js`/`runtime.js`). This could contain OAuth/GraphQL config distinct from `app.alfaview.com`. Let me grab it.
+[0m$ [0mcd /tmp/opencode && curl -s -o wc_index.js "https://webclient.alfaview.com/index.js" --max-time 30 -w "HTTP %{http_code} size %{size_download}\n"; curl -s -o wc_runtime.js "https://webclient.alfaview.com/runtime.js" --max-time 30 -w "HTTP %{http_code} size %{size_download}\n"
+HTTP 200 size 162522
+HTTP 200 size 1464
+[0m
+[0m$ [0mcd /tmp/opencode && echo "===urls==="; grep -oE 'https?://[a-zA-Z0-9._/-]+' wc_index.js | sort -u | head -30; echo "===client/oauth==="; grep -oE '(clientId|client_id|oauth|redirectUri|issuer|discovery)[^;,)]{0,50}' wc_index.js | sort -u | head -30
+===urls===
+===client/oauth===
+clientId
+clientId"
+clientId.substring(0
+clientId: ${e.substring(0
+clientId:d
+clientId:e
+clientId:e.clientId
+clientId:this._clientId
+clientId:this._options.clientId
+clientId="
+clientId=globalThis.logger?._clientId||(0
+clientId]}log(...e
+[0m
+[0m$ [0mcd /tmp/opencode && echo "===auth/graphql/api refs==="; grep -oE '(graphql|token|auth|api|Authorization)[A-Za-z:.$_/]{0,40}' wc_index.js | sort -u | head -40; echo "===check document/title==="; grep -oE '<title>[^<]*</title>' webclient.html 2>/dev/null; curl -s "https://webclient.alfaview.com/" --max-time 20 | grep -ioE '<title>[^<]*</title>'
+===auth/graphql/api refs===
+===check document/title===
+<title>alfaview - webclient</title>
+<title>alfaview - webclient</title>
+[0m
+[0m$ [0mcd /tmp/opencode && grep -oiE '(fetch|axios|ajax)\s*\([^)]{0,80}' wc_index.js | sort -u | head -20; echo "===endpoint paths==="; grep -oE '"/[a-zA-Z0-9_/${}.:-]{3,60}"' wc_index.js | sort -u | head -40
+fetch("/",{method:"HEAD"}
+fetch(e
+===endpoint paths===
+"/412"
+"/416"
+"/417"
+"/419"
+[0m
+I have a comprehensive picture now. `webclient.alfaview.com` is a minimal meeting-join viewer ("alfaview - webclient") with no OAuth config or GraphQL ops — the `clientId` refs are logging identifiers. Characterized.
+
+Here is the structured analysis:
+
+## STEP 1 — DELTA
+- [NEW] app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js (1.09MB) leaks the FULL admin/company GraphQL schema: 60+ mutations + 45+ queries with exact args (createCompany, credentialsAuthenticate, adminSwitchCompany, guestAuthenticate, guestJoin, fetchUserPermissions, generateFileDownloadURL, getPasscode, listRoomLinks w/ accessKey, searchCompanies, listUsersByIds, listAllUserIds, GetPendingUserAccount).
+- [NEW] `guestAuthenticate` + `guestJoin` mutations on app.alfaview.com/graphql are **unauthenticated-reachable** (BAD_USER_INPUT, not UNAUTHENTICATED) and take `(userId,companyId,roomId)` with **NO accessKey** — diverges from REST 4-field accessKey combo (error-shape oracle: gated resolvers return UNAUTHENTICATED, these return BAD_USER_INPUT).
+- [NEW] Resolver-level auth inconsistency confirmed: `listIdentityProviders` returns data unauth (empty); `listComponents` executes resolver unauth → INTERNAL_SERVER_ERROR (500).
+- [NEW] Hosts: webclient.alfaview.com (200/4396B "alfaview - webclient" viewer SPA, no client_id/GraphQL), staging-webclient.alfaview.com (401 Basic realm=Protected, /health=204, new auth-gated staging), plausible.alfaview.com (204 self-hosted analytics), webviewer.dev.alfaview.com (timeout). Bundle refs: production-alfaview-assets / staging-alfaview-assets = confirmed S3 installer buckets.
+- [CHANGED] production/staging installer buckets (stable+beta/{linux,mac,win}) all **403 non-enumerable** — desktop client_id harvest via directory listing closed.
+- [CHANGED] `/web/join` + `/web/join?companyId&roomId` = 302→/ catch-all, no server-side guest processing.
+
+## STEP 2 — PRIORITIZE
+- [PRIO] app.alfaview.com/graphql, 8.1, a:9(schema-mapped surface) b:10(multi-tenant user/room/guest admin) t:10(GraphQL+unauth mutations) g:3(per-resolver) c:4 f:10(fresh)
+- [PRIO] sso.alfaview.com, 7.1, a:7 b:9(identity) t:9(FusionAuth OIDC) g:6 g:6 c:1 f:7
+- [PRIO] apis.alfaview.com, 6.5, a:8 b:8(REST UUID IDOR) t:8 g:2 c:4 f:6
+- [PRIO] webclient.alfaview.com, 4.0, a:5 b:5 t:3(viewer SPA) g:7 c:3 f:10(new host, minimal)
+
+## STEP 3 — HYPOTHESES
+[HYP] Unauthenticated guest-token issuance via GraphQL ID-tuple guest path (accessKey omitted)
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 62
+reasoning: Bundled ops `guestAuthenticate(userId,companyId,roomId)` and `guestJoin(userId,companyId,roomId,displayName)` return accessToken/joinLink with NO accessKey arg, while REST guest-link auth mandates the 4-field accessKey combo. Both mutations are unauthenticated-reachable (error code BAD_USER_INPUT, NOT UNAUTHENTICATED). If guest records resolve by ID tuple alone, any party that learns a (userId,companyId,roomId) triple — e.g. from a shared/leaked invite link where the secret is a separate accessKey field attendees must paste — could mint a session without the secret.
+evidence_needed: A real guest triple; observe guestAuthenticate returning accessToken with wrong/absent accessKey (vs REST rejecting same triple without accessKey).
+verify_steps: (AUTH) create own tenant → GenerateGroupLink → take returned userId/companyId/roomId → call mutation guestAuthenticate (NO accessKey) vs POST REST /v2/auth/guest-link (same triple, no accessKey) → compare 200+accessToken vs 401. Then cross-tenant roomId variant.
+impact: unauthorized room entry / guest-token mint without accessKey — MEDIUM-HIGH; if guest IDs predictable, enumeration up to session hijack.
+testability: AUTH_HELPED
+
+[HYP] OAuth redirect_uri validation bypass on FusionAuth authorize → authorization-code theft
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 65
+reasoning: FusionAuth 1.63.0 confirmed; `invalid_client` gate precedes redirect_uri handling; standard FusionAuth redirect_uri = exact-match registry, but path/query substitution bugs exist. Desktop client (S3 buckets) is the only client_id source; buckets 403 so harvest requires installer URL discovery.
+evidence_needed: registered client_id + its USP; then 302-to-attacker on mutated URI.
+verify_steps: harvest client_id → GET /oauth2/authorize?client_id&response_type=code&redirect_uri=<registered-uri>/../attacker|?extra= → compare 302 Location vs exact-match.
+impact: ATO of any alfaview user; HIGH.
+testability: AUTH_HELPED
+
+[HYP] Cross-tenant IDOR on GraphQL/REST user+room ops after free-tenant signup
+class: IDOR
+asset: apis.alfaview.com/v2 + app.alfaview.com/graphql
+confidence: 80
+reasoning: OpenAPI UUID path params (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}); bundle exposes matching GraphQL ops (fetchUserPermissions, generateFileDownloadURL, getPasscode, listRoomLinks, listUsersByIds, searchCompanies) — schema is the same multi-tenant admin surface. Company-scoped tokens; cross-tenant authz unverified. All data resolvers auth-gated (UNAUTHENTICATED) so a low-privilege token is the test baseline.
+evidence_needed: token of tenant A reads/alters tenant B's userId/roomId → 200 vs 403/204.
+verify_steps: (AUTH) signup free tenant → credentialsAuthenticate → bearer → GET /v2/users/{victimId} + query fetchUserPermissions(victimId) → observe cross-tenant 200 vs 403.
+impact: cross-tenant PII read, file download, permission/account mod, user delete; HIGH.
+testability: AUTH_HELPED
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] listComponents unauth 500: confidence 40 — resolver executes unauth but field is non-nullable-null; no data leak proven, no exploit path.
+- [PARKED] Device-flow abuse via public client: below momentum, needs client_id, phishing precondition.
+- [PARKED] Magic-token / guest-key entropy: needs own tenant to generate samples.
+- [FINAL] Cross-tenant IDOR: 80 — rank 1; schema now fully mapped (exact op names), blocked on token.
+- [FINAL] redirect_uri bypass: 65 — rank 2; grounded on FusionAuth + invalid_client gate, blocked on client_id.
+- [FINAL] Guest-auth ID-tuple gap (no accessKey): 62 — rank 3; NEW structural delta (GraphQL vs REST), unauth reachability proven by error-shape oracle.
+
+## STEP 5 — NEXT ACTION
+[NEXT] PROBE: POST `https://app.alfaview.com/graphql` with `{"query":"mutation{guestAuthenticate(userId:\"<own-tenant-guestId>\",companyId:\"<own-companyId>\",roomId:\"<own-roomId>\"){accessToken expiry}}"}` — repeat with the identical triple on REST `POST https://apis.alfaview.com/v2/auth/guest-link` (with and without accessKey); the 200+accessToken-vs-401 delta is the one-shot proof of the accessKey-bypass. Requires own-tenant guest triple: obtain via `[NEXT] HUMAN` — create one throwaway free alfaview company via the self-service signup ("Create your free alfaview company now" on app.alfaview.com login / `createCompany` mutation), which also unlocks the rank-1 IDOR test suite (GET /v2/users/{ownUserId} baseline, then fetchUserPermissions with a victim ID).
+
+## STEP 6 — LEARNING
+- [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Full admin/company GraphQL schema (60+ mutations, 45+ queries, exact args) is exposed in the public app.min.5b3949112f0cf682adc8.js bundle — complete attack map, per-resolver auth.
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin are unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED) and omit accessKey vs REST 4-field combo — structural divergence, top AUTH_HELPED lead.
+- [LEARN] ACCEPTED MISCONFIG @ webclient.alfaview.com: Minimal "alfaview - webclient" viewer SPA (200/4396B), no client_id/GraphQL config — low-value new host.
+- [LEARN] ACCEPTED AUTH @ staging-webclient.alfaview.com: HTTP 401 Basic realm="Protected" on app routes, /health=204 — staging webclient gated; default-cred testing OOS.
+- [LEARN] ACCEPTED MISCONFIG @ plausible.alfaview.com: Self-hosted Plausible analytics 204 — minimal.
+- [LEARN] REJECTED MISCONFIG @ production-alfaview-assets/staging-alfaview-assets.alfaview.com: Installer buckets (stable+beta/{linux,mac,win}) all 403 — OAuth client_id harvest via listing closed.
+- [LEARN] REJECTED MISCONFIG @ webviewer.dev.alfaview.com: timeout — no surface.
+- [LEARN] REJECTED MISCONFIG @ app.alfaview.com/web/join: 302→/ catch-all; no server-side guest processing.
+
+## STEP 7 — RISK
+[RISK] alfaview: 58/100. Passive yield re-expanded this session: the public bundle exposes the entire multi-tenant admin GraphQL schema and proves unauthenticated guest mutations exist with an accessKey-less signature — a concrete, testable Authz divergence from REST, plus the still-unchallenged cross-tenant IDOR pattern (conf 80) and FusionAuth redirect_uri surface (65). Risk is tempered by per-resolver auth gating on all PII ops and the fact that every exploit still resolves to obtaining a valid test tenant (HUMAN) or the desktop-only client_id; passive avenues are now essentially exhausted.
