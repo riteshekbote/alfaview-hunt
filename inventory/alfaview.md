@@ -257,3 +257,5 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/languages: Now returns 401 (was 404) — endpoint added to production, aligns with beta; OpenAPI specs now identical including /v2/languages — 2026-09-05 04:34
 - CHANGED beta-app.alfaview.com: HTTP 401 with WWW-Authenticate: Basic realm — different auth mechanism than main app (OAuth) — 2026-09-05 04:34
 - CHANGED alfatraining/bhc/kh-freiburg.alfaview.com: XSS hypothesis REJECTED — all three serve byte-identical generic SPA shell (1381B, MD5 554a39), no tenant-specific rendering, no reflections — targets exhaus
+
+## 2026-09-05 22:28:21 UTC

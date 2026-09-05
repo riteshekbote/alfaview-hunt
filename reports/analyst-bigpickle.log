@@ -6619,3 +6619,200 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 48/100 — unchanged, no live bug proven. This session closed the last fully-passive avenue (binary client_id harvest: three artifacts, zero OAuth config), pushing the OAuth chain to server-side gating (sso 6.8, redirect_uri 65→50). Remaining upside sits behind two HUMAN gates — a disposable-email signup (IDOR 80, guest-authz 55) and a desktop-login client_id capture (redirect_uri 50). New passively-mapped surfaces (staging-usercontent, assets.alfaview.com distribution) are low-yield read-only.
+===== ANALYST bigpickle 2026-09-05 22:28:21 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor u in "https://clone.staging-wordpress.alfaview.com/" "https://clone.staging-wordpress.alfaview.com/wp-json/" "https://clone.staging-wordpress.alfaview.com/wp-login.php" "https://client-diagnostics-ingest.alfaview.com/" "https://client-diagnostics-ingest.alfaview.com/health" "https://client-diagnostics-ingest.alfaview.com/v1/diagnostics" "https://plausible.alfaview.com/" "https://plausible.alfaview.com/register" "https://plausible.alfaview.com/api/stats/realtime/visitors" "https://design-assets.alfaview.com/?list-type=2" "https://hello-world.atlas-spike.atlas.alfaview.com/"; do printf "%-80s -> %s\n" "$u" "$(curl -ksS -o /dev/null -w '%{http_code}|%{redirect_url}|%{size_download}B|%{content_type}' --max-time 15 "$u")"; sleep 1.2; done
+https://clone.staging-wordpress.alfaview.com/                                    -> 303|https://clone.staging-wordpress.alfaview.com:443/login.php|0B|text/html; charset=UTF-8
+https://clone.staging-wordpress.alfaview.com/wp-json/                            -> 404||990B|text/html
+https://clone.staging-wordpress.alfaview.com/wp-login.php                        -> 404||16B|text/html; charset=UTF-8
+https://client-diagnostics-ingest.alfaview.com/                                  -> 404||39B|application/json
+https://client-diagnostics-ingest.alfaview.com/health                            -> 200||16B|application/json
+https://client-diagnostics-ingest.alfaview.com/v1/diagnostics                    -> 404||39B|application/json
+https://plausible.alfaview.com/                                                  -> 204||0B|
+https://plausible.alfaview.com/register                                          -> 404||146B|text/html
+https://plausible.alfaview.com/api/stats/realtime/visitors                       -> 404||146B|text/html
+https://design-assets.alfaview.com/?list-type=2                                  -> 404||146B|text/html
+https://hello-world.atlas-spike.atlas.alfaview.com/                              -> 404||19B|text/plain; charset=utf-8
+[0m
+Interesting findings. Let me probe deeper on the live surfaces discovered.
+[0m$ [0mecho "=== client-diagnostics-ingest /health body ==="; curl -ksS --max-time 15 "https://client-diagnostics-ingest.alfaview.com/health"; echo; echo "=== clone.staging-wordpress login.php ==="; curl -ksS --max-time 15 -L "https://clone.staging-wordpress.alfaview.com/login.php" | head -c 2000; echo; echo "=== hello-world atlas ==="; curl -ksS --max-time 15 "https://hello-world.atlas-spike.atlas.alfaview.com/health" -w "|%{http_code}"; echo; curl -ksS --max-time 15 "https://hello-world.atlas-spike.atlas.alfaview.com/" -w "|%{http_code}"; echo
+=== client-diagnostics-ingest /health body ===
+{"status":"ok"}
+
+=== clone.staging-wordpress login.php ===
+<!DOCTYPE html><html lang="en" dir="ltr" class="sid-plesk" data-theme="contrast">
+<head>
+    <meta charset="utf-8">    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="SKYPE_TOOLBAR" content="SKYPE_TOOLBAR_PARSER_COMPATIBLE">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="forgery_protection_token" id="forgery_protection_token" content="2cd9ad87e3ca0e3d264d3b73e3e556ee">
+    <title>Plesk Obsidian 18.0.80</title>    
+            <link rel='icon' href='/favicon.ico?1788301181' sizes='any'>
+            <link rel='icon' href='/images/favicon.svg?1788301181' type='image/svg+xml'>
+            <link rel='apple-touch-icon' href='/images/apple-touch-icon.png?1788301181'>
+            <link rel='manifest' href='/manifest.webmanifest?1788301181' />    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="plesk-build" content="1800260901.22">
+    <meta name="plesk-revision" content="3cd584f599cf1e289cbce697d63f97612b184f9c">
+    <link rel="stylesheet" href="/ui-library/plesk-ui-library.css?1788301181">
+<link rel="stylesheet" href="/theme-skins/IONOS/css/main.css?1788301181">
+<link rel="stylesheet" href="/theme-skins/IONOS/css/custom.css?1643746189">
+    <meta name='theme-color' content='#ffffff'><meta name='theme-color-default' content='#ffffff'><meta name='theme-color-contrast' content='#ffffff'><meta name='theme-color-dark' content='#191919'>        <link href="/modules/letsencrypt/global.css?1788325423" media="screen" rel="stylesheet" type="text/css" >                            <script type="text/javascript" src="/cp/javascript/externals/prototype.js?1788301181"></script>
+<script type="text/javascript" src="/ui-library/plesk-ui-library.min.js?1788301181"></script>
+<script type="text/javascript" src="/cp/javascript/vendors.js?1788301181"></script>
+<script type="text/javascript" src="/cp/javascript/main.js?1788301181"></script>
+<script type="text/javascript" src="/cp/javcurl: (23) Failure writing output to destination
+
+=== hello-world atlas ===
+404 page not found
+|404
+404 page not found
+|404
+[0m
+Two significant findings. Let me investigate the Plesk server and the diagnostic ingest further.
+[0m$ [0mecho "=== Plesk login gate? probe server-info, panel URLs ==="; for p in "/login_up.php" "/cp" "/admin" "/modules" "/api" "/v2" "/health"; do printf "%-30s -> %s\n" "$p" "$(curl -ksS -o /dev/null -w '%{http_code}|%{redirect_url}' --max-time 15 "https://clone.staging-wordpress.alfaview.com$p")"; sleep 1; done; echo "=== version/theme/copyright ==="; curl -ksS --max-time 15 "https://clone.staging-wordpress.alfaview.com/login.php" | grep -iE "plesk|ionos|build|copyright" | head
+=== Plesk login gate? probe server-info, panel URLs ===
+/login_up.php                  -> 200|
+/cp                            -> 303|https://clone.staging-wordpress.alfaview.com:443/login.php?success_redirect_url=%2Fcp
+/admin                         -> 303|https://clone.staging-wordpress.alfaview.com:443/login.php?success_redirect_url=%2Fadmin
+/modules                       -> 301|https://clone.staging-wordpress.alfaview.com/modules/
+/api                           -> 404|
+/v2                            -> 404|
+/health                        -> 404|
+=== version/theme/copyright ===
+[0m
+[0m$ [0mecho "=== client-diagnostics-ingest probe endpoints ==="; for p in "/ingest" "/v1/ingest" "/upload" "/v1/upload" "/report" "/v1/report" "/api" "/diagnostics" "/status" "/metrics" "/debug" "/bundle" "/v1/bundle" "/openapi.json" "/swagger.json" "/docs" "/v1"; do printf "%-24s -> %s\n" "$p" "$(curl -ksS -o /dev/null -w '%{http_code}|%{size_download}B|%{content_type}' --max-time 12 "https://client-diagnostics-ingest.alfaview.com$p")"; sleep 1; done
+=== client-diagnostics-ingest probe endpoints ===
+/ingest                  -> 404|39B|application/json
+/v1/ingest               -> 404|39B|application/json
+/upload                  -> 404|39B|application/json
+/v1/upload               -> 404|39B|application/json
+/report                  -> 404|39B|application/json
+/v1/report               -> 404|39B|application/json
+/api                     -> 404|39B|application/json
+/diagnostics             -> 404|39B|application/json
+/status                  -> 404|39B|application/json
+/metrics                 -> 404|39B|application/json
+/debug                   -> 404|39B|application/json
+/bundle                  -> 404|39B|application/json
+/v1/bundle               -> 404|39B|application/json
+/openapi.json            -> 404|39B|application/json
+/swagger.json            -> 404|39B|application/json
+/docs                    -> 404|39B|application/json
+/v1                      -> 404|39B|application/json
+[0m
+The client-diagnostics-ingest `/health` endpoint leaks Go service identification and protocol hints. Let me check it more and examine the 39B error body and any server headers.
+[0m$ [0mecho "=== server headers ==="; curl -ksSI --max-time 15 "https://client-diagnostics-ingest.alfaview.com/" | head -20; echo; echo "=== error body ==="; curl -ksS --max-time 15 "https://client-diagnostics-ingest.alfaview.com/v1/diagnostics"; echo; echo "=== health headers+full ==="; curl -ksSI --max-time 15 "https://client-diagnostics-ingest.alfaview.com/health"; echo; echo "=== POST probe /health (read-only OPTIONS acceptable, but check method semantics) ==="; curl -ksS -o /dev/null -w '%{http_code}' -X OPTIONS --max-time 12 "https://client-diagnostics-ingest.alfaview.com/v1/diagnostics"; echo " <OPTIONS /v1/diagnostics>"; sleep 1; curl -ksS -o /dev/null -w '%{http_code}' -X OPTIONS --max-time 12 "https://client-diagnostics-ingest.alfaview.com/"; echo " <OPTIONS />"
+=== server headers ===
+HTTP/2 404 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 29100106b705cd1d
+date: Sat, 05 Sep 2026 22:27:27 GMT
+content-length: 39
+server: edge-proxy
+vary: Accept-Encoding
+
+
+=== error body ===
+{"status":"error","error":"not found"}
+
+=== health headers+full ===
+HTTP/2 405 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 45c3764744031f1f
+date: Sat, 05 Sep 2026 22:27:28 GMT
+content-length: 48
+server: edge-proxy
+vary: Accept-Encoding
+
+
+=== POST probe /health (read-only OPTIONS acceptable, but check method semantics) ===
+404 <OPTIONS /v1/diagnostics>
+404 <OPTIONS />
+[0m
+The HEAD on /health returns 405 (GET-only). This is a Go edge-proxy service ("edge-proxy" server header, same as assets.alfaview.com CDN). The client-diagnostics-ingest is a strictly GET-routed health endpoint service — no exposed ingest surface. This is consistent with a known-secret ingest (POST-gated). 
+
+Let me consolidate. This session's findings:
+1. **clone.staging-wordpress.alfaview.com** → Plesk Obsidian 18.0.80 control panel login (IONOS theme). WordPress instance behind, but WP itself not exposed. Plesk login is a public login panel — out of scope class (public login panels rejected). However, the Plesk control panel version + the fact that a Wordpress staging clone exposes Plesk panel is a minor misc. Panels are rejected class ("public login panels"). Not reportable.
+2. **client-diagnostics-ingest.alfaview.com** → Go edge-proxy, `/health`=200 `{"status":"ok"}`, strict GET routing, everything else 404. Mirrors the storage-usercontent/service pattern. Low yield.
+3. **hello-world.atlas-spike.atlas.alfaview.com** → Go 404 "page not found" on all paths. Staging/test microservice. No surface.
+
+None of these disprove or advance the live-risk threads. All three are effectively exhausted or rejected-class. Let me check one more potential: does Plesk leak anything about the WordPress deployment or is there an exposed install? Actually `wp-login.php` returned 404 earlier and `/` 303→login.php means the host is now a pure Plesk panel host, not WordPress at all. The "clone.staging-wordpress" naming now appears stale.
+
+Let me also quickly verify whether the diagnostics-ingest has any openapi or matching structure to the storage service. Already probed — 404 everywhere. Done.
+
+Let me write the structured output.
+[0m$ [0mfor u in "https://clone.staging-wordpress.alfaview.com/wp-json/wp/v2/users" "https://clone.staging-wordpress.alfaview.com/readme.html" "https://clone.staging-wordpress.alfaview.com/xmlrpc.php" "https://clone.staging-wordpress.alfaview.com/wp-content/"; do printf "%-70s -> %s\n" "$u" "$(curl -ksS -o /dev/null -w '%{http_code}|%{size_download}B' --max-time 12 "$u")"; sleep 1.2; done; echo "--- confirm Plesk-only (no WP) ---"; curl -ksS -o /dev/null -w '%{http_code}\n' --max-time 12 "https://clone.staging-wordpress.alfaview.com/wp-json/wp/v2/posts"
+https://clone.staging-wordpress.alfaview.com/wp-json/wp/v2/users       -> 404|990B
+https://clone.staging-wordpress.alfaview.com/readme.html               -> 404|990B
+https://clone.staging-wordpress.alfaview.com/xmlrpc.php                -> 404|16B
+https://clone.staging-wordpress.alfaview.com/wp-content/               -> 404|990B
+--- confirm Plesk-only (no WP) ---
+404
+[0m
+No WordPress surface exposed — query handler intercepts everything and redirects to Plesk login. This confirms a Plesk-only control panel host. Public login panels are a rejected class. No live WP install exposed.
+
+All three probes this session are low-yield/exhausted. Let me finalize the analysis.
+
+STEP 1 — DELTA:
+- [CHANGED] clone.staging-wordpress.alfaview.com: NOT a WordPress site — Plesk Obsidian 18.0.80 control panel (IONOS theme); anonymous query handler 303→login.php, no WP paths/wp-json/xmlrpc exposed. Plesk login is a public login panel (rejected class).
+- [NEW] client-diagnostics-ingest.alfaview.com: Go edge-proxy, /health=200 {"status":"ok"} GET-only (HEAD=405), all other paths strict 404 {"status":"error","error":"not found"}; mirrors staging-usercontent service pattern; upload/ingest path POST-gated (unprovable passively).
+- [NEW] hello-world.atlas-spike.atlas.alfaview.com: Go service 404 "page not found" on all probed paths, no surface.
+- [NEW] design-assets.alfaview.com + plausible.alfaview.com = 404/204, no surface.
+
+STEP 2 — PRIORITIZE: none of these new surfaces score high. Skip low-value PRIO entries.
+
+STEP 3-4 — HYPOTHESES: all three new surfaces are exhausted or rejected-class; no new high-confidence hypothesis. The standing live threads (IDOR/guest-authz/OAuth/idP) remain HUMAN-gated.
+
+STEP 5 — NEXT: stay on the rank-1 authenticated thread, needs HUMAN signup.
+
+STEP 6 — LEARN entries.
+
+STEP 7 — RISK.
+
+Let me output the structured blocks concisely.
+
+---
+STEP 1 — DELTA
+- **[CHANGED] clone.staging-wordpress.alfaview.com**: NOT WordPress — Plesk Obsidian 18.0.80 control panel (IONOS theme, `sid-plesk`), anonymous query handler 303→login.php; wp-json/xmlrpc/wp-content all 404. Plesk login = public login panel → rejected class.
+- **[NEW] client-diagnostics-ingest.alfaview.com**: Go edge-proxy, `/health`=200 `{"status":"ok"}` GET-only (`HEAD`→405), all other paths strict 404 `{"status":"error","error":"not found"}`; mirrors `staging-usercontent` edge-proxy pattern → upload/ingest path POST-gated, unprovable passively.
+- **[NEW] hello-world.atlas-spike.atlas.alfaview.com**: Go service, 404 `page not found` on all probed paths (`/`, `/health`). No surface.
+- **[NEW] design-assets.alfaview.com** (404) / **plausible.alfaview.com** (204+404): no exposed surface.
+
+STEP 2 — PRIORITIZE
+No new surface ranks ≥5. Plesk panel = rejected class; diagnostics-ingest & atlas-spike = health-only shells. No new PRIO.
+
+STEP 3 — HYPOTHESES
+None of the newly-probed surfaces support a hypothesis above the confidence floor; no endpoint-map-only additions. (Standing high-value threads unchanged, all HUMAN-gated as before.)
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Plesk panel on clone.staging-wordpress: public login panel → REJECTED class per program rules (no credential/brute testing).
+- [PARKED] client-diagnostics-ingest /health: `/health` alone is descriptive-only/headers → rejected class; actual ingest path POST-gated (can't prove passively without auth).
+- [PARKED] atlas-spike hello-world: no service surface revealed; low-confidence shape only.
+- [FINAL] Cross-tenant IDOR — 80. Blocked: disposable-email signup (HUMAN).
+- [FINAL] Guest-authz lifecycle/cross-tenant splice — 55. Blocked: own tenant guest triple (HUMAN).
+- [FINAL] OAuth redirect_uri bypass — 50. Blocked: server-side client_id (HUMAN webview HAR).
+- [FINAL] staging-usercontent upload authz — 42. POST-gated parity diff.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Create one throwaway free alfaview company via `app.alfaview.com` signup (unauthenticated `Signup` mutation, planId `free-business`, disposable inbox → click activation link → `finishSignup({companyId,username,activationToken,password})`). This single unlock feeds all rank-1 threads: (a) IDOR `GET /v2/rooms/{victimRoomId}/passcode` 403-vs-200, (b) GraphQL `guestAuthenticate` without accessKey splice test, (c) `CredentialsAuthenticate`-scoped pass over `staging-usercontent.alfaview.com/v1/files/upload` staging-vs-prod parity.
+
+STEP 6 — LEARNING
+- [LEARN] REJECTED MISCONFIG @ clone.staging-wordpress.alfaview.com: Host is Plesk Obsidian 18.0.80 control panel (IONOS), not an exposed WordPress — anonymous 303→login.php, all wp-json/xmlrpc/wp-content 404. Public login panel = rejected class; target exhausted.
+- [LEARN] REJECTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: Go edge-proxy shell; `/health` GET-only 200 {"status":"ok"}, everything else strict 404. Ingest/upload path POST-gated (unprovable passively) — mirrors storage-usercontent pattern. Target exhausted as read-only surface.
+- [LEARN] REJECTED MISCONFIG @ hello-world.atlas-spike.atlas.alfaview.com: Go 404 on all paths, no service surface.
+- [LEARN] REJECTED MISCONFIG @ design-assets.alfaview.com / plausible.alfaview.com: 404/204 — no exposed surface.
+
+STEP 7 — RISK
+[RISK] alfaview: 48/100 — unchanged, no live bug proven. This session resolved three remaining unprobed inventory hosts, all to dead ends (Plesk panel = rejected-class; diagnostics-ingest & atlas-spike = health shells). No new passive avenue opened; all meaningful upside remains behind the two HUMAN gates (disposable-email signup for IDOR 80 / guest-authz 55; desktop-login client_id capture for redirect_uri 50).

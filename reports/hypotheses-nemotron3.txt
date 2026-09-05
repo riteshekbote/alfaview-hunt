@@ -1,21 +1,11 @@
-## 2026-09-05 20:50:02 UTC [target] (model nemotron3)
-[NEW] sso.alfaview.com: FusionAuth 1.63.0 OIDC discovery live (issuer=acme.com misconfiguration, implicit flow enabled, HS256/HS384/HS512 in supported algs but RSA-only JWKS) — 2026-09-05 00:15
-[NEW] test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms: linux/amd64, windows/amd64, mac/amd64, mac/arm64), statically linked ELF, no integrity hashes/signatures visible — 2026-09-05 00:15
-[NEW] app.alfaview.com: Full admin GraphQL schema leaked in public JS bundle (1.09MB, 60+ mutations, 45+ queries); resolver auth INCONSISTENT (listIdentityProviders returns data unauth, listComponents unauth 500); guestAuthenticate/guestJoin mutations reachable unauth (BAD_USER_INPUT not UNAUTHENTICATED) — NO accessKey parameter vs REST 4-field requirement — 2026-09-05 04:34
-[NEW] app.alfaview.com: Signup mutation unauthenticated (AppSignup.min.js lazy chunk) — sends NO token header; activation email-gated via finishSignup at /finish-signup route; Apollo client uses credentials:"include" + custom token header (not Authorization/Bearer); no CSRF token observed — 2026-09-05 08:50
-[NEW] alfaview.com: Marketing page live (301→/en, nginx, Accept-Language vary, 177KB, strict CSP, matomo) — no unauthenticated SSO login links — 2026-09-05 04:34
-[NEW] www.alfaview.com: 301→alfaview.com/en (no independent surface) — 2026-09-05 04:34
-[NEW] beta-ionoscloud-21-beta-engine-* (2 hosts): Confirmed timeout (000) — internal/firewalled like alfacheck-* fleet; beta-ionoscloud-21 fleet 7 hosts total, only 1/7 probed (hydra=timeout), 6 remain unprobed — 2026-09-05 04:34
-[CHANGED] apis.alfaview.com/v2/languages: Now returns 401 (was 404) — endpoint added to production, aligns with beta; OpenAPI specs now identical including /v2/languages — 2026-09-05 04:34
-[CHANGED] beta-app.alfaview.com: HTTP 401 with WWW-Authenticate: Basic realm — different auth mechanism than main app (OAuth) — 2026-09-05 04:34
-[CHANGED] alfatraining/bhc/kh-freiburg.alfaview.com: XSS hypothesis REJECTED — all three serve byte-identical generic SPA shell (1381B, MD5 554a39), no tenant-specific rendering, no reflections — targets exhausted — 2026-09-05 04:34
-[PRIO] sso.alfaview.com,8.3,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=10,cloud_surface=8,freshness=10
+## 2026-09-05 22:26:11 UTC [target] (model nemotron3)
 [PRIO] app.alfaview.com/graphql,8.1,attack_surface=9,business_value=9,tech_exposure=9,gate_ease=8,cloud_surface=7,freshness=10
 [PRIO] test.alfaview.com,7.8,attack_surface=8,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=7,freshness=9
 [PRIO] apis.alfaview.com,7.5,attack_surface=9,business_value=10,tech_exposure=8,gate_ease=2,cloud_surface=8,freshness=7
 [PRIO] beta-ionoscloud-21-* fleet (6 unprobed),6.5,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=8,freshness=8
+[PRIO] sso.alfaview.com,6.2,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=5,cloud_surface=6,freshness=9
 [PRIO] alfaview.com,5.5,attack_surface=6,business_value=6,tech_exposure=5,gate_ease=10,cloud_surface=6,freshness=8
-[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com leading to authorization code theft
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
 class: OATH
 asset: sso.alfaview.com
 confidence: 75
