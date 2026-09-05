@@ -131,3 +131,13 @@ https://apis.alfaview.com/v2/rooms/{victimRoomId -> HTTP 401
 
 ## 2026-09-05 15:02:37 UTC
 
+
+## 2026-09-05 17:06:28 UTC
+https://sso.alfaview.com/oauth2/authorize -> 200 len=0
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+https://test.alfaview.com/ -> 200 len=494
+https://app.alfaview.com/` -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` -> HTTP 400
+https://app.alfaview.com -> 200 len=1381
