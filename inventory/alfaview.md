@@ -176,3 +176,11 @@ www.alfaview.com
 - CHANGED Main domain set (6 hosts): Previously only support/staging probed (301) → now alfaview.com + sso.alfaview.com confirmed HTTP 200, 4 remain unprobed (app, dev, test, www)
 
 ## 2026-09-05 00:15:07 UTC
+
+## 2026-09-05 04:34:13 UTC
+- NEW sso.alfaview.com: FusionAuth 1.63.0 OIDC discovery live (issuer=acme.com, implicit flow, HS256 in supported algs but RSA-only JWKS) — confirmed 2026-09-05 00:15
+- NEW test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) — no integrity verification visible
+- NEW alfaview.com: Marketing page live (301→/en, 177KB, strict CSP, matomo) — no SSO login links on marketing domain
+- CHANGED beta-ionoscloud-21-beta-engine-* (2 hosts): Confirmed timeout (000) — internal/firewalled like alfacheck-* fleet
+- CHANGED alfaview.com: Root now redirects to /en with nginx + Accept-Language vary header
+- CHANGED www.alfaview.com: 301→alfaview.com/en (no independent surface)

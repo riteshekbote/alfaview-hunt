@@ -1790,3 +1790,407 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 [RISK] alfaview: 48/100. Newly exposed FusionAuth IAM is the highest-value remaining surface (identity = crown jewels) with concrete drift (issuer acme.com) and live OAuth/device endpoints, but every exploit path (redirect_uri, device-flow, api-key IDOR) still resolves to a valid client_id or account — auth-gated. CLI-side JWT/alg avenues closed by the opaque-token oracle. Risk rises if a public client_id or test account is obtained; until then, passive yield is near exhausted.
+===== ANALYST bigpickle 2026-09-05 04:34:13 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS -D - -o /tmp/opencode/sso_register.html -m 20 "https://sso.alfaview.com/oauth2/register" 2>&1 | head -40; echo "---BODY---"; wc -c /tmp/opencode/sso_register.html
+HTTP/2 200 
+set-cookie: fusionauth.sso=QkJCAEFyaVFJRFVubW0xZlVlWHprWTVHSHNlRFdUMkxsZHlVS0FkNmt0SnppS2FGRlQxUTc4UXAwbll2; HttpOnly; Max-Age=2147483647; Path=/; SameSite=Lax; Secure
+x-frame-options: DENY
+content-type: text/html; charset=UTF-8
+cache-control: no-store
+date: Sat, 05 Sep 2026 04:30:39 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+---BODY---
+6189 /tmp/opencode/sso_register.html
+[0m
+[0m$ [0mcurl -sS -D - -o /dev/null -m 20 "https://sso.alfaview.com/oauth2/register/" 2>&1 | head -25
+HTTP/2 200 
+set-cookie: fusionauth.sso=QkJCAEFtd21GVVA3UU1SQW1mSXJwT2VZcU05MVFlc1V0TTFGd0RjVlh0c3VmbzVpeFNFcEZwRXRtdUJM; HttpOnly; Max-Age=2147483647; Path=/; SameSite=Lax; Secure
+x-frame-options: DENY
+content-type: text/html; charset=UTF-8
+cache-control: no-store
+date: Sat, 05 Sep 2026 04:30:39 GMT
+server: edge-proxy
+vary: Accept-Encoding
+[0m
+[0m→ [0mRead /tmp/opencode/sso_register.html
+`/oauth2/register` returns 200 with a 6189-byte form — open self-registration candidate. Let me inspect it.
+Registration endpoint exists but requires `redirect_uri` (FusionAuth error). Now harvesting OAuth client config from the app web client.
+[0m
+[0m$ [0mcurl -sS -D /tmp/opencode/app_hdr.txt -o /tmp/opencode/app_root.html -m 25 "https://app.alfaview.com/" 2>&1; echo "=== HEADERS ==="; cat /tmp/opencode/app_hdr.txt | head -20; echo "=== SIZE ==="; wc -c /tmp/opencode/app_root.html
+=== HEADERS ===
+HTTP/2 200 
+strict-transport-security: max-age=15552000; includeSubDomains
+content-security-policy: default-src 'self' https://alfaview.com https://*.alfaview.com;connect-src 'self' https://alfaview.com https://*.alfaview.com https://plausible.alfaview.com;img-src 'self' data: https://alfaview.com https://*.alfaview.com;script-src 'self' 'unsafe-eval' https://alfaview.com https://*.alfaview.com ;script-src-attr 'none';child-src alfaview:;frame-ancestors 'self' https://omega-lectures.com https://*.omega-lectures.com;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;form-action 'self';object-src 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+x-content-type-options: nosniff
+x-xss-protection: 0
+referrer-policy: origin-when-cross-origin
+accept-ranges: bytes
+cache-control: public, max-age=0
+last-modified: Fri, 04 Sep 2026 06:31:26 GMT
+etag: W/"565-1a06b1d6e30"
+content-type: text/html; charset=UTF-8
+content-length: 1381
+date: Sat, 05 Sep 2026 04:30:44 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+=== SIZE ===
+1381 /tmp/opencode/app_root.html
+[0m
+[0m→ [0mRead /tmp/opencode/app_root.html
+SPA shell loads `app.min.5b3949112f0cf682adc8.js` from assets host. Fetching and grepping for OAuth config.
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/app.min.js -m 60 "https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.5b3949112f0cf682adc8.js" 2>&1; wc -c /tmp/opencode/app.min.js
+1090319 /tmp/opencode/app.min.js
+[0m
+[0m$ [0mgrep -oiE '.{80}(client_id|clientId|oauth|authorize|redirect_uri|redirectUri|sso\.alfaview|fusionauth|oidc|accessKey).{80}' /tmp/opencode/app.min.js | head -40
+Access",direct_join_link:"Direct link",direct_join_link_hint:"Direct access for authorized registered users",copy_link_button:"Copy link",default_user_role:"Default user
+.Ay);var R=new r.Ay({mode:"hash",routes:[{path:"/",redirect:"/welcome"},{path:"/authorize/:principal/:token",component:function(){return t.e(8413).then(t.bind(t,60399))}
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+ialIn\n    startDate: $startDate\n    expiry: $expiry\n  ) {\n    link {\n      accessKey\n      guestId\n      validFrom\n      expiry\n      displayName\n      role\n 
+ $expiry, timeZone: $timeZone) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n     
+ linkSettings: $linkSettings) {\n    links {\n      ... on GuestLink {\n        accessKey\n        guestId\n        validFrom\n        expiry\n        displayName\n     
+uestId: $guestId, role: $role) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        jo
+Id, allowDialIn: $allowDialIn) {\n    link {\n      ... on GuestLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        jo
+  dialInAllowed\n        dialInCode\n      }\n      ... on GroupLink {\n        accessKey\n        guestId\n        expiry\n        displayName\n        role\n        jo
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"guestId"},
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"roomId"},a
+tionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"accessKey"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"roomId"},a
+lectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"userProfilesWithNoAuth"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"orphanedUs
+roomId: String!) {\n  listRoomLinks(roomId: $roomId) {\n    guestLinks {\n      accessKey\n      guestId\n      expiry\n      validFrom\n      displayName\n      email\n
+roomId: String!) {\n  listRoomLinks(roomId: $roomId) {\n    groupLinks {\n      accessKey\n      guestId\n      validFrom\n      expiry\n      displayName\n      managed
+}\n}\n\nquery ListCompanyLinks {\n  listCompanyLinks {\n    guestLinks {\n      accessKey\n      roomId\n      roomName\n      guestId\n      expiry\n      validFrom\n  
+email\n      locale\n      role\n      joinLink\n    }\n    groupLinks {\n      accessKey\n      roomId\n      roomName\n      managed\n      guestId\n      expiry\n    
+n  }\n}\n\nquery GetOrphanedUsers {\n  getOrphanedUsers {\n    userProfilesWithNoAuth\n    orphanedUserAccounts\n  }\n}\n\nquery FetchUserPermissions($userId: String
+:"AdminUserInfoByEmail",7759:"AppError500",7954:"AppMeetingManagement",8413:"AppAuthorize",8445:"CommonRoomSettingsInviteExternalMembersDialog",8857:"CommonRoomSettingsA
+[0m
+[0m$ [0mgrep -oiE '.{120}sso\.alfaview\.com.{120}' /tmp/opencode/app.min.js | head -10; echo "=== clientId minified ==="; grep -oiE '.{80}clientId.{80}' /tmp/opencode/app.min.js | head -10; echo "=== oauth2 ==="; grep -oiE '.{80}oauth2.{80}' /tmp/opencode/app.min.js | head -10; echo "=== response_type/implicit ==="; grep -oiE '.{60}(response_type|implicit|token_endpoint|authorization_endpoint).{60}' /tmp/opencode/app.min.js | head -10
+=== clientId minified ===
+=== oauth2 ===
+=== response_type/implicit ===
+[0m
+No OAuth client config in web bundle — it's a guest-join client using GraphQL. Let me find the API/GraphQL endpoint config.
+[0m$ [0mgrep -oiE '.{100}(apis\.alfaview|graphql|/v2/|apiUrl|baseUrl|ALFA).{100}' /tmp/opencode/app.min.js | grep -viE 'graphql-library-string|kind:|value:' | head -30
+.zU(2);throw i.parseError=e,i}return t},c=function(e){void 0===e&&(e={});var n=e.uri,t=void 0===n?"/graphql":n,c=e.fetch,m=e.includeExtensions,p=e.useGETForQueries,f=(0,i.Tt)(e,["uri","fetch","includeExtensi
+(function(e){var n=function(e,n){var t=e.getContext().uri;return t||("function"==typeof n?n(e):n||"/graphql")}(e,t),s=e.getContext(),m={};if(s.clientAwareness){var f=s.clientAwareness,h=f.name,v=f.version;h&
+,p=["Windows","Mac OS","Android","iOS"].concat(m),f={production:{stable:{mac_os:"https://production-alfaview-assets.alfaview.com/stable/mac/",windows:"https://production-alfaview-assets.alfaview.com/stabl
+aview-assets.alfaview.com/stable/linux/",android:"https://play.google.com/store/apps/details?id=com.alfaview.app",i_os:"https://apps.apple.com/de/app/alfaview/id1383675030"}},staging:{stable:{mac_os:"http
+ble/mac/",windows:"https://staging-alfaview-assets.alfaview.com/stable/win/",linux:"https://staging-alfaview-assets.alfaview.com/stable/linux/",android:"https://play.google.com/store/apps/details?id=com.a
+view.app",i_os:"https://apps.apple.com/de/app/alfaview/id1383675030"},beta:{mac_os:"https://staging-alfaview-assets.alfaview.com/beta/mac/",windows:"https://staging-alfaview-assets.alfaview.com/beta/win/"
+g-alfaview-assets.alfaview.com/beta/linux/"}}},g="production",h={development:"https://webviewer.dev.alfaview.com:8443/join",staging:"https://staging-app.alfaview.com/web/join",beta:"https://beta-app.alfav
+/join",production:"https://app.alfaview.com/web/join"}[g],v={development:"https://staging-webclient.alfaview.com",staging:"https://staging-webclient.alfaview.com",beta:"https://webclient.alfaview.com",pro
+,c=t(46331),m=t(84231),p=t(31142),f=t(54150),g=new p.BusinessLogicServicePromiseClient("https://app.alfaview.com",null,{}),h=(i={servicePromiseClient:g,serviceTrackingInfo:f.TrackingInfo,serviceTaskProgre
+ter:!0},attempts:{max:3,retryIf:function(e){return!!e&&e.statusCode>=500}}}),new s.V,new l.P({uri:"/graphql",credentials:"include",fetch:u.A})]),_=function(e){var n=e.query,t=e.variables,i=e.headers,o=void 0
+,s=function(){return r.R.t(["production","beta"].indexOf("production")>-1?"urls.production_download_alfaview_page":"urls.staging_download_alfaview_page")},l=function(e){var n=e.companyURLDomain,t=e.compan
+word:"Forgot password?",no_account:"You don't have an access yet?",create_account:"Create your free alfaview company now",email_placeholder:"Email address",password_placeholder:"Password",providers:{login
+:{title:"User account setup via LDAP",title_success:"User account created",description:"Create your alfaview account by providing your LDAP credentials.",username:"LDAP - Username",password:"LDAP - Passwo
+> and your <span class="font-weight-medium">LDAP password</span>.',example_mail:"firstname.lastname@alfatraining.de",example_password:"your-LDAP-password",ldap_prompt:"Looking for the LDAP login?",go_to_l
+ng",main_title:"You are about to join",name_label:"Your name",join:"Join",main_note:"You don't have alfaview installed?",download_alfaview:"Install alfaview",terms_title:"Terms and Conditions <br />and Pr
+itle:"In order to use alfaview you must <br />accept our Terms and Conditions.",installed_title:"Is alfaview installed on your computer?",installed_subtitle:"You'll need alfaview to join this meeting room
+,download_title:"Download alfaview for {name}",download_subtitle:"The first step is to download the alfaview application.",download_other_os:"alfaview for other platforms",download_button:"Download",downl
+iled_launch:"Has alfaview not started?",download_subtitle_failed_launch:{line_1:"Make sure that the alfaview app is installed.",line_2:"Check whether the alfaview app is hidden by other applications.",lin
+ling the alfaview app.",line_4:'If none of the above measures help, please <a href="https://support.alfaview.com/en/first-steps/getting-started/troubleshooting-and-log-files/#i-need-support" target="_blan
+ad_title_not_supported:'Unfortunately, your operating system is currently not natively supported by alfaview. Please use the "Join with browser" option to join the meeting.',install_title:"Now install alf
+ter you finished the installation, press done and join your meeting.",check_install_button:"Install alfaview app",done_button:"Done",next:"Next",ready_title:"You are ready to join the room",ready_note:"If
+:"Your name and your consent to our terms and conditions will be remembered for 45 days.",spectator_alfaview_join:"Join with alfaview app",webviewer_join:"Join with browser",webviewer_join_aria:"Join with
+"An unknown error occurred, please try again."},mobile:{appStoreLink:"https://apps.apple.com/us/app/alfaview/id1383675030",get_alfaview:"Get the alfaview app",app_hint:"Once the app is installed, please o
+2:"Access to all features",line_2_with_webclient:"Best quality and performance"},client_aria_label:"alfaview native app capabilities",browser_list:{line_1:"No installation required",line_2:"Allows watchin
+"font-weight-bold lt-primary-text-color">Microsoft Edge, Google Chrome</span>'},browser_aria_label:"alfaview in browser capabilities - not recommended for screen readers"},no_web_access_warning:"Joining v
+name:",delete_successfull_description:"The company was successfully deleted.",support_link:"https://alfaview.com/en/support"},top_nav:{room_structure_editor:{basic:"Interactive editor",advanced:"Advanced 
+any with id {companyId} does not exist"}},rooms_landing:{hint:"You can now access your room list in alfaview",launch_alfaview:"Launch alfaview client",open_room_list:"I have an older version, I still need
+to create a new room.",misconfigured_quota_tooltip:"This room type is misconfigured. Please contact alfaview support to resolve this issue.",toast:{quota_error:"You do not have enough quota to create this
+tion_provider:"Transcription provider",transcription_provider_hint:"The provider can only be set by alfaview internal staff.",translation_provider:"Translation provider",translation_provider_hint:"The tra
+roup link",create_link_info:"Group links can be used by several people at the same time to enter an alfaview room.",copy_link_button:"Copy link",copy_inactive_link_button:"Copy inactive link",group_link_n
+[0m
+[0m$ [0mcurl -sS -D - -o /tmp/opencode/gql_bare.txt -m 20 "https://app.alfaview.com/graphql" -H "Accept: application/json" 2>&1 | head -20; echo "=== BODY ==="; wc -c /tmp/opencode/gql_bare.txt; head -c 400 /tmp/opencode/gql_bare.txt
+HTTP/2 400 
+strict-transport-security: max-age=15552000; includeSubDomains
+content-security-policy: default-src 'self' https://alfaview.com https://*.alfaview.com;connect-src 'self' https://alfaview.com https://*.alfaview.com https://plausible.alfaview.com;img-src 'self' data: https://alfaview.com https://*.alfaview.com;script-src 'self' 'unsafe-eval' https://alfaview.com https://*.alfaview.com ;script-src-attr 'none';child-src alfaview:;frame-ancestors 'self' https://omega-lectures.com https://*.omega-lectures.com;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;form-action 'self';object-src 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+x-content-type-options: nosniff
+x-xss-protection: 0
+referrer-policy: origin-when-cross-origin
+access-control-allow-origin: *
+content-type: application/json; charset=utf-8
+content-length: 406
+etag: W/"196-HUCJKwlQurC5GNaaJnH0d+HOnRw"
+date: Sat, 05 Sep 2026 04:31:24 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+=== BODY ===
+406 /tmp/opencode/gql_bare.txt
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST
+[0m
+The web bundle exposes a GraphQL client (`/graphql`, `credentials: include`) and gRPC-web on app.alfaview.com. Probing the GraphQL endpoint — high value if introspection is enabled.
+[0m$ [0mcurl -sS -D - -o /tmp/opencode/gql_intro.txt -m 25 "https://app.alfaview.com/graphql?query=%7B__typename%7D" -H "Accept: application/json" 2>&1 | head -20; echo "=== BODY ==="; head -c 400 /tmp/opencode/gql_intro.txt
+HTTP/2 400 
+strict-transport-security: max-age=15552000; includeSubDomains
+content-security-policy: default-src 'self' https://alfaview.com https://*.alfaview.com;connect-src 'self' https://alfaview.com https://*.alfaview.com https://plausible.alfaview.com;img-src 'self' data: https://alfaview.com https://*.alfaview.com;script-src 'self' 'unsafe-eval' https://alfaview.com https://*.alfaview.com ;script-src-attr 'none';child-src alfaview:;frame-ancestors 'self' https://omega-lectures.com https://*.omega-lectures.com;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;form-action 'self';object-src 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+x-content-type-options: nosniff
+x-xss-protection: 0
+referrer-policy: origin-when-cross-origin
+access-control-allow-origin: *
+content-type: application/json; charset=utf-8
+content-length: 406
+etag: W/"196-HUCJKwlQurC5GNaaJnH0d+HOnRw"
+date: Sat, 05 Sep 2026 04:31:25 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+=== BODY ===
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST
+[0m
+Apollo GraphQL server confirmed (CSRF-preflight protected). Retrying with the `apollo-require-preflight` header.
+[0m$ [0mcurl -sS -D /tmp/opencode/gql2_hdr.txt -o /tmp/opencode/gql2.txt -m 25 "https://app.alfaview.com/graphql?query=%7B__typename%7D" -H "Accept: application/json" -H "apollo-require-preflight: 1" 2>&1; cat /tmp/opencode/gql2_hdr.txt | grep -iE 'HTTP/|content-type|content-length'; echo "=== BODY ==="; cat /tmp/opencode/gql2.txt
+HTTP/2 200 
+x-content-type-options: nosniff
+content-type: application/json; charset=utf-8
+content-length: 32
+=== BODY ===
+{"data":{"__typename":"Query"}}
+[0m
+GraphQL live and resolving. Running full schema introspection (read-only).
+[0m$ [0mcat > /tmp/opencode/intro.graphql <<'EOF'
+query IntrospectionQuery{__schema{queryType{name}mutationType{name}subscriptionType{name}types{...FullType}directives{name description locations args{...InputValue}}}}fragment FullType on __Type{kind name description fields(includeDeprecated:true){name description args{...InputValue}type{...TypeRef}isDeprecated deprecationReason}inputFields{...InputValue}interfaces{...TypeRef}enumValues(includeDeprecated:true){name description isDeprecated deprecationReason}possibleTypes{...TypeRef}}fragment InputValue on __InputValue{name description type{...TypeRef}defaultValue}fragment TypeRef on __Type{kind name ofType{kind name ofType{kind name ofType{kind name ofType{kind name ofType{kind name ofType{kind name ofType{kind name}}}}}}}}
+EOF
+python3 -c "import urllib.parse,sys;print('query='+urllib.parse.quote(open('/tmp/opencode/intro.graphql').read()))" > /tmp/opencode/intro_qs.txt
+curl -sS -o /tmp/opencode/intro.json -m 40 "https://app.alfaview.com/graphql?$(cat /tmp/opencode/intro_qs.txt)" -H "Accept: application/json" -H "apollo-require-preflight: 1"; wc -c /tmp/opencode/intro.json; python3 -c "import json;d=json.load(open('/tmp/opencode/intro.json'));print('errors' in d, d.get('errors','')[:200] if 'errors' in d else 'OK-SCHEMA'); print('types:',len(d['data']['__schema']['types']) if 'data' in d else 'n/a')"
+340 /tmp/opencode/intro.json
+True [{'message': 'GraphQL introspection is not allowed by Apollo Server, but the query contained __schema or __type. To enable introspection, pass introspection: true to ApolloServer in production', 'locations': [{'line': 1, 'column': 26}], 'extensions': {'validationErrorCode': 'INTROSPECTION_DISABLED', 'code': 'GRAPHQL_VALIDATION_FAILED'}}]
+types: n/a
+[0m
+Introspection disabled (good control) — but known field names from the bundle let me test gate-less reads. Checking the unauthenticated join/company-lookup queries.
+[0m$ [0mgrep -oiE '(query|mutation) [A-Za-z]+[({][^}]{0,60}' /tmp/opencode/app.min.js | sort -u | head -80
+mutation AdminReinvitePendingUser($userId: String!, $companyId: String!, $isOldPending: Boolea
+mutation AdminSwitchCompany($nextCompanyId: String!) {\n  adminSwitchCompany(nextCompany
+mutation AssignCompanyAdminPermission($userId: String!) {\n  assignCompanyAdminPermission(userId: 
+mutation AssignGrantCompanyAdminPermission($userId: String!) {\n  assignGrantCompanyAdminPermission(use
+mutation BatchAssignUsers($assignments: [JSONObject!], $isDryRun: Boolean) {\n  batchA
+mutation BatchCreateGroupLinks(\n  $roomIds: [String]!\n  $linkName: String!\n  $role: Stri
+mutation BatchCreateRoomStructure($roomStructure: JSONObject!, $options: JSONObject!) {\n  bat
+mutation BatchCreateRooms($roomNames: [String!], $options: JSONObject!) {\n  batchCrea
+mutation BatchDeleteUsers($userEmails: [String!], $isDryRun: Boolean) {\n  batchDelete
+mutation BatchInviteExternalMembers(\n  $invitations: [BatchExternalMemberInvitationInput!]\n  $
+mutation BatchReinvitePendingUsers($userEmails: [String!]!, $isDryRun: Boolean) {\n  batchReinv
+mutation BatchUnassignUsers($userEmails: [String!], $isDryRun: Boolean) {\n  batchUnassi
+mutation BatchUpdateRoomsCapacity(\n  $numOfParticipants: Int!\n  $numOfSpectators: Int\n  $nu
+mutation BatchUpdateRoomsDefaultUserRole($defaultPermission: String!) {\n  batchUpdateRoomsDefaultUse
+mutation BatchUpdateRoomsFeatures(\n  $roomIds: [String!]\n  $features: [JSONObject!]\n  $wait
+mutation BatchUpdateRoomsTranscriptionSettings(\n  $isEnabled: Boolean!\n  $transcriptionProvider: String!\
+mutation CancelMeeting($id: String!, $reason: String, $creatorLocale: String, $skip
+mutation ChangePassword($username: String!, $newPassword: String!, $currentPassword:
+mutation Checkout($planId: String!, $products: [CheckoutProductInput!]!, $cust
+mutation CreateApiKey($alias: String!, $userId: String!) {\n  createApiKey(alias: 
+mutation CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {
+mutation CreateGroup(\n  $name: String!\n  $externalId: String!\n  $permissions: 
+mutation CreateGroupLink(\n  $roomId: String!\n  $role: String!\n  $displayName: Stri
+mutation CreateMeeting(\n  $meetingTitle: String!\n  $invitations: [JSONObject]\n  
+mutation CreateRoom($room: JSONObject!) {\n  createRoom(room: $room) {\n    room
+mutation CredentialsAuthenticate($username: String!, $password: String!, $companyId: String) 
+mutation DeactivateApiKey($alias: String!, $userId: String!) {\n  deactivateApiKey(ali
+mutation DeleteApiKey($alias: String!, $userId: String!) {\n  deleteApiKey(alias: 
+mutation DeleteCompany($companyId: String!) {\n  deleteCompany(companyId: $companyI
+mutation DeleteFiles($roomId: String!, $fileIds: [String]!) {\n  deleteFiles(room
+mutation DeleteGroup($id: String!) {\n  deleteGroup(id: $id)\n
+mutation DeleteRoom($roomId: String!) {\n  deleteRoom(roomId: $roomId) {\n    de
+mutation DeleteRoomLinks($roomId: String!, $guestIds: [String]) {\n  deleteRoomLinks(
+mutation DeleteUser($userId: String!) {\n  deleteUser(userId: $userId) {\n    de
+mutation DuplicateRoom($roomId: String!, $numberOfDuplications: Int) {\n  duplicate
+mutation FetchGuestInfo($userId: String!, $companyId: String!, $roomId: String!) {\n
+mutation FinishMultiFactorAuthentication(\n  $mfaLoginSessionToken: String!\n  $codeType: String!\n  
+mutation FinishSignup($username: String!, $password: String!, $companyId: String!,
+mutation GuestJoin($userId: String!, $companyId: String!, $roomId: String!, $di
+mutation InviteAndAssignUsers($csvUserInvitations: [JSONObject!], $locale: String!, $isDry
+mutation InviteExternalMembers($roomId: String!, $invitations: [ExternalMemberInvitationInp
+mutation InviteUsers($userInvitations: [UserInvitationInput!], $userPermissions: 
+mutation LdapCredentialsAuthenticate($username: String!, $password: String!) {\n  ldapCredentials
+mutation MagicTokenAuthenticate($magicToken: String!) {\n  magicTokenAuthenticate(magicToken
+mutation MassUpdateRoomLinks($selectedRoomLinks: [JSONObject!], $linkSettings: JSONObject
+mutation RegeneratePasscode($roomId: String!) {\n  regeneratePasscode(roomId: $roomId) {
+mutation ReinvitePendingUser($userId: String!, $isOldPending: Boolean) {\n  reinvitePendi
+mutation RemoveCompanyBrandingLogo($fileTypes: [String]!) {\n  removeCompanyBrandingLogo(fileTy
+mutation ResendGuestInviteEmail($roomId: String!, $guestId: String!, $timeZone: String) {\n 
+mutation ResetPassword($username: String!) {\n  resetPassword(username: $username)\
+mutation SetGroupLinkName($guestId: String!, $displayName: String!) {\n  setGroupLinkN
+mutation SetNewPassword($companyId: String!, $username: String!, $password: String!,
+mutation SetPrivacyPolicyUrl($companyId: String!, $privacyUrl: String!) {\n  setPrivacyPo
+mutation SetRoomLinkDialIn($guestId: String!, $allowDialIn: Boolean!) {\n  setRoomLinkD
+mutation SetRoomLinkRole($guestId: String!, $role: String!) {\n  setRoomLinkRole(gues
+mutation SetRoomLinkValidityPeriod($guestId: String!, $startDate: Number, $expiry: Number, $tim
+mutation Signup(\n  $displayName: String\n  $user: UserInput\n  $agreedToTer
+mutation SortRooms($moves: [RoomMoveInput]!) {\n  sortRooms(moves: $moves) {\n 
+mutation SwitchCompany($companyId: String!) {\n  switchCompany(companyId: $companyI
+mutation UnassignCompanyAdminPermission($userId: String!) {\n  unassignCompanyAdminPermission(userId
+mutation UnassignGrantCompanyAdminPermission($userId: String!) {\n  unassignGrantCompanyAdminPermission(u
+mutation UpdateCompany($companyId: String!, $plan: String, $displayName: String) {\
+mutation UpdateCompanyBranding($branding: JSONObject) {\n  updateCompanyBranding(branding: 
+mutation UpdateCompanyName($displayName: String!) {\n  updateCompanyName(displayName: $
+mutation UpdateCompanyOwnerId($newOwnerID: String) {\n  updateCompanyOwnerId(newOwnerID: $
+mutation UpdateCompanyQuotas($companyId: String!, $upsertQuotas: [JSONObject!], $removeQu
+mutation UpdateFavoriteRooms($roomIdsChanges: JSONObject) {\n  updateFavoriteRooms(roomId
+mutation UpdateFileCompanySettings($active: String!) {\n  updateFileCompanySettings(active: $ac
+mutation UpdateFileRoomSettings($roomId: String!, $settings: JSONObject!) {\n  updateFileRoo
+mutation UpdateFiles($roomId: String!, $fileIds: [String]!, $accessLevel: String!
+mutation UpdateGroup(\n  $name: String!\n  $externalId: String!\n  $permissions: 
+mutation UpdateMeeting(\n  $id: String!\n  $meetingTitle: String\n  $agenda: String
+mutation UpdatePermissionGroups($input: UpdatePermissionGroupsInput!) {\n  updatePermissionG
+mutation UpdateRoom($roomId: String!, $room: JSONObject!, $removeDefaultPermissi
+mutation UpdateRoomWaitingRoomState($roomId: String!, $isWaitingRoomEnabled: Boolean!) {\n  upda
+mutation UpdateRoomWaitingRoomWelcomeNote($roomId: String!, $waitingRoomWelcomeNote: String!) {\n  upd
+mutation UpdateTranscriptionProvider($roomId: String!, $provider: String!) {\n  updateTranscripti
+mutation UpdateTranscriptionSettings(\n  $roomId: String!\n  $enabled: Boolean!\n  $translationLa
+mutation UpdateTranslationProvider($roomId: String!, $translationProvider: String!) {\n  update
+mutation UpdateUser($userId: String!, $user: JSONObject!) {\n  updateUser(userId
+[0m
+Rich GraphQL surface confirmed: self-service `Signup`/`CreateCompany`, `CredentialsAuthenticate`, magic-token auth. Now checking the desktop client download host for auto-update manifests (potential OAuth client_id harvest for FusionAuth).
+[0m$ [0msleep 1; curl -sS -D - -o /dev/null -m 20 "https://production-alfaview-assets.alfaview.com/stable/windows/" 2>&1 | head -12; echo "---RELEASES---"; sleep 1; curl -sS -o /tmp/opencode/rel.yml -m 20 -w "HTTP %{http_code} size=%{size_download}\n" "https://production-alfaview-assets.alfaview.com/stable/windows/latest.yml" 2>&1; head -c 500 /tmp/opencode/rel.yml
+HTTP/2 403 
+x-reserved-indicator: 372
+content-type: application/xml
+date: Sat, 05 Sep 2026 04:32:09 GMT
+content-length: 263
+server: edge-proxy
+vary: Origin, Accept-Encoding
+
+---RELEASES---
+HTTP 403 size=263
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>000001A06FD69E9A604D101CAB0A3E85</RequestId><HostId>oZc6+W9p1zUFPOn/5wnTV3pDKNQRdcTxHJzIo/EkyNZTtFjekLkXOkYdqU/MeJ2F</HostId></Error>
+[0m
+S3-gated downloads. Re-extracting exact desktop download URL patterns from the bundle to hunt for versioned installers (client_id source).
+[0m$ [0mgrep -oE 'https://production-alfaview-assets\.alfaview\.com[^" ]+' /tmp/opencode/app.min.js | sort -u | head -20; echo "=== update manifest urls ==="; grep -oE '.{40}(latest\.yml|RELEASES|update|version\:).{40}' /tmp/opencode/app.min.js | grep -iE 'alfaview-assets|latest|yml|RELEASES' | head -10
+https://production-alfaview-assets.alfaview.com/stable/linux/
+https://production-alfaview-assets.alfaview.com/stable/mac/
+https://production-alfaview-assets.alfaview.com/stable/win/
+=== update manifest urls ===
+[0m
+No versioned filenames exposed. Now extracting the exact self-service `Signup` mutation shape from the bundle — the designed free-tier company creation is the key to unlock authenticated testing.
+[0m$ [0mpython3 - <<'EOF'
+import re
+s=open('/tmp/opencode/app.min.js',encoding='utf-8',errors='replace').read()
+i=s.find('mutation Signup')
+print(s[i:i+1400])
+EOF
+mutation Signup(\n  $displayName: String\n  $user: UserInput\n  $agreedToTerms: Boolean\n  $agreedToPrivacyPolicy: Boolean\n  $planId: String\n) {\n  signup(\n    displayName: $displayName\n    user: $user\n    agreedToTerms: $agreedToTerms\n    agreedToPrivacyPolicy: $agreedToPrivacyPolicy\n    planId: $planId\n  )\n}\n\nmutation CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {\n  createCompany(companyName: $companyName, user: $user, planId: $planId) {\n    companyId\n  }\n}\n\nmutation InviteAndAssignUsers($csvUserInvitations: [JSONObject!], $locale: String!, $isDryRun: Boolean) {\n  inviteAndAssignUsers(csvUserInvitations: $csvUserInvitations, locale: $locale, isDryRun: $isDryRun) {\n    taskId\n    assignedInMs\n  }\n}\n\nmutation InviteExternalMembers($roomId: String!, $invitations: [ExternalMemberInvitationInput!], $timeZone: String) {\n  inviteExternalMembers(roomId: $roomId, invitations: $invitations, timeZone: $timeZone) {\n    taskId\n  }\n}\n\nmutation UpdateFavoriteRooms($roomIdsChanges: JSONObject) {\n  updateFavoriteRooms(roomIdsChanges: $roomIdsChanges)\n}\n\nmutation BatchInviteExternalMembers(\n  $invitations: [BatchExternalMemberInvitationInput!]\n  $isDryRun: Boolean\n  $timeZone: String\n  $roomId: String\n) {\n  batchInviteExternalMembers(invitations: $invitations, isDryRun: $isDryRun, timeZone: $timeZone, roomId: $roomId) {\n    t
+[0m
+[0m$ [0mpython3 - <<'EOF'
+import re
+s=open('/tmp/opencode/app.min.js',encoding='utf-8',errors='replace').read()
+for pat in ['input UserInput{','UserInput {','UserInput\\n','type UserInput','inputtype']:
+    idx=s.find(pat)
+    if idx>=0:
+        print("FOUND",pat,"@",idx)
+        print(s[idx:idx+700]); print('---')
+        break
+# fallback: regex for UserInput block
+for m in re.finditer(r'UserInput', s):
+    seg=s[m.start()-40:m.start()+600]
+    if 'email' in seg and 'password' in seg:
+        print(seg); break
+EOF
+FOUND UserInput\n @ 803863
+UserInput\n  $agreedToTerms: Boolean\n  $agreedToPrivacyPolicy: Boolean\n  $planId: String\n) {\n  signup(\n    displayName: $displayName\n    user: $user\n    agreedToTerms: $agreedToTerms\n    agreedToPrivacyPolicy: $agreedToPrivacyPolicy\n    planId: $planId\n  )\n}\n\nmutation CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {\n  createCompany(companyName: $companyName, user: $user, planId: $planId) {\n    companyId\n  }\n}\n\nmutation InviteAndAssignUsers($csvUserInvitations: [JSONObject!], $locale: String!, $isDryRun: Boolean) {\n  inviteAndAssignUsers(csvUserInvitations: $csvUserInvitations, locale: $locale, isDryRun: $isDryRun) {\n    taskId\n    assignedInMs\
+---
+[0m
+[0m$ [0mpython3 - <<'EOF'
+import re
+s=open('/tmp/opencode/app.min.js',encoding='utf-8',errors='replace').read()
+# find runtime signup invocation with variables
+for pat in ['agreedToTerms','Signup'],:
+    for m in re.finditer(r'agreedToTerms', s):
+        seg=s[max(0,m.start()-300):m.start()+250]
+        if 'variable' in seg or 'Signup' in seg or 'signup' in seg:
+            print(seg);print('===')
+# find UserInput schema: search fragment 'username' near 'email' near 'password'
+for m in re.finditer(r'firstName', s):
+    seg=s[max(0,m.start()-150):m.start()+250]
+    if 'email' in seg and 'password' in seg:
+        print(seg[:400]); print('====')
+        break
+EOF
+amedType",name:{kind:"Name",value:"String"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"user"}},type:{kind:"NamedType",name:{kind:"Name",value:"UserInput"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"agreedToTerms"}},type:{kind:"NamedType",name:{kind:"Name",value:"Boolean"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"agreedToPrivacyPolicy"}},type:{kind:"NamedType",name:{kind:"Name",value:"Boolean"
+===
+ame",value:"signup"},arguments:[{kind:"Argument",name:{kind:"Name",value:"displayName"},value:{kind:"Variable",name:{kind:"Name",value:"displayName"}}},{kind:"Argument",name:{kind:"Name",value:"user"},value:{kind:"Variable",name:{kind:"Name",value:"user"}}},{kind:"Argument",name:{kind:"Name",value:"agreedToTerms"},value:{kind:"Variable",name:{kind:"Name",value:"agreedToTerms"}}},{kind:"Argument",name:{kind:"Name",value:"agreedToPrivacyPolicy"},value:{kind:"Variable",name:{kind:"Name",value:"agreedToPrivacyPolicy"}}},{kind:"Argument",name:{kind:
+===
+ssion($userId: String!) {\n  assignGrantCompanyAdminPermission(userId: $userId)\n}\nmutation UnassignGrantCompanyAdminPermission($userId: String!) {\n  unassignGrantCompanyAdminPermission(userId: $userId)\n}\n\n# businessLogicService\nmutation Signup(\n  $displayName: String\n  $user: UserInput\n  $agreedToTerms: Boolean\n  $agreedToPrivacyPolicy: Boolean\n  $planId: String\n) {\n  signup(\n    displayName: $displayName\n    user: $user\n    agreedToTerms: $agreedToTerms\n    agreedToPrivacyPolicy: $agreedToPrivacyPolicy\n    planId: $planId\n 
+===
+ {\n  unassignGrantCompanyAdminPermission(userId: $userId)\n}\n\n# businessLogicService\nmutation Signup(\n  $displayName: String\n  $user: UserInput\n  $agreedToTerms: Boolean\n  $agreedToPrivacyPolicy: Boolean\n  $planId: String\n) {\n  signup(\n    displayName: $displayName\n    user: $user\n    agreedToTerms: $agreedToTerms\n    agreedToPrivacyPolicy: $agreedToPrivacyPolicy\n    planId: $planId\n  )\n}\n\nmutation CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {\n  createCompany(companyName: $companyName, user: $us
+===
+antCompanyAdminPermission(userId: $userId)\n}\n\n# businessLogicService\nmutation Signup(\n  $displayName: String\n  $user: UserInput\n  $agreedToTerms: Boolean\n  $agreedToPrivacyPolicy: Boolean\n  $planId: String\n) {\n  signup(\n    displayName: $displayName\n    user: $user\n    agreedToTerms: $agreedToTerms\n    agreedToPrivacyPolicy: $agreedToPrivacyPolicy\n    planId: $planId\n  )\n}\n\nmutation CreateCompany($companyName: String!, $user: UserInput!, $planId: String) {\n  createCompany(companyName: $companyName, user: $user, planId: $pla
+===
+[0m
+All key probes done. Consolidating findings into the structured report.
+
+## STEP 1 — DELTA
+- [NEW] `app.alfaview.com/graphql` — previously unmapped live **Apollo GraphQL endpoint** (SPA shell's real API). CSRF-preflight protected (`apollo-require-preflight`), `access-control-allow-origin: *`, **introspection disabled** (positive control). `__typename` resolves unauthenticated — server reachable without session.
+- [NEW] Web bundle (`app.min.5b3949112f0cf682adc8.js`, 1.09MB) is a **guest-link + account/company management client**: GraphQL ops incl. `Signup`, `CreateCompany`, `CredentialsAuthenticate`, `MagicTokenAuthenticate`, LDAP auth, guest-link CRUD (`listCompanyLinks`, `BatchCreateGroupLinks`, `FetchGuestInfo`, `GuestJoin`), plus gRPC-web `BusinessLogicService` at `app.alfaview.com`.
+- [NEW] `sso.alfaview.com/oauth2/register` **live** — returns stock FusionAuth error page requiring `redirect_uri` (`invalid_request`/`missing_redirect_uri`). Registration flow active; gated per-client.
+- [NEW] Desktop downloads (`production-alfaview-assets.alfaview.com/stable/{mac,win,linux}/`) are **S3 direct objects** — listing/dir → 403 `AccessDenied`; no versioned filenames leaked.
+- [NEW] OAuth `client_id` **absent** from web bundle (`clientId`/`oauth2`/`response_type` = 0 hits) → FusionAuth SSO client is **desktop-only**; web login uses GraphQL `CredentialsAuthenticate` (opaque tokens).
+
+## STEP 2 — PRIORITIZE
+- [PRIO] app.alfaview.com/graphql, 6.8, a:7 b:8 t:9 g:4 c:2 f:10
+- [PRIO] sso.alfaview.com, 7.0, a:7 b:8 t:9 g:3 c:1 f:9
+- [PRIO] apis.alfaview.com, 6.2, a:8 b:8 t:7 g:2 c:2 f:6
+
+## STEP 3 — HYPOTHESES
+[HYP] Authz-gap on guest-link/company GraphQL ops after free-tenant self-signup
+class: IDOR
+asset: app.alfaview.com/graphql
+confidence: 70
+reasoning: Bundle proves designed free-tier signup (`signup(displayName,user,agreedToTerms,agreedToPrivacyPolicy,planId)` mutation, `# businessLogicService` SDL) and cross-tenant-shaped ops (`FetchUserPermissions($userId)`, `listCompanyLinks`, `FetchGuestInfo($userId,$companyId,$roomId)`). GraphQL reachable unauthenticated (__typename=Query); introspection off so schema/field enforcement must be tested via known op names. A created low-privilege tenant is the standard IDOR baseline for the confirmed DELETE /v2/users/{id} REST pattern.
+evidence_needed: 2nd tenant's userId/roomId accessible or their permission set readable from the 1st tenant's session token.
+verify_steps: (AUTH) signup own tenant → CredentialsAuthenticate → Authorization bearer → run FetchUserPermissions against victim-tenant userId; GET apis.alfaview.com/v2/users/{id} with same bearer; observe cross-tenant 200 vs 403.
+impact: cross-tenant user/room permission read and user deletion — PII exposure, account takeover; severity HIGH.
+testability: AUTH_HELPED
+[HYP] OAuth register/authorize client_id harvest from desktop bundle unlocks redirect_uri + device-flow
+class: AUTH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 60
+reasoning: `invalid_client` gate reconfirmed; `oauth2/register` live requires redirect_uri. Web bundle carries no client_id (`clientId` absent), so desktop client (S3 `stable/{mac,win,linux}/`) is the only public source. No versioned file names leaked — filename discovery needed before download.
+evidence_needed: real client_id + its registered redirect_uri from desktop client resources; then 302-to-attacker on mismatched redirect_uri.
+verify_steps: obtain installer → strings/extract config for client_id/issuer → GET /oauth2/authorize?...&redirect_uri=https://evil.example/ → compare 302 target vs exact-match registered URI.
+impact: authorization-code theft → ATO of any alfaview user; severity HIGH.
+testability: AUTH_HELPED
+[HYP] Magic-token / guest-link bearer strength in unauthenticated join flow
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 45
+reasoning: `MagicTokenAuthenticate($magicToken)` and `GuestJoin(userId,companyId,roomId,dialIn...)` exist; guest join is designed-unauthenticated with 4-field accessKey combo. If accessKey/guestId sequence space is small/guessable or magic tokens replay, unauthorized room entry follows.
+evidence_needed: create guest link in own tenant; observe accessKey entropy + whether room-scoped; test cross-tenant roomId with wrong accessKey (rejects) vs correct (accepts).
+verify_steps: (AUTH) GenerateGroupLink in own tenant → inspect accessKey format/entropy → attempt GuestJoin against a second tenant's roomId without their accessKey.
+impact: unauthorized room access / replay across tenants; severity MEDIUM-HIGH if guessable.
+testability: AUTH_HELPED
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] Magic-token/guest-link entropy (45): needs own-tenant link generation first — parked behind the same account gate as every other hypothesis.
+- [PARKED] OAuth client_id harvest (60): blocked on S3 filename discovery in a ~hundreds-MB native binary — parked; low yield-to-cost, revisit only if signup path fails.
+- [FINAL] GraphQL authz-gap via own free tenant: id 70 — top survivor; full field-set known from bundle, single account unlocks it.
+- [FINAL] REST IDOR (apis /v2/users/{id} + /v2/rooms/{roomId}/permissions/{userId}): id 80 — unchanged, highest severity, same single account unlocks.
+- [FINAL] FusionAuth issuer=acme.com drift (id 90) — passive evidence complete, low-severity report item.
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Create one throwaway free alfaview company via the documented self-service flow ("Create your free alfaview company now" on app.alfaview.com login page) or supply a test account — this single action unlocks all three live high-value hypotheses (REST IDOR id 80, GraphQL authz-gap id 70, guest-link testing id 45) that are otherwise permanently gated. Then run: GET apis.alfaview.com/v2/users/{ownUserId} with the issued opaque bearer as the IDOR baseline.
+
+## STEP 6 — LEARNING
+- [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Production Apollo GraphQL live, `__typename` resolves unauthenticated; introspection disabled and CSRF-preflight enforced (both positive controls); full backend schema reach exists via bundle-known op names.
+- [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Web client = GraphQL guest-link/account-management SPA (self-service `signup`/`createCompany`, `CredentialsAuthenticate`, `MagicTokenAuthenticate`, LDAP auth) — free-tenant creation is the designed unblock for authenticated testing.
+- [LEARN] ACCEPTED AUTH @ sso.alfaview.com: `/oauth2/register` live (FusionAuth error page, `missing_redirect_uri`) — registration/redirect_uri surface testable only with a registered client_id + redirect_uri.
+- [LEARN] REJECTED MISCONFIG @ production-alfaview-assets.alfaview.com: S3-style 403 `AccessDenied` on `stable/{mac,win,linux}/` listing — desktop bundle fetch requires known versioned filenames; not enumerable passively.
+- [LEARN] REJECTED MISCONFIG @ app.alfaview.com: No OAuth `client_id`/`oauth2`/`response_type` strings in web bundle — SSO client is desktop-app-only; web auth is GraphQL credential-based (opaque tokens, per earlier 401 oracle).
+
+## STEP 7 — RISK
+[RISK] alfaview: 55/100. New, previously-unmapped high-value surface exposed: production Apollo GraphQL on app.alfaview.com with a feature-complete guest-link/company admin schema and a designed self-service free-tenant path that would unlock the top IDOR hypotheses. Offsetting positives: introspection disabled, CSRF-preflight enforced, FusionAuth `/oauth2/register` still client-gated, desktop download bucket not enumerable. Every remaining exploit path still resolves to a created account or a desktop-only client_id; passive yield is exhausted and risk is now conditional on the signup unblock, which needs human/decision authorization to mutate live infrastructure.
