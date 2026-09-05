@@ -238,3 +238,22 @@ www.alfaview.com
 - CHANGED alfatraining/bhc/kh-freiburg.alfaview.com: XSS hypothesis REJECTED — all three serve byte-identical generic SPA shell (1381B, MD5 554a39), no tenant-specific rendering, no reflections
 - CHANGED insider-webclient.alfaview.com / beta-webclient.alfaview.com: SPA shell only (4396B), /health=204, all admin/debug paths 404 — targets exhausted
 - CHANGED demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root, no unauthenticated data exposure
+
+## 2026-09-05 20:53:46 UTC
+- NEW app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js (1.09MB) leaks FULL admin/company GraphQL schema: 60+ mutations + 45+ queries with exact args. Not just SDL strings — includes CreateCompany($compan
+- NEW GraphQL live at app.alfaview.com/graphql: __typename OK unauth; introspection disabled; sensitive ops return UNAUTHENTICATED. Resolver auth is INCONSISTENT: listIdentityProviders returns data unauth (
+- NEW CRITICAL DELTA: GraphQL guest path guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) take NO accessKey — while REST guest-link flow requires 4-field combo i
+- NEW Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview
+- NEW app.alfaview.com/js/AppSignup.min.3329eeac503c038b44b8.js (48KB lazy chunk) recovered: SIGNUP IS UNAUTHENTICATED — Signup action sends NO token header (vs CreateCompany which sends headers:{token:s}).
+- NEW app.alfaview.com/js/AppFinishSignup.min.c05a2146b0620d1167ae.js recovered: activation is EMAIL-GATED — finishSignup({companyId, username, activationToken, password}) pulled from URL route /finish-sign
+- NEW GraphQL client posts to /graphql with credentials:"include" (Apollo), authenticated ops use a token header (not Authorization/Bearer); Signup/FinishSignup send NO token → anonymous reachable. No CSRF 
+- NEW sso.alfaview.com: FusionAuth 1.63.0 OIDC discovery live (issuer=acme.com misconfiguration, implicit flow enabled, HS256/HS384/HS512 in supported algs but RSA-only JWKS) — 2026-09-05 00:15
+- NEW test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms: linux/amd64, windows/amd64, mac/amd64, mac/arm64), statically linked ELF, no integrity hashes/signatures visible
+- NEW app.alfaview.com: Full admin GraphQL schema leaked in public JS bundle (1.09MB, 60+ mutations, 45+ queries); resolver auth INCONSISTENT (listIdentityProviders returns data unauth, listComponents unaut
+- NEW app.alfaview.com: Signup mutation unauthenticated (AppSignup.min.js lazy chunk) — sends NO token header; activation email-gated via finishSignup at /finish-signup route; Apollo client uses credentials
+- NEW alfaview.com: Marketing page live (301→/en, nginx, Accept-Language vary, 177KB, strict CSP, matomo) — no unauthenticated SSO login links — 2026-09-05 04:34
+- NEW www.alfaview.com: 301→alfaview.com/en (no independent surface) — 2026-09-05 04:34
+- NEW beta-ionoscloud-21-beta-engine-* (2 hosts): Confirmed timeout (000) — internal/firewalled like alfacheck-* fleet; beta-ionoscloud-21 fleet 7 hosts total, only 1/7 probed (hydra=timeout), 6 remain unpr
+- CHANGED apis.alfaview.com/v2/languages: Now returns 401 (was 404) — endpoint added to production, aligns with beta; OpenAPI specs now identical including /v2/languages — 2026-09-05 04:34
+- CHANGED beta-app.alfaview.com: HTTP 401 with WWW-Authenticate: Basic realm — different auth mechanism than main app (OAuth) — 2026-09-05 04:34
+- CHANGED alfatraining/bhc/kh-freiburg.alfaview.com: XSS hypothesis REJECTED — all three serve byte-identical generic SPA shell (1381B, MD5 554a39), no tenant-specific rendering, no reflections — targets exhaus

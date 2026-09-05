@@ -5928,3 +5928,93 @@ testability: PASSIVE
 
 === STEP 7 — RISK ===
 [RISK] alfaview: 80/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in OpenAPI — needs account. OAuth/SSO surface live: sso.alfaview.com (FusionAuth 1.63.0) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256 support vs RSA-only JWKS (alg confusion vector). app.alfaview.com is primary client but client_id not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no accessKey). test.alfaview.com distributes unsigned binaries (supply chain risk). 7-host beta-ionoscloud fleet largely unprobed (1/7 hydra timeout, 6 unprobed). 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com network traffic → probe OAuth redirect_uri/state on sso.alfaview.com (AUTH_HELPED, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account → test IDOR cross-tenant + guest-link rate limits. JWT alg confusion (confidence 70) adds CRITICAL vector if token validation flawed.
+===== ANALYST nemotron3 2026-09-05 20:53:46 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+STEP 1 — DELTA
+[NEW] sso.alfaview.com: FusionAuth 1.63.0 OIDC discovery live (issuer=acme.com misconfiguration, implicit flow enabled, HS256/HS384/HS512 in supported algs but RSA-only JWKS) — 2026-09-05 00:15
+[NEW] test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms: linux/amd64, windows/amd64, mac/amd64, mac/arm64), statically linked ELF, no integrity hashes/signatures visible — 2026-09-05 00:15
+[NEW] app.alfaview.com: Full admin GraphQL schema leaked in public JS bundle (1.09MB, 60+ mutations, 45+ queries); resolver auth INCONSISTENT (listIdentityProviders returns data unauth, listComponents unauth 500); guestAuthenticate/guestJoin mutations reachable unauth (BAD_USER_INPUT not UNAUTHENTICATED) — NO accessKey parameter vs REST 4-field requirement — 2026-09-05 04:34
+[NEW] app.alfaview.com: Signup mutation unauthenticated (AppSignup.min.js lazy chunk) — sends NO token header; activation email-gated via finishSignup at /finish-signup route; Apollo client uses credentials:"include" + custom token header (not Authorization/Bearer); no CSRF token observed — 2026-09-05 08:50
+[NEW] alfaview.com: Marketing page live (301→/en, nginx, Accept-Language vary, 177KB, strict CSP, matomo) — no unauthenticated SSO login links — 2026-09-05 04:34
+[NEW] www.alfaview.com: 301→alfaview.com/en (no independent surface) — 2026-09-05 04:34
+[NEW] beta-ionoscloud-21-beta-engine-* (2 hosts): Confirmed timeout (000) — internal/firewalled like alfacheck-* fleet; beta-ionoscloud-21 fleet 7 hosts total, only 1/7 probed (hydra=timeout), 6 remain unprobed — 2026-09-05 04:34
+[CHANGED] apis.alfaview.com/v2/languages: Now returns 401 (was 404) — endpoint added to production, aligns with beta; OpenAPI specs now identical including /v2/languages — 2026-09-05 04:34
+[CHANGED] beta-app.alfaview.com: HTTP 401 with WWW-Authenticate: Basic realm — different auth mechanism than main app (OAuth) — 2026-09-05 04:34
+[CHANGED] alfatraining/bhc/kh-freiburg.alfaview.com: XSS hypothesis REJECTED — all three serve byte-identical generic SPA shell (1381B, MD5 554a39), no tenant-specific rendering, no reflections — targets exhausted — 2026-09-05 04:34
+
+STEP 2 — PRIORITIZE
+[PRIO] sso.alfaview.com,8.3,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=10,cloud_surface=8,freshness=10
+[PRIO] app.alfaview.com/graphql,8.1,attack_surface=9,business_value=9,tech_exposure=9,gate_ease=8,cloud_surface=7,freshness=10
+[PRIO] test.alfaview.com,7.8,attack_surface=8,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=7,freshness=9
+[PRIO] apis.alfaview.com,7.5,attack_surface=9,business_value=10,tech_exposure=8,gate_ease=2,cloud_surface=8,freshness=7
+[PRIO] beta-ionoscloud-21-* fleet (6 unprobed),6.5,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=8,freshness=8
+[PRIO] alfaview.com,5.5,attack_surface=6,business_value=6,tech_exposure=5,gate_ease=10,cloud_surface=6,freshness=8
+
+STEP 3 — HYPOTHESES
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com leading to authorization code theft
+class: OATH
+asset: sso.alfaview.com
+confidence: 75
+reasoning: FusionAuth 1.63.0 exposes OIDC discovery with authorization_endpoint=https://sso.alfaview.com/oauth2/authorize. Issuer=acme.com (misconfiguration vs alfaview.com). Implicit flow enabled. redirect_uri allowlist validation and state parameter enforcement untested. app.alfaview.com is the known client but client_id not yet discovered. /oauth2/authorize enforces client_id registration (returns invalid_client_id for unregistered clients).
+evidence_needed: Valid client_id for app.alfaview.com; redirect_uri acceptance of external domains (evil.com, localhost); state parameter optional vs required; PKCE enforcement behavior
+verify_steps: GET https://app.alfaview.com/ → monitor network for OAuth config API call (client_id, authorization_endpoint, redirect_uri); GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location header; repeat without state parameter; test PKCE challenge_method=S256
+impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
+testability: AUTH_HELPED
+
+[HYP] Unauthenticated guest token issuance via GraphQL missing accessKey parameter
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 85
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) are reachable unauthenticated (return BAD_USER_INPUT not UNAUTHENTICATED). REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 4-field combo (companyId+roomId+accessKey+displayName). GraphQL path omits accessKey entirely — divergent auth logic. Full admin schema leaked in JS bundle confirms mutation signatures.
+evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token returned without accessKey; compare token scope/claims vs REST guest token
+verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){token,errors}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and decode (if JWT) or test against APIs
+impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
+testability: AUTH_HELPED
+
+[HYP] Unauthenticated binary distribution on test.alfaview.com — supply chain / version enumeration
+class: MISCONFIG
+asset: test.alfaview.com
+confidence: 65
+reasoning: test.alfaview.com serves alfacheck binaries (Linux/Windows/macOS/ARM) with version 470079 in filename. No auth, no integrity hashes (SHA256), no signature verification visible on download page. Version number enumerable (470078, 470080 return 404). Binary is statically linked ELF with certificate-related strings but no embedded PEM certificates. Could serve malicious binaries if storage compromised or version tampered.
+evidence_needed: Binary hash verification mechanism (subresource integrity, checksums); signature/checksum exposure via API; version enumeration across builds; CSP/subresource integrity on download links
+verify_steps: GET https://test.alfaview.com/ → extract all hrefs; download each binary → check for embedded signatures/certificates (strings, objdump); probe for directory listing or version enumeration (470078, 470080, 470000); check response headers for CSP, SRI
+impact: Supply chain compromise → RCE on client machines (HIGH)
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+[PARKED] JWT algorithm confusion via HS256 support in OIDC config with RSA-only JWKS: Requires valid token sample to confirm validation flaw; without auth, cannot observe actual token structure. Confidence 70 but needs AUTH_HELPED step first. API gateway already rejected crafted HS256 JWT with RSA pubkey as HMAC secret (distinct 401 "No base64 encoded access token was provided").
+[PARKED] Cross-tenant IDOR on apis.alfaview.com/v2 DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId}: Confirmed in OpenAPI (UUID path params) but requires authenticated account — gate_ease=2. Needs HUMAN account creation via self-service flow first.
+[FINAL] 1. OAuth redirect_uri validation bypass on sso.alfaview.com — RANK 1. Confidence 75, AUTH_HELPED, CRITICAL impact. Need valid client_id discoverable via app.alfaview.com network traffic.
+[FINAL] 2. Unauthenticated guest token issuance via GraphQL missing accessKey — RANK 2. Confidence 85, AUTH_HELPED, HIGH impact. Divergent auth logic between REST (4-field+accessKey) and GraphQL (3-field no accessKey).
+[FINAL] 3. Unauthenticated binary distribution on test.alfaview.com — RANK 3. Confidence 65, PASSIVE, HIGH impact. Fully verifiable now without auth.
+
+STEP 5 — NEXT ACTION
+[NEXT] PROBE: GET `https://app.alfaview.com/` with browser DevTools / HAR capture → search network requests for OAuth config endpoint (client_id, authorization_endpoint, redirect_uri) → use discovered client_id in `GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` → observe 302 Location header and state/PKCE handling. Rate: 1 rps.
+
+STEP 6 — LEARNING
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in JWKS.
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+[LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — HTTP Basic auth gate (not OAuth).
+[LEARN] REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
+[LEARN] ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
+[LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Full GraphQL admin schema in public bundle; per-resolver auth (listIdentityProviders unauth data, listComponents unauth 500).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 4-field accessKey combo.
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), not raw JWTs — JWT alg-confusion avenue closed.
+[LEARN] ACCEPTED MISCONFIG @ alfaview.com: root 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login links on marketing domain.
+[LEARN] REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39). No tenant-specific rendering, no inline data, no reflections. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-webclient.alfaview.com: Identical SPA shell to insider, no internal endpoints. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root. No unauthenticated data exposure.
+[LEARN] REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Media/signaling server ("Hi Client"), not OIDC/auth infrastructure. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — media server. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — media server. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: UNREACHABLE — all 3 probes timed out. Internal/firewalled. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: UNREACHABLE — all 3 probes timed out. Target exhausted.
+[LEARN] REJECTED MISCONFIG @ alfacheck-video.alfaview.com: UNREACHABLE — root probe timed out. Target exhausted.
+
+STEP 7 — RISK
+[RISK] alfaview: 80/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in OpenAPI — needs account. OAuth/SSO surface live: sso.alfaview.com (FusionAuth 1.63.0) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256 support vs RSA-only JWKS (alg confusion vector). app.alfaview.com is primary client but client_id not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no accessKey). test.alfaview.com distributes unsigned binaries (supply chain risk). 7-host beta-ionoscloud fleet largely unprobed (1/7 hydra timeout, 6 unprobed). 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com network traffic → probe OAuth redirect_uri/state on sso.alfaview.com (AUTH_HELPED, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account → test IDOR cross-tenant + guest-link rate limits. JWT alg confusion (confidence 70) adds CRITICAL vector if token validation flawed.
