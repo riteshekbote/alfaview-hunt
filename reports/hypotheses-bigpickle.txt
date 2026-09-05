@@ -1,30 +1,51 @@
-## 2026-09-05 12:06:17 UTC [target] (model bigpickle)
+## 2026-09-05 14:44:19 UTC [target] (model bigpickle)
+[PRIO] sso.alfaview.com,7.6,a:7 b:9 t:9(OAuth/FusionAuth/OIDC) g:6 c:2 f:10
+[PRIO] app.alfaview.com/graphql,7.4,a:7 b:9 t:9(GraphQL schema+guest ops) g:3 c:2 f:10
+[PRIO] apis.alfaview.com,7.3,a:9 b:9 t:8(OpenAPI+UUID-paths) g:2 c:2 f:6
+[PRIO] test.alfaview.com,5.8,a:4 b:6 t:6(binary dist) g:9 c:2 f:10
+[PRIO] alfaview.com,5.2,a:4 b:6 t:5(marketing) g:9 c:2 f:10
 [HYP] Cross-tenant IDOR on REST user/room/permission ops via UUID path params
 class: IDOR
 asset: apis.alfaview.com/v2
 confidence: 80
-reasoning: Live OpenAPI (this session) confirms `DELETE /v2/users/{id}`, `PATCH|DELETE /v2/rooms/{roomId}/permissions/{userId}`, plus read-heavy `GET /v2/rooms/{roomId}/passcode` (returns passcode string), `GET /v2/stats`, `GET /v2/users` — all token-authed, company-scoped, cross-tenant authz unverified. `GET /v2/users/me` unauth → 401 opaque-token gate reconfirmed. Same schema exposed by GraphQL resolvers (fetchUserPermissions/generateFileDownloadURL/getPasscode) which are auth-gated (verified this session).
+reasoning: OpenAPI confirms UUID path params on destructive ops (`DELETE /v2/users/{id}`, `PATCH|DELETE /v2/rooms/{roomId}/permissions/{userId}`, `GET /v2/rooms/{roomId}/passcode`). Auth uses company-scoped opaque tokens; cross-tenant authz unverified. High-confidence structural finding backed by spec.
 evidence_needed: token of tenant A returns 200/204 for tenant B's userId/roomId where 403 is expected (esp. passcode + permissions + stats).
-verify_steps: (AUTH) signup free tenant → POST /v2/auth/password `{"username","password"}` (or api-key) → keep opaque base64 bearer → GET /v2/users/me baseline 200 → GET /v2/rooms/{victimUUID}/passcode + PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → 403 vs 200/204 verdict.
+verify_steps: (AUTH) signup free tenant → POST /v2/auth/password {"username","password"} → opaque bearer → GET /v2/users/me baseline → GET /v2/rooms/{victimUUID}/passcode → 403 vs 200 verdict.
 impact: cross-tenant PII read, room passcode/recording access, permission/account mutation, user deletion; HIGH.
+testability: AUTH_HELPED
+[HYP] OAuth redirect_uri validation bypass on FusionAuth authorize → authorization-code theft
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 65
+reasoning: FusionAuth 1.63.0 confirmed; `invalid_client` gate precedes redirect_uri handling; standard FusionAuth redirect_uri = exact-match registry but path/query substitution bugs exist. Desktop client (S3 buckets) is the only client_id source; buckets 403 so harvest requires installer URL discovery.
+evidence_needed: registered client_id + its exact registered redirect_uri, then 302 Location on `...&redirect_uri=<registered>/../evil` vs exact-match.
+verify_steps: harvest client_id from desktop installer resources → GET /oauth2/authorize?client_id&response_type=code&redirect_uri=<reg-uri>/../evil → compare 302 target.
+impact: code theft → ATO of any alfaview user; HIGH.
 testability: AUTH_HELPED
 [HYP] Guest-authz gap: expired/disabled or cross-tenant guest triples still authenticate via GraphQL guest path
 class: AUTH
 asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
 confidence: 55
-reasoning: guestAuthenticate(guestId,companyId,roomId) is anonymous-executing (previous session: BAD_USER_INPUT not UNAUTHENTICATED; mutation-over-GET now verified blocked, so classification stands from POST). Database lookup is by ID triple only (no secret), per confirmed op signature. Two distinct flaw candidates survive design analysis: (1) lifecycle — revoked/expired guestIDs still mint tokens; (2) cross-tenant — companyId/roomId from tenant B accepted with tenant A triple (tuple splicing).
-evidence_needed: with own tenant guest triple, expired/re-keyed link still returns accessToken; BAD_USER_INPUT→rejects wrong-pair (already seen) vs cross-pair accepts.
-verify_steps: (AUTH) GenerateGroupLink/guest-link in own tenant → guestAuthenticate with own triple (token issued?) → delete/expire link → repeat (still token?) → splice roomId of second tenant → compare BAD_USER_INPUT vs accessToken.
+reasoning: `guestAuthenticate(userId,companyId,roomId)` is anonymous-executing (BAD_USER_INPUT not UNAUTHENTICATED; GET blocked). DB lookup by ID triple only (no secret). Two flaw candidates: (1) revoked/expired guestIDs still mint tokens; (2) companyId/roomId from tenant B accepted with tenant A triple (tuple splicing).
+evidence_needed: own tenant guest triple: expired/re-keyed link still returns accessToken; cross-pair accepts vs BAD_USER_INPUT.
+verify_steps: (AUTH) GenerateGroupLink → guestAuthenticate own triple (token issued?) → delete/expire link → repeat (still token?) → splice roomId of second tenant → compare BAD_USER_INPUT vs accessToken.
 impact: unauthorized room entry by dead/re-keyed or cross-tenant links; MEDIUM-HIGH.
 testability: AUTH_HELPED
-[HYP] OAuth redirect_uri validation bypass → authorization-code theft
-class: OATH
-asset: sso.alfaview.com/oauth2/authorize
-confidence: 65
-reasoning: FusionAuth 1.63.0 OIDC source; `invalid_client` (reason `invalid_client_id`) precedes redirect_uri handling, so bypass variants (path/query template confusion, fragment carriage) only testable with a registered client_id; web bundle carries no client_id (verified prior sessions); desktop installer S3 (production-alfaview-assets) is the remaining source, buckets return 403 (not enumerable).
-evidence_needed: registered client_id + its exact registered redirect_uri, then 302 Location on `...&redirect_uri=<registered>/../evil` vs exact-match.
-verify_steps: harvest client_id from desktop installer resources → GET /oauth2/authorize?client_id&response_type=code&redirect_uri=<reg-uri>/../evil → compare 302 target.
-impact: code theft → ATO of any alfaview user; HIGH.
-testability: AUTH_HELPED
-[NEXT] HUMAN: Create one throwaway free alfaview company via the documented self-service flow ("Create your free alfaview company now" on app.alfaview.com login page) — unlock rank-1 (REST IDOR) and the guest-authz splice test. Baseline on acceptance: POST https://apis.alfaview.com/v2/auth/password {"username","password"} → store opaque bearer → GET https://apis.alfaview.com/v2/users/me (expect 200, own user/company IDs) → then GET https://apis.alfaview.com/v2/rooms/{victimRoomId}/passcode (expect 403 = enforced vs 200 = IDOR). Anything below that signup resolves all remaining live hypotheses (also unblocks POSTing GET-blocked GraphQL mutations magicTokenAuthenticate/guestAuthenticate).
-[RISK] alfaview: 48/100. Anonymous GraphQL surface now fully mapped and largely closed (sensitive resolvers verified auth-gated; only empty listIdentityProviders and crashing listComponents are anonymously reachable). Remaining exposure concentrates on the two auth-gated chains — REST cross-tenant IDOR (80) and guest-authz splicing (55) — plus the plausible FusionAuth redirect_uri surface (65) that only a valid client_id unlocks. No live bug is yet proven; every remaining path requires either a self-service tenant (HUMAN) or a harvested desktop client_id, so probability-weighted risk is pulled down by those gates while upside stays constant if either resolves.
+[PARKED] Device-flow abuse (45): needs public client_id + phishing precondition + POST-only. Parked pending client_id harvest.
+[PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens confirmed, not raw JWTs. Closed.
+[FINAL] 1. Cross-tenant IDOR — 80. Highest impact, strongest structural evidence, clear verify steps. Blocked on: account creation (HUMAN).
+[FINAL] 2. OAuth redirect_uri bypass — 65. HIGH impact if client_id harvested. Blocked on: desktop installer extraction (HUMAN).
+[FINAL] 3. Guest-authz lifecycle/cross-tenant splice — 55. Design-level authz gap (no accessKey in GraphQL guest path). Blocked on: own tenant guest triple (HUMAN).
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), not raw JWTs — JWT alg-confusion avenue closed.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_id`) — redirect_uri testing requires a registered client_id.
+[LEARN] ACCEPTED MISCONFIG @ alfaview.com: root 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login links on marketing domain.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in JWKS.
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms), no visible integrity verification.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Full GraphQL admin schema in public bundle; per-resolver auth (listIdentityProviders unauth data, listComponents unauth 500).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 4-field accessKey combo.
+[LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — HTTP Basic auth gate (not OAuth).
+[LEARN] REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
+[LEARN] ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
+[LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+[RISK] alfaview: 48/100. Remaining exposure concentrated on three auth-gated chains: REST cross-tenant IDOR (80), OAuth redirect_uri bypass (65), guest-authz lifecycle/cross-tenant splice (55). No live bug proven. All paths resolve to either a self-service tenant (HUMAN) or a harvested desktop client_id. Anonymous GraphQL surface largely closed (sensitive resolvers auth-gated; only empty listIdentityProviders + crashing listComponents remain). Passive yield exhausted; risk conditional on human action to unlock credential-gated test surfaces.
