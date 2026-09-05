@@ -4692,3 +4692,137 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 - [RISK] alfaview: 48/100. Unchanged. Signup barrier collapsed to a single human mailbox action — the moment a test tenant exists, rank-1 IDOR (80) and guest-authz splice (55) become directly testable one-command chains; FusionAuth redirect_uri (65) still awaits a desktop client_id. No live bug proven yet; all remaining paths gate on the signup or the installer harvest.
+===== ANALYST bigpickle 2026-09-05 18:56:58 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la
+total 200
+drwxr-xr-x 12 runner runner  4096 Sep  5 18:46 .
+drwxr-xr-x  3 runner runner  4096 Sep  5 18:46 ..
+drwxr-xr-x  7 runner runner  4096 Sep  5 18:46 .git
+drwxr-xr-x  3 runner runner  4096 Sep  5 18:46 .github
+-rw-r--r--  1 runner runner  1883 Sep  5 18:46 README.md
+-rw-r--r--  1 runner runner    32 Sep  5 18:46 analyst-out.txt
+-rw-r--r--  1 runner runner 56307 Sep  5 18:46 analyst-prompt.txt
+-rw-r--r--  1 runner runner 52397 Sep  5 18:46 ctx.txt
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 inventory
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 knowledge
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 leads
+-rw-r--r--  1 runner runner  7392 Sep  5 18:46 probe-results.md
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 recon-notes
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 reports
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 reposcan-raw
+-rw-r--r--  1 runner runner  3323 Sep  5 18:46 scope.yml
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 scripts
+-rw-r--r--  1 runner runner    33 Sep  5 18:46 state_bigpickle.json
+-rw-r--r--  1 runner runner    33 Sep  5 18:46 state_laguna.json
+-rw-r--r--  1 runner runner    33 Sep  5 18:46 state_ling3.json
+-rw-r--r--  1 runner runner    33 Sep  5 18:46 state_longcat.json
+-rw-r--r--  1 runner runner    33 Sep  5 18:46 state_mimo.json
+-rw-r--r--  1 runner runner    33 Sep  5 18:46 state_nemotron3.json
+drwxr-xr-x  2 runner runner  4096 Sep  5 18:46 triage
+[0m
+[0m✱ [0mGlob "art/**/*"[90m in . · 0 matches[0m
+[0m→ [0mRead state_bigpickle.json
+[0m→ [0mRead analyst-out.txt
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead scope.yml
+[0m✱ [0mGlob "*"[90m in leads · 7 matches[0m
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead leads/lead-nemotron3.md
+[0m→ [0mRead knowledge
+[0m→ [0mRead leads/lead-bigpickle.md[90m [offset=399][0m
+[0m→ [0mRead leads/lead-nemotron3.md[90m [offset=415][0m
+[0m→ [0mRead knowledge/index.md
+Now let me read the last section of the bigpickle lead file (from the most recent entry) and the remaining nemotron3 content:
+Now I have full context. Let me execute the 8-step analysis.
+
+**STEP 1 — DELTA:**
+NO_DELTA from knowledge base. All entries from 2026-09-05 17:06:07 UTC are already reflected in my last leads. No new hosts probed, no new findings.
+
+**STEP 2 — PRIORITIZE:**
+```
+[PRIO] sso.alfaview.com,7.3,a:7 b:9 t:9(OAuth/FusionAuth/OIDC) g:6 c:2 f:10
+[PRIO] app.alfaview.com/graphql,7.2,a:7 b:9 t:9(GraphQL+guest ops) g:3 c:2 f:10
+[PRIO] apis.alfaview.com,7.0,a:9 b:9 t:8(OpenAPI+UUID-paths) g:2 c:2 f:6
+[PRIO] test.alfaview.com,5.8,a:4 b:6 t:6(binary dist) g:9 c:2 f:10
+```
+
+**STEP 3 — HYPOTHESES:**
+All three hypotheses are unchanged from last session (IDOR 80, OAuth 65, guest-authz 55). All blocked on HUMAN. No new passive-PROBEable surface exists.
+
+**STEP 4 — SELF-CRITIQUE:**
+All three survive (confidence ≥40, not REJECTED, have verify steps). But they are all BLOCKED — no passive probe can advance them.
+
+**STEP 5 — NEXT ACTION:**
+One actionable path exists that doesn't need human account creation: **download the alfacheck binary from test.alfaview.com and extract embedded OAuth client_id, API endpoints, and configuration.** This could unlock the OAuth redirect_uri bypass (conf 65) by revealing the registered client_id — a client_id that was previously only obtainable from the desktop installer (S3 buckets 403). The binary is unauthenticated on test.alfaview.com and contains 4 platform variants. Static analysis (strings, config extraction) is read-only.
+
+**STEP 6 — LEARN:**
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) — potential client_id source for OAuth redirect_uri bypass.
+
+**STEP 7 — RISK:**
+[RISK] alfaview: 48/100 — unchanged. All exploit paths gated on HUMAN action (account creation or desktop client_id). Binary extraction may yield client_id passively.
+
+---
+
+## 2026-09-05 18:50:00 UTC [target] (model bigpickle)
+
+[PRIO] sso.alfaview.com,7.3,a:7 b:9 t:9(OAuth/FusionAuth/OIDC) g:6 c:2 f:10
+[PRIO] app.alfaview.com/graphql,7.2,a:7 b:9 t:9(GraphQL+guest ops) g:3 c:2 f:10
+[PRIO] apis.alfaview.com,7.0,a:9 b:9 t:8(OpenAPI+UUID-paths) g:2 c:2 f:6
+[PRIO] test.alfaview.com,5.8,a:4 b:6 t:6(binary dist) g:9 c:2 f:10
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, GET /v2/rooms/{roomId}/passcode). Tenant A's opaque bearer vs tenant B UUIDs → cross-tenant authz unverified. Signup roadblock now fully mapped: unauth Signup mutation (planId="free-business") → email activation → REST password auth.
+evidence_needed: tenant A token returns 200/204 for tenant B userId/roomId where 403 expected (passcode+permissions first).
+verify_steps: signup free tenant → POST /v2/auth/password {"username","password"} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimUUID}/passcode → 403 vs 200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → 403 vs 204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: AUTH_HELPED
+
+[HYP] OAuth redirect_uri validation bypass on FusionAuth authorize → code theft
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 65
+reasoning: invalid_client gate precedes redirect_uri handling (confirmed); FusionAuth exact-match registry with known path/query-substitution bypass variants; web bundle carries no client_id; S3 buckets 403.
+evidence_needed: registered client_id + its exact redirect_uri, then 302 Location on mutated URI.
+verify_steps: harvest client_id from desktop installer → GET /oauth2/authorize?...&redirect_uri=<reg>/../evil → compare 302 target vs exact-match.
+impact: code theft → ATO of any alfaview user; HIGH.
+testability: AUTH_HELPED
+
+[HYP] Guest-authz gap: dead/re-keyed or cross-tenant guest triples still mint tokens via GraphQL
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(userId,companyId,roomId) anonymous-executing, lookup by ID triple only (no secret; REST requires 4-field accessKey combo). Candidate flaws: revoked/expired triple still returns accessToken; cross-tenant tuple splice accepted.
+evidence_needed: own tenant guest triple: token issued without accessKey; persists after link revoke; cross-pair accepts.
+verify_steps: GenerateGroupLink → guestAuthenticate own triple → revoke link → retry → splice second-tenant roomId → compare accessToken vs BAD_USER_INPUT.
+impact: unauthorized room entry by dead/re-keyed or cross-tenant links; MEDIUM-HIGH.
+testability: AUTH_HELPED
+
+[PARKED] Device-flow abuse (45): needs public client_id + phishing precondition + POST-only. Parked pending client_id harvest.
+[PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens confirmed, not raw JWTs. Closed.
+
+[FINAL] 1. Cross-tenant IDOR — 80. Highest impact, strongest structural evidence, clear verify steps. Blocked on: account creation (HUMAN).
+[FINAL] 2. OAuth redirect_uri bypass — 65. HIGH impact if client_id harvested. Blocked on: desktop installer extraction (HUMAN) — BUT: binary may be extractable from test.alfaview.com (NEW passive path).
+[FINAL] 3. Guest-authz lifecycle/cross-tenant splice — 55. Design-level authz gap (no accessKey in GraphQL guest path). Blocked on: own tenant guest triple (HUMAN).
+
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), not raw JWTs — JWT alg-confusion avenue closed.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_id`) — redirect_uri testing requires a registered client_id.
+[LEARN] ACCEPTED MISCONFIG @ alfaview.com: root 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login links on marketing domain.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in JWKS.
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification — POTENTIAL CLIENT_ID SOURCE.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Full GraphQL admin schema in public bundle; per-resolver auth (listIdentityProviders unauth data, listComponents unauth 500).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 4-field accessKey combo.
+[LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — HTTP Basic auth gate (not OAuth).
+[LEARN] REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
+[LEARN] ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
+[LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+
+[NEXT] PROBE: GET `https://test.alfaview.com/` → extract binary download URLs for alfacheck v470079 (linux/amd64, smallest) → download the ELF binary → run `strings` on it to search for: (1) OAuth/OIDC client_id patterns (e.g. `client_id`, `oauth`, `fusionauth`, `alfaview`, UUID patterns matching registered app clients), (2) internal API hostnames/URLs not in public inventory, (3) hardcoded API keys or tokens. This is a read-only passive extraction of a publicly-served binary — no auth needed. If client_id found → immediately unlock the redirect_uri bypass test on sso.alfaview.com. Rate: ≤1 rps. All results are local analysis only.
+
+[RISK] alfaview: 48/100 — unchanged. Remaining exposure concentrated on three auth-gated chains: REST cross-tenant IDOR (80), OAuth redirect_uri bypass (65), guest-authz lifecycle/cross-tenant splice (55). No live bug proven. All paths resolve to either a self-service tenant (HUMAN) or a harvested desktop client_id. NEW passive path: extract client_id from test.alfaview.com binary (eliminates HUMAN gate for hypothesis 2).

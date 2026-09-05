@@ -1,9 +1,14 @@
-## 2026-09-05 17:06:07 UTC [target] (model bigpickle)
-[NEW] app.alfaview.com/js/AppSignup.min.3329eeac503c038b44b8.js (48KB lazy chunk) recovered: SIGNUP IS UNAUTHENTICATED — Signup action sends NO token header (vs CreateCompany which sends headers:{token:s}). Exact payload: signup({displayName, user:{email, userProfile:{firstname,lastname}, locale:{UILanguage}}, agreedToTerms, agreedToPrivacyPolicy, planId}). Free-tier plan constant: "free-business" ({return"free-business"===this.paymentPlanId}).
-[NEW] app.alfaview.com/js/AppFinishSignup.min.c05a2146b0620d1167ae.js recovered: activation is EMAIL-GATED — finishSignup({companyId, username, activationToken, password}) pulled from URL route /finish-signup/{companyId}/{activationToken} (username fallback from query param "principal"). Signup redirects to SIGNUP_EMAIL_SENT route — company created pre-email, activated post-click. Headless signup impossible without the email — this gate is HUMAN (mailbox access), the remaining chain is fully automatable.
-[NEW] GraphQL client posts to /graphql with credentials:"include" (Apollo), authenticated ops use a token header (not Authorization/Bearer); Signup/FinishSignup send NO token → anonymous reachable. No CSRF header observed on GraphQL client.
-[NEXT] HUMAN: Create one throwaway free alfaview company — now fully prepped: either (a) UI: https://app.alfaview.com signup (plan "Continue with free") with a disposable inbox, click activation email, report the chosen email+password; or (b) operator approves + drops a catch-all inbox address and I run the two mutation chain: POST app.alfaview.com/graphql {q: signup(displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms:true,agreedToPrivacyPolicy:true,planId:"free-business")}, await activation email for {companyId,activationToken} → finishSignup(username,password,companyId,activationToken) → POST apis.alfaview.com/v2/auth/password {"username","password"} → opaque base64 bearer → GET /v2/users/me baseline 200 → GET /v2/rooms/{victimUUID}/passcode (403=enforced vs 200=IDOR) → fetchUserPermissions(victimUserId) cross-tenant verdict. After handoff all remaining probes are read/mutate-own-tenant only at <=1 rps.
-[RISK] alfaview: 48/100 — unchanged. Signup gate reduced to a single human mailbox action; the moment a test tenant exists, rank-1 IDOR (80) + guest-authz splice (55) go from static to one-command testable.
+## 2026-09-05 18:47:10 UTC [target] (model bigpickle)
+[PRIO] sso.alfaview.com,7.3,a:7 b:9 t:9(OAuth/FusionAuth/OIDC) g:6 c:2 f:10
+[PRIO] app.alfaview.com/graphql,7.2,a:7 b:9 t:9(GraphQL+guest ops) g:3 c:2 f:10
+[PRIO] apis.alfaview.com,7.0,a:9 b:9 t:8(OpenAPI+UUID-paths) g:2 c:2 f:6
+[PRIO] test.alfaview.com,5.8,a:4 b:6 t:6(binary dist) g:9 c:2 f:10
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) — potential client_id source for OAuth redirect_uri bypass.
+[RISK] alfaview: 48/100 — unchanged. All exploit paths gated on HUMAN action (account creation or desktop client_id). Binary extraction may yield client_id passively.
+[PRIO] sso.alfaview.com,7.3,a:7 b:9 t:9(OAuth/FusionAuth/OIDC) g:6 c:2 f:10
+[PRIO] app.alfaview.com/graphql,7.2,a:7 b:9 t:9(GraphQL+guest ops) g:3 c:2 f:10
+[PRIO] apis.alfaview.com,7.0,a:9 b:9 t:8(OpenAPI+UUID-paths) g:2 c:2 f:6
+[PRIO] test.alfaview.com,5.8,a:4 b:6 t:6(binary dist) g:9 c:2 f:10
 [HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
 class: IDOR
 asset: apis.alfaview.com/v2
@@ -31,3 +36,22 @@ evidence_needed: own tenant guest triple: token issued without accessKey; persis
 verify_steps: GenerateGroupLink → guestAuthenticate own triple → revoke link → retry → splice second-tenant roomId → compare accessToken vs BAD_USER_INPUT.
 impact: unauthorized room entry by dead/re-keyed or cross-tenant links; MEDIUM-HIGH.
 testability: AUTH_HELPED
+[PARKED] Device-flow abuse (45): needs public client_id + phishing precondition + POST-only. Parked pending client_id harvest.
+[PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens confirmed, not raw JWTs. Closed.
+[FINAL] 1. Cross-tenant IDOR — 80. Highest impact, strongest structural evidence, clear verify steps. Blocked on: account creation (HUMAN).
+[FINAL] 2. OAuth redirect_uri bypass — 65. HIGH impact if client_id harvested. Blocked on: desktop installer extraction (HUMAN) — BUT: binary may be extractable from test.alfaview.com (NEW passive path).
+[FINAL] 3. Guest-authz lifecycle/cross-tenant splice — 55. Design-level authz gap (no accessKey in GraphQL guest path). Blocked on: own tenant guest triple (HUMAN).
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), not raw JWTs — JWT alg-confusion avenue closed.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_id`) — redirect_uri testing requires a registered client_id.
+[LEARN] ACCEPTED MISCONFIG @ alfaview.com: root 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login links on marketing domain.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in JWKS.
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification — POTENTIAL CLIENT_ID SOURCE.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: Full GraphQL admin schema in public bundle; per-resolver auth (listIdentityProviders unauth data, listComponents unauth 500).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 4-field accessKey combo.
+[LEARN] ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — HTTP Basic auth gate (not OAuth).
+[LEARN] REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
+[LEARN] ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
+[LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+[NEXT] PROBE: GET `https://test.alfaview.com/` → extract binary download URLs for alfacheck v470079 (linux/amd64, smallest) → download the ELF binary → run `strings` on it to search for: (1) OAuth/OIDC client_id patterns (e.g. `client_id`, `oauth`, `fusionauth`, `alfaview`, UUID patterns matching registered app clients), (2) internal API hostnames/URLs not in public inventory, (3) hardcoded API keys or tokens. This is a read-only passive extraction of a publicly-served binary — no auth needed. If client_id found → immediately unlock the redirect_uri bypass test on sso.alfaview.com. Rate: ≤1 rps. All results are local analysis only.
+[RISK] alfaview: 48/100 — unchanged. Remaining exposure concentrated on three auth-gated chains: REST cross-tenant IDOR (80), OAuth redirect_uri bypass (65), guest-authz lifecycle/cross-tenant splice (55). No live bug proven. All paths resolve to either a self-service tenant (HUMAN) or a harvested desktop client_id. NEW passive path: extract client_id from test.alfaview.com binary (eliminates HUMAN gate for hypothesis 2).
