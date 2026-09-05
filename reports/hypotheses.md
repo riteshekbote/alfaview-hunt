@@ -278,3 +278,19 @@
 - LEARN: ACCEPTED AUTH @ internal.alfaview.com: HTTP 401 — HTTP Basic auth gate confirmed.
 - LEARN: REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39). 
 - LEARN: REJECTED MISCONFIG @ beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout on root and trailing slash — unlike other cloud hydra hosts, no "Hi Client" 
+
+## RANKED HYPOTHESES 2026-09-05 00:15:07 UTC
+- [75] sso.alfaview.com: OAuth redirect_uri validation bypass on sso.alfaview.com leading to authorization code theft (from art/lead_nemotron3.txt)
+- [65] sso.alfaview.com/oauth2/authorize: OAuth redirect_uri validation bypass on FusionAuth authorize endpoint → code theft (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET `https://sso.alfaview.com/oauth2/register` (checks open tenant self-registration on prod IAM — if live, also maps default-registration surface); foll
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET `https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js` → search for `client_id` or `oauth` config → use discovered client_id in `GET https://s
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: Production IAM is FusionAuth with default tenant issuer "acme.com" (OIDC `issuer` + JWK CN=acme.com, self-signed 2021-12-
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_i
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), no
+- LEARN: ACCEPTED MISCONFIG @ alfaview.com: root now 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO l
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in 
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+- LEARN: REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
+- LEARN: ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
+- LEARN: REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.

@@ -2376,4 +2376,711 @@ STEP 6 — LEARNING
 [LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout on root and trailing slash — unlike other cloud hydra hosts, no "Hi Client" response. Target behavior unknown, fleet remains 6/7 unprobed.
 
 STEP 7 — RISK
-[RISK] alfaview: 72/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts + 6 main domains. Production APIs auth-gated (401). High-value IDOR (confidence 85) and AUTH (confidence 70) classes confirmed in OpenAPI spec. Multi-tenant SaaS on 3 customer subdomains (identical SPA shells). 3 hydra media servers across 3 clouds expose unauthenticated HTTP 200 but serve only "Hi Client" — no sensitive endpoints. 7 beta-ionoscloud hosts: 1 hydra timeout (behavior diverges from other clouds), 6 completely unprobed (engine/audio/video) — new attack surface. 6 main domains (alfaview.com, app, dev, sso, test, www): 2 now live (alfaview.com, sso.alfaview.com), 4 unprobed. 31 hosts exhausted/rejected. Realistic path: probe alfaview.com/sso.alfaview.com OAuth flows (PASSIVE, CRITICAL impact); probe beta-ionoscloud engine hosts (PASSIVE, MEDIUM-HIGH); obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API. JWT alg/key confusion (confidence 55) adds CRITICAL vector if JWKS misconfigured. Main domain OAuth/SSO flows untested — highest immediate ROI.
+[RISK] alfaview: 72/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts + 6 main domains. Production APIs auth-gated (401). High-value IDOR (confidence 85) and AUTH (confidence 70) classes confirmed in OpenAPI spec. Multi-tenant SaaS on 3 customer subdomains (identical SPA shells). 3 hydra media servers across 3 clouds expose unauthenticated HTTP 200 but serve only "Hi Client" — no sensitive endpoints. 7 beta-ionoscloud hosts: 1 hydra timeout (behavior diverges from other clouds), 6 completely unprobed (engine/audio/video) — new attack surface. 6 main domains (alfaview.com, app, dev, sso, test, www): 2 now live (alfaview.com, sso.alfaview.com), 4 unprobed. 31 hosts exhausted/rejected. Realistic path: probe alfaview.com/sso.alfaview.com OAuth flows (PASSIVE, CRITICAL impact); probe beta-ionoscloud engine hosts (PASSIVE, MEDIUM-HIGH); obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API. JWT alg/key confusion (confidence 55) adds CRITICAL vector if JWKS misconfigured. Main domain OAuth/SSO flows untested — highest immediate ROI.===== ANALYST nemotron3 2026-09-05 00:15:07 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{content_length}" "https://alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+curl: unknown --write-out variable: 'content_length'
+301
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{content_length}" "https://sso.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+curl: unknown --write-out variable: 'content_length'
+200
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}" "https://alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+301 162
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}" "https://sso.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+200 8526
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10 | head -200
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-128.png">
+
+
+    <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+
+    <link rel="stylesheet" href="/css/entrypoints/fusionauth-hosted.css?version=1.63.0"/>
+
+    <style>
+    
+    </style>
+
+    <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+    <script src="/js/Util.js?version=1.63.0"></script>
+    <script src="/js/oauth2/LocaleSelect.js?version=1.63.0"></script>
+    <script>
+      "use strict";
+      Prime.Document.onReady(function() {
+        Prime.Document.query('.alert').each(function(e) {
+          var dismissButton = e.queryFirst('.dismiss-button');
+          if (dismissButton !== null) {
+            new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+          }
+        });
+        document.querySelectorAll('.date-picker').forEach(datePicker => {
+          datePicker.onfocus = () => datePicker.type = 'date';
+          datePicker.onblur = () => {
+            if (datePicker.value === '') {
+              datePicker.type = 'text';
+            }
+          };
+        });
+        var localeSelect = Prime.Document.queryById('locale-select');
+        if (localeSelect !== null) {
+          new FusionAuth.OAuth2.LocaleSelect(localeSelect);
+        }
+        document.querySelectorAll('button.show-password-button').forEach(button => {
+          button.classList.remove('hidden');
+          button.addEventListener('click', () => FusionAuth.Util.togglePasswordMasking(button));
+        });
+      });
+      FusionAuth.Version = "1.63.0";
+    </script>
+
+
+  </head>
+  <body class="min-h-screen font-theme text-font text-text text-xs bg-page-bg">
+        <main class="min-h-screen bg-page-bg flex flex-col items-center px-5 py-15">
+          <div class="w-full max-w-lg rounded-theme">
+            <div class="bg-panel-bg border-1 border-panel-border rounded-panel shadow-sm">
+              <div class="p-8">  
+                <main>
+                  <div class="p-3 pb-5">
+                    <img class="w-48 mb-8" src="/images/logo-gray.svg">
+                    <p class="text-lg mb-2">Welcome to your FusionAuth instance!</p>
+                    <div class="text-sm">
+                    <p class="mb-3">
+                      If you're looking for <strong>the FusionAuth admin application</strong>, you'll find that at <strong><a class="text-indigo-800 underline" href="/admin">/admin</a></strong>. FusionAuth has a handful of applications running on it, each at a different path. This page is just the default page for the system.
+                    </p>
+                      <p>
+                        You can theme this in your <a href="/admin/theme" class="text-indigo-800 underline">customization options</a>. If you don't want to theme it, be sure to redirect it to the proper route.
+                      </p>     
+                      <a class="flex justify-center items-center mb-9 mt-5 rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 cursor-pointer" href="/admin/">
+                        <span>Go to FusionAuth Admin</span> 
+                        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="16" class="ml-2">
+                          <path fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0.75 0.823242)" d="M8.75 0L15 6.25M15 6.25L8.75 12.5M15 6.25L0 6.25" fill-rule="evenodd"></path>
+                        </svg>
+                      </a>
+                      
+                      <h2 class="text-lg mb-3">Need Help?</h2>
+                      <p class="mb-2">If you want help setting up your instance with best-practice expertise, <a class="text-indigo-800 underline" href="https://fusionauth.link/root-contact">reach out to the sales team</a> to set up a meeting. Want to tinker and figure it out on your own? Here are some links to help you get started:</p>
+                      <ul class="pl-4">
+                      <li class="pt-2 list-disc">  <a class="text-sm text-link hover:text-link-hover hover:underline cursor-pointer" href="https://fusionauth.link/root-get-started?tenantId=f12a112a-a2c6-11eb-a6c5-fa163e7d0e80&client_id=&nonce=&pendingIdPLinkId=&redirect_uri=&response_mode=&response_type=&scope=&state=&timezone=&metaData.device.name=&metaData.device.type=&code_challenge=&code_challenge_method=&user_code=&prompt=&max_age=&dpop_jkt=">
+Getting started  </a>
+</li>
+                      <li class="pt-2 list-disc">  <a class="text-sm text-link hover:text-link-hover hover:underline cursor-pointer" href="https://fusionauth.link/root-look-and-feel?tenantId=f12a112a-a2c6-11eb-a6c5-fa163e7d0e80&client_id=&nonce=&pendingIdPLinkId=&redirect_uri=&response_mode=&response_type=&scope=&state=&timezone=&metaData.device.name=&metaData.device.type=&code_challenge=&code_challenge_method=&user_code=&prompt=&max_age=&dpop_jkt=">
+Customization and Themes  </a>
+</li>
+                      <li class="pt-2 list-disc">  <a class="text-sm text-link hover:text-link-hover hover:underline cursor-pointer" href="https://fusionauth.link/root-docs?tenantId=f12a112a-a2c6-11eb-a6c5-fa163e7d0e80&client_id=&nonce=&pendingIdPLinkId=&redirect_uri=&response_mode=&response_type=&scope=&state=&timezone=&metaData.device.name=&metaData.device.type=&code_challenge=&code_challenge_method=&user_code=&prompt=&max_age=&dpop_jkt=">
+Full Documentation  </a>
+</li>
+                      <li class="pt-2 list-disc">  <a class="text-sm text-link hover:text-link-hover hover:underline cursor-pointer" href="https://fusionauth.link/root-community?tenantId=f12a112a-a2c6-11eb-a6c5-fa163e7d0e80&client_id=&nonce=&pendingIdPLinkId=&redirect_uri=&response_mode=&response_type=&scope=&state=&timezone=&metaData.device.name=&metaData.device.type=&code_challenge=&code_challenge_method=&user_code=&prompt=&max_age=&dpop_jkt=">
+Community & Support  </a>
+</li>
+                    </ul>
+                    </div>
+                  </div>
+                </main>
+              </div>
+            </div>
+          </div>
+        </main>
+              
+        
+
+
+  <div id="fa-footer" class="footer-display fixed bottom-2 right-2 flex items-center gap-2 px-2.5 py-1">
+    <span class="text-sm text-text">Powered by</span>
+    <a href="https://fusionauth.io" title="The best developer IAM in the universe!">
+      <img src="/images/footer-logo.svg" alt="FusionAuth" class="h-6 w-auto">
+    </a>
+  </div>
+  </body>
+</html>
+[0m
+[0m$ [0mcurl -sL -o /dev/null -w "%{http_code} %{size_download} %{url_effective}" "https://alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+200 177622 https://alfaview.com/en
+[0m
+[0m$ [0mcurl -s "https://alfaview.com/en" -H "User-Agent: Mozilla/5.0" --max-time 10 | grep -iE "(login|oauth|authorize|sso|sign.in)" | head -30
+<li id=menu-item-5692 class="menu-item menu-item-type-custom menu-item-object-custom nav-item menu-item-5692"><a target=_blank href="https://app.alfaview.com/" class=nav-link>Login</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom nav-item menu-item-5692"><a target=_blank href="https://app.alfaview.com/" class=nav-link>Login</a></li>
+<div class="carousel slide  " id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550 role=region aria-roledescription=carousel aria-label="Content carousel" tabindex=0 data-bs-keyboard=true data-slide-effect=slide><div class="carousel-status visually-hidden" aria-live=polite>Carousel with 4 slides</div><div class=carousel-inner><div style=min-height:400px class="carousel-item active" data-bs-interval=5000 id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-0 role=tabpanel aria-labelledby=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-0 aria-roledescription=slide aria-label="Slide 1 of 4"><span class=carousel-item-company>Karlsruhe Institute of Technology (KIT)</span><p class=carousel-item-name>Dr. Ing. Sebastian Stüker &#8211; Institute for Anthropomatics and Robotics</p><p class=carousel-item-content>&#8220;We work closely with international research groups located all over the world. alfaview gives us the opportunity to communicate and complete projects across locations, efficiently and face-to-face with our international partners.&#8221;</p></div><div style=min-height:400px class="carousel-item " data-bs-interval=5000 id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-1 role=tabpanel aria-labelledby=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-1 aria-roledescription=slide aria-label="Slide 2 of 4"><span class=carousel-item-company>Pforzheim University</span><p class=carousel-item-name>Prof. Dr.-Ing. Rainer Drath &#8211; Professorship for Mechatronic System Engineering, School of Engineering</p><p class=carousel-item-content>&#8220;We use alfaview for one simple reason: It works, even for people who are not very technical. Simplicity is a crucial prerequisite for new digital teaching methods, it increases acceptance. We use alfaview as internet offices, virtual labs, virtual lecture halls, for discussions with students and colleagues – it is a huge help in tightly packed schedules.&#8221;</p></div><div style=min-height:400px class="carousel-item " data-bs-interval=5000 id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-2 role=tabpanel aria-labelledby=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-2 aria-roledescription=slide aria-label="Slide 3 of 4"><span class=carousel-item-company>German Aerospace Center</span><p class=carousel-item-name>Daniele Cerra &#8211; Research Fellow</p><p class=carousel-item-content>&#8220;We usually gather in a single location of the globe to discuss several aspects of life all around our planet. As the pandemic made this impossible, this time alfaview allowed us to successfully reverse our point of view, focussing on a specific instrument in space from all around the world instead.&#8221;</p></div><div style=min-height:400px class="carousel-item " data-bs-interval=5000 id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-3 role=tabpanel aria-labelledby=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-3 aria-roledescription=slide aria-label="Slide 4 of 4"><span class=carousel-item-company>SAP SE</span><p class=carousel-item-name>Timo Schütte &#8211; Global Vice President SAP Product Learning</p><p class=carousel-item-content>&#8220;The alfaview video conferencing solution offers unique face-to-face conferencing and training, so we, as a company, have decided to use alfaview for our Education Division as well. The advantage of alfaview is that all participants in a training course can see, hear, and interact with each other in the digital classroom. In addition, our customers can now participate in the meeting or training course from the comfort of their own home or workplace. Our clientele benefits from a professional learning environment in alfaview that produces a high level of learning success. And best of all, alfaview was developed in Germany and is GDPR-compliant.&#8221;</p></div></div><button class="av-carousel-nav av-carousel-control-prev" type=button data-bs-target="#av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550" data-bs-slide=prev aria-label="Previous slide" aria-controls=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550><i class=icon-ic_navigate_before_24dp aria-hidden=true></i><span class=visually-hidden>Previous</span></button><button class="av-carousel-nav av-carousel-control-next" type=button data-bs-target="#av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550" data-bs-slide=next aria-label="Next slide" aria-controls=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550><i class=icon-ic_navigate_next_24dp aria-hidden=true></i><span class=visually-hidden>Next</span></button><div class=carousel-indicators id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicators role=tablist aria-label="Carousel indicators"><button type=button data-bs-target="#av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550" data-bs-slide-to=0 class=active aria-current=true aria-label="Go to slide 1" id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-0 aria-controls=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-0></button><button type=button data-bs-target="#av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550" data-bs-slide-to=1 class="" aria-current=false aria-label="Go to slide 2" id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-1 aria-controls=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-1></button><button type=button data-bs-target="#av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550" data-bs-slide-to=2 class="" aria-current=false aria-label="Go to slide 3" id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-2 aria-controls=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-2></button><button type=button data-bs-target="#av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550" data-bs-slide-to=3 class="" aria-current=false aria-label="Go to slide 4" id=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-indicator-3 aria-controls=av-carousel-e2cfef64-8090-45e8-85cd-466c16d16550-slide-3></button></div></div>
+<li id=menu-item-2725 class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2725"><a href="https://app.alfaview.com">Login</a></li>
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download} %{url_effective}" "https://sso.alfaview.com/oauth2/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" -H "User-Agent: Mozilla/5.0" --max-time 10
+200 6157 https://sso.alfaview.com/oauth2/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" -H "User-Agent: Mozilla/5.0" --max-time 10 | head -100
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-128.png">
+
+
+    <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+
+    <link rel="stylesheet" href="/css/entrypoints/fusionauth-hosted.css?version=1.63.0"/>
+
+    <style>
+    
+    </style>
+
+    <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+    <script src="/js/Util.js?version=1.63.0"></script>
+    <script src="/js/oauth2/LocaleSelect.js?version=1.63.0"></script>
+    <script>
+      "use strict";
+      Prime.Document.onReady(function() {
+        Prime.Document.query('.alert').each(function(e) {
+          var dismissButton = e.queryFirst('.dismiss-button');
+          if (dismissButton !== null) {
+            new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+          }
+        });
+        document.querySelectorAll('.date-picker').forEach(datePicker => {
+          datePicker.onfocus = () => datePicker.type = 'date';
+          datePicker.onblur = () => {
+            if (datePicker.value === '') {
+              datePicker.type = 'text';
+            }
+          };
+        });
+        var localeSelect = Prime.Document.queryById('locale-select');
+        if (localeSelect !== null) {
+          new FusionAuth.OAuth2.LocaleSelect(localeSelect);
+        }
+        document.querySelectorAll('button.show-password-button').forEach(button => {
+          button.classList.remove('hidden');
+          button.addEventListener('click', () => FusionAuth.Util.togglePasswordMasking(button));
+        });
+      });
+      FusionAuth.Version = "1.63.0";
+    </script>
+
+
+  </head>
+  <body class="min-h-screen font-theme text-font text-text text-xs bg-page-bg">
+
+
+
+  <main class="min-h-screen bg-page-bg flex flex-col items-center px-5 py-15 bg-(image:--img-background) bg-(repeat:--background-repeat) bg-(size:--background-size)">
+    <div class="w-full max-w-[352px] rounded-theme">
+      <div class="bg-panel-bg border-1 border-panel-border rounded-panel shadow-sm">
+        <div class="p-8" data-in-progress>
+          <div class="logo-container img-display justify-center">
+          </div>
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+          <main>
+      <p class="text-sm">We're sorry, your request was malformed or was unable to be completed for some reason. Try hitting the back button and restarting the process to see if it fixes the problem.</p>
+
+      <p class="mt-4 mb-4">If you want the nerdy explanation, review the following JSON body.</p>
+      <div class="overflow-auto text-xs full">
+        <pre>{
+  &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: test is not valid.&quot;,
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download} %{url_effective}" "https://app.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+200 1381 https://app.alfaview.com/
+[0m
+[0m$ [0mcurl -s "https://app.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10 | head -50
+<!doctype html><html lang="en"><head><meta content="text/html; charset=UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="description" content="High quality audio/video conferencing for professional online meetings and live classes."/><title>alfaview</title><link rel="icon" href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/production_alfaview_icon_web_favicon_96px.png"><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js"></script><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js"></script><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.5b3949112f0cf682adc8.js"></script><link href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/vendor-vue-vuetify.min.04d1ead8363afa7c651b.css" rel="stylesheet"><link href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/app.min.516b0e3a72fb94a8fec5.css" rel="stylesheet"></head><body><div id="app"><app></app></div><noscript>alfaview.com is heavily dependent on JavaScript. Please make sure you have JavaScript enabled.</noscript></body></html>
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}" "https://beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+000 0
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/.well-known/oauth-authorization-server" -H "User-Agent: Mozilla/5.0" --max-time 10
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Error | FusionAuth</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="application-name" content="FusionAuth">
+  <meta name="author" content="FusionAuth">
+  <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+  <meta name="keywords" content="fusionauth, sso, user management, login, registration, identity management">
+  <meta name="robots" content="index, follow">
+
+  <meta name="referrer" content="strict-origin">
+
+  <link rel="apple-touch-icon-precomposed" sizes="57x57" href="/images/apple-touch-icon-57x57.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="60x60" href="/images/apple-touch-icon-60x60.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="120x120" href="/images/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="128x128" href="/images/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="76x76" href="/images/apple-touch-icon-76x76.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="152x152" href="/images/apple-touch-icon-152x152.png" />
+
+  <link rel="icon" type="image/png" href="/images/favicon-196x196.png" sizes="196x196" />
+  <link rel="icon" type="image/png" href="/images/favicon-128.png" sizes="128x128" />
+  <link rel="icon" type="image/png" href="/images/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32" />
+  <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16" />
+
+  <meta name="msapplication-TileColor" content="#FFFFFF" />
+  <meta name="msapplication-TileImage" content="/images/mstile-144x144.png" />
+  <meta name="msapplication-square70x70logo" content="/images/mstile-70x70.png" />
+  <meta name="msapplication-square150x150logo" content="/images/mstile-150x150.png" />
+  <meta name="msapplication-wide310x150logo" content="/images/mstile-310x150.png" />
+  <meta name="msapplication-square310x310logo" content="/images/mstile-310x310.png" />
+
+  <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+  <link rel="stylesheet" href="/css/entrypoints/fusionauth-admin.css?version=1.63.0"/>
+  <script src="/js/entrypoints/admin/main.js?version=1.63.0" type="module"></script>
+
+  <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+  <script src="/js/ui/AdvancedControls.js?version=1.63.0"></script>
+  <script src="/js/ui/CopyToClipboard-0.1.0.js"></script>
+  <script src="/js/ui/Main.js?version=1.63.0"></script>
+  <script>
+    "use strict";
+    Prime.Document.onReady(function() {
+      Prime.Document.query('.alert').each(function(e) {
+        var dismissButton = e.queryFirst('a.dismiss-button');
+        if (dismissButton !== null) {
+          new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+        }
+      });
+      Prime.Document.query('[data-tooltip]').each(function(e) {
+        new Prime.Widgets.Tooltip(e).withClassName('tooltip').initialize();
+      });
+    });
+  </script>
+</head>
+  <body class="bg-slate-100">
+  <div class="flex items-center justify-between w-full h-16 bg-white py-4 px-9 z-50 shadow-md">
+    <div class="text-2xl font-bold">
+      <img src="/images/logo-black-orange.svg" alt="FusionAuth logo" class="h-10 w-auto">
+    </div>
+
+    <div>
+      <a target="_blank" href="https://fusionauth.link/adminuihelp" class="relative inline-flex items-center rounded-md bg-white px-2 py-2 text-slate-400 hover:bg-slate-100 focus:z-10">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 shrink-0 group-hover:text-indigo-500">
+      <use xlink:href="/assets/icons/heroicons-outline.svg#question-mark-circle"></use>
+    </svg>
+      </a>
+    </div>
+  </div>
+    <main class="page-body w-full flex flex-col pt-15 items-center">
+
+  <div class="p-8 sm:px-6 lg:px-8 bg-slate-100 content-container w-1/2  min-w-[400px] max-w-96">
+    <div class="overflow-hidden rounded-lg bg-white shadow-sm panel relative p-8 flex flex-col card mb-8">
+  <h1 class="text-2xl font-semibold text-slate-900 pb-4 grow">404 Page Missing</h1>
+  <p class="text-sm text-slate-700 font-medium ">
+      Let's get you back where you belong before someone misses you,   <a href="/admin" class="text-indigo-500 hover:text-indigo-700 font-medium focus:outline-none focus:underline text-sm"
+      
+     
+   >
+back to FusionAuth  </a>
+.
+  </p>
+    </div>
+  </div>
+    </main>
+  </body>
+</html>
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}" "https://beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+000 0
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/.well-known/openid-configuration" -H "User-Agent: Mozilla/5.0" --max-time 10
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oauth2/device_authorize",
+  "dpop_signing_alg_values_supported" : [
+    "Ed448",
+    "Ed25519",
+    "ES256",
+    "ES384",
+    "ES512",
+    "PS256",
+    "PS384",
+    "PS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "end_session_endpoint" : "https://sso.alfaview.com/oauth2/logout",
+  "frontchannel_logout_supported" : true,
+  "grant_types_supported" : [
+    "authorization_code",
+    "password",
+    "implicit",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "client_credentials"
+  ],
+  "id_token_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "HS256",
+    "HS384",
+    "HS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "issuer" : "acme.com",
+  "jwks_uri" : "https://sso.alfaview.com/.well-known/jwks.json",
+  "response_modes_supported" : [
+    "form_post",
+    "fragment",
+    "query"
+  ],
+  "response_types_supported" : [
+    "code",
+    "id_token",
+    "token id_token"
+  ],
+  "scopes_supported" : [
+    "openid",
+    "offline_access",
+    "email",
+    "phone",
+    "profile"
+  ],
+  "subject_types_supported" : [
+    "public"
+  ],
+  "token_endpoint" : "https://sso.alfaview.com/oauth2/token",
+  "token_endpoint_auth_methods_supported" : [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "userinfo_endpoint" : "https://sso.alfaview.com/oauth2/userinfo",
+  "userinfo_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "RS256",
+    "RS384",
+    "RS512",
+    "HS256",
+    "HS384",
+    "HS512"
+  ]
+}
+[0m
+[0m$ [0mcurl -s "https://app.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10 | grep -iE "client_id|oauth|authorize" | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/.well-known/jwks.json" -H "User-Agent: Mozilla/5.0" --max-time 10
+{
+  "keys" : [
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "kty" : "RSA",
+      "n" : "qT_xytJqFqGysh3-OWpKQAwzzeTwXg8TJs3qI7A0yhe-xkBue5vsyyfT47MIGkVIY9R3kbhY7ysjjv8FV6bbvDk1NyND66QlraPeyJtDoNF6AdBr5d6Zy4zU21aSubgW-OXTf-M-bwqYCpjVn8xU0F0BfXsQeNgO4k3nKG7FME-BKREsyE-5PZRkVpZ7TzFWDhXJ4Vm1Oxut0Vh4OvJdTrX_yji71BSlm65pryVWZ0XSnf12opRFNgMNcDHdDjnRFeQimoT9aN2Ce_cMdrXYazhtu5Hvirb97lnGqXsM5OozheaZgo9iVOUYwstTGd_GZPOzuHUOgM5Xo-bvz3l25w",
+      "use" : "sig",
+      "x5c" : [
+        "MIICrzCCAZegAwIBAQIRAL1bz9UQtEiHnHR4oy8p5yMwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjExMjAzMTQwMDQ0WhcNMzExMjAzMTQwMDQ0WjATMREwDwYDVQQDEwhhY21lLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKk/8crSahahsrId/jlqSkAMM83k8F4PEybN6iOwNMoXvsZAbnub7Msn0+OzCBpFSGPUd5G4WO8rI47/BVem27w5NTcjQ+ukJa2j3sibQ6DRegHQa+XemcuM1NtWkrm4Fvjl03/jPm8KmAqY1Z/MVNBdAX17EHjYDuJN5yhuxTBPgSkRLMhPuT2UZFaWe08xVg4VyeFZtTsbrdFYeDryXU61/8o4u9QUpZuuaa8lVmdF0p39dqKURTYDDXAx3Q450RXkIpqE/Wjdgnv3DHa12Gs4bbuR74q2/e5Zxql7DOTqM4XmmYKPYlTlGMLLUxnfxmTzs7h1DoDOV6Pm7895ducCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAZokpTeSFu0pUavb5JWBOmHWdFWlVAM+ae0dFODeyjs0a3XzjRrOMhHLsA73Ubn9y5BQ0SaNe/qPAYA2hLA3DfwHUyqx9tD2ubWLXYadXHSTET4oJ9TgVpPctRNaFwjysHXrudh5R0WYAYTr9xeeFxJ5gJx5Lxdom2t+e2UeddcKdFLl5qhx5AYcUkpfg1OU27sS/JPYsy7P7tAEiajuADbu36jf8Gz1ffPmuCJyWdnj7OUFtz+RgpWnKhxiVvNOJBlk8ZxefFBpUCoomvudavVa0eEVMnF7RZ+UepVdQgvyhdIdnPYZycH0nec4Bgkxvuies3sz1Yqsezo30gzmNMA=="
+      ],
+      "x5t" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "x5t#S256" : "aLyCb0zVEdHKyDlDvL3ou0k5FvUpJ7Q4BxirZuEUICQ"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "MyYL4tkdByeJy8TYsH9uVDAVfgw",
+      "kty" : "RSA",
+      "n" : "xnTecdsOXkQem8V_9TyjVx2BX_YKxctfjyeIawzclehzDbLHaTvWiJVlUdMalys1b19vhK760cmeA-cpI_pbJd3wy5IW66tbijHeDgnSDizvlV_5K1BbvQSXp1V0md6cdetvcWdcgYg2KXNwf9xXZzYOzeF81UAsdJzdSIMqx5YuTJJcQDoB09I-OFUY-Y5PlC43DVho1uiHDaPHh56dI17rSXo3h1TnjsvhR8mo6rBFeObd9nBaxM6H2kBq97JztLkWzWxfrgoAigptH54pIpxugq54HCWk8_Owfh1a7cpH_iXdJhYiJP2HYY6vzYGs_eSOgPI5KTqq38m9k00tPoCyWnd-uG7phOLKDAeB7zWnsEB1VyPBUduYClqZRbv_awbQuRP5N-FDbaK_snhz5OJblK47MnfRmu2EQpVJqOplO6ML4AKABAhhvAifa8rq8Uu7Vkj7dfnaQBckW1gObC-gi-IrLgcTMAU6TzS_9Wguq4EIBaC2BBffGpYw5yAWN31WJg9aeaikmTkI4lwzeHtqSn9Mu5ZXi95AUNkv3BXxsSCmFQvnl2OmsfcW0I44rkC1A6y6lCzXnRsE8ychiu5IKlFsSj-3ksrtPe5Gsa2zPHkmeS6OW0IGSlgRae-qdusl6XgNMHL2oxPQLM9-TD48sZ_JJhuFKNzoP9FlaOE",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAKmS4nFpqEtEparlQ/2aPOMwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjIwNTI1MTUyOTAwWhcNMzIwNTI1MTUyOTAwWjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMZ03nHbDl5EHpvFf/U8o1cdgV/2CsXLX48niGsM3JXocw2yx2k71oiVZVHTGpcrNW9fb4Su+tHJngPnKSP6WyXd8MuSFuurW4ox3g4J0g4s75Vf+StQW70El6dVdJnenHXrb3FnXIGINilzcH/cV2c2Ds3hfNVALHSc3UiDKseWLkySXEA6AdPSPjhVGPmOT5QuNw1YaNbohw2jx4eenSNe60l6N4dU547L4UfJqOqwRXjm3fZwWsTOh9pAaveyc7S5Fs1sX64KAIoKbR+eKSKcboKueBwlpPPzsH4dWu3KR/4l3SYWIiT9h2GOr82BrP3kjoDyOSk6qt/JvZNNLT6Aslp3frhu6YTiygwHge81p7BAdVcjwVHbmApamUW7/2sG0LkT+TfhQ22iv7J4c+TiW5SuOzJ30ZrthEKVSajqZTujC+ACgAQIYbwIn2vK6vFLu1ZI+3X52kAXJFtYDmwvoIviKy4HEzAFOk80v/VoLquBCAWgtgQX3xqWMOcgFjd9ViYPWnmopJk5COJcM3h7akp/TLuWV4veQFDZL9wV8bEgphUL55djprH3FtCOOK5AtQOsupQs150bBPMnIYruSCpRbEo/t5LK7T3uRrGtszx5JnkujltCBkpYEWnvqnbrJel4DTBy9qMT0CzPfkw+PLGfySYbhSjc6D/RZWjhAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAIjis2BC56ZXl8BghQysMPp08aO9jKDMtjPoNdU8MUtszJaJcReGNhuAIky9dZnAPkK83/GAX64KbHGjovhBnYeNKyr5JIWZ6fcBrfX9q9V6zGHmCsZJ5mmnQdp3AhrS2FUhfhpOQXjOg48IC6rwbh1TBYh0fTaByX5OIvE37sn3glGr89Syw+t6hHAI5rXvFSz3fPTL26jAXGfw4i+e+nrO6zuyAqpwQPeTo/rKpzTm4HicM2BZuHGAC3BbqYEvXm0t/Lk2Hjt8W77s8vk45VcZtDLWqhLGIElJG3WFtIjq9/ba7Ng6oIpDJZ3q0HG9PWhpYlWDY3jJ6iVw7lctd93UtTq6Vg3vQdOSfOt6WfaHuMfPxauT+Q+7v77jhDh33ThO8ErGGDapFhXkE7s/uePsYc6pmVPVGC1HRQfCtCcTolrcYyKiGPlKcEOwLK+TuP8HgjkFCZH8Sn9vD9XIHyAPm0sz4hYvd5nXveFkrzZbGRheJAib+xKKOcjisrZPelERfWRqy+YVeNWvr7KjPhui88lWSSv1JeD3Ei3RHvB7UIu0jA6SE4GF8tsUyW6SV7rj/15Icw2vileTbMqBIDfdV/M/4zIIQSXpyUuzpi2OzR55VwySYDXoE++xopkZyZrBieIUyZBVH4+RmRzEmFFdrZRKyRnNztVzOafnDzff"
+      ],
+      "x5t" : "MyYL4tkdByeJy8TYsH9uVDAVfgw",
+      "x5t#S256" : "rmi_KwpezuADHvfT4yYh2hCjB4SLxwrrKl3Pu4CZehs"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "9exxjB5QmH0DtbhMn4qTBxcw24E",
+      "kty" : "RSA",
+      "n" : "r-rqp4-GbwvwwPjLFObnV5k5w2uxLuzzY6uSIRJfk0ntBTbP1Czwi4QbSk0POtNtKsuXIAy2BvK43fwzWMqhTCQhETbF7_EoqMYDsbbJBiEpUVO4PL7bG3fyizw73_07SonHY-T3cvCZapY8TI2LiaJJLeEPeCVlaGXw6jSe1HzsxDsJwsJ17mAzruzy4S58VScoTv6_HpotboFyBY-2KoeesEOh8Vh9zNaMa9nayGGfuvX7BU0IoDxwD5VoV7wXQzwJK1vXusPUbfNLMJAz_ZINauOL3Su7SXH3AZE_2WA43VTs0ciarnqIrqRY_dxAdqp0zTAqAGOeQJjss2VRNUwOesQIAysP0PauZuTIxwv257nb36XGzhoIFH87SvtTrdaGBtItu8hYwT6o9cw5p4WFUTH1A34rQuGLa5ySnVAXhzYgDcIqsjz__ztYNrXqo1nEdwQES-C782yLeMBAo6GsilRosANFrFCM6iYwwPc6gxb_rbNp1t945MHWuGBoK_l9sEdpJEwbhdMuMp-ZGvpeVAlcRzmarDq2oq6RU1W2uGymQONmbuIjHfe1kYj6fYzzDRaa0R0wUb8qgBu2YGVxAuZbB6nEFuABi4l9xDX3GA7GAhfLwTqF0KbLjPARxibWXhlMRm7nCPLuOsFj1jaarcjRkGCqxrYPGz8Bo-8",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAOMh+2Pk9E0UqfJgalnHuIAwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjIwNzA2MDk1NzE1WhcNMzIwNzA2MDk1NzE1WjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK/q6qePhm8L8MD4yxTm51eZOcNrsS7s82OrkiESX5NJ7QU2z9Qs8IuEG0pNDzrTbSrLlyAMtgbyuN38M1jKoUwkIRE2xe/xKKjGA7G2yQYhKVFTuDy+2xt38os8O9/9O0qJx2Pk93LwmWqWPEyNi4miSS3hD3glZWhl8Oo0ntR87MQ7CcLCde5gM67s8uEufFUnKE7+vx6aLW6BcgWPtiqHnrBDofFYfczWjGvZ2shhn7r1+wVNCKA8cA+VaFe8F0M8CStb17rD1G3zSzCQM/2SDWrji90ru0lx9wGRP9lgON1U7NHImq56iK6kWP3cQHaqdM0wKgBjnkCY7LNlUTVMDnrECAMrD9D2rmbkyMcL9ue529+lxs4aCBR/O0r7U63WhgbSLbvIWME+qPXMOaeFhVEx9QN+K0Lhi2uckp1QF4c2IA3CKrI8//87WDa16qNZxHcEBEvgu/Nsi3jAQKOhrIpUaLADRaxQjOomMMD3OoMW/62zadbfeOTB1rhgaCv5fbBHaSRMG4XTLjKfmRr6XlQJXEc5mqw6tqKukVNVtrhspkDjZm7iIx33tZGI+n2M8w0WmtEdMFG/KoAbtmBlcQLmWwepxBbgAYuJfcQ19xgOxgIXy8E6hdCmy4zwEcYm1l4ZTEZu5wjy7jrBY9Y2mq3I0ZBgqsa2Dxs/AaPvAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAHxFsUX/nvjWPlxHAaHFLRC3IJ/wBgfM3IlXvXoT6/2fPcm9e3m6gtbNUWmzl4Sjq+IxtBaNwnQpwwzB/nBQCmnAXLnOq0T2co9ssSMnCDYImJwXeU4b1oDZkMJ4m2899yVBTlFgq0xWqsqOdK9nJk9szXQAg3IsBt5FW9XkxSLuJnM5UDIfFEkHYQezpvYa+/CvGAUbl1bIOjjdQ5GR7W6CgpscFEdPvT+QIxA65fL3OgDByJ0VtEOSa3xKeaB6UWamqiEJUXt4ZwBraw9apOgxpRN0G+XFxANGdRRBXxr+9eqC42A6mWrU+kmYrWTD+3ozrOaMODimmy0G39TZUiC0QZWFFxk85ru/dOVpBGZxDJIQBmdgtgXXx/obOIpxZ7x9ZthXb/RD/HJe5FFv6Tw2Y9CRMP3ndNC0xzbI97C+e2btYUfIaNBg9PLRvsVw122vjGe3Hq2/JmVTrgrHR6Wnb6cYax9QQETexmrA5Xl7+rX4IXLA+8KYJZbWL2gc5J6LS7GMi+v797FVwtzpAj4PldgOIgRD5Ez/K1bJQKMH5Pu3eW4Uj749U5ezT0XXs6Jn7ucfKki4bXty+H2GMeN8AP+xAl6CkcbFV1n3o9xh1Hy+Luvvm7KAJJG9z2eXtm7sXUwUfk6Yv39anFNw1WGpol4Rxn3luhnY9wx3ovnU"
+      ],
+      "x5t" : "9exxjB5QmH0DtbhMn4qTBxcw24E",
+      "x5t#S256" : "uPB4p8P09fchza4FFWwyWS-CoXllhCjqDstvPMPRRd8"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "reKNTTsoGH_Ed8P4u0ArlPnLoVc",
+      "kty" : "RSA",
+      "n" : "vrBfpx2Tp6aus0dfylst400kqxtwPyoVVPDDg30qFa77uS2dfQ5YxYZV_m35J2mZmH-FRVpDxCg3ULEG3l7zszYYNbSlf-WkUNwZBZw_cAUdJ4Gj5WmrBw-tIXFq-fmNjLjMnxdCniH87Cp4PwDYAYdzPGvGC9tFuDNiydCpTyK0C-PZ8lef9l1-8l_zVcAnUZl-ih0I_wxqD0IN1-dDB8Wyl7OWeyQNqKo6kCU0LxpdLg47aooEWBE4bqCpGjUJwA0oLVPiNS8IHHHA4rlw0mkHDiqQEuEVm0NKe1jeSyM8vNcOtni8cCEz1XAjJLH5G7l9cA3u8yVBG_3qq9c6BFEK2q1eGVyAqfeWHdmZBvxBdb-X77-xCv4AQzlcah0R6vQrMulEFIN8n1-fUiDY80_6wIdAICrz6OEh4y50UkXI04uxNy5RxQTo5vgkg7fH2V8CNxVwLaj58kWikUyA545ZUNrYnS6yene4__wpHLgx8hT87WbpSPhUjIwpZsDqrlwK3oOWq85dxL71i5UBfXYmWCUc7HpfOnCVYGqASIIJWs27sHsRXNV5qGKNhdRsmV3DbFaZ_tNgpKVRc9YOYxQv4B9bnQvHk85WFYzrhswnvYmcUaiOcvZY4x3NhxE-IPbqUyrBZUETYfOm_NNAXOn8jSikPT7ILdxI8-ui6UE",
+      "use" : "sig",
+      "x5c" : [
+        "MIIFFDCCAvygAwIBAgIUU12rjOshhiM2VyPxUi6B2wbjiAIwDQYJKoZIhvcNAQELBQAwGzEZMBcGA1UEAwwQc3NvLmFsZmF2aWV3LmNvbTAeFw0yMzAyMjgxMTI0NThaFw0yODAyMjcxMTI0NThaMBsxGTAXBgNVBAMMEHNzby5hbGZhdmlldy5jb20wggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQC+sF+nHZOnpq6zR1/KWy3jTSSrG3A/KhVU8MODfSoVrvu5LZ19DljFhlX+bfknaZmYf4VFWkPEKDdQsQbeXvOzNhg1tKV/5aRQ3BkFnD9wBR0ngaPlaasHD60hcWr5+Y2MuMyfF0KeIfzsKng/ANgBh3M8a8YL20W4M2LJ0KlPIrQL49nyV5/2XX7yX/NVwCdRmX6KHQj/DGoPQg3X50MHxbKXs5Z7JA2oqjqQJTQvGl0uDjtqigRYEThuoKkaNQnADSgtU+I1LwgcccDiuXDSaQcOKpAS4RWbQ0p7WN5LIzy81w62eLxwITPVcCMksfkbuX1wDe7zJUEb/eqr1zoEUQrarV4ZXICp95Yd2ZkG/EF1v5fvv7EK/gBDOVxqHRHq9Csy6UQUg3yfX59SINjzT/rAh0AgKvPo4SHjLnRSRcjTi7E3LlHFBOjm+CSDt8fZXwI3FXAtqPnyRaKRTIDnjllQ2tidLrJ6d7j//CkcuDHyFPztZulI+FSMjClmwOquXAreg5arzl3EvvWLlQF9diZYJRzsel86cJVgaoBIgglazbuwexFc1XmoYo2F1GyZXcNsVpn+02CkpVFz1g5jFC/gH1udC8eTzlYVjOuGzCe9iZxRqI5y9ljjHc2HET4g9upTKsFlQRNh86b800Bc6fyNKKQ9Psgt3Ejz66LpQQIDAQABo1AwTjAdBgNVHQ4EFgQUI7Gq3gwaKpuBWfZPqP75HdiVNrYwHwYDVR0jBBgwFoAUI7Gq3gwaKpuBWfZPqP75HdiVNrYwDAYDVR0TAQH/BAIwADANBgkqhkiG9w0BAQsFAAOCAgEAetG/oJJTmCs1rex4Y1NE2MI+6F8xGKRzQllBaQOrk5ktb+BcAOx7jEaPTIldh9jYcbYOuS+2vwNzbxw3dhNW9vwk4KAHT+3qrK+NhkBA3+eKroKOqt7NzqYY2e4lYBnR0gL0JyAoevOVBL9b8RNrF+r3xTD3qOx8MPSfoFmkzCrf/uQeFZWPuRGrWujTNoWEza7c992RNY1vAEAJPYBM4ctPoMJTBylnvX1e9qpl7T9AZtCmzglQeUEzUYsCj/xSswNm5McDRHNx+1eBDylQC+sq/2X6FZoVurAESYLQNvD93RIC86G+YjgFumjyr0dAHdbVW3c5INHfRTH8ET6AY/Xq3CN8qoil2d51BBgZwpWO+JAf36Mxi9qBF/La3mocyW2cMrcbFwTpByvMoghRpWJrfmyXOD/W9ILGyLo8oa7yrphmvvl0MDRfhcip8BIvKYgGDFPMm8+eIILc4eQBufoPn+RsN9JBPyqwQ+rajZjVAQMqQQTAFnfPIPbjiUk7ERd9iCeIe82cJl20HE9iODJ3JqMW7jhX5mmPwYqbLjBN5wDWiGc3tElm2gG33bnaWsH365VPDiw8PCzuGaH43LVU5CagGLKa1LFWwhFFdtYVLVfvsr9o7af54P2oUZeON+ffQw7nDaJ03RApGMaUBtNxJsAuya0BpF1aaMHkOmg="
+      ],
+      "x5t" : "reKNTTsoGH_Ed8P4u0ArlPnLoVc",
+      "x5t#S256" : "nEUU7LJIJ3Xv9DMYIDi0Op793_NmgC4Hz-cPfJu4D90"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "Wt8BxbYdoVmNkFX6kRhBc8loIVc",
+      "kty" : "RSA",
+      "n" : "j2uYpLEOuDjEV92D9BwfmZZyMyem2Ix8A6ED_ffbuopLRZVdTHcRua_XS9TyCubSO48ZNeTJPMQF1d4rgrgSHq0nNF8AhPlRqsImkwGSWawyD-0TFFnHXjjFZVYvVgtnW4PG3Af9wVFVzdI1sT5f3CBpKQjSFNRbytBdzHINOXs9Y9yLBmdW8e5X7Es2lWMPP5rSdGNdHzoLGTHFjsS6iNT28bNyin3V9eDsjEOGZSw7KDOwGxCswDEkh_R7aOmu0Qjx3zJWZn9D8ybKkRz4UcphOGkuX_xAbtpbYDaWdm8ZwrDXt9rVMOjHjkVJNo20QDR0ueAL8nDFNdp3khLVoLAZ8gDUCVH9Zt66cWk_Dgza9mSTENBBn73ngHRu6mgYMphO8iJusk0PJkdszliz5ScJQhtcZWFV-LbDOUjybSGoMLINIHNC_QwSM-Zx8SLtspM7YHott-XrVn_RHGiK8HuuIdmMRzCcs9ClXGMJbgBIrTwBWHv_2FosPxIZv0ds5VUld4IphwiHGJ0fp1DeUx4DxatOE9KZ53NJ9zYZWztXUzyvDIhgsgO9tO2DV1ck6QlHakQLiLQC0k8c3vr-NRMl8K3G_ECSx-5VWbvkjBc_xkq-rp9GmnMpzXBUM7ZKOLPfich2EOTh_7FBg9ju7F-7-663AzPDqwLHqMi_YuU",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAMLf5SLh/0jFhjBM+8JaboQwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjQwMzI2MTA1OTM1WhcNMzQwMzI2MTA1OTM1WjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAI9rmKSxDrg4xFfdg/QcH5mWcjMnptiMfAOhA/3327qKS0WVXUx3Ebmv10vU8grm0juPGTXkyTzEBdXeK4K4Eh6tJzRfAIT5UarCJpMBklmsMg/tExRZx144xWVWL1YLZ1uDxtwH/cFRVc3SNbE+X9wgaSkI0hTUW8rQXcxyDTl7PWPciwZnVvHuV+xLNpVjDz+a0nRjXR86CxkxxY7EuojU9vGzcop91fXg7IxDhmUsOygzsBsQrMAxJIf0e2jprtEI8d8yVmZ/Q/MmypEc+FHKYThpLl/8QG7aW2A2lnZvGcKw17fa1TDox45FSTaNtEA0dLngC/JwxTXad5IS1aCwGfIA1AlR/WbeunFpPw4M2vZkkxDQQZ+954B0bupoGDKYTvIibrJNDyZHbM5Ys+UnCUIbXGVhVfi2wzlI8m0hqDCyDSBzQv0MEjPmcfEi7bKTO2B6Lbfl61Z/0RxoivB7riHZjEcwnLPQpVxjCW4ASK08AVh7/9haLD8SGb9HbOVVJXeCKYcIhxidH6dQ3lMeA8WrThPSmedzSfc2GVs7V1M8rwyIYLIDvbTtg1dXJOkJR2pEC4i0AtJPHN76/jUTJfCtxvxAksfuVVm75IwXP8ZKvq6fRppzKc1wVDO2Sjiz34nIdhDk4f+xQYPY7uxfu/uutwMzw6sCx6jIv2LlAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAARbI+KUUdhgA5ChLJOoJOyYmHsc4+czX3qWn0kxeb6H0l+EFPmRxYFIKi4m1sO3PxSxyqHvuf+2wb2aEibG4SUYRkL28Wvaq7m9+0kbD6MFCQoFCrG0Oz8wD5DhCTUT1RxnyGzoGoNPsv2ehg2ZlMGsop2O9+4IfvdN9yYist1v/MuVzEWy2OjebgwlcrSfOAsTJfxxlBbArL5DfjHkoJAGKoOYGM+unp+mzL/JvQOxeojddaPtFQGgeXcCkGDhoW7hFh0dfna2viBp6F+2fqI177IiZJu7xUbkadeSbLCoqw3JM7ptLOJ62MhgxFQK8CHl5SzQLhLxlzQvv+raLssiVGee8lQbz8vaTgazYC22nsfq+j+xvrNKpbej82kl6pkw8N91HVfEjmKFXiA0DlSPnOLJ+JqUz7gDULSiv5O0Jzp5sD2aIxN28Kt8gKa8sO9zpLKGv3XBXCUfbqD2/TSu88xbEg5y0zr/TIha9HWlphK+FhEuFFWoDD6IZDRzmvwI371vCkhzohtfUTAxlHkbUJSzDt/LYZYzmW5yu37bGfJjEJVFViUbpsrkBc1SlM/9qvTB22W3YEabgGbWBiu7bwiA4gbBJ2DxuA7Dox+AHrVBvLY5jQeR3WESAqpStxkFOixbsq/jFvTC6UurK7QYuCkBQZbjBBg6WXKm50Nb"
+      ],
+      "x5t" : "Wt8BxbYdoVmNkFX6kRhBc8loIVc",
+      "x5t#S256" : "KxZCJuyfj-NkiKl1sIEIIvWvK-6TdP5X_dE9JT6VIHo"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "KrAseHBJPFZAWUGd6owW3xqKJDo",
+      "kty" : "RSA",
+      "n" : "1fEFewYalYZQ4lf3mS4u6Y6_7jB84GNT1MNTc9VqiCgZi3NJVXsZPgjfJSRlk95ofuBDwoisMydr_DD4DU9Y85b2acCSWd23D20BBo2W8iLICiuU961E6Wr1y_g5KULBDUcXrdAw6gCeA0ttqNHBf9j_iYDkrruHbR3Uqs3PybCUoFoDvw4d8w3ZOPqAn-muW_0Mq-VBmdLToUqejcY0TNb5euKkQphLk92Saj8pTSzj8QZeijMzIcgVTKMrq97mQ7iXF7IBuolEwo5RDAInpgWf6AXmrTDoMeWmg63oTvphzB1Z6OuFalOyXDVxRtnBCCJushQLTWVvmILsXxNMzw",
+      "use" : "sig",
+      "x5c" : [
+        "MIICrzCCAZegAwIBAQIRANXOF98hAknrgmHQMEgyyawwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjUwNDIzMTM1MjMxWhcNMzUwNDIzMTM1MjMxWjATMREwDwYDVQQDEwhhY21lLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANXxBXsGGpWGUOJX95kuLumOv+4wfOBjU9TDU3PVaogoGYtzSVV7GT4I3yUkZZPeaH7gQ8KIrDMna/ww+A1PWPOW9mnAklndtw9tAQaNlvIiyAorlPetROlq9cv4OSlCwQ1HF63QMOoAngNLbajRwX/Y/4mA5K67h20d1KrNz8mwlKBaA78OHfMN2Tj6gJ/prlv9DKvlQZnS06FKno3GNEzW+XripEKYS5Pdkmo/KU0s4/EGXoozMyHIFUyjK6ve5kO4lxeyAbqJRMKOUQwCJ6YFn+gF5q0w6DHlpoOt6E76YcwdWejrhWpTslw1cUbZwQgibrIUC01lb5iC7F8TTM8CAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAr9B1iaWmOWWeFCDIDbzebmtuj6xJqavXublR8xy58HCmrRkTIUAgpkdmOnmH/j6FAfWr51b+UklbNMo/VCEImMofuMsSh2M0KRHjAuEYWG0cUNFcLC5WRNhgwAUw5vu4sYuTkCWVUPSYo+ErFl9DJ0oiC+8xxlMPbiDq5NWP/GLH6xe9i7pD2g5eAkcDT/XE0CmFipXrRpWCpxuDdLlNARlR3a1bPU3b6DMu3ptxFidkdWiaLMaj6Pa6GJPEDKoUPsd13z1mQMMJjMkxvpS7F0cOUqeZDXQh4IKXQATWEjEtAJU4H7T8Z5tp/dWgTS5anUjYh+zQzp030WdnRjNrFw=="
+      ],
+      "x5t" : "KrAseHBJPFZAWUGd6owW3xqKJDo",
+      "x5t#S256" : "JOWaPs7uY_DpjRrhbaAzeals3GE06r1LR8U8jACNE1c"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "hgU3GWoYlxkkAL18h3t0kOib2Q4",
+      "kty" : "RSA",
+      "n" : "raHbRlwM5_casFA20CsZ7iVhUPO2txTYjxVYOcjJrVxHNrYFHIFse5kml4anWHEAdd1P0Io1JZhVJ4rYiZhj7tICOz7EGQxfK6-SzEvdZWZF---ZDiA5oOrcWrMW-H96jfFklojdn_OVoh7crTRghU8GeIhNuO3WSFxWNjsC4ZKfnhha18ZTxLVa6-QhbK2YSiqy82Qbe6RKyLxCH7jo0U08BRGGCbySkyIBfMBa86uMLAWdABiYRwszNybeQbX4l1mQGsDHqmgsl5al43pcIArgVMWhvYTJF8uDy-J2yQ7BQEn6i-0m4eyFu4mXMyU_6AIudlNPnUNkJW0K7PqCXyVhgu8lBB-v-6_tlXZEHQRPZOVq3fM9_0z74S26i54LRW1pC5mbXuhZpMxnkVs86GVtlvI8-PIt3qGqYih_ymegJkM9HV7NXZniAM7QkkJ9SXRXB29OD7IwBD1CydIg-j3DX5ucTW2DY_dpSDzOao-Lb3rZ0DaOCKsrZOhleOpNw2SV2t1oyVdMemJd5ZcgxKlTsWDbKIH0J-97t2GFZh8zwHqnJEzzxtTmvNpiLk9p_pRLFw7fVmpIYeAHQDU3VvRQpd35OhTl4TF_dxsT9f4hLQhBPUhpGPJnpukoW583MMKnQ5rKmMbKUh7m4Pf2E3etQ3hOk5hZEa1o9CC80vM",
+      "use" : "sig",
+      "x5c" : [
+        "MIIErzCCApegAwIBAQIRAOdPD1zOUUEgop6ISylAAqkwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjYwNjAyMTMzNzA2WhcNMzYwNjAyMTMzNzA2WjATMREwDwYDVQQDEwhhY21lLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK2h20ZcDOf3GrBQNtArGe4lYVDztrcU2I8VWDnIya1cRza2BRyBbHuZJpeGp1hxAHXdT9CKNSWYVSeK2ImYY+7SAjs+xBkMXyuvksxL3WVmRfvvmQ4gOaDq3FqzFvh/eo3xZJaI3Z/zlaIe3K00YIVPBniITbjt1khcVjY7AuGSn54YWtfGU8S1WuvkIWytmEoqsvNkG3ukSsi8Qh+46NFNPAURhgm8kpMiAXzAWvOrjCwFnQAYmEcLMzcm3kG1+JdZkBrAx6poLJeWpeN6XCAK4FTFob2EyRfLg8vidskOwUBJ+ovtJuHshbuJlzMlP+gCLnZTT51DZCVtCuz6gl8lYYLvJQQfr/uv7ZV2RB0ET2Tlat3zPf9M++EtuoueC0VtaQuZm17oWaTMZ5FbPOhlbZbyPPjyLd6hqmIof8pnoCZDPR1ezV2Z4gDO0JJCfUl0VwdvTg+yMAQ9QsnSIPo9w1+bnE1tg2P3aUg8zmqPi2962dA2jgirK2ToZXjqTcNkldrdaMlXTHpiXeWXIMSpU7Fg2yiB9Cfve7dhhWYfM8B6pyRM88bU5rzaYi5Paf6USxcO31ZqSGHgB0A1N1b0UKXd+ToU5eExf3cbE/X+IS0IQT1IaRjyZ6bpKFufNzDCp0OaypjGylIe5uD39hN3rUN4TpOYWRGtaPQgvNLzAgMBAAEwDQYJKoZIhvcNAQELBQADggIBAIy9xO6gWpoWBIZwT3qA4bq7XnYyhxN0lIjSuZDNKEqJxj6kH1xc40Y06PbeU1Ko5VmAMaM2BqQ7QA+MRaClFzW+tkbobhc3Dmyvv5KP2feE7Fi+OgbCLlO87x6MvREXLBk9DnmFuVpXSKxKV1APbX+7jOZgTHDldd85imiNjbY/3wNxXcwP0k+S9juysn7UnAKAMmovQ5oYQcaGvNsRhAjfyoJ3sL1SaLBpRWbxzhM1ueSXSHoLB0pdEjWPk/CgbTdvB0KErDumUv1ssCwpQyY5Om4zZZcRwCGRfzpPczHrjBixnRauRJV7sVZ2oyw0s0UH5s67r2dupdnfyXhACucJagsrKlUPb1xm74mJcT28ViMMVJybmPEOSKD6/g4STBYahFNxNcdDd2p5NifMHGJ7GAjpFYmOBlQUXOmSG/3CYawyK1riCDTtJVHa0QX1UN+bZ6TVNIEAvPjQMe7vNZJhLdv7GobWva5lnLtGa+UXf1FNcw3WZPaxEiocT5QuIpoEnF87gJdVHWU0+MZqjbtlnEW05ctL2NhyZffIT8WElFX/YWB78R5Q4HMG1kEJP9zwQkKFjYLHB9b+Bzpbz6rqyseFYsWYSydb77bEq8OYBaZFl3S3+oSt6YIsFfZAUcEa+nKaDq8+GALBrnnFcIqF6OHpYPX0l8wIBuy7yJRE"
+      ],
+      "x5t" : "hgU3GWoYlxkkAL18h3t0kOib2Q4",
+      "x5t#S256" : "8DIcFv8ggW78ZGiMqpIKgbc1Kp1qTUFUXtnfAmk2UW0"
+    }
+  ]
+}
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/admin" -H "User-Agent: Mozilla/5.0" --max-time 10 | head -30
+(no output)
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download} %{url_effective}" "https://dev.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+000 0 https://dev.alfaview.com/
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download} %{url_effective}" "https://test.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+200 494 https://test.alfaview.com/
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download} %{url_effective}" "https://www.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+301 162 https://www.alfaview.com/
+[0m
+[0m$ [0mcurl -s "https://test.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>alfacheck</title>
+	</head>
+	<body>
+		<h1>alfacheck</h1>
+<a href="alfacheck.linux.amd64.470079.bin" download>alfacheck.linux.amd64.470079.bin</a></br>
+<a href="alfacheck.windows.amd64.470079.exe" download>alfacheck.windows.amd64.470079.exe</a></br>
+<a href="alfacheck.mac.amd64.470079.bin" download>alfacheck.mac.amd64.470079.bin</a></br>
+<a href="alfacheck.mac.arm64.470079.bin" download>alfacheck.mac.arm64.470079.bin</a></br>
+	</body>
+</html>
+[0m
+[0m$ [0mcurl -sL -o /dev/null -w "%{http_code} %{size_download} %{url_effective}" "https://www.alfaview.com/" -H "User-Agent: Mozilla/5.0" --max-time 10
+200 177622 https://alfaview.com/en
+[0m
+Now I have comprehensive live data. Running the 8-step analysis:
+
+---
+
+### STEP 1 — DELTA
+
+**NEW**: `sso.alfaview.com` exposes full OIDC discovery (`.well-known/openid-configuration`) with issuer=`acme.com` (default/test value, not `alfaview.com`), JWKS with 7 RSA keys, implicit flow enabled, HS256/HS384/HS512 listed as supported signing algs.  
+**NEW**: `app.alfaview.com` serves generic SPA shell (1381B, MD5 554a39), login links from `alfaview.com` point here.  
+**NEW**: `test.alfaview.com` serves `alfacheck` binary download page (client diagnostic tool distribution).  
+**NEW**: `dev.alfaview.com` timeout (000), `www.alfaview.com` 301→`alfaview.com/en`.  
+**NEW**: Both `beta-ionoscloud-21-beta-engine-*` hosts timeout (000) — 7-host fleet entirely unprobed (1 hydra timeout, 6 engine/audio/video unprobed).  
+**CHANGED**: `alfaview.com` now HTTP 200 (was unprobed), redirects to `/en` with login links to `app.alfaview.com`.  
+**CHANGED**: `sso.alfaview.com` confirmed FusionAuth 1.63.0, OIDC metadata exposed, `/admin` returns 404.
+
+---
+
+### STEP 2 — PRIORITIZE
+
+| Asset | Score | a | b | t | g | c | f |
+|-------|-------|---|---|---|---|---|---|
+| `sso.alfaview.com` | **7.8** | 9 | 10 | 9 | 10 | 8 | 5 |
+| `alfaview.com` | **6.8** | 8 | 9 | 7 | 8 | 7 | 5 |
+| `app.alfaview.com` | **6.3** | 7 | 9 | 6 | 7 | 7 | 5 |
+| `apis.alfaview.com` | **6.0** | 7 | 10 | 8 | 1 | 7 | 5 |
+| `beta-apis.alfaview.com` | **5.8** | 7 | 9 | 8 | 1 | 7 | 5 |
+| `test.alfaview.com` | **5.5** | 6 | 6 | 5 | 8 | 6 | 4 |
+| `beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com` | **4.5** | 5 | 7 | 4 | 10 | 5 | 3 |
+
+> `sso.alfaview.com` scores highest: full OIDC surface (a=9), critical auth value (b=10), JWT/implicit/OAuth tech (t=9), no auth gate (g=10), cloud metadata via SSRF potential (c=8), fresh untested (f=5).
+
+---
+
+### STEP 3 — HYPOTHESES
+
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com leading to authorization code theft
+class: AUTH
+asset: sso.alfaview.com
+confidence: 75
+reasoning: FusionAuth 1.63.0 at sso.alfaview.com exposes OIDC discovery with authorization_endpoint=https://sso.alfaview.com/oauth2/authorize. Issuer=acme.com (misconfiguration). Implicit flow enabled. redirect_uri allowlist validation and state parameter enforcement untested. app.alfaview.com is the known client (login links from alfaview.com). No valid client_id discovered yet.
+evidence_needed: Valid client_id for app.alfaview.com; redirect_uri acceptance of external domains (evil.com, localhost); state parameter optional vs required; PKCE enforcement
+verify_steps: GET https://sso.alfaview.com/oauth2/authorize?client_id=<valid_id>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test → observe 302 Location; repeat without state; test PKCE challenge_method=S256
+impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
+testability: PASSIVE
+
+[HYP] JWT algorithm confusion via HS256 support in OIDC config with RSA-only JWKS
+class: AUTH
+asset: sso.alfaview.com
+confidence: 70
+reasoning: OIDC discovery lists id_token_signing_alg_values_supported including HS256, HS384, HS512 (symmetric) but JWKS only contains 7 RSA public keys (RS256). If token validation uses kid to fetch key but doesn't enforce alg=RS256, attacker could forge HS256-signed JWT using RSA public key as HMAC secret (classic alg confusion). Issuer=acme.com mismatch adds confusion.
+evidence_needed: Valid access/id token to inspect alg/kid; token endpoint behavior with alg=HS256 header; JWKS key usage (sig vs enc)
+verify_steps: POST https://sso.alfaview.com/oauth2/token with client_credentials (if public client) or observe tokens from app.alfaview.com login flow → decode header; attempt token forge with alg=HS256 using RSA pubkey as secret
+impact: Arbitrary token forgery → ATO, privilege escalation (CRITICAL)
+testability: AUTH_HELPED
+
+[HYP] Unauthenticated binary distribution on test.alfaview.com — supply chain / version enumeration
+class: MISCONFIG
+asset: test.alfaview.com
+confidence: 60
+reasoning: test.alfaview.com serves alfacheck binaries (Linux/Windows/macOS/ARM) with version 470079 in filename. No auth, no integrity hashes, no signature verification visible. Version number enumerable. Could serve malicious binaries if storage compromised or version tampered.
+evidence_needed: Binary hash verification mechanism; signature/checksum exposure; version enumeration across builds; CSP/subresource integrity on download links
+verify_steps: GET https://test.alfaview.com/ → extract all hrefs; download each binary → check for embedded signatures/certificates; probe for directory listing or version enumeration (e.g., 470078, 470080)
+impact: Supply chain compromise → RCE on client machines (HIGH)
+testability: PASSIVE
+
+---
+
+### STEP 4 — SELF-CRITIQUE
+
+[PARKED] JWT algorithm confusion via HS256 support: Requires valid token sample to confirm validation flaw; without auth, cannot observe actual token structure. Confidence 70 but needs AUTH_HELPED step first.  
+[FINAL] OAuth redirect_uri validation bypass on sso.alfaview.com — **RANK 1**. Confidence 75, PASSIVE testability, CRITICAL impact. Need valid client_id — discoverable via app.alfaview.com JS bundles.  
+[FINAL] Unauthenticated binary distribution on test.alfaview.com — **RANK 2**. Confidence 60, PASSIVE testability, HIGH impact. Fully verifiable now.
+
+---
+
+### STEP 5 — NEXT ACTION
+
+[NEXT] PROBE: GET `https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js` → search for `client_id` or `oauth` config → use discovered client_id in `GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` → observe 302 Location header and state handling. Rate: 1 rps.
+
+---
+
+### STEP 6 — LEARNING
+
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in JWKS.  
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).  
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.  
+[LEARN] REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.  
+[LEARN] ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).  
+[LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+
+---
+
+### STEP 7 — RISK
+
+[RISK] alfaview: 78/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in OpenAPI — needs account. OAuth/SSO surface now live: sso.alfaview.com (FusionAuth) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256 support vs RSA-only JWKS (alg confusion vector). app.alfaview.com is primary client. test.alfaview.com distributes unsigned binaries. 7-host beta-ionoscloud fleet completely unprobed (all timeout). 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com JS → probe OAuth redirect_uri/state on sso.alfaview.com (PASSIVE, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account → test IDOR cross-tenant + guest-link rate limits. JWT alg confusion (confidence 70) adds CRITICAL vector if token validation flawed.

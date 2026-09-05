@@ -670,3 +670,42 @@ testability: PASSIVE
 [LEARN] REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39). No tenant-specific rendering, no inline data, no reflections. Target exhausted.
 [LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout on root and trailing slash — unlike other cloud hydra hosts, no "Hi Client" response. Target behavior unknown, fleet remains 6/7 unprobed.
 [RISK] alfaview: 72/100. Broad scope ("all company-owned infrastructure") with 55 dedicated hosts + 6 main domains. Production APIs auth-gated (401). High-value IDOR (confidence 85) and AUTH (confidence 70) classes confirmed in OpenAPI spec. Multi-tenant SaaS on 3 customer subdomains (identical SPA shells). 3 hydra media servers across 3 clouds expose unauthenticated HTTP 200 but serve only "Hi Client" — no sensitive endpoints. 7 beta-ionoscloud hosts: 1 hydra timeout (behavior diverges from other clouds), 6 completely unprobed (engine/audio/video) — new attack surface. 6 main domains (alfaview.com, app, dev, sso, test, www): 2 now live (alfaview.com, sso.alfaview.com), 4 unprobed. 31 hosts exhausted/rejected. Realistic path: probe alfaview.com/sso.alfaview.com OAuth flows (PASSIVE, CRITICAL impact); probe beta-ionoscloud engine hosts (PASSIVE, MEDIUM-HIGH); obtain developer account → test IDOR cross-tenant + guest-link rate limits. Beta environment provides parallel attack surface with identical API. JWT alg/key confusion (confidence 55) adds CRITICAL vector if JWKS misconfigured. Main domain OAuth/SSO flows untested — highest immediate ROI.
+## 2026-09-05 00:14:51 UTC [target] (model nemotron3)
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com leading to authorization code theft
+class: AUTH
+asset: sso.alfaview.com
+confidence: 75
+reasoning: FusionAuth 1.63.0 at sso.alfaview.com exposes OIDC discovery with authorization_endpoint=https://sso.alfaview.com/oauth2/authorize. Issuer=acme.com (misconfiguration). Implicit flow enabled. redirect_uri allowlist validation and state parameter enforcement untested. app.alfaview.com is the known client (login links from alfaview.com). No valid client_id discovered yet.
+evidence_needed: Valid client_id for app.alfaview.com; redirect_uri acceptance of external domains (evil.com, localhost); state parameter optional vs required; PKCE enforcement
+verify_steps: GET https://sso.alfaview.com/oauth2/authorize?client_id=<valid_id>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test → observe 302 Location; repeat without state; test PKCE challenge_method=S256
+impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
+testability: PASSIVE
+[HYP] JWT algorithm confusion via HS256 support in OIDC config with RSA-only JWKS
+class: AUTH
+asset: sso.alfaview.com
+confidence: 70
+reasoning: OIDC discovery lists id_token_signing_alg_values_supported including HS256, HS384, HS512 (symmetric) but JWKS only contains 7 RSA public keys (RS256). If token validation uses kid to fetch key but doesn't enforce alg=RS256, attacker could forge HS256-signed JWT using RSA public key as HMAC secret (classic alg confusion). Issuer=acme.com mismatch adds confusion.
+evidence_needed: Valid access/id token to inspect alg/kid; token endpoint behavior with alg=HS256 header; JWKS key usage (sig vs enc)
+verify_steps: POST https://sso.alfaview.com/oauth2/token with client_credentials (if public client) or observe tokens from app.alfaview.com login flow → decode header; attempt token forge with alg=HS256 using RSA pubkey as secret
+impact: Arbitrary token forgery → ATO, privilege escalation (CRITICAL)
+testability: AUTH_HELPED
+[HYP] Unauthenticated binary distribution on test.alfaview.com — supply chain / version enumeration
+class: MISCONFIG
+asset: test.alfaview.com
+confidence: 60
+reasoning: test.alfaview.com serves alfacheck binaries (Linux/Windows/macOS/ARM) with version 470079 in filename. No auth, no integrity hashes, no signature verification visible. Version number enumerable. Could serve malicious binaries if storage compromised or version tampered.
+evidence_needed: Binary hash verification mechanism; signature/checksum exposure; version enumeration across builds; CSP/subresource integrity on download links
+verify_steps: GET https://test.alfaview.com/ → extract all hrefs; download each binary → check for embedded signatures/certificates; probe for directory listing or version enumeration (e.g., 470078, 470080)
+impact: Supply chain compromise → RCE on client machines (HIGH)
+testability: PASSIVE
+[PARKED] JWT algorithm confusion via HS256 support: Requires valid token sample to confirm validation flaw; without auth, cannot observe actual token structure. Confidence 70 but needs AUTH_HELPED step first.  
+[FINAL] OAuth redirect_uri validation bypass on sso.alfaview.com — **RANK 1**. Confidence 75, PASSIVE testability, CRITICAL impact. Need valid client_id — discoverable via app.alfaview.com JS bundles.  
+[FINAL] Unauthenticated binary distribution on test.alfaview.com — **RANK 2**. Confidence 60, PASSIVE testability, HIGH impact. Fully verifiable now.
+[NEXT] PROBE: GET `https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js` → search for `client_id` or `oauth` config → use discovered client_id in `GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` → observe 302 Location header and state handling. Rate: 1 rps.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in JWKS.  
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).  
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.  
+[LEARN] REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.  
+[LEARN] ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).  
+[LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+[RISK] alfaview: 78/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in OpenAPI — needs account. OAuth/SSO surface now live: sso.alfaview.com (FusionAuth) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256 support vs RSA-only JWKS (alg confusion vector). app.alfaview.com is primary client. test.alfaview.com distributes unsigned binaries. 7-host beta-ionoscloud fleet completely unprobed (all timeout). 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com JS → probe OAuth redirect_uri/state on sso.alfaview.com (PASSIVE, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account → test IDOR cross-tenant + guest-link rate limits. JWT alg confusion (confidence 70) adds CRITICAL vector if token validation flawed.

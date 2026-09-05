@@ -386,3 +386,44 @@ testability: PASSIVE
 [RISK] alfaview: 45/100. All unauthenticated surfaces now exhausted: multi-tenant SPA shells (alfatraining/bhc/kh-freiburg) byte-identical to generic marketing shell; hydra hosts = media servers; alfacheck-* = unreachable; demo-company/insider/beta-webclient = SPA catch-all; beta-apis = auth identical to prod. Zero findings. The two surviving high-value hypotheses (IDOR conf 80, guest-link conf 65) both require an authenticated account. Without one, no further progress is possible via passive testing.
 ## 2026-09-04 20:01:52 UTC [target] (model bigpickle)
 ## 2026-09-04 22:04:47 UTC [target] (model bigpickle)
+## 2026-09-05 00:10:38 UTC [target] (model bigpickle)
+[PRIO] sso.alfaview.com, 7.3, a:7 b:8 t:9 g:7 c:1 f:10
+[PRIO] alfaview.com, 6.4, a:6 b:8 t:6 g:8 c:1 f:7
+[PRIO] apis.alfaview.com, 6.2, a:8 b:8 t:7 g:2 c:2 f:6
+[HYP] OAuth redirect_uri validation bypass on FusionAuth authorize endpoint → code theft
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 65
+reasoning: OIDC discovery confirms /oauth2/authorize with response_type code, response_modes query/form_post/fragment, frontchannel logout on. Unknown client_id yields invalid_client, proving registration gate precedes redirect_uri validation. FusionAuth's standard redirect_uri handling = exact match (with registered_redirect_uris), but bypasses exist (e.g., path/query confusion per registered URI, fragment-in-uri, client-credentials flow with leaked secret). Cannot test without a valid client_id.
+evidence_needed: 302 Location to attacker URI after authorize with a registered client_id + unregistered redirect_uri; or attacker-controlled code/state issuance.
+verify_steps: harvest valid client_id from desktop/web-client public bundle → GET /oauth2/authorize?client_id=<real>&redirect_uri=https://evil.example/&response_type=code&scope=openid → expect 302 to login page (valid_client) then observe 302 redirect_uri check → compare with exact-match registered URI variant.
+impact: OAuth authorization-code theft → account takeover of any alfaview user; severity HIGH.
+testability: AUTH_HELPED
+[HYP] FusionAuth default tenant issuer drift on production IAM
+class: MISCONFIG
+asset: sso.alfaview.com/.well-known/openid-configuration
+confidence: 90
+reasoning: issuer field literally "acme.com"; JWKS X.509 CN=acme.com self-signed 2021-2023/31; stock FusionAuth landing page. Production SSO was never re-issued/branded — default tenant metadata live. Combination with id_token_signing HS256 support and public auth endpoints = drift signal, exploitable only if any relying party does weak iss/alg validation.
+evidence_needed: confirmation that this is the live production issuer used by app/desktop logins (present it as config drift; low-severity finding).
+verify_steps: GET /oauth2/authorize with any registered client_id shows login; compare issuer value against desktop-client-validated tokens (HUMAN). Passive evidence already conclusive for the drift claim.
+impact: trust ambiguity for any SSO consumer doing loose iss verification; indicates hardening gap; severity LOW.
+testability: PASSIVE
+[HYP] Device authorization flow abuse via public client
+class: AUTH
+asset: sso.alfaview.com/oauth2/device_authorize
+confidence: 45
+reasoning: discovery advertises device_authorization_endpoint; grant device_code enabled; GET=405 POST-only (endpoint live). If alfaview ships a public (non-secret) native client_id (mobile/desktop), attacker can initiate device flow, phish the user_code approval page, then redeem victim's authorization → session/account hijack.
+evidence_needed: a registered public client_id (no secret) that device_authorize accepts.
+verify_steps: POST device_authorize with harvested public client_id; if device/user codes returned without client_secret, phishing-to-account-takeover path confirmed. Requires client_id harvest first.
+impact: user session/account takeover via device-code phishing; severity HIGH if exploitable.
+testability: AUTH_HELPED
+[PARKED] Device-flow abuse (45): below momentum — needs a public client_id, phishing precondition, POST-only; parked pending client_id harvest.
+[PARKED] JWT alg-confusion on apis gateway: REJECTED this session — token oracle proves opaque/base64 access tokens (not raw JWTs); crafted HS256-JWT (RS256-modulus-as-HMAC) rejected at base64-decode. Reframable to SSO id_token consumers but not passively testable.
+[FINAL] redirect_uri bypass: 65. Survives — rank 1, now grounded on confirmed FusionAuth + exact `invalid_client` gate. Blocked on client_id harvest.
+[FINAL] issuer=acme.com drift: 90. Survives — direct read-only evidence, low severity baselined for reporting.
+[NEXT] PROBE: GET `https://sso.alfaview.com/oauth2/register` (checks open tenant self-registration on prod IAM — if live, also maps default-registration surface); follow-up HUMAN: extract registered client_id from desktop client's public config/bundle to unlock redirect_uri + device-flow testing on `/oauth2/authorize`.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: Production IAM is FusionAuth with default tenant issuer "acme.com" (OIDC `issuer` + JWK CN=acme.com, self-signed 2021-12-03+10y); /api/status 200 `{"status":"Ok"}` unauthenticated; device endpoint live (405 GET).
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_id`) — redirect_uri testing requires a registered client_id.
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), not raw JWTs — crafted-HS256-JWT with JWKS public key as HMAC secret rejected at decode; JWT alg-confusion against API gateway closed.
+[LEARN] ACCEPTED MISCONFIG @ alfaview.com: root now 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login links present on marketing domain.
+[RISK] alfaview: 48/100. Newly exposed FusionAuth IAM is the highest-value remaining surface (identity = crown jewels) with concrete drift (issuer acme.com) and live OAuth/device endpoints, but every exploit path (redirect_uri, device-flow, api-key IDOR) still resolves to a valid client_id or account — auth-gated. CLI-side JWT/alg avenues closed by the opaque-token oracle. Risk rises if a public client_id or test account is obtained; until then, passive yield is near exhausted.

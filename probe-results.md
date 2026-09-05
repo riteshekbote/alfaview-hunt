@@ -92,3 +92,12 @@ https://alfaview.com/@evil.com -> HTTP 404
 https://beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com/ -> ERR <urlopen error timed out>
 https://alfaview.com/` -> HTTP 404
 https://sso.alfaview.com/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` -> HTTP 404
+
+## 2026-09-05 00:15:17 UTC
+https://sso.alfaview.com/oauth2/authorize -> 200 len=0
+https://sso.alfaview.com/oauth2/authorize?client_id=<valid_id>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test -> HTTP 400
+https://sso.alfaview.com/oauth2/token -> HTTP 405
+https://test.alfaview.com/ -> 200 len=494
+https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js` -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` -> HTTP 400
+https://sso.alfaview.com/oauth2/register` -> HTTP 404
