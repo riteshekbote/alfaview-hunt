@@ -1397,3 +1397,31 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery still exposed with issuer=acme.com, implicit + device_code grants, token_endpoint supports public-client (`none`); no `registration_endpoint` → FusionAuth dynamic client registration disabled (self-registration client_id path closed).
 [LEARN] REJECTED MISCONFIG @ sso.alfaview.com: GET /oauth2/register is a generic 6.2KB "Login | FusionAuth" theme page (200), not a client-registration or config surface; no client_id exposure.
 [RISK] alfaview: 48/100 — unchanged. Today's probes confirm zero new reachable surface: OIDC config stable (registration disabled, monolith config), anonymous GraphQL surface reconfirmed live but data-less, inventory still 100% verdicted. All substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus a desktop OAuth HAR client_id capture (redirect_uri 50); passive reconnaissance yield remains fully exhausted.
+## 2026-09-06 23:21:43 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}); opaque company-scoped bearer; cross-tenant authorization unverified; production client uses gRPC authService/guestService mirroring these ops.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN 2-tenant signup) POST /v2/auth/password → bearer → GET /v2/users/me (baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(userId,companyId,roomId) processed anonymously (validation error, never UNAUTHENTICATED); GuestAuthenticateReply exposes role; no accessKey arg in GraphQL guest signature while REST guest-link mandates 4-field accessKey combo; client guestService.v2.gRPC Authenticate mirrors it.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 50
+reasoning: authorize enforces client_id registration before redirect_uri handling; discovery advertises public-client (`none`) + implicit + device grants; issuer=acme.com misconfig. NEW: client_id confirmed absent from ALL public artifacts (alfacheck test binary, production Linux .deb, Android APK) — server-side or per-session only.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix against.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from the OAuth subsystem (likely returned server-side during company-SSO bootstrap) → GET https://sso.alfaview.com/oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY

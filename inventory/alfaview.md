@@ -286,3 +286,12 @@ www.alfaview.com
 ## 2026-09-06 21:51:20 UTC
 - CHANGED sso.alfaview.com: OIDC discovery re-fetched today — no `registration_endpoint` advertised → FusionAuth dynamic client registration OFF; GET `/oauth2/register` = 6.2KB generic "Login | FusionAuth" them
 - CHANGED app.alfaview.com/graphql: guestAuthenticate reconfirmed anonymous-reachable (~1 rps) — mutation processed, my field guess returned `GRAPHQL_VALIDATION_FAILED` ("Did you mean `role`?") not UNAUTHENTICA
+
+## 2026-09-06 23:21:54 UTC
+- NEW sso.alfaview.com: OIDC discovery re-fetched — no `registration_endpoint` advertised → FusionAuth dynamic client registration OFF; GET `/oauth2/register` returns 6.2KB generic "Login | FusionAuth" them
+- NEW app.alfaview.com/graphql: guestAuthenticate reconfirmed anonymous-reachable (~1 rps) — mutation processed, field guess returned `GRAPHQL_VALIDATION_FAILED` ("Did you mean `role`?") not `UNAUTHENTICATE
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero genuinely-unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)
+- CHANGED app.alfaview.com/graphql: anonymous resolver slice confirmed closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` return `UNAUTHENTIC
+- CHANGED sso.alfaview.com: OIDC discovery unchanged — issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512 in supported algs but JWKS contains ONLY RSA keys (7 RS256 keys, zero symmetric)
+- CHANGED test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible
+- CHANGED apis.alfaview.com: Access tokens confirmed opaque/base64 (distinct 401 "No base64 encoded access token was provided") — JWT alg-confusion against API gateway closed

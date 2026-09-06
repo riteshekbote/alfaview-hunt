@@ -243,3 +243,13 @@ https://app.alfaview.com/graphql -> HTTP 400
 https://test.alfaview.com/ -> 200 len=494
 https://sso.alfaview.com/oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code -> HTTP 400
 https://apis.alfaview.com/v2/rooms/{victimRoomId -> HTTP 401
+
+## 2026-09-06 23:22:06 UTC
+https://sso.alfaview.com/oauth2/authorize -> 200 len=0
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+https://apis.alfaview.com/v2/users/me -> HTTP 401
+https://apis.alfaview.com/v2/users/{foreign-uuid -> HTTP 405
+https://apis.alfaview.com/v2/rooms/{foreign-room-id -> HTTP 401
+https://sso.alfaview.com/oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code -> HTTP 400
