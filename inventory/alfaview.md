@@ -267,3 +267,7 @@ www.alfaview.com
 ## 2026-09-06 08:57:09 UTC
 
 ## 2026-09-06 12:28:54 UTC
+
+## 2026-09-06 16:02:35 UTC
+- NEW beta-ionoscloud-21 fleet (7/7) fully probed: beta-ionoscloud-21-beta-audio-65st7/bdtmf and -beta-video-6pp2m/l5mbv all timeout (000, 12s) — resolves to real distinct IPs (185.127.30.215/.225). Last un
+- CHANGED Inventory now 100% probed: all 55 dedicated hosts have an HTTP verdict; zero genuinely-unprobed hosts remain.
