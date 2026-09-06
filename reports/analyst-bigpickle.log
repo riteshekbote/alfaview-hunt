@@ -7142,3 +7142,97 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 48/100 — unchanged, no live bug proven. This session closed the final unprobed inventory stragglers (clone.staging-wordpress=Plesk panel, plausible=204 shell, webclient=insider SPA) and confirmed the CSP third-party trust is live, not dangling. Every host now resolves to an auth gate, a rejected-class surface, or a dead end. Remaining upside: one immediately-testable anonymous GraphQL leak (60) and three HUMAN/AUTH-gated chains (IDOR 80, guest-splice 55, upload parity 42).
+===== ANALYST bigpickle 2026-09-06 04:41:59 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -m 20 -o /tmp/opencode/idp1.json -w "%{http_code}" -X POST https://app.alfaview.com/graphql -H 'content-type: application/json' --data '{"query":"{listIdentityProviders{id name}}"}' ; echo; cat /tmp/opencode/idp1.json | head -c 800
+400
+{"errors":[{"message":"Cannot query field \"id\" on type \"ListIdentityProvidersReply\".","locations":[{"line":1,"column":24}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Cannot query field \"name\" on type \"ListIdentityProvidersReply\".","locations":[{"line":1,"column":27}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
+[0m$ [0msleep 1; for f in items identityProviders providers list; do echo "== $f =="; curl -s -m 20 -X POST https://app.alfaview.com/graphql -H 'content-type: application/json' --data "{\"query\":\"{listIdentityProviders{$f{id}}}\"}" | head -c 300; echo; sleep 1; done
+== items ==
+{"errors":[{"message":"Cannot query field \"items\" on type \"ListIdentityProvidersReply\".","locations":[{"line":1,"column":24}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+== identityProviders ==
+{"errors":[{"message":"Cannot query field \"identityProviders\" on type \"ListIdentityProvidersReply\".","locations":[{"line":1,"column":24}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+== providers ==
+{"errors":[{"message":"Field \"providers\" must not have a selection since type \"[JSONObject]\" has no subfields.","locations":[{"line":1,"column":33}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+== list ==
+{"errors":[{"message":"Cannot query field \"list\" on type \"ListIdentityProvidersReply\".","locations":[{"line":1,"column":24}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
+[0m$ [0mcurl -s -m 20 -o /tmp/opencode/idp2.json -w "%{http_code}\n" -X POST https://app.alfaview.com/graphql -H 'content-type: application/json' --data '{"query":"{listIdentityProviders{providers}}"}' ; head -c 2000 /tmp/opencode/idp2.json
+200
+{"data":{"listIdentityProviders":{"providers":[]}}}
+[0m
+[0m$ [0msleep 1; curl -s -m 20 -X POST https://app.alfaview.com/graphql -H 'content-type: application/json' --data '{"query":"query($c:ID){listIdentityProviders(companyId:$c){providers}}"}' | head -c 400; echo; sleep 1; curl -s -m 20 -X POST https://app.alfaview.com/graphql -H 'content-type: application/json' --data '{"query":"mutation{guestAuthenticate(userId:\"00000000-0000-0000-0000-000000000000\",companyId:\"00000000-0000-0000-0000-000000000000\",roomId:\"00000000-0000-0000-0000-000000000000\")}"}' | head -c 400
+{"errors":[{"message":"Unknown type \"ID\".","locations":[{"line":1,"column":10}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Unknown argument \"companyId\" on field \"Query.listIdentityProviders\".","locations":[{"line":1,"column":36}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+{"errors":[{"message":"Field \"guestAuthenticate\" of type \"GuestAuthenticateReply!\" must have a selection of subfields. Did you mean \"guestAuthenticate { ... }\"?","locations":[{"line":1,"column":10}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
+[0m$ [0msleep 1; curl -s -m 20 -X POST https://app.alfaview.com/graphql -H 'content-type: application/json' --data '{"query":"mutation{guestAuthenticate(userId:\"00000000-0000-0000-0000-000000000000\",companyId:\"00000000-0000-0000-0000-000000000000\",roomId:\"00000000-0000-0000-0000-000000000000\"){token sessionId}}"}' | head -c 500
+{"errors":[{"message":"Cannot query field \"token\" on type \"GuestAuthenticateReply\". Did you mean \"role\"?","locations":[{"line":1,"column":170}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Cannot query field \"sessionId\" on type \"GuestAuthenticateReply\".","locations":[{"line":1,"column":176}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
+[0m$ [0msleep 1; curl -s -m 20 -X POST https://app.alfaview.com/graphql -H 'content-type: application/json' --data '{"query":"mutation{guestAuthenticate(userId:\"00000000-0000-0000-0000-000000000000\",companyId:\"00000000-0000-0000-0000-000000000000\",roomId:\"00000000-0000-0000-0000-000000000000\"){role}}"}' | head -c 500
+{"errors":[{"message":"","locations":[{"line":1,"column":10}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+[0m
+**STEP 1 — DELTA**
+- [CHANGED] app.alfaview.com/graphql: anonymous `listIdentityProviders{providers}` → **200 `providers:[]`** — the "anonymous IdP leak" is null; resolver is reachable without a guard but returns empty (token-scoped to null company). Passive leak thread closed.
+- [CHANGED] Resolver shape: `ListIdentityProvidersReply.providers: [JSONObject]`, no `companyId` arg — global resolver, scope derived solely from token.
+- [CONFIRMED] `guestAuthenticate` anonymous null-UUID call → `BAD_USER_INPUT` (data null, no auth gate); reply type exposes `role` subfield. Consistent with prior records.
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] apis.alfaview.com,6.80,a:9 b:9 t:8(OpenAPI+UUID paths) g:2 c:2 f:6 — unchanged; IDOR rank-1, HUMAN-gated.
+- [PRIO] sso.alfaview.com,6.90,a:7 b:9 t:9(FusionAuth/OIDC) g:5 c:2 f:6 — unchanged; blocked on server-side client_id.
+- [PRIO] app.alfaview.com/graphql,6.05,a:7 b:8 t:9 g:10 c:2 f:6 — **reduced** (was 7.45): last anonymous data lead nulled; value now only as schema/behavior map.
+- [PRIO] staging-usercontent.alfaview.com,6.65,a:6 b:6 t:7 g:8 c:4 f:10 — unchanged.
+
+**STEP 3 — HYPOTHESES**
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, GET /v2/rooms/{roomId}/passcode); opaque company-scoped bearer; cross-tenant authz unverified. Two self-owned free companies would prove enforcement without touching customer data.
+evidence_needed: tenant-A token returns 200/204 for tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password {"username","password"} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: AUTH_HELPED
+
+[HYP] Guest-authz splice: GraphQL guest ops authenticate a guest triple without any accessKey
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 55
+reasoning: THIS session re-confirmed guestAuthenticate(userId,companyId,roomId) is anonymously reachable (BAD_USER_INPUT, not UNAUTHENTICATED) while REST guest-link requires the 4-field accessKey combo; no accessKey in GraphQL signature. A valid guest triple is the only missing ingredient.
+evidence_needed: guestAuthenticate with a real room's valid guest userId/companyId/roomId yields a session token with no accessKey.
+verify_steps: (post-signup) create own room's guest link → capture triple → call GraphQL guestAuthenticate{role} with triple minus accessKey → observe session grant vs error; then guestJoin{..} write.
+impact: bypass of accessKey-gated room entry (jump-in without the secret), cross-room guest impersonation; MEDIUM-HIGH.
+testability: AUTH_HELPED
+
+[HYP] Staging file-upload service may accept uploads without signing on staging-vs-prod parity
+class: MISCONFIG
+asset: staging-usercontent.alfaview.com/v1/files/upload
+confidence: 42
+reasoning: Desktop artifact hardcodes staging upload endpoint; host live on 3 IPs; strict Go routing (all GET/OPTIONS 404). Upload is POST-only with presumed signed-URL flow; a staging/prod authz diff would prove exposure; unprovable passively.
+evidence_needed: POST /v1/files/upload/ dummy multipart accepted on staging while prod 401/400.
+verify_steps: (AUTH-limited) POST multipart to staging only, compare body/status vs prod; if 2xx, read returned object URL back via GET for CDN readback.
+impact: arbitrary file write into staging object storage (stored-content abuse); MEDIUM.
+testability: AUTH_HELPED
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] Anonymous GraphQL resolver leak (was 60): directly disproven this session — `providers:[]` resolves 200 with zero data; passive thread exhausted.
+- [PARKED] OAuth redirect_uri bypass (50): client_id server-side; unchanged HUMAN gate (desktop-login webview HAR).
+- [FINAL] 1. Cross-tenant IDOR — 80. Highest impact; needs HUMAN signup of 2 self-owned free companies.
+- [FINAL] 2. Guest-authz splice — 55. Needs own guest triple (HUMAN); folded under the same signup gate.
+- [FINAL] 3. staging-usercontent upload parity — 42. POST parity diff; needs account.
+
+**STEP 5 — NEXT ACTION**
+- [NEXT] HUMAN: Create one throwaway free alfaview company via the unauthenticated `Signup` mutation on `app.alfaview.com` (planId `free-business`, disposable inbox → activation link → `finishSignup({companyId,username,activationToken,password})`). This is the single unlock for rank-1 IDOR (`GET /v2/rooms/{victimRoomId}/passcode` 403-vs-200 first) and rank-2 guest-splice (`guestAuthenticate{role}` on own triple, minus accessKey).
+
+**STEP 6 — LEARNING**
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: anonymous `listIdentityProviders{providers}` returns `[]` (200) — resolver has no explicit auth guard but is token-scoped; anonymous leak is null, passive thread closed.
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: `GuestAuthenticateReply` exposes `role`; null-UUID anonymous call → BAD_USER_INPUT (data null) — confirms anonymous reachability but real IDs required.
+
+**STEP 7 — RISK**
+- [RISK] alfaview: 46/100 — down 2. The last immediately-testable passive lead (anonymous GraphQL resolver leak at 60) returned empty data and is closed; every remaining avenue resolves to an auth gate, a rejected-class surface, or a record-behavior-only observation. No live bug proven; all meaningful upside sits behind the single HUMAN signup gate (IDOR 80, guest-splice 55) plus a desktop-login HAR for OAuth.

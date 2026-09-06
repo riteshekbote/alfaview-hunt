@@ -1,4 +1,4 @@
-## 2026-09-06 00:13:25 UTC [target] (model nemotron3)
+## 2026-09-06 04:41:48 UTC [target] (model nemotron3)
 [PRIO] test.alfaview.com,7.8,attack_surface=8,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=7,freshness=9
 [PRIO] apis.alfaview.com,7.5,attack_surface=9,business_value=10,tech_exposure=8,gate_ease=2,cloud_surface=8,freshness=7
 [PRIO] beta-ionoscloud-21-* fleet (6 unprobed),6.5,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=8,freshness=8

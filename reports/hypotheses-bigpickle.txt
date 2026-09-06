@@ -1,17 +1,4 @@
-## 2026-09-06 00:15:37 UTC [target] (model bigpickle)
-[PRIO] app.alfaview.com/graphql,7.45,a:7 b:9 t:9(anonymous resolver leak+guest ops) g:6 c:2 f:10
-[PRIO] sso.alfaview.com,6.90,a:7 b:9 t:9(FusionAuth/OIDC) g:5 c:2 f:6
-[PRIO] apis.alfaview.com,6.80,a:9 b:9 t:8(OpenAPI+UUID paths) g:2 c:2 f:6
-[PRIO] staging-usercontent.alfaview.com,6.65,a:6 b:6 t:7(Go file-service) g:8 c:4 f:10
-[HYP] Anonymous GraphQL admin resolvers leak scoped/global config after schema leak in public JS bundle
-class: MISCONFIG
-asset: app.alfaview.com/graphql
-confidence: 60
-reasoning: Full admin schema is in public bundles (1.09MB); resolver auth is inconsistent — recorded observations show `listIdentityProviders` returns data without a token and `listComponents` errors 500 anonymously, while other resolvers require auth. Unauth reachability is already proven; sensitivity of the returned IdP fields (entityId, endpoints, signing certs, per-company SSO setup) is unverified.
-evidence_needed: anonymous POST of `{listIdentityProviders{...}}` / `{listComponents{...}}` returning non-empty IdP/component config vs UNAUTHENTICATED; determine company-scoping of returned rows.
-verify_steps: POST app.alfaview.com/graphql `{"query":"{listIdentityProviders{id name issuer settings}}"}` no token → observe data (leak) vs null vs UNAUTHENTICATED; repeat for `{listComponents{name}}`; diff field sets one-by-one to map the anonymous-readable slice.
-impact: unauthenticated disclosure of SSO/IdP configuration (entity metadata, possibly certs/endpoints) and internal component topology; lateral recon for OAuth/SSO impersonation chains; LOW-MEDIUM unless certs/keys ride along.
-testability: PASSIVE (POST query required, no token, no data write)
+## 2026-09-06 04:41:40 UTC [target] (model bigpickle)
 [HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
 class: IDOR
 asset: apis.alfaview.com/v2
@@ -20,6 +7,15 @@ reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}
 evidence_needed: tenant-A token returns 200/204 for tenant-B userId/roomId where 403 expected.
 verify_steps: (post-signup) POST /v2/auth/password {"username","password"} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
 impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: AUTH_HELPED
+[HYP] Guest-authz splice: GraphQL guest ops authenticate a guest triple without any accessKey
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 55
+reasoning: THIS session re-confirmed guestAuthenticate(userId,companyId,roomId) is anonymously reachable (BAD_USER_INPUT, not UNAUTHENTICATED) while REST guest-link requires the 4-field accessKey combo; no accessKey in GraphQL signature. A valid guest triple is the only missing ingredient.
+evidence_needed: guestAuthenticate with a real room's valid guest userId/companyId/roomId yields a session token with no accessKey.
+verify_steps: (post-signup) create own room's guest link → capture triple → call GraphQL guestAuthenticate{role} with triple minus accessKey → observe session grant vs error; then guestJoin{..} write.
+impact: bypass of accessKey-gated room entry (jump-in without the secret), cross-room guest impersonation; MEDIUM-HIGH.
 testability: AUTH_HELPED
 [HYP] Staging file-upload service may accept uploads without signing on staging-vs-prod parity
 class: MISCONFIG
@@ -30,18 +26,3 @@ evidence_needed: POST /v1/files/upload/ dummy multipart accepted on staging whil
 verify_steps: (AUTH-limited) POST multipart to staging only, compare body/status vs prod; if 2xx, read returned object URL back via GET for CDN readback.
 impact: arbitrary file write into staging object storage (stored-content abuse); MEDIUM.
 testability: AUTH_HELPED
-[PARKED] OAuth redirect_uri bypass (50): client_id is server-side (three artifacts carry zero OAuth config); no passive harvest path remains. Blocked on HUMAN desktop-login webview HAR.
-[PARKED] Device-flow abuse (40): needs server-side client_id + phishing precondition + POST-only surface.
-[PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens; avenue closed.
-[PARKED] Binary client_id harvest: REFUTED (.deb/APK/alfacheck all zero OAuth config).
-[FINAL] 1. Anonymous GraphQL resolver-leak — 60. Only immediately-testable high-value lead; unauth reachability already recorded, sensitivity unverified.
-[FINAL] 2. Cross-tenant IDOR — 80. Highest impact; needs HUMAN signup of 2 self-owned free companies.
-[FINAL] 3. Guest-authz lifecycle/cross-tenant splice — 55. Needs own tenant guest triple (HUMAN). Folded under signup gate.
-[FINAL] 4. staging-usercontent upload authz — 42. POST parity diff; needs account.
-[NEXT] PROBE: POST `app.alfaview.com/graphql` (no token, content-type application/json, body `{"query":"{listIdentityProviders{id name settings}}"}`) then diff against `{listComponents{name}}` — map the anonymous-readable field slice; if IdP metadata (issuer/entityId/signing cert) returns non-null, escalate to a chain on FusionAuth SSO impersonation. Standing unlock unchanged: HUMAN self-service signup of two throwaway free companies to run IDOR rank-1 (`GET /v2/rooms/{victimRoomId}/passcode` 403-vs-200 first) and guest-splice rank-3.
-[LEARN] REJECTED MISCONFIG @ clone.staging-wordpress.alfaview.com: Plesk panel — /→303→login.php→login_up.php, `sid-plesk` HTML. Public login panel, out of scope. Target closed.
-[LEARN] REJECTED MISCONFIG @ plausible.alfaview.com: Bare 204 health responder; /api/health and /login 404 — no Plausible API or web surface. Target closed.
-[LEARN] REJECTED MISCONFIG @ webclient.alfaview.com: 200/4396B insider-family SPA, /health=204 — identical to exhausted insider/beta-webclient shells. Target closed.
-[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: CSP frame-ancestors allows live third-party omega-lectures.com (IONOS/Apache 200) — trust entry is to an active partner host, not dangling; no clickjacking chain in scope.
-[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: listIdentityProviders returns data anonymously while other resolvers 401/500 — resolver auth inconsistent; anonymous field-slice still unmapped.
-[RISK] alfaview: 48/100 — unchanged, no live bug proven. This session closed the final unprobed inventory stragglers (clone.staging-wordpress=Plesk panel, plausible=204 shell, webclient=insider SPA) and confirmed the CSP third-party trust is live, not dangling. Every host now resolves to an auth gate, a rejected-class surface, or a dead end. Remaining upside: one immediately-testable anonymous GraphQL leak (60) and three HUMAN/AUTH-gated chains (IDOR 80, guest-splice 55, upload parity 42).

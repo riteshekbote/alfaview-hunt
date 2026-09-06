@@ -1114,3 +1114,31 @@ testability: AUTH_HELPED
 [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: CSP frame-ancestors allows live third-party omega-lectures.com (IONOS/Apache 200) — trust entry is to an active partner host, not dangling; no clickjacking chain in scope.
 [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: listIdentityProviders returns data anonymously while other resolvers 401/500 — resolver auth inconsistent; anonymous field-slice still unmapped.
 [RISK] alfaview: 48/100 — unchanged, no live bug proven. This session closed the final unprobed inventory stragglers (clone.staging-wordpress=Plesk panel, plausible=204 shell, webclient=insider SPA) and confirmed the CSP third-party trust is live, not dangling. Every host now resolves to an auth gate, a rejected-class surface, or a dead end. Remaining upside: one immediately-testable anonymous GraphQL leak (60) and three HUMAN/AUTH-gated chains (IDOR 80, guest-splice 55, upload parity 42).
+## 2026-09-06 04:41:40 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, GET /v2/rooms/{roomId}/passcode); opaque company-scoped bearer; cross-tenant authz unverified. Two self-owned free companies would prove enforcement without touching customer data.
+evidence_needed: tenant-A token returns 200/204 for tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password {"username","password"} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: AUTH_HELPED
+[HYP] Guest-authz splice: GraphQL guest ops authenticate a guest triple without any accessKey
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 55
+reasoning: THIS session re-confirmed guestAuthenticate(userId,companyId,roomId) is anonymously reachable (BAD_USER_INPUT, not UNAUTHENTICATED) while REST guest-link requires the 4-field accessKey combo; no accessKey in GraphQL signature. A valid guest triple is the only missing ingredient.
+evidence_needed: guestAuthenticate with a real room's valid guest userId/companyId/roomId yields a session token with no accessKey.
+verify_steps: (post-signup) create own room's guest link → capture triple → call GraphQL guestAuthenticate{role} with triple minus accessKey → observe session grant vs error; then guestJoin{..} write.
+impact: bypass of accessKey-gated room entry (jump-in without the secret), cross-room guest impersonation; MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Staging file-upload service may accept uploads without signing on staging-vs-prod parity
+class: MISCONFIG
+asset: staging-usercontent.alfaview.com/v1/files/upload
+confidence: 42
+reasoning: Desktop artifact hardcodes staging upload endpoint; host live on 3 IPs; strict Go routing (all GET/OPTIONS 404). Upload is POST-only with presumed signed-URL flow; a staging/prod authz diff would prove exposure; unprovable passively.
+evidence_needed: POST /v1/files/upload/ dummy multipart accepted on staging while prod 401/400.
+verify_steps: (AUTH-limited) POST multipart to staging only, compare body/status vs prod; if 2xx, read returned object URL back via GET for CDN readback.
+impact: arbitrary file write into staging object storage (stored-content abuse); MEDIUM.
+testability: AUTH_HELPED
