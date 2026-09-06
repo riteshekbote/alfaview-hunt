@@ -736,3 +736,21 @@
 - LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diver
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingU
 - LEARN: ACCEPTED MISCONFIG @ staging-usercontent.alfaview.com / usercontent.alfaview.com: Go file-services live on prod+staging; all GET/OPTIONS 404 strict-routed; uplo
+
+## RANKED HYPOTHESES 2026-09-06 21:51:20 UTC
+- [80] sso.alfaview.com: OAuth redirect_uri validation bypass on sso.alfaview.com (from art/lead_nemotron3.txt)
+- [55] app.alfaview.com/graphql: Guest-authz splice: GraphQL guest ops mint tokens without accessKey (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Create two throwaway free tenants via app.alfaview.com unauthenticated `Signup` mutation (planId `free-business`, disposable inbox → activation → `finish
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow 
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (2026-09-06) — GuestAuthenticateReply exposes `role`; acce
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery still exposed with issuer=acme.com, implicit + device_code grants, token_endpoint supports public-client (
+- LEARN: REJECTED MISCONFIG @ sso.alfaview.com: GET /oauth2/register is a generic 6.2KB "Login | FusionAuth" theme page (200), not a client-registration or config surfac
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces `client_id` registration before `redirect_uri` handling (`invalid_client`, reason `invalid_client
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256 listed but only RSA keys
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated).
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP

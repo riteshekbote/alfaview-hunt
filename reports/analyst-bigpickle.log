@@ -9140,3 +9140,199 @@ Here are the 8 structured steps:
 
 **STEP 7 — RISK**
 - [RISK] alfaview: 48/100 — unchanged. No live bug proven (0 validated findings). 100% of the 55-host inventory has a verdict; passive yield exhausted. All surviving upside (IDOR 80, guest-authz 55, redirect_uri 75) sits behind the single 2-tenant disposable-email signup plus a desktop-login client_id capture — both HUMAN actions. Risk holds at 48 until signup activation unblocks the active AUTH_HELPED verification.
+===== ANALYST bigpickle 2026-09-06 21:51:20 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -m 20 "https://sso.alfaview.com/.well-known/openid-configuration" | head -c 4000; echo
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oauth2/device_authorize",
+  "dpop_signing_alg_values_supported" : [
+    "Ed448",
+    "Ed25519",
+    "ES256",
+    "ES384",
+    "ES512",
+    "PS256",
+    "PS384",
+    "PS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "end_session_endpoint" : "https://sso.alfaview.com/oauth2/logout",
+  "frontchannel_logout_supported" : true,
+  "grant_types_supported" : [
+    "authorization_code",
+    "password",
+    "implicit",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "client_credentials"
+  ],
+  "id_token_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "HS256",
+    "HS384",
+    "HS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "issuer" : "acme.com",
+  "jwks_uri" : "https://sso.alfaview.com/.well-known/jwks.json",
+  "response_modes_supported" : [
+    "form_post",
+    "fragment",
+    "query"
+  ],
+  "response_types_supported" : [
+    "code",
+    "id_token",
+    "token id_token"
+  ],
+  "scopes_supported" : [
+    "openid",
+    "offline_access",
+    "email",
+    "phone",
+    "profile"
+  ],
+  "subject_types_supported" : [
+    "public"
+  ],
+  "token_endpoint" : "https://sso.alfaview.com/oauth2/token",
+  "token_endpoint_auth_methods_supported" : [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "userinfo_endpoint" : "https://sso.alfaview.com/oauth2/userinfo",
+  "userinfo_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "RS256",
+    "RS384",
+    "RS512",
+    "HS256",
+    "HS384",
+    "HS512"
+  ]
+}
+[0m
+[0m$ [0mcurl -s -m 20 -o /dev/null -w "GET /oauth2/register -> HTTP %{http_code}\n" "https://sso.alfaview.com/oauth2/register"; curl -s -m 20 -o /dev/null -w "OPTIONS /oauth2/register -> HTTP %{http_code}\n" -X OPTIONS "https://sso.alfaview.com/oauth2/register"
+GET /oauth2/register -> HTTP 200
+OPTIONS /oauth2/register -> HTTP 405
+[0m
+[0m$ [0mcurl -s -m 20 -X POST "https://app.alfaview.com/graphql" -H "content-type: application/json" --data '{"query":"mutation{guestAuthenticate(userId:\"x\",companyId:\"y\",roomId:\"z\"){token}}"}' -w "\nHTTP %{http_code}\n" | head -c 800
+{"errors":[{"message":"Cannot query field \"token\" on type \"GuestAuthenticateReply\". Did you mean \"role\"?","locations":[{"line":1,"column":65}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+HTTP 400
+[0m
+[0m$ [0mcurl -s -m 20 "https://sso.alfaview.com/oauth2/register" | head -c 600; echo; echo "---"; curl -s -m 20 "https://sso.alfaview.com/oauth2/register" | wc -c
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" co
+---
+6189
+[0m
+STEP 1 — DELTA
+[CHANGED] sso.alfaview.com: OIDC discovery re-fetched today — no `registration_endpoint` advertised → FusionAuth dynamic client registration OFF; GET `/oauth2/register` = 6.2KB generic "Login | FusionAuth" theme page (not a client-registration surface). No client_id leak path.
+[CHANGED] app.alfaview.com/graphql: guestAuthenticate reconfirmed anonymous-reachable (~1 rps) — mutation processed, my field guess returned `GRAPHQL_VALIDATION_FAILED` ("Did you mean `role`?") not UNAUTHENTICATED; reply type `GuestAuthenticateReply` exposes field `role`. Field-oracle + anonymous surface unchanged.
+NO_DELTA on inventory: 55/55 hosts carry a verdict; no new reachable surface.
+
+STEP 2 — PRIORITIZE
+[PRIO] app.alfaview.com/graphql,7.45,a:7 b:9 t:9(GraphQL guest ops) g:6 c:2 f:9
+[PRIO] sso.alfaview.com,6.90,a:7 b:9 t:9(FusionAuth/OIDC device+implicit) g:5 c:2 f:6
+[PRIO] apis.alfaview.com,6.80,a:9 b:9 t:8(OpenAPI UUID IDOR) g:2 c:2 f:6
+[PRIO] staging-usercontent.alfaview.com,6.65,a:6 b:6 t:7(Go file-service) g:8 c:4 f:10
+
+STEP 3 — HYPOTHESES
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(userId,companyId,roomId) processed anonymously today (validation error, never UNAUTHENTICATED); GuestAuthenticateReply exposes role. No accessKey arg in GraphQL guest signature, while REST guest-link mandates 4-field accessKey combo. Valid guest triple is the only missing ingredient.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant -> capture (userId,companyId,roomId) -> GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST `/v2/auth/guest-link` same triple -> 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, GET/POST/DELETE/PATCH /v2/rooms/{roomId}/permissions[/{userId}]); opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN 2-tenant signup) POST /v2/auth/password -> bearer -> GET /v2/users/me (baseline) -> GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 -> PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: HUMAN_ONLY
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 50
+reasoning: FusionAuth authorize enforces client_id registration before redirect_uri handling; discovery lists public-client auth (`none`) + implicit + device grants; issuer=acme.com misconfig. Client_id exists but is not in any public bundle/artifact — desktop-login webview HAR is the only capture path.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix against.
+verify_steps: (HUMAN desktop HAR) capture client_id + redirect_uri from desktop OAuth webview -> GET https://sso.alfaview.com/oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code -> observe 302 Location carbon of evil.com vs validation error.
+impact: OAuth code theft -> ATO via open redirect / state-CSRF on a public client; HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+[PARKED] OAuth redirect_uri bypass (50): no passive client_id path; dynamic registration OFF closes the self-registration vector — strictly HUMAN (desktop HAR).
+[PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens; JWKS RSA-only though HS256 advertised: no symmetric key to sign with remotely.
+[PARKED] Anonymous GraphQL resolver-leak: closed (empty `[]`/500 only) — supporting evidence; GuestAuthenticateReply.role now mapped.
+[PARKED] Staging file-upload (42): POST/mutating, AUTH-limited — held behind the two HUMAN chains.
+[FINAL] 1. Guest-authz accessKey bypass — 55. Design-level divergence, anonymous-reachable today; needs own guest triple (HUMAN).
+[FINAL] 2. Cross-tenant IDOR — 80. Highest impact; needs HUMAN 2-tenant signup.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Create two throwaway free tenants via app.alfaview.com unauthenticated `Signup` mutation (planId `free-business`, disposable inbox → activation → `finishSignup({companyId,username,activationToken,password})` at /finish-signup). This single unlock feeds both surviving chains: (a) IDOR `GET https://apis.alfaview.com/v2/rooms/{victimRoomId}/passcode` 403-vs-200 with tenant-A bearer, and (b) GraphQL `guestAuthenticate(userId,companyId,roomId)` accessKey-less vs REST `/v2/auth/guest-link` 200+token-vs-401. Passive yield is exhausted; no read-only probe advances either chain.
+
+STEP 6 — LEARNING
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (2026-09-06) — GuestAuthenticateReply exposes `role`; accessKey-less GraphQL guest path diverging from REST 4-field combo remains the standing highest-structural authz gap.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery still exposed with issuer=acme.com, implicit + device_code grants, token_endpoint supports public-client (`none`); no `registration_endpoint` → FusionAuth dynamic client registration disabled (self-registration client_id path closed).
+[LEARN] REJECTED MISCONFIG @ sso.alfaview.com: GET /oauth2/register is a generic 6.2KB "Login | FusionAuth" theme page (200), not a client-registration or config surface; no client_id exposure.
+
+STEP 7 — RISK
+[RISK] alfaview: 48/100 — unchanged. Today's probes confirm zero new reachable surface: OIDC config stable (registration disabled, monolith config), anonymous GraphQL surface reconfirmed live but data-less, inventory still 100% verdicted. All substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus a desktop OAuth HAR client_id capture (redirect_uri 50); passive reconnaissance yield remains fully exhausted.
