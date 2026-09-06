@@ -8548,3 +8548,595 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 - [RISK] alfaview: 48/100 — unchanged, no live bug proven. Inventory is 100% probed (all 55 hosts have verdicts). Passive reconnaissance yield is fully exhausted; every surviving HIGH-value chain (IDOR 80, guest-authz 55, OAuth redirect_uri 75) sits behind a HUMAN gate (throwaway 2-tenant signup and/or desktop client_id HAR capture). Probability-weighted risk holds at 48 until the signup activation unblocks active AUTH_HELPED verification. No low-effort passive avenues remain untried.
+===== ANALYST bigpickle 2026-09-06 19:58:58 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll analyze the current state and run through the 8 steps.
+
+Let me review what's new since the last analysis. The key remaining state: all 55 hosts probed, passive recon exhausted, surviving chains need HUMAN gated actions (2-tenant signup for IDOR + guest-authz).
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt 2>/dev/null && ls -la 2>/dev/null; echo "---"; ls inventory 2>/dev/null; echo "---"; cat scope.yml inventory/alfaview.md 2>/dev/null | head -120
+total 248
+drwxr-xr-x 12 runner runner  4096 Sep  6 19:40 .
+drwxr-xr-x  3 runner runner  4096 Sep  6 19:39 ..
+drwxr-xr-x  7 runner runner  4096 Sep  6 19:40 .git
+drwxr-xr-x  3 runner runner  4096 Sep  6 19:39 .github
+-rw-r--r--  1 runner runner  1883 Sep  6 19:39 README.md
+-rw-r--r--  1 runner runner   298 Sep  6 19:40 analyst-out.txt
+-rw-r--r--  1 runner runner 74962 Sep  6 19:40 analyst-prompt.txt
+-rw-r--r--  1 runner runner 71052 Sep  6 19:40 ctx.txt
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 inventory
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 knowledge
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 leads
+-rw-r--r--  1 runner runner 12327 Sep  6 19:39 probe-results.md
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 recon-notes
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 reports
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 reposcan-raw
+-rw-r--r--  1 runner runner  3323 Sep  6 19:39 scope.yml
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 scripts
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_bigpickle.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_laguna.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_ling3.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_longcat.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_mimo.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_nemotron3.json
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 triage
+---
+alfaview.md
+---
+programs:
+  alfaview:
+    name: alfaview gmbh Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+  passive_first: false          # deep-hunt agent: active probes allowed when scoped
+  max_requests_per_second: 1    # never hammer live infra
+  no_doom: true                 # no DoS/DDoS, no account-lockout attacks
+  account_creation: restricted  # only on test/sandbox assets, never live customer data
+  no_data_modification: true    # no writes/deletes on live customer data
+  no_pre_disclosure: true       # never disclose before program response
+  poc_required: true            # scanner output alone is REJECTED
+  redact_secrets_in_commits: true
+
+models:
+  - { id: opencode/big-pickle, name: bigpickle }
+  - { id: opencode/nemotron-3-ultra-free, name: nemotron3 }
+  - { id: opencode/longcat-2.0-free, name: longcat }
+  - { id: opencode/ling-3.0-flash-free, name: ling3 }
+  - { id: opencode/laguna-s-2.1-free, name: laguna }
+# alfaview gmbh inventory (discovery seed 2026-09-02)
+# NOTE: hosts below are discovery candidates from passive DNS/CT; confirm in-scope vs program scope before active testing.
+alfaview.com
+app.alfaview.com
+dev.alfaview.com
+sso.alfaview.com
+staging.alfaview.com
+support.alfaview.com
+test.alfaview.com
+www.alfaview.com
+
+## PASSIVE RECON 2026-09-02 (read-only, non-intrusive)
+
+> Recon observations only. These are NOT confirmed vulnerabilities; ownership/in-scope of each host must be confirmed against the program scope before any active testing. Hosts resolve + serve HTTP — investigation requires scoped authorization.
+
+**Probed:** 8 hosts | **Live HTTP:** 2
+
+| Host | Status | Server/Tech |
+|---|---|---|
+| `support.alfaview.com` | 301 | Server: myracloud -> https://support.alfaview.com/en/ |
+| `staging.alfaview.com` | 301 | Server: myracloud -> https://staging.alfaview.com/en |
+
+**CNAME review signals (2):**
+- `support.alfaview.com` -> `support-alfaview-com.ax4z.com`
+- `staging.alfaview.com` -> `staging-alfaview-com.ax4z.com`
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `staging.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `support.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP ENUM (wildcard-cleaned) 2026-09-03
+**Root zone:** `alfaview.com` | **dedicated hosts after wildcard-filter: 55**
+> Audit: brute+passive subfinder produced 10,083 resolving hostnames; zone-wildcard + IP-fingerprint filtering dropped 9,973 (98.9%) DNS-wildcard noise (random labels resolving to shared wildcard IPs e.g. account.cineplex.de, a.hypofriend.de, account.live-manager.de, docker.jtl-software.de, *.ggamdom.com, *.dev.alfaview.com). Only genuine dedicated hosts listed below. These are surface-map observations; live HTTP status captured read-only (GET / via curl). No findings claimed; scope must be confirmed with the program.
+- `alfacheck-audio.alfaview.com`  [HTTP unprobed]
+- `alfacheck-engine.alfaview.com`  [HTTP unprobed]
+- `alfacheck-video.alfaview.com`  [HTTP unprobed]
+- `alfatraining.alfaview.com`  [HTTP 200]
+- `alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `apis.alfaview.com`  [HTTP 200]
+- `app.alfaview.com`  [HTTP 200]
+- `appstats.alfaview.com`  [HTTP unprobed]
+- `assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `beta-apis.alfaview.com`  [HTTP 200]
+- `beta-app.alfaview.com`  [HTTP 401]
+- `beta-hcloud-19-beta-audio-4xstl.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-audio-8xnz9.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-9m62k.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-vlhwd.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`  [HTTP 200]
+- `beta-hcloud-19-beta-video-xjl6p.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-video-zhjvl.alfaview.com`  [HTTP 404]
+- `beta-ionoscloud-21-beta-audio-65st7.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-audio-bdtmf.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-6pp2m.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-l5mbv.alfaview.com`  [HTTP unprobed]
+- `beta-noris-33-beta-audio-ljj9x.alfaview.com`  [HTTP 404]
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && ls leads/ knowledge/ triage/ && echo "---STATE---" && cat state_bigpickle.json && echo && echo "---analyst-out---" && cat analyst-out.txt
+knowledge/:
+index.md
+
+leads/:
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-alfaview.md
+
+triage/:
+run-2026-09-03-11-41.md
+run-2026-09-03-15-37.md
+run-2026-09-03-18-51.md
+run-2026-09-03-21-32.md
+run-2026-09-03-23-30.md
+run-2026-09-04-01-20.md
+run-2026-09-04-06-01.md
+run-2026-09-04-11-23.md
+run-2026-09-04-15-05.md
+run-2026-09-04-18-27.md
+run-2026-09-04-21-00.md
+run-2026-09-04-23-04.md
+run-2026-09-05-01-01.md
+run-2026-09-05-05-48.md
+run-2026-09-05-09-49.md
+run-2026-09-05-13-11.md
+run-2026-09-05-16-10.md
+run-2026-09-05-18-21.md
+run-2026-09-05-20-41.md
+run-2026-09-05-22-34.md
+run-2026-09-06-00-11.md
+run-2026-09-06-04-44.md
+run-2026-09-06-09-06.md
+run-2026-09-06-12-54.md
+run-2026-09-06-15-56.md
+run-2026-09-06-18-00.md
+---STATE---
+{"phase": "POC", "target": "api"}
+---analyst-out---
+[0m
+> build · big-pickle
+[0m
+I'll analyze the current state and run through the 8 steps.
+
+Let me review what's new since the last analysis. The key remaining state: all 55 hosts probed, passive recon exhausted, surviving chains need HUMAN gated actions (2-tenant signup for IDOR + guest-authz).
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt 2>/dev/null && ls -la 2>/dev/null; echo "---"; ls inventory 2>/dev/null; echo "---"; cat scope.yml inventory/alfaview.md 2>/dev/null | head -120
+total 248
+drwxr-xr-x 12 runner runner  4096 Sep  6 19:40 .
+drwxr-xr-x  3 runner runner  4096 Sep  6 19:39 ..
+drwxr-xr-x  7 runner runner  4096 Sep  6 19:40 .git
+drwxr-xr-x  3 runner runner  4096 Sep  6 19:39 .github
+-rw-r--r--  1 runner runner  1883 Sep  6 19:39 README.md
+-rw-r--r--  1 runner runner   298 Sep  6 19:40 analyst-out.txt
+-rw-r--r--  1 runner runner 74962 Sep  6 19:40 analyst-prompt.txt
+-rw-r--r--  1 runner runner 71052 Sep  6 19:40 ctx.txt
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 inventory
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 knowledge
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 leads
+-rw-r--r--  1 runner runner 12327 Sep  6 19:39 probe-results.md
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 recon-notes
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 reports
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 reposcan-raw
+-rw-r--r--  1 runner runner  3323 Sep  6 19:39 scope.yml
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 scripts
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_bigpickle.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_laguna.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_ling3.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_longcat.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_mimo.json
+-rw-r--r--  1 runner runner    33 Sep  6 19:39 state_nemotron3.json
+drwxr-xr-x  2 runner runner  4096 Sep  6 19:39 triage
+---
+alfaview.md
+---
+programs:
+  alfaview:
+    name: alfaview gmbh Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+  passive_first: false          # deep-hunt agent: active probes allowed when scoped
+  max_requests_per_second: 1    # never hammer live infra
+  no_doom: true                 # no DoS/DDoS, no account-lockout attacks
+  account_creation: restricted  # only on test/sandbox assets, never live customer data
+  no_data_modification: true    # no writes/deletes on live customer data
+  no_pre_disclosure: true       # never disclose before program response
+  poc_required: true            # scanner output alone is REJECTED
+  redact_secrets_in_commits: true
+
+models:
+  - { id: opencode/big-pickle, name: bigpickle }
+  - { id: opencode/nemotron-3-ultra-free, name: nemotron3 }
+  - { id: opencode/longcat-2.0-free, name: longcat }
+  - { id: opencode/ling-3.0-flash-free, name: ling3 }
+  - { id: opencode/laguna-s-2.1-free, name: laguna }
+# alfaview gmbh inventory (discovery seed 2026-09-02)
+# NOTE: hosts below are discovery candidates from passive DNS/CT; confirm in-scope vs program scope before active testing.
+alfaview.com
+app.alfaview.com
+dev.alfaview.com
+sso.alfaview.com
+staging.alfaview.com
+support.alfaview.com
+test.alfaview.com
+www.alfaview.com
+
+## PASSIVE RECON 2026-09-02 (read-only, non-intrusive)
+
+> Recon observations only. These are NOT confirmed vulnerabilities; ownership/in-scope of each host must be confirmed against the program scope before any active testing. Hosts resolve + serve HTTP — investigation requires scoped authorization.
+
+**Probed:** 8 hosts | **Live HTTP:** 2
+
+| Host | Status | Server/Tech |
+|---|---|---|
+| `support.alfaview.com` | 301 | Server: myracloud -> https://support.alfaview.com/en/ |
+| `staging.alfaview.com` | 301 | Server: myracloud -> https://staging.alfaview.com/en |
+
+**CNAME review signals (2):**
+- `support.alfaview.com` -> `support-alfaview-com.ax4z.com`
+- `staging.alfaview.com` -> `staging-alfaview-com.ax4z.com`
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `staging.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `support.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP ENUM (wildcard-cleaned) 2026-09-03
+**Root zone:** `alfaview.com` | **dedicated hosts after wildcard-filter: 55**
+> Audit: brute+passive subfinder produced 10,083 resolving hostnames; zone-wildcard + IP-fingerprint filtering dropped 9,973 (98.9%) DNS-wildcard noise (random labels resolving to shared wildcard IPs e.g. account.cineplex.de, a.hypofriend.de, account.live-manager.de, docker.jtl-software.de, *.ggamdom.com, *.dev.alfaview.com). Only genuine dedicated hosts listed below. These are surface-map observations; live HTTP status captured read-only (GET / via curl). No findings claimed; scope must be confirmed with the program.
+- `alfacheck-audio.alfaview.com`  [HTTP unprobed]
+- `alfacheck-engine.alfaview.com`  [HTTP unprobed]
+- `alfacheck-video.alfaview.com`  [HTTP unprobed]
+- `alfatraining.alfaview.com`  [HTTP 200]
+- `alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `apis.alfaview.com`  [HTTP 200]
+- `app.alfaview.com`  [HTTP 200]
+- `appstats.alfaview.com`  [HTTP unprobed]
+- `assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `beta-apis.alfaview.com`  [HTTP 200]
+- `beta-app.alfaview.com`  [HTTP 401]
+- `beta-hcloud-19-beta-audio-4xstl.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-audio-8xnz9.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-9m62k.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-vlhwd.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`  [HTTP 200]
+- `beta-hcloud-19-beta-video-xjl6p.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-video-zhjvl.alfaview.com`  [HTTP 404]
+- `beta-ionoscloud-21-beta-audio-65st7.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-audio-bdtmf.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-6pp2m.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-l5mbv.alfaview.com`  [HTTP unprobed]
+- `beta-noris-33-beta-audio-ljj9x.alfaview.com`  [HTTP 404]
+[0m
+[0m
+Let me check the leads directory and current state files to determine what action to take.
+The state is clear. I have full context from the knowledge base and my prior state. The situation is: **passive recon is 100% exhausted**, all 55 hosts have verdicts, and the only surviving HIGH-confidence chains require HUMAN-gated actions (2-tenant disposable-email signup to unlock IDOR + guest-authz proof). There is no new delta since the last analysis at 18:09 UTC.
+
+Let me run the 8 steps. Since there is no new surface data to probe and everything is behind HUMAN gates, I'll produce the structured output without redundant live probing.
+
+**STEP 1 — DELTA:**
+No_new_surface. Inventory 100% probed; surviving chains (IDOR 80, guest-authz 55) unchanged and still HUMAN-gated. Nothing to re-probe passively.
+
+**STEP 2 — PRIORITIZE** (unchanged ranked assets, no new):
+- apis.alfaview.com — highest IDOR value
+- app.alfaview.com/graphql — guest-authz divergence
+- sso.alfaview.com — FusionAuth/OIDC (client_id not located)
+
+**STEP 3-4 — HYPOTHESES:** Same two FINAL survivors, both HUMAN_ONLY. No new viable passive hypotheses.
+
+**STEP 5 — NEXT:** Everything valuable requires the HUMAN 2-tenant signup. That is the single blocker.
+
+**STEP 6 — LEARNING:** No new facts learned this cycle (no probes run; nothing changed).
+
+**STEP 7 — RISK:** 48/100 unchanged — consistent with prior.
+
+Let me verify there's genuinely nothing new by checking the git log quickly for any un-analyzed additions.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && git log --oneline -5 && echo "---LAST TRIAGE---" && cat triage/run-2026-09-06-18-00.md 2>/dev/null | tail -40
+6fd13c1 reposcan 2026-09-06-18-14
+---LAST TRIAGE---
+
+===== TRIAGE 2026-09-06 18:00:18 UTC =====
+[0m
+> build · mimo-v2.5-free
+[0m
+No leads provided. The LEADS section is empty — please paste the probe results for validation.
+[0m
+The last triage at 18:00 had empty leads, and the most recent commit is `reposcan 2026-09-06-18-14`. My last analysis was 18:09. The reposcan at 18:14 is the only thing newer than my state. Let me check if that reposcan produced anything new worth analyzing.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && git show --stat HEAD && echo "---" && git show HEAD -- leads/ 2>/dev/null | head -60
+commit 6fd13c1ebe950b9de414691f51c4a506fadef660
+Author: github-actions <actions@github.com>
+Date:   Sun Sep 6 18:14:15 2026 +0000
+
+    reposcan 2026-09-06-18-14
+
+ .github/workflows/hunt.yml        |  250 ++
+ .github/workflows/reposcan.yml    |  109 +
+ .github/workflows/sync-issues.yml |   44 +
+ .github/workflows/triage.yml      |  138 +
+ README.md                         |   34 +
+ inventory/alfaview.md             |  275 ++
+ knowledge/index.md                |  176 +
+ leads/lead-bigpickle.md           | 1353 ++++++
+ leads/lead-laguna.md              |   27 +
+ leads/lead-ling3.md               |   27 +
+ leads/lead-longcat.md             |   27 +
+ leads/lead-mimo.md                |    1 +
+ leads/lead-nemotron3.md           | 1414 ++++++
+ leads/reposcan-alfaview.md        |   50 +
+ probe-results.md                  |  227 +
+ recon-notes/CORPUS-ALFAVIEW.md    |   65 +
+ recon-notes/DEDICATED-DEEP.md     |   58 +
+ recon-notes/DEEPER-FINDINGS.md    |  161 +
+ recon-notes/SCOPE-CONFIRMATION.md |   99 +
+ recon-notes/alfaview-openapi.yaml | 4538 ++++++++++++++++++++
+ reports/analyst-bigpickle.log     | 8550 +++++++++++++++++++++++++++++++++++++
+ reports/analyst-laguna.log        |  216 +
+ reports/analyst-ling3.log         |  216 +
+ reports/analyst-longcat.log       |  216 +
+ reports/analyst-nemotron3.log     | 6812 +++++++++++++++++++++++++++++
+ reports/hypotheses-bigpickle.txt  |    1 +
+ reports/hypotheses-laguna.txt     |    1 +
+ reports/hypotheses-ling3.txt      |    1 +
+ reports/hypotheses-longcat.txt    |    1 +
+ reports/hypotheses-nemotron3.txt  |    1 +
+ reports/hypotheses.md             |  705 +++
+ reports/valid-bugs.md             |   18 +
+ reposcan-raw/summary.txt          |    1 +
+ scope.yml                         |   55 +
+ scripts/sync-issues.py            |  429 ++
+ state_bigpickle.json              |    1 +
+ state_laguna.json                 |    1 +
+ state_ling3.json                  |    1 +
+ state_longcat.json                |    1 +
+ state_mimo.json                   |    1 +
+ state_nemotron3.json              |    1 +
+ triage/.gitkeep                   |    0
+ triage/run-2026-09-03-11-41.md    |    6 +
+ triage/run-2026-09-03-15-37.md    |    6 +
+ triage/run-2026-09-03-18-51.md    |   11 +
+ triage/run-2026-09-03-21-32.md    |    8 +
+ triage/run-2026-09-03-23-30.md    |    6 +
+ triage/run-2026-09-04-01-20.md    |    6 +
+ triage/run-2026-09-04-06-01.md    |    6 +
+ triage/run-2026-09-04-11-23.md    |    6 +
+ triage/run-2026-09-04-15-05.md    |    8 +
+ triage/run-2026-09-04-18-27.md    |    6 +
+ triage/run-2026-09-04-21-00.md    |    6 +
+ triage/run-2026-09-04-23-04.md    |    6 +
+ triage/run-2026-09-05-01-01.md    |    6 +
+ triage/run-2026-09-05-05-48.md    |    6 +
+ triage/run-2026-09-05-09-49.md    |   31 +
+ triage/run-2026-09-05-13-11.md    |    6 +
+ triage/run-2026-09-05-16-10.md    |  322 ++
+ triage/run-2026-09-05-18-21.md    |   45 +
+ triage/run-2026-09-05-20-41.md    |    6 +
+ triage/run-2026-09-05-22-34.md    |   27 +
+ triage/run-2026-09-06-00-11.md    |    6 +
+ triage/run-2026-09-06-04-44.md    |    6 +
+ triage/run-2026-09-06-09-06.md    |    6 +
+ triage/run-2026-09-06-12-54.md    |    6 +
+ triage/run-2026-09-06-15-56.md    |    6 +
+ triage/run-2026-09-06-18-00.md    |    6 +
+ 68 files changed, 26868 insertions(+)
+---
+commit 6fd13c1ebe950b9de414691f51c4a506fadef660
+Author: github-actions <actions@github.com>
+Date:   Sun Sep 6 18:14:15 2026 +0000
+
+    reposcan 2026-09-06-18-14
+
+diff --git a/leads/lead-bigpickle.md b/leads/lead-bigpickle.md
+new file mode 100644
+index 0000000..efc196e
+--- /dev/null
++++ b/leads/lead-bigpickle.md
+@@ -0,0 +1,1353 @@
++## 2026-09-03 14:06:59 UTC [target] (model bigpickle)
++[PRIO] beta-apis.alfaview.com, 8.8, a:7 b:8 t:9(API+OpenAPI) g:6(cloud:3,auth-gate:3) c:3 f:5
++[PRIO] demo-company.alfaview.com, 8.3, a:9 b:8 t:6(web app) g:8(no basic auth gate) c:3 f:5
++[PRIO] internal.alfaview.com, 7.0, a:6 b:9 t:5(Basic auth) g:3(closed) c:3 f:5
++[HYP] IDOR on room permissions and user deletion
++class: IDOR
++asset: apis.alfaview.com
++confidence: 72
++reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
++evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
++verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
++impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
++testability: AUTH_HELPED
++[HYP] Guest link access key enumeration via auth oracle
++class: AUTH
++asset: apis.alfaview.com/v2/auth/group-link
++confidence: 65
++reasoning: Group/guest link auth requires companyId + roomId + accessKey. The auth endpoint returns distinct errors: 401 "A guest with the provided information could not be found and authenticated" vs 422 if wrong endpoint type used. If accessKeys are low-entropy or sequential, and rate-limiting is absent per-scope, brute force of accessKey for a known companyId+roomId yields a guest session token.
++evidence_needed: Rate-limited probe of /v2/auth/group-link with a known companyId+roomId and random accessKeys; observe response timing or 429 after N requests confirming (or not) brute-force feasibility.
++verify_steps: POST /v2/auth/group-link with companyId=<known>, roomId=<known>, accessKey=<random-12-char>, displayName="test" — note 401 response time. Repeat 10x at 1 rps to detect rate limiting.
++impact: Guest session impersonation; access to private meeting rooms; severity MEDIUM-HIGH.
++testability: AUTH_HELPED
++[HYP] Beta API environment weaker auth enforcement
++class: MISCONFIG
++asset: beta-apis.alfaview.com
++confidence: 55
++reasoning: beta-apis resolves to a separate IP pool (185.127.28.102, 185.245.100.219, 195.201.44.172) from production apis. Beta environments commonly have relaxed validation, disabled features, or test credentials. If the same OpenAPI spec applies but auth middleware differs, unauthenticated access or test API keys may work.
++evidence_needed: Comparison of /v2/languages or /v2/room-types response on beta-apis vs apis without Authorization header; check for different error bodies or 200 vs 401.
++verify_steps: GET https://beta-apis.alfaview.com/v2/languages (no auth) — compare response code and body against the same request on apis.alfaview.com (401).
++impact: Unauthenticated API access to user data, room data, and meeting statistics; severity HIGH.
++testability: PASSIVE (no auth needed to probe response codes)
++[PARKED] IDOR on room permissions: requires valid API credentials to confirm. Confidence 72 is justified by the explicit path-param UUID pattern in the spec but server-side authorization is unverified without auth testing. Remains as highest-priority authenticated test.
++[PARKED] Guest link access key enumeration: needs valid companyId+roomId to confirm rate limiting. Confidence 65 reflects the speculative brute-force angle. Keep for authenticated phase.
++[FINAL] Beta API weaker auth enforcement — **RANK 1 for next probe**. PASSIVE, no auth required, directly testable.
++[NEXT] PROBE: GET `https://beta-apis.alfaview.com/v2/languages` — no Authorization header, compare response code/body vs production `https://apis.alfaview.com/v2/languages` (known 401).
++[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
++[LEARN] ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
++[LEARN] REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected class).
++[RISK] alfaview: 65/100. Scope is broad ("all company-owned infrastructure") but active testing on production APIs requires an API key or guest account. 1 rps rate limit constrains brute-force. All high-value endpoints are auth-gated. Realistic path: obtain a developer account, test IDOR and guest-link flows.
++## 2026-09-03 15:10:59 UTC [target] (model bigpickle)
++[CHANGED] beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
++[NEW] beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
++[NEW] insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
++[PRIO] demo-company.alfaview.com, 8.7, a:9 b:9 t:6(web app) g:9(no auth gate) c:3 f:5
++[PRIO] beta-webclient.alfaview.com, 8.2, a:7 b:8 t:7(web client) g:7(no basic auth) c:3 f:4
++[PRIO] apis.alfaview.com, 8.0, a:8 b:8 t:9(API) g:6(cloud:3,auth-gate:3) c:3 f:5
++[HYP] IDOR on room permissions and user deletion
++class: IDOR
+[0m
+The `reposcan` commit at 18:14 is just the CI workflow repo state (this is the investigation artifact repo itself — the whole git tree was committed). There's no new attack-surface data; this commit is the repo's own workflow scaffolding. My state and knowledge already cover all of this. There is genuinely NO new surface since my last analysis.
+
+Running the full 8 steps now.
+
+Note: `reports/valid-bugs.md` exists — let me quickly check it to ensure nothing new was logged that changes the picture.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && cat reports/valid-bugs.md && echo "---SUMMARY---" && cat reposcan-raw/summary.txt
+# Validated findings (running count 0)
+
+- 11 lead(s) marked VALID at 2026-09-05 16:10:05 UTC
+  - **Verdict: VALID**
+  - | Q4 Provable non-invasively? | PARTIAL | Needs valid companyId+roomId pair + 10+ rapid requests to test rate limiting |
+  - | Q7 Reasonable triager accept? | YES | If rate limiting confirmed absent, this is a valid auth bypass; accessKey entropy matters |
+  - **Verdict: HOLD** — Blocked on obtaining valid companyId+roomId pair. Once obtained, re-triage after rate-limit probe.
+  - | Q4 Provable non-invasively? | NO | Needs valid client_id + registered redirect_uri to test bypass. Web bundle carries no client_id. Desktop installer is only source (S3 buckets 403). |
+  - **Verdict: VALID (low severity)** — Fully provable passively, genuine misconfiguration, but low direct impact.
+  - | Q4 Provable non-invasively? | PARTIAL | OIDC/JWKS metadata is public (passive proof of misconfiguration). Actual exploit needs a valid token sample to test alg confusion. |
+  - **Verdict: HOLD** — Needs valid token to test. Misconfiguration is provable passively but exploit requires AUTH_HELPED step.
+  - | 1 | Cross-tenant IDOR (REST UUID paths) | **VALID** | 7.5 HIGH | Ready to test with free account |
+  - | 4 | FusionAuth issuer=acme.com drift | **VALID** | 5.3 MED | Low severity, fully passive |
+  - | 6 | JWT alg confusion (HS256+RSA JWKS) | **HOLD** | 9.8 CRIT | Needs valid token sample |
+
+- 2 lead(s) marked VALID at 2026-09-05 18:21:43 UTC
+  - | 1 | Cross-tenant IDOR (REST UUID paths) | **VALID** |
+  - | 4 | FusionAuth issuer=acme.com drift | **VALID** |
+---SUMMARY---
+TARGET_ORG not configured for alfaview; skipping public-org deep scan.
+[0m
+The reposcan-raw summary confirms no new surface (`TARGET_ORG not configured; skipping public-org deep scan`). The `valid-bugs.md` shows running count 0 validated findings, consistent with my state.
+
+There is **NO DELTA** since my last analysis. Everything I've verified confirms: passive recon exhausted, 0 validated bugs, both surviving chains HUMAN-gated. The reposcan added no new public-org attack surface.
+
+Here are the 8 structured steps:
+
+---
+
+**STEP 1 — DELTA**
+- NO_DELTA. Last action (18:14 reposcan) was CI repo self-commit + `TARGET_ORG not configured → skip`; no new public-org surface, no new facts. Inventory remains 100% probed; both surviving HIGH chains (IDOR 80, guest-authz 55) unchanged and still HUMAN-gated (2-tenant disposable-email signup). Nothing new to probe passively.
+
+**STEP 2 — PRIORITIZE** (unchanged, no new assets)
+- [PRIO] apis.alfaview.com, 6.80, a:9 b:9 t:8(OpenAPI+UUID IDOR) g:2 c:2 f:6
+- [PRIO] app.alfaview.com/graphql, 7.45, a:7 b:9 t:9(GraphQL guest ops) g:6 c:2 f:9
+- [PRIO] sso.alfaview.com, 6.90, a:7 b:9 t:9(FusionAuth/OIDC) g:5 c:2 f:6
+
+**STEP 3 — HYPOTHESES** (top 3 assets, 1 each)
+- [HYP] Cross-tenant IDOR via UUID path params (apis.alfaview.com/v2) — see below
+- [HYP] Guest-authz accessKey bypass via GraphQL (app.alfaview.com/graphql) — see below
+- [HYP] OAuth redirect_uri bypass via undiscovered client_id (sso.alfaview.com) — see below
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] OAuth redirect_uri: client_id not in any public bundle/artifact; requires desktop-login webview HAR (HUMAN). No passive harvest path.
+- [PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens.
+- [PARKED] Unsigned binary supply-chain: PASSIVE, out-of-impact (no integrity-control vuln in scope).
+- [PARKED] Anonymous GraphQL resolver-leak: closed — empty `[]`/500 only, no data. Supporting evidence.
+- [FINAL] 1. Cross-tenant IDOR — conf 80. Highest impact; needs HUMAN 2-tenant signup.
+- [FINAL] 2. Guest-authz accessKey bypass — conf 55. Design-level divergence; needs own guest triple (HUMAN).
+
+**STEP 5 — NEXT ACTION**
+- [NEXT] HUMAN: Create two throwaway free alfaview tenants (unauthenticated `Signup` → activation email → `finishSignup` at /finish-signup, planId `free-business`, disposable inbox). This single unlock feeds both surviving HIGH chains: (a) cross-tenant IDOR `GET https://apis.alfaview.com/v2/rooms/{victimRoomId}/passcode` 403-vs-200, and (b) GraphQL `guestAuthenticate(userId,companyId,roomId)` without accessKey vs REST `/v2/auth/guest-link` — 200+token-vs-401 is the one-shot accessKey-bypass proof. No further passive PROBE is actionable; the bottleneck is the signup.
+
+**STEP 6 — LEARNING**
+- [LEARN] NO_DELTA @ inventory: 18:14 reposcan skipped (`TARGET_ORG not configured`) — no new public-org surface; remaining upside is fully HUMAN-gated.
+
+**STEP 7 — RISK**
+- [RISK] alfaview: 48/100 — unchanged. No live bug proven (0 validated findings). 100% of the 55-host inventory has a verdict; passive yield exhausted. All surviving upside (IDOR 80, guest-authz 55, redirect_uri 75) sits behind the single 2-tenant disposable-email signup plus a desktop-login client_id capture — both HUMAN actions. Risk holds at 48 until signup activation unblocks the active AUTH_HELPED verification.

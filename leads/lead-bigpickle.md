@@ -1351,3 +1351,4 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED MISCONFIG @ beta-ionoscloud-21-audio/video fleet: all 4 audio/video hosts timeout (000, real IPs 185.127.30.215/.225) — firewalled like engine/hydra siblings; fleet exhausted, same as alfacheck-*.
 [RISK] alfaview: 48/100 — unchanged, no live bug proven. This session closed the final unprobed passive surface (beta-ionoscloud-21 audio/video, all 000), confirming 100% of the 55-host inventory has a verdict with no new reachable surface. All surviving upside sits behind the single HUMAN disposable-email 2-tenant signup (unlocks IDOR 80 + guest-authz 55) and a desktop-login client_id capture (redirect_uri OATH 75). Passive reconnaissance yield is fully exhausted; probability-weighted risk holds at 48 until the signup activation unblocks active AUTH_HELPED verification.
 ## 2026-09-06 17:51:21 UTC [target] (model bigpickle)
+## 2026-09-06 19:40:27 UTC [target] (model bigpickle)

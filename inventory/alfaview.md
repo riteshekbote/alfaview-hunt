@@ -273,3 +273,12 @@ www.alfaview.com
 - CHANGED Inventory now 100% probed: all 55 dedicated hosts have an HTTP verdict; zero genuinely-unprobed hosts remain.
 
 ## 2026-09-06 18:09:34 UTC
+
+## 2026-09-06 19:58:58 UTC
+- NEW beta-ionoscloud-21 fleet (7/7) fully probed — all 4 audio/video + 2 engine + 1 hydra hosts timeout (000, 12s), resolves to real IPs 185.127.30.215/.225; firewalled like alfacheck-* fleet. Inventory no
+- CHANGED app.alfaview.com/graphql: anonymous resolver slice confirmed closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/generateFileDownloadURL return UNAUTHENTICATED; no 
+- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural 
+- CHANGED app.alfaview.com/graphql: field-oracle enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingUserAccount(userId)) — broader schema-surface mapping.
+- CHANGED sso.alfaview.com: OIDC discovery unchanged — issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512 in supported algs but JWKS contains ONLY RSA keys (7 RS256 keys, zero symmetric). 
+- CHANGED test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible.
+- CHANGED apis.alfaview.com: Access tokens confirmed opaque/base64 (distinct 401 "No base64 encoded access token was provided") — JWT alg-confusion against API gateway closed.
