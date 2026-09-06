@@ -8501,3 +8501,50 @@ I've run the complete 8-step analysis with a genuine passive probe this session.
 **STEP 7 — RISK:** 48/100 unchanged — no live bug proven; passive recon yield fully exhausted, upside gated behind the signup activation.
 
 Key takeaway: my live probes this session closed the final unprobed host cluster (ionoscloud audio/video = timeout), bringing the entire 55-host inventory to a definitive verdict. No new reachable surface exists; the only path forward is the HUMAN signup activation that unlocks the two surviving HIGH-value chains (IDOR 80, guest-authz 55).
+===== ANALYST bigpickle 2026-09-06 18:09:34 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m• [0mCheck workspace state[90m Explore Agent[0m
+[0m✓ [0mCheck workspace state[90m Explore Agent[0m
+Based on my exploration of the workspace state, I have a complete picture. The passive reconnaissance is fully exhausted, with all surviving hypotheses HUMAN-gated. Let me run the 8-step analysis.
+
+STEP 1 — DELTA: The inventory is 100% probed. No new surface has appeared since the last cycle. The universal blocker remains: no throwaway tenant signup, no client_id. There is no NEW delta to report beyond the state summary.
+
+STEP 2 — PRIORITIZE: Re-scoring the standing top assets.
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code}" --max-time 10 https://app.alfaview.com/graphql -X POST -H "Content-Type: application/json" -d '{"query":"{__typename}"}'; echo " app/graphql"; curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://apis.alfaview.com/v2/languages"; echo " apis/languages"; curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://sso.alfaview.com/.well-known/openid-configuration"; echo " sso/oidc"
+200 app/graphql
+401 apis/languages
+200 sso/oidc
+[0m
+Surface unchanged (as expected). All status codes match the established baseline. No new delta.
+
+Outputting the structured analysis:
+
+STEP 1 — DELTA:
+- CHANGED No new surface this cycle — inventory remains 100% probed (55 hosts all have verdicts); passive recon is fully exhausted.
+
+STEP 2 — PRIORITIZE:
+- [PRIO] apis.alfaview.com,6.80,a:9 b:9 t:8(OpenAPI+UUID IDOR) g:2 c:2 f:6 — unchanged, blocked on account
+- [PRIO] app.alfaview.com/graphql,7.45,a:7 b:9 t:9(GraphQL guest ops) g:6 c:2 f:9 — unchanged
+- [PRIO] sso.alfaview.com,6.90,a:7 b:9 t:9(FusionAuth/OIDC) g:5 c:2 f:6 — unchanged, blocked on client_id
+
+STEP 3 — HYPOTHESES: The two surviving hypotheses (IDOR cross-tenant, guest-authz accessKey bypass) are both HUMAN_ONLY. Since inventory is fully probed and passive yield is exhausted, no new passive-verifiable hypothesis emerges. I will not invent new hypotheses on exhausted surface.
+
+STEP 4 — SELF-CRITIQUE:
+- [FINAL] 1. Cross-tenant IDOR — 80. Requires HUMAN 2-tenant signup; highest impact.
+- [FINAL] 2. Guest-authz accessKey bypass — 55. Design divergence; requires own guest triple (HUMAN).
+- [PARKED] OAuth redirect_uri bypass — client_id is server-side only, requires desktop HAR (HUMAN).
+- [PARKED] JWT alg-confusion — REJECTED, opaque/base64 tokens.
+- [PARKED] Staging file-upload — mutating, AUTH-limited, lower priority.
+- [PARKED] Anonymous GraphQL resolver leak — closed, empty data only.
+
+STEP 5 — NEXT ACTION:
+- [NEXT] HUMAN: Execute the standing blocked unlock — create one throwaway free alfaview company via unauthenticated `Signup` mutation (planId `free-business`) at app.alfaview.com/graphql, receive activation email via disposable inbox, complete `finishSignup({companyId,username,activationToken,password})`, then create a second self-owned tenant. This single action feeds both surviving HIGH chains: (a) IDOR `GET https://apis.alfaview.com/v2/rooms/{victimRoomId}/passcode` 403-vs-200, and (b) GraphQL `guestAuthenticate(userId,companyId,roomId)` without accessKey vs REST `/v2/auth/guest-link` — 200+token-vs-401 accessKey-bypass proof.
+
+STEP 6 — LEARNING:
+- [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com / sso.alfaview.com / app.alfaview.com/graphql: Surface reconfirmed this cycle — /v2/languages=401 (auth-gated), OIDC discovery=200, graphql __typename=200. All baselines stable; no drift or new surface.
+
+STEP 7 — RISK:
+- [RISK] alfaview: 48/100 — unchanged, no live bug proven. Inventory is 100% probed (all 55 hosts have verdicts). Passive reconnaissance yield is fully exhausted; every surviving HIGH-value chain (IDOR 80, guest-authz 55, OAuth redirect_uri 75) sits behind a HUMAN gate (throwaway 2-tenant signup and/or desktop client_id HAR capture). Probability-weighted risk holds at 48 until the signup activation unblocks active AUTH_HELPED verification. No low-effort passive avenues remain untried.
