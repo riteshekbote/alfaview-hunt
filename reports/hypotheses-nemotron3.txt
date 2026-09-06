@@ -1,4 +1,4 @@
-## 2026-09-06 04:41:48 UTC [target] (model nemotron3)
+## 2026-09-06 08:54:52 UTC [target] (model nemotron3)
 [PRIO] test.alfaview.com,7.8,attack_surface=8,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=7,freshness=9
 [PRIO] apis.alfaview.com,7.5,attack_surface=9,business_value=10,tech_exposure=8,gate_ease=2,cloud_surface=8,freshness=7
 [PRIO] beta-ionoscloud-21-* fleet (6 unprobed),6.5,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=8,freshness=8
@@ -31,8 +31,6 @@ evidence_needed: Binary hash verification mechanism (subresource integrity, chec
 verify_steps: GET https://test.alfaview.com/ → extract all hrefs; download each binary → check for embedded signatures/certificates (strings, objdump); probe for directory listing or version enumeration (470078, 470080, 470000); check response headers for CSP, SRI
 impact: Supply chain compromise → RCE on client machines (HIGH)
 testability: PASSIVE
-[PARKED] JWT algorithm confusion via HS256 support in OIDC config with RSA-only JWKS: Requires valid token sample to confirm validation flaw; without auth, cannot observe actual token structure. Confidence 70 but needs AUTH_HELPED step first. API gateway already rejected crafted HS256 JWT with RSA pubkey as HMAC secret (distinct 401 "No base64 encoded access token was provided").
-[PARKED] Cross-tenant IDOR on apis.alfaview.com/v2 DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId}: Confirmed in OpenAPI (UUID path params) but requires authenticated account — gate_ease=2. Needs HUMAN account creation via self-service flow first.
 [FINAL] 1. OAuth redirect_uri validation bypass on sso.alfaview.com — RANK 1. Confidence 75, AUTH_HELPED, CRITICAL impact. Need valid client_id discoverable via app.alfaview.com network traffic.
 [FINAL] 2. Unauthenticated guest token issuance via GraphQL missing accessKey — RANK 2. Confidence 85, AUTH_HELPED, HIGH impact. Divergent auth logic between REST (4-field+accessKey) and GraphQL (3-field no accessKey).
 [FINAL] 3. Unauthenticated binary distribution on test.alfaview.com — RANK 3. Confidence 65, PASSIVE, HIGH impact. Fully verifiable now without auth.

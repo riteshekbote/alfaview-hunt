@@ -1142,3 +1142,52 @@ evidence_needed: POST /v1/files/upload/ dummy multipart accepted on staging whil
 verify_steps: (AUTH-limited) POST multipart to staging only, compare body/status vs prod; if 2xx, read returned object URL back via GET for CDN readback.
 impact: arbitrary file write into staging object storage (stored-content abuse); MEDIUM.
 testability: AUTH_HELPED
+## 2026-09-06 08:56:58 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, GET /v2/rooms/{roomId}/passcode); opaque company-scoped bearer; cross-tenant authz unverified. Two self-owned free companies prove enforcement without touching customer data. GraphQL mirrors (generateFileDownloadURL/getPasscode) are auth-gated, consistent with REST.
+evidence_needed: tenant-A token returns 200/204 for tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password {"username","password"} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: AUTH_HELPED
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without the accessKey secret
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: Reconfirmed this session that guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) are anonymously-reachable (BAD_USER_INPUT, not UNAUTHENTICATED) while REST guest-link mandates the 4-field accessKey combo; no accessKey in GraphQL signature. A valid guest triple is the only missing ingredient.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL guestAuthenticate{accessToken} without accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401 verdict; then expired/cross-tenant splice variant.
+impact: bypass of accessKey-gated room entry (jump-in without the secret), cross-room guest impersonation; MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Staging file-upload service accepts unauthenticated uploads on staging-vs-prod parity
+class: MISCONFIG
+asset: staging-usercontent.alfaview.com/v1/files/upload
+confidence: 42
+reasoning: Desktop artifact hardcodes staging upload endpoint; host live on 3 IPs; strict Go routing (all GET/OPTIONS 404). Upload POST-only with presumed signed-URL flow; staging/prod authz diff would prove exposure; unprovable passively.
+evidence_needed: POST /v1/files/upload/ dummy multipart accepted on staging while prod 401/400; returned object URL readable back via GET.
+verify_steps: (AUTH-limited) POST multipart to staging only, compare body/status vs prod; if 2xx, GET returned object URL for CDN readback.
+impact: arbitrary file write into staging object storage (stored-content abuse); MEDIUM.
+testability: AUTH_HELPED
+[PARKED] Anonymous GraphQL resolver-leak (60) → DOWNGRADED this session: the only anonymous resolvers (listIdentityProviders, listComponents) return empty `[]` / 500 with NO data — the leak is now proven to be low-value (schema shape only, no PII/config). Closed as a standalone chain; demoted to supporting evidence for the guest authz gap.
+[PARKED] OAuth redirect_uri bypass (50): client_id is server-side (three artifacts carry zero OAuth config); no passive harvest path remains. Blocked on HUMAN desktop-login webview HAR.
+[PARKED] Device-flow abuse (40): needs server-side client_id + phishing precondition + POST-only surface.
+[PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens; avenue closed.
+[PARKED] Binary client_id harvest: REFUTED (.deb/APK/alfacheck all zero OAuth config).
+[FINAL] 1. Cross-tenant IDOR — 80. Highest impact; needs HUMAN signup of 2 self-owned free companies.
+[FINAL] 2. Guest-authz accessKey bypass/splice — 55. Design-level divergence (no accessKey in GraphQL guest path); needs own tenant guest triple (HUMAN).
+[FINAL] 3. staging-usercontent upload authz — 42. POST parity diff; needs account.
+[NEXT] HUMAN: Create one throwaway free alfaview company via `app.alfaview.com` signup (unauthenticated `Signup` mutation, planId `free-business`, disposable inbox → click activation → `finishSignup({companyId,username,activationToken,password})`). This single unlock feeds both surviving HIGH chains: (a) IDOR `GET https://apis.alfaview.com/v2/rooms/{victimRoomId}/passcode` 403-vs-200 on a second self-owned tenant, and (b) GraphQL `guestAuthenticate(userId,companyId,roomId)` without accessKey vs REST `/v2/auth/guest-link` — the 200+token-vs-401 delta is the one-shot proof of the accessKey bypass. Anonymous-GraphQL resolver-leak avenue now closed (empty/500 only, no data) — not worth further probing.
+[LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously. Schema-leak lead demoted to informational/supporting evidence.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains the standing highest-structural authz gap; generateFileDownloadURL is correctly auth-gated (UNAUTHENTICATED).
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/graphql: field-oracle (error-message) enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingUserAccount(userId)) — broader schema-surface mapping than the anonymous resolvers alone.
+[RISK] alfaview: 48/100 — unchanged, no live bug proven. This session closed the last immediately-testable passive avenue: the anonymous GraphQL resolver-leak (60) is now proven empty/error-only (no data), and sensitive resolvers (searchCompanies, generateFileDownloadURL) verify as correctly auth-gated. Remaining upside sits entirely behind two HUMAN gates: a disposable-email signup of two self-owned free tenants (IDOR 80, guest-authz 55) and a desktop-login client_id capture (redirect_uri 50). Passive yield is exhausted; probability-weighted risk holds while activation depends on the single signup unblock.
+[PRIO] app.alfaview.com/graphql,7.45,a:7 b:9 t:9(GraphQL+guest ops) g:6 c:2 f:10
+[PRIO] sso.alfaview.com,6.90,a:7 b:9 t:9(FusionAuth/OIDC) g:5 c:2 f:6
+[PRIO] apis.alfaview.com,6.80,a:9 b:9 t:8(OpenAPI+UUID paths) g:2 c:2 f:6
+[PRIO] staging-usercontent.alfaview.com,6.65,a:6 b:6 t:7(Go file-service) g:8 c:4 f:10
+[LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo is the standing highest-structural authz gap.
+[NEXT] HUMAN: Create one throwaway free alfaview company via app.alfaview.com signup (planId "free-business", disposable inbox → activation → finishSignup) — the single unlock for IDOR `GET /v2/rooms/{victimRoomId}/passcode` 403-vs-200 (two self-owned tenants) and GraphQL `guestAuthenticate` accessKey-bypass-vs-REST-401 proof. Anonymous resolver-leak avenue now closed (empty/500 only, no data).
+[RISK] alfaview: 48/100 — no live bug proven. Anonymous GraphQL resolver-leak (60) closed as empty/error-only; sensitive resolvers verified auth-gated. Remaining upside fully behind two HUMAN gates (two-tenant signup for IDOR 80 + guest-authz 55; desktop-login client_id for redirect_uri 50). Passive yield exhausted.
