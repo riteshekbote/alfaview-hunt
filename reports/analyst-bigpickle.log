@@ -6816,3 +6816,329 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 48/100 — unchanged, no live bug proven. This session resolved three remaining unprobed inventory hosts, all to dead ends (Plesk panel = rejected-class; diagnostics-ingest & atlas-spike = health shells). No new passive avenue opened; all meaningful upside remains behind the two HUMAN gates (disposable-email signup for IDOR 80 / guest-authz 55; desktop-login client_id capture for redirect_uri 50).
+===== ANALYST bigpickle 2026-09-06 00:15:48 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && git log --oneline -5 2>/dev/null; ls -la art 2>/dev/null; ls -la inventory 2>/dev/null
+total 220
+drwxr-xr-x 12 runner runner  4096 Sep  6 00:10 .
+drwxr-xr-x  3 runner runner  4096 Sep  6 00:10 ..
+drwxr-xr-x  7 runner runner  4096 Sep  6 00:10 .git
+drwxr-xr-x  3 runner runner  4096 Sep  6 00:10 .github
+-rw-r--r--  1 runner runner  1883 Sep  6 00:10 README.md
+-rw-r--r--  1 runner runner    32 Sep  6 00:10 analyst-out.txt
+-rw-r--r--  1 runner runner 64138 Sep  6 00:10 analyst-prompt.txt
+-rw-r--r--  1 runner runner 60228 Sep  6 00:10 ctx.txt
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 inventory
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 knowledge
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 leads
+-rw-r--r--  1 runner runner  9355 Sep  6 00:10 probe-results.md
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 recon-notes
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 reports
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 reposcan-raw
+-rw-r--r--  1 runner runner  3323 Sep  6 00:10 scope.yml
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 scripts
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_bigpickle.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_laguna.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_ling3.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_longcat.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_mimo.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_nemotron3.json
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 triage
+ad5c3f7 reposcan 2026-09-05-22-39
+total 36
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 .
+drwxr-xr-x 12 runner runner  4096 Sep  6 00:10 ..
+-rw-r--r--  1 runner runner 25459 Sep  6 00:10 alfaview.md
+[0m
+[0m✱ [0mGlob "**/*.md"[90m 37 matches[0m
+[0m→ [0mRead triage/run-2026-09-05-22-34.md
+[0m→ [0mRead reports/hypotheses.md
+[0m
+[0m$ [0mcat state_bigpickle.json; echo; cat analyst-out.txt; echo; cat README.md
+{"phase": "POC", "target": "api"}
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && git log --oneline -5 2>/dev/null; ls -la art 2>/dev/null; ls -la inventory 2>/dev/null
+total 220
+drwxr-xr-x 12 runner runner  4096 Sep  6 00:10 .
+drwxr-xr-x  3 runner runner  4096 Sep  6 00:10 ..
+drwxr-xr-x  7 runner runner  4096 Sep  6 00:10 .git
+drwxr-xr-x  3 runner runner  4096 Sep  6 00:10 .github
+-rw-r--r--  1 runner runner  1883 Sep  6 00:10 README.md
+-rw-r--r--  1 runner runner    32 Sep  6 00:10 analyst-out.txt
+-rw-r--r--  1 runner runner 64138 Sep  6 00:10 analyst-prompt.txt
+-rw-r--r--  1 runner runner 60228 Sep  6 00:10 ctx.txt
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 inventory
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 knowledge
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 leads
+-rw-r--r--  1 runner runner  9355 Sep  6 00:10 probe-results.md
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 recon-notes
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 reports
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 reposcan-raw
+-rw-r--r--  1 runner runner  3323 Sep  6 00:10 scope.yml
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 scripts
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_bigpickle.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_laguna.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_ling3.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_longcat.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_mimo.json
+-rw-r--r--  1 runner runner    33 Sep  6 00:10 state_nemotron3.json
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 triage
+ad5c3f7 reposcan 2026-09-05-22-39
+total 36
+drwxr-xr-x  2 runner runner  4096 Sep  6 00:10 .
+drwxr-xr-x 12 runner runner  4096 Sep  6 00:10 ..
+-rw-r--r--  1 runner runner 25459 Sep  6 00:10 alfaview.md
+[0m
+[0m✱ [0mGlob "**/*.md"[90m 37 matches[0m
+[0m→ [0mRead triage/run-2026-09-05-22-34.md
+[0m→ [0mRead reports/hypotheses.md
+
+# alfaview-hunt
+
+24/7 deep multi-model bug-hunting automation for **alfaview gmbh** (Oliver Maicher bug-bounty hub).
+
+Scope: All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains
+(full exclusion + rules list in `scope.yml`)
+
+Pipeline (all workflows run every 20 minutes):
+
+- **Deep Hunt** (`hunt.yml`): analyst hunts the discovered inventory + hypotheses, emits structured
+  leads, chains primitives, self-critiques. Models: mimo.
+- **Triager** (`triage.yml`): second-model 7-Question Gate validation + live passive probe; keeps
+  running count in `reports/valid-bugs.md`.
+- **Reposcan** (`reposcan.yml`): deep source scan of any public GitHub org (if configured).
+- **Sync Issues** (`sync-issues.yml`): mirrors leads to GitHub issues.
+
+Testing discipline: rate-limited (1 rps), no DoS/account-lockout, writes only on non-prod/test
+assets, no exposure of customer/employee/financial/auth data, secrets committed only as hashes.
+
+> IMPORTANT: the pipeline produces CANDIDATE leads. A reportable, validated finding requires
+> human triage + proof against the program's gate. No finding is fabricated; scanner output alone
+> is never accepted. Active testing is gated behind the in-scope hosts in `inventory/alfaview.md` and
+> must stay within the program's published scope.
+
+Artifacts:
+
+| Artifact | Purpose |
+|---|---|
+| `leads/` | Candidate findings (UNVALIDATED) |
+| `triage/` | Validation verdicts |
+| `reports/valid-bugs.md` | Validated findings + running count |
+| `scope.yml` | Program scope and exclusions (edit to adjust) |
+
+Program description: German video conferencing and virtual collaboration software provider offering desktop, web, and mobile communication platforms
+[0m
+[0m→ [0mRead leads/lead-bigpickle.md[90m [limit=100][0m
+[0m→ [0mRead leads/lead-nemotron3.md[90m [limit=80][0m
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead leads/lead-bigpickle.md[90m [offset=900][0m
+[0m
+[0m$ [0mls -la reposcan-raw/ leads/ 2>/dev/null; wc -l leads/*.md
+leads/:
+total 332
+drwxr-xr-x  2 runner runner   4096 Sep  6 00:10 .
+drwxr-xr-x 12 runner runner   4096 Sep  6 00:10 ..
+-rw-r--r--  1 runner runner 148268 Sep  6 00:10 lead-bigpickle.md
+-rw-r--r--  1 runner runner   1071 Sep  6 00:10 lead-laguna.md
+-rw-r--r--  1 runner runner   1050 Sep  6 00:10 lead-ling3.md
+-rw-r--r--  1 runner runner   1092 Sep  6 00:10 lead-longcat.md
+-rw-r--r--  1 runner runner     18 Sep  6 00:10 lead-mimo.md
+-rw-r--r--  1 runner runner 157263 Sep  6 00:10 lead-nemotron3.md
+-rw-r--r--  1 runner runner   2033 Sep  6 00:10 reposcan-alfaview.md
+
+reposcan-raw/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Sep  6 00:10 .
+drwxr-xr-x 12 runner runner 4096 Sep  6 00:10 ..
+-rw-r--r--  1 runner runner   71 Sep  6 00:10 summary.txt
+  1069 leads/lead-bigpickle.md
+    21 leads/lead-laguna.md
+    21 leads/lead-ling3.md
+    21 leads/lead-longcat.md
+     1 leads/lead-mimo.md
+  1109 leads/lead-nemotron3.md
+    38 leads/reposcan-alfaview.md
+  2280 total
+[0m
+[0m→ [0mRead leads/reposcan-alfaview.md
+[0m
+[0m$ [0mcat reposcan-raw/summary.txt; echo; ls knowledge/; echo; ls recon-notes/
+TARGET_ORG not configured for alfaview; skipping public-org deep scan.
+
+index.md
+
+CORPUS-ALFAVIEW.md
+DEDICATED-DEEP.md
+DEEPER-FINDINGS.md
+SCOPE-CONFIRMATION.md
+alfaview-openapi.yaml
+[0m
+[0m→ [0mRead recon-notes/DEEPER-FINDINGS.md
+[0m→ [0mRead knowledge/index.md
+[0m→ [0mRead leads/lead-nemotron3.md[90m [offset=1010][0m
+[0m
+[0m$ [0mrg -in "wordpress|plausible|webclient|diagnostics|atlas-spike|omega-lectures|staging-usercontent" --glob '!binaries/*' -l . 2>/dev/null | head; echo ---; grep -rn "clone.staging-wordpress\|plausible\|webclient.alfaview\|staging-webclient" --include='*.md' . | head -30
+---
+./recon-notes/DEDICATED-DEEP.md:45:- `beta-webclient.alfaview.com`  [HTTP 200]
+./recon-notes/DEDICATED-DEEP.md:48:- `clone.staging-wordpress.alfaview.com`  [HTTP 303]
+./recon-notes/DEDICATED-DEEP.md:55:- `insider-webclient.alfaview.com`  [HTTP 200]
+./recon-notes/CORPUS-ALFAVIEW.md:38:- `beta-webclient.alfaview.com`  [HTTP 200]  185.127.28.100,185.245.100.98,195.201.44.170
+./recon-notes/CORPUS-ALFAVIEW.md:41:- `clone.staging-wordpress.alfaview.com`  [HTTP 303]  82.165.59.152
+./recon-notes/CORPUS-ALFAVIEW.md:46:- `insider-webclient.alfaview.com`  [HTTP 200]  185.127.28.101,185.245.100.52,195.201.44.171
+./recon-notes/CORPUS-ALFAVIEW.md:61:- `clone.staging-wordpress.alfaview.com` (303) on 82.165.59.152 (Strato) — staging WordPress clone.
+./recon-notes/SCOPE-CONFIRMATION.md:66:- `app.alfaview.com`, `apis.alfaview.com`, `assets.alfaview.com`, `webclient.alfaview.com`, `insider-webclient.alfaview.com`
+./recon-notes/SCOPE-CONFIRMATION.md:68:- `beta-app.alfaview.com` (HTTP Basic auth), `beta-apis.alfaview.com`, `beta-webclient.alfaview.com`
+./recon-notes/SCOPE-CONFIRMATION.md:78:- `clone.staging-wordpress.alfaview.com` (303)
+./inventory/alfaview.md:79:- `beta-webclient.alfaview.com`  [HTTP 200]
+./inventory/alfaview.md:82:- `clone.staging-wordpress.alfaview.com`  [HTTP 303]
+./inventory/alfaview.md:89:- `insider-webclient.alfaview.com`  [HTTP 200]
+./inventory/alfaview.md:104:- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+./inventory/alfaview.md:105:- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+./inventory/alfaview.md:120:- NEW `insider-webclient.alfaview.com` and `beta-webclient.alfaview.com` both serve identical SPA shells (4396 bytes, same HTML structure, `/health`=204, `/api|/admin|/debug|/internal|/v2|/docs`=404) — no i
+./inventory/alfaview.md:126:- NEW `insider-webclient.alfaview.com` and `beta-webclient.alfaview.com` both serve identical SPA shells (4396 bytes, same HTML structure, `/health`=204, `/api|/admin|/debug|/internal|/v2|/docs`=404) — no i
+./inventory/alfaview.md:192:- NEW Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview
+./inventory/alfaview.md:221:- CHANGED insider-webclient.alfaview.com / beta-webclient.alfaview.com: SPA shell only (4396B), /health=204, all admin/debug paths 404 — targets exhausted
+./inventory/alfaview.md:239:- CHANGED insider-webclient.alfaview.com / beta-webclient.alfaview.com: SPA shell only (4396B), /health=204, all admin/debug paths 404 — targets exhausted
+./inventory/alfaview.md:246:- NEW Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview
+./knowledge/index.md:18:- 2026-09-03 ACCEPTED MISCONFIG @ insider-webclient.alfaview.com: Unauthenticated web surface (HTTP 200), testable immediately — NEW target.
+./knowledge/index.md:25:- 2026-09-03 REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404.
+./knowledge/index.md:26:- 2026-09-03 REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
+./knowledge/index.md:32:- 2026-09-04 REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404.
+./knowledge/index.md:33:- 2026-09-04 REJECTED MISCONFIG @ beta-webclient.alfaview.com: Same SPA shell as insider, no internal endpoints exposed.
+./knowledge/index.md:47:- 2026-09-04 REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only (4396B), /health=204, all common paths 404. Target exhausted.
+./knowledge/index.md:48:- 2026-09-04 REJECTED MISCONFIG @ beta-webclient.alfaview.com: Identical SPA shell to insider, no internal endpoints. Target exhausted.
+./knowledge/index.md:76:- 2026-09-04 REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404. Target exhausted.
+./knowledge/index.md:84:- 2026-09-04 REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404. Target exhausted.
+[0m
+[0m→ [0mRead scope.yml
+[0m
+[0m$ [0mprobe() { code=$(curl -s -k -o /dev/null -w '%{http_code} %{redirect_url}' -m 8 -A 'Mozilla/5.0 (X11; Linux x86_64) research-scan' "$1" 2>/dev/null); echo "$1 -> $code"; sleep 1; }
+probe "https://clone.staging-wordpress.alfaview.com/";
+probe "https://clone.staging-wordpress.alfaview.com/wp-login.php";
+probe "https://clone.staging-wordpress.alfaview.com/wp-json/";
+probe "https://clone.staging-wordpress.alfaview.com/wp-content/uploads/";
+probe "https://clone.staging-wordpress.alfaview.com/wp-config.php.bak";
+probe "https://clone.staging-wordpress.alfaview.com/wp-config.bak";
+probe "https://plausible.alfaview.com/api/health";
+probe "https://plausible.alfaview.com/login";
+probe "https://webclient.alfaview.com/health";
+https://clone.staging-wordpress.alfaview.com/ -> 303 https://clone.staging-wordpress.alfaview.com:443/login.php
+https://clone.staging-wordpress.alfaview.com/wp-login.php -> 404 
+https://clone.staging-wordpress.alfaview.com/wp-json/ -> 404 
+https://clone.staging-wordpress.alfaview.com/wp-content/uploads/ -> 404 
+https://clone.staging-wordpress.alfaview.com/wp-config.php.bak -> 404 
+https://clone.staging-wordpress.alfaview.com/wp-config.bak -> 404 
+https://plausible.alfaview.com/api/health -> 404 
+https://plausible.alfaview.com/login -> 404 
+https://webclient.alfaview.com/health -> 204
+[0m
+[0m$ [0mprobe2() { out=$(curl -s -k -m 8 -D - -o /tmp/resp_body -A 'Mozilla/5.0 (X11; Linux x86_64) research-scan' "$1" 2>/dev/null); ct=$(grep -i '^content-type:' /tmp/resp_body | tr -d '\r'); sv=$(grep -i '^server:' /tmp/resp_body | tr -d '\r'); code=$(printf '%s' "$out" | head -1 | tr -d '\r'); echo "$1 -> $code $ct | $sv"; sleep 1; }
+probe2 "https://clone.staging-wordpress.alfaview.com/login.php";
+probe2 "https://clone.staging-wordpress.alfaview.com/index.php";
+probe2 "https://plausible.alfaview.com/";
+probe2 "https://webclient.alfaview.com/";
+https://clone.staging-wordpress.alfaview.com/login.php -> HTTP/2 303   | 
+https://clone.staging-wordpress.alfaview.com/index.php -> HTTP/2 303   | 
+https://plausible.alfaview.com/ -> HTTP/2 204   | 
+https://webclient.alfaview.com/ -> HTTP/2 200   |
+[0m
+[0m$ [0mr() { loc=$(curl -s -k -o /dev/null -D - -m 8 -A 'Mozilla/5.0 research-scan' "$1" 2>/dev/null | grep -i '^location:' | tr -d '\r'); echo "$1 LOC=$loc"; sleep 1; }
+r "https://clone.staging-wordpress.alfaview.com/";
+r "https://clone.staging-wordpress.alfaview.com/login.php";
+r "https://clone.staging-wordpress.alfaview.com/index.php";
+curl -s -k -L -m 10 -A 'Mozilla/5.0 research-scan' -w '\nFINAL:%{http_code} URL:%{url_effective}\n' -o /tmp/wp_final -D /tmp/wp_hdr "https://clone.staging-wordpress.alfaview.com/" 2>/dev/null; grep -i '^location:\|^server:\|^content-type:\|^x-powered' /tmp/wp_hdr | tr -d '\r'; ls -la /tmp/wp_final; head -c 400 /tmp/wp_final
+https://clone.staging-wordpress.alfaview.com/ LOC=location: https://clone.staging-wordpress.alfaview.com:443/login.php
+https://clone.staging-wordpress.alfaview.com/login.php LOC=location: https://clone.staging-wordpress.alfaview.com:443/login_up.php
+https://clone.staging-wordpress.alfaview.com/index.php LOC=location: https://clone.staging-wordpress.alfaview.com:443/login.php?success_redirect_url=%2Findex.php
+
+FINAL:200 URL:https://clone.staging-wordpress.alfaview.com:443/login_up.php
+server: nginx
+content-type: text/html; charset=UTF-8
+location: https://clone.staging-wordpress.alfaview.com:443/login.php
+server: nginx
+content-type: text/html; charset=utf-8
+location: https://clone.staging-wordpress.alfaview.com:443/login_up.php
+server: nginx
+content-type: text/html; charset=utf-8
+-rw-r--r-- 1 runner runner 108723 Sep  6 00:13 /tmp/wp_final
+<!DOCTYPE html><html lang="en" dir="ltr" class="sid-plesk" data-theme="contrast">
+<head>
+    <meta charset="utf-8">    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="SKYPE_TOOLBAR" content="SKYPE_TOOLBAR_PARSER_COMPATIBLE">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="forgery_protection_token" id="forgery_protection_token" content="fc159
+[0m
+[0m$ [0mgetent hosts omega-lectures.com | head -2; curl -s -k -o /dev/null -w 'omega-lectures.com -> %{http_code} (ip %{remote_ip}, server %header{server})\n' -m 8 -A 'Mozilla/5.0 research-scan' https://omega-lectures.com/ 2>/dev/null; sleep 1; curl -s -k -m 8 -A 'Mozilla/5.0 research-scan' -o /dev/null -w 'sso /api/status -> %{http_code}\n' https://sso.alfaview.com/api/status 2>/dev/null
+2001:8d8:100f:f000::266 omega-lectures.com
+omega-lectures.com -> 200 (ip 217.160.0.36, server Apache)
+sso /api/status -> 200
+[0m
+STEP 1 — DELTA
+[REJECTED] clone.staging-wordpress.alfaview.com: not WordPress — Plesk panel (`/`→303→`login.php`→`login_up.php`, HTML `sid-plesk`); public login panel, rejected class. New host, now closed.
+[REJECTED] plausible.alfaview.com: bare 204 health responder only — `/api/health` and `/login` both 404; no Plausible web/API surface exposed. New host, no surface.
+[REJECTED] webclient.alfaview.com: identical insider-family SPA shell (200, `/health`=204) — same exhausted pattern as insider/beta-webclient.
+[ACCEPTED] sso.alfaview.com/api/status → 200 `{"status":"Ok"}` re-confirmed (FusionAuth live, unauth).
+[ACCEPTED] omega-lectures.com (CSP frame-ancestors trust on app): live 200 on IONOS/Apache — third-party trust entry points to a live host, not dangling; clickjacking-without-exploit is out of scope, so no chain.
+NO_DELTA in high-value surface: all 55 inventory hosts plus the three session-discovered hosts (webclient, staging-webclient=Basic, plausible) now resolve to dead ends or gates.
+
+STEP 2 — PRIORITIZE
+[PRIO] app.alfaview.com/graphql,7.45,a:7 b:9 t:9(anonymous resolver leak+guest ops) g:6 c:2 f:10
+[PRIO] sso.alfaview.com,6.90,a:7 b:9 t:9(FusionAuth/OIDC) g:5 c:2 f:6
+[PRIO] apis.alfaview.com,6.80,a:9 b:9 t:8(OpenAPI+UUID paths) g:2 c:2 f:6
+[PRIO] staging-usercontent.alfaview.com,6.65,a:6 b:6 t:7(Go file-service) g:8 c:4 f:10
+
+STEP 3 — HYPOTHESES
+[HYP] Anonymous GraphQL admin resolvers leak scoped/global config after schema leak in public JS bundle
+class: MISCONFIG
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: Full admin schema is in public bundles (1.09MB); resolver auth is inconsistent — recorded observations show `listIdentityProviders` returns data without a token and `listComponents` errors 500 anonymously, while other resolvers require auth. Unauth reachability is already proven; sensitivity of the returned IdP fields (entityId, endpoints, signing certs, per-company SSO setup) is unverified.
+evidence_needed: anonymous POST of `{listIdentityProviders{...}}` / `{listComponents{...}}` returning non-empty IdP/component config vs UNAUTHENTICATED; determine company-scoping of returned rows.
+verify_steps: POST app.alfaview.com/graphql `{"query":"{listIdentityProviders{id name issuer settings}}"}` no token → observe data (leak) vs null vs UNAUTHENTICATED; repeat for `{listComponents{name}}`; diff field sets one-by-one to map the anonymous-readable slice.
+impact: unauthenticated disclosure of SSO/IdP configuration (entity metadata, possibly certs/endpoints) and internal component topology; lateral recon for OAuth/SSO impersonation chains; LOW-MEDIUM unless certs/keys ride along.
+testability: PASSIVE (POST query required, no token, no data write)
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI confirms token-authed UUID path params (DELETE /v2/users/{id}, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, GET /v2/rooms/{roomId}/passcode); opaque company-scoped bearer; cross-tenant authz unverified. Two self-owned free companies would prove enforcement without touching customer data.
+evidence_needed: tenant-A token returns 200/204 for tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password {"username","password"} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: AUTH_HELPED
+[HYP] Staging file-upload service may accept uploads without signing on staging-vs-prod parity
+class: MISCONFIG
+asset: staging-usercontent.alfaview.com/v1/files/upload
+confidence: 42
+reasoning: Desktop artifact hardcodes staging upload endpoint; host live on 3 IPs; strict Go routing (all GET/OPTIONS 404). Upload is POST-only with presumed signed-URL flow; a staging/prod authz diff would prove exposure; unprovable passively.
+evidence_needed: POST /v1/files/upload/ dummy multipart accepted on staging while prod 401/400.
+verify_steps: (AUTH-limited) POST multipart to staging only, compare body/status vs prod; if 2xx, read returned object URL back via GET for CDN readback.
+impact: arbitrary file write into staging object storage (stored-content abuse); MEDIUM.
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE
+[PARKED] OAuth redirect_uri bypass (50): client_id is server-side (three artifacts carry zero OAuth config); no passive harvest path remains. Blocked on HUMAN desktop-login webview HAR.
+[PARKED] Device-flow abuse (40): needs server-side client_id + phishing precondition + POST-only surface.
+[PARKED] JWT alg-confusion: REJECTED — opaque/base64 tokens; avenue closed.
+[PARKED] Binary client_id harvest: REFUTED (.deb/APK/alfacheck all zero OAuth config).
+[FINAL] 1. Anonymous GraphQL resolver-leak — 60. Only immediately-testable high-value lead; unauth reachability already recorded, sensitivity unverified.
+[FINAL] 2. Cross-tenant IDOR — 80. Highest impact; needs HUMAN signup of 2 self-owned free companies.
+[FINAL] 3. Guest-authz lifecycle/cross-tenant splice — 55. Needs own tenant guest triple (HUMAN). Folded under signup gate.
+[FINAL] 4. staging-usercontent upload authz — 42. POST parity diff; needs account.
+
+STEP 5 — NEXT ACTION
+[NEXT] PROBE: POST `app.alfaview.com/graphql` (no token, content-type application/json, body `{"query":"{listIdentityProviders{id name settings}}"}`) then diff against `{listComponents{name}}` — map the anonymous-readable field slice; if IdP metadata (issuer/entityId/signing cert) returns non-null, escalate to a chain on FusionAuth SSO impersonation. Standing unlock unchanged: HUMAN self-service signup of two throwaway free companies to run IDOR rank-1 (`GET /v2/rooms/{victimRoomId}/passcode` 403-vs-200 first) and guest-splice rank-3.
+
+STEP 6 — LEARNING
+[LEARN] REJECTED MISCONFIG @ clone.staging-wordpress.alfaview.com: Plesk panel — /→303→login.php→login_up.php, `sid-plesk` HTML. Public login panel, out of scope. Target closed.
+[LEARN] REJECTED MISCONFIG @ plausible.alfaview.com: Bare 204 health responder; /api/health and /login 404 — no Plausible API or web surface. Target closed.
+[LEARN] REJECTED MISCONFIG @ webclient.alfaview.com: 200/4396B insider-family SPA, /health=204 — identical to exhausted insider/beta-webclient shells. Target closed.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: CSP frame-ancestors allows live third-party omega-lectures.com (IONOS/Apache 200) — trust entry is to an active partner host, not dangling; no clickjacking chain in scope.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: listIdentityProviders returns data anonymously while other resolvers 401/500 — resolver auth inconsistent; anonymous field-slice still unmapped.
+
+STEP 7 — RISK
+[RISK] alfaview: 48/100 — unchanged, no live bug proven. This session closed the final unprobed inventory stragglers (clone.staging-wordpress=Plesk panel, plausible=204 shell, webclient=insider SPA) and confirmed the CSP third-party trust is live, not dangling. Every host now resolves to an auth gate, a rejected-class surface, or a dead end. Remaining upside: one immediately-testable anonymous GraphQL leak (60) and three HUMAN/AUTH-gated chains (IDOR 80, guest-splice 55, upload parity 42).
