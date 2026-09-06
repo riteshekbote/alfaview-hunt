@@ -1,14 +1,14 @@
-## 2026-09-06 08:54:52 UTC [target] (model nemotron3)
-[PRIO] test.alfaview.com,7.8,attack_surface=8,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=7,freshness=9
-[PRIO] apis.alfaview.com,7.5,attack_surface=9,business_value=10,tech_exposure=8,gate_ease=2,cloud_surface=8,freshness=7
-[PRIO] beta-ionoscloud-21-* fleet (6 unprobed),6.5,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=8,freshness=8
-[PRIO] sso.alfaview.com,6.2,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=5,cloud_surface=6,freshness=9
-[PRIO] alfaview.com,5.5,attack_surface=6,business_value=6,tech_exposure=5,gate_ease=10,cloud_surface=6,freshness=8
-[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+## 2026-09-06 12:28:44 UTC [target] (model nemotron3)
+[PRIO] sso.alfaview.com,8.1,attack_surface=9,business_value=9,tech_exposure=8,gate_ease=10,cloud_surface=7,freshness=9
+[PRIO] app.alfaview.com/graphql,7.9,attack_surface=9,business_value=9,tech_exposure=9,gate_ease=10,cloud_surface=6,freshness=9
+[PRIO] test.alfaview.com,7.3,attack_surface=8,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=7,freshness=9
+[PRIO] apis.alfaview.com,7.1,attack_surface=9,business_value=10,tech_exposure=8,gate_ease=2,cloud_surface=8,freshness=7
+[PRIO] beta-ionoscloud-21-* fleet (6 unprobed),6.2,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=8,freshness=8
+[HYP] OAuth redirect_uri validation bypass via client_id discovered from app.alfaview.com
 class: OATH
 asset: sso.alfaview.com
 confidence: 75
-reasoning: FusionAuth 1.63.0 exposes OIDC discovery with authorization_endpoint=https://sso.alfaview.com/oauth2/authorize. Issuer=acme.com (misconfiguration vs alfaview.com). Implicit flow enabled. redirect_uri allowlist validation and state parameter enforcement untested. app.alfaview.com is the known client but client_id not yet discovered. /oauth2/authorize enforces client_id registration (returns invalid_client_id for unregistered clients).
+reasoning: FusionAuth 1.63.0 OIDC discovery exposes authorization_endpoint=https://sso.alfaview.com/oauth2/authorize with issuer=acme.com (misconfiguration), implicit flow enabled, HS256 in supported algs but RSA-only JWKS. /oauth2/authorize enforces client_id registration (returns invalid_client_id for unregistered). app.alfaview.com is primary SPA client but client_id not yet discovered in public bundles. redirect_uri allowlist validation and state parameter enforcement untested.
 evidence_needed: Valid client_id for app.alfaview.com; redirect_uri acceptance of external domains (evil.com, localhost); state parameter optional vs required; PKCE enforcement behavior
 verify_steps: GET https://app.alfaview.com/ → monitor network for OAuth config API call (client_id, authorization_endpoint, redirect_uri); GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location header; repeat without state parameter; test PKCE challenge_method=S256
 impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
@@ -17,7 +17,7 @@ testability: AUTH_HELPED
 class: AUTH
 asset: app.alfaview.com/graphql
 confidence: 85
-reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) are reachable unauthenticated (return BAD_USER_INPUT not UNAUTHENTICATED). REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 4-field combo (companyId+roomId+accessKey+displayName). GraphQL path omits accessKey entirely — divergent auth logic. Full admin schema leaked in JS bundle confirms mutation signatures.
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT not UNAUTHENTICATED). REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 4-field combo (companyId+roomId+accessKey+displayName). GraphQL path omits accessKey entirely — divergent auth logic. Full admin schema leaked in JS bundle confirms mutation signatures.
 evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token returned without accessKey; compare token scope/claims vs REST guest token
 verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){token,errors}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and decode (if JWT) or test against APIs
 impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
@@ -31,9 +31,10 @@ evidence_needed: Binary hash verification mechanism (subresource integrity, chec
 verify_steps: GET https://test.alfaview.com/ → extract all hrefs; download each binary → check for embedded signatures/certificates (strings, objdump); probe for directory listing or version enumeration (470078, 470080, 470000); check response headers for CSP, SRI
 impact: Supply chain compromise → RCE on client machines (HIGH)
 testability: PASSIVE
-[FINAL] 1. OAuth redirect_uri validation bypass on sso.alfaview.com — RANK 1. Confidence 75, AUTH_HELPED, CRITICAL impact. Need valid client_id discoverable via app.alfaview.com network traffic.
-[FINAL] 2. Unauthenticated guest token issuance via GraphQL missing accessKey — RANK 2. Confidence 85, AUTH_HELPED, HIGH impact. Divergent auth logic between REST (4-field+accessKey) and GraphQL (3-field no accessKey).
-[FINAL] 3. Unauthenticated binary distribution on test.alfaview.com — RANK 3. Confidence 65, PASSIVE, HIGH impact. Fully verifiable now without auth.
+[PARKED] Cross-tenant IDOR via UUID path params on apis.alfaview.com: Requires authenticated account (gate_ease=2) — cannot verify without valid credentials; parked until account obtained.
+[FINAL] 1. OAuth redirect_uri validation bypass via client_id discovered from app.alfaview.com — RANK 1. Confidence 75, AUTH_HELPED, CRITICAL impact.
+[FINAL] 2. Unauthenticated guest token issuance via GraphQL missing accessKey — RANK 2. Confidence 85, AUTH_HELPED, HIGH impact.
+[FINAL] 3. Unauthenticated binary distribution on test.alfaview.com — RANK 3. Confidence 65, PASSIVE, HIGH impact.
 [NEXT] PROBE: GET `https://app.alfaview.com/` with browser DevTools / HAR capture → search network requests for OAuth config endpoint (client_id, authorization_endpoint, redirect_uri) → use discovered client_id in `GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123` → observe 302 Location header and state/PKCE handling. Rate: 1 rps.
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in JWKS.
 [LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).
