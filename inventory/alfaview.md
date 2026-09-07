@@ -295,3 +295,12 @@ www.alfaview.com
 - CHANGED sso.alfaview.com: OIDC discovery unchanged — issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512 in supported algs but JWKS contains ONLY RSA keys (7 RS256 keys, zero symmetric)
 - CHANGED test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible
 - CHANGED apis.alfaview.com: Access tokens confirmed opaque/base64 (distinct 401 "No base64 encoded access token was provided") — JWT alg-confusion against API gateway closed
+
+## 2026-09-07 01:08:39 UTC
+- NEW sso.alfaview.com/oauth2/authorize now returns HTTP 404 on root path (was 200 len=0) — endpoint behavior changed, may indicate deployment update
+- NEW apis.alfaview.com/v2/users/{foreign-uuid} returns HTTP 405 (Method Not Allowed) — DELETE method not allowed on user endpoint without auth; PATCH /v2/rooms/{roomId}/permissions/{userId} returns 401
+- CHANGED sso.alfaview.com OIDC discovery unchanged — issuer=acme.com, implicit flow enabled, HS256/384/512 in supported algs but JWKS contains ONLY 7 RSA keys (zero symmetric)
+- CHANGED app.alfaview.com/graphql guestAuthenticate/guestJoin reconfirmed anonymous-reachable (returns GRAPHQL_VALIDATION_FAILED "Did you mean `role`?" not UNAUTHENTICATED) — accessKey-less GraphQL guest path 
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)
+- CHANGED apis.alfaview.com access tokens confirmed opaque/base64 (distinct 401 "No base64 encoded access token was provided") — JWT alg-confusion against API gateway closed
+- CHANGED test.alfaview.com unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible

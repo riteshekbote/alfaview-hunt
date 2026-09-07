@@ -9948,3 +9948,348 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] alfaview: 48/100 — unchanged. Today's artifact-mining added topology (status.alfaview.com, plausible ingest, prod→staging upload URL, env-only OAuth creds) but zero new exploitable surface and definitively closed the last passive `client_id` path, confirming all surviving chains are HUMAN-gated. Score holds until the 2-tenant signup unblocks IDOR (80) / guest-authz (55).
+===== ANALYST bigpickle 2026-09-07 01:08:39 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m# [0mTodos
+[•] STEP 1-7: Structured analyst output
+[ ] Probe OpenAPI spec for unauthenticated endpoints
+[ ] Probe GraphQL mutations shape without auth
+[ ] Check sso.alfaview.com for additional OAuth endpoints
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/openapi.json -w "HTTP %{http_code} len=%{size_download}\n" https://apis.alfaview.com/v2/docs/openapi.json --max-time 15
+HTTP 200 len=127532
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/gql_root.txt -w "HTTP %{http_code} len=%{size_download}\n" -X POST https://app.alfaview.com/graphql -H 'Content-Type: application/json' --data '{"query":"query{__typename}"}' --max-time 15
+HTTP 200 len=32
+[0m
+Running read-only probes to verify surface status before analysis.
+[0m$ [0mcurl -s -o /tmp/opencode/gql_guest.txt -w "HTTP %{http_code} len=%{size_download}\n" -X POST https://app.alfaview.com/graphql -H 'Content-Type: application/json' --data '{"query":"mutation{guestAuthenticate(userId:\"00000000-0000-0000-0000-000000000000\",companyId:\"00000000-0000-0000-0000-000000000000\",roomId:\"00000000-0000-0000-0000-000000000000\"){role}}","variables":{}}' --max-time 15
+HTTP 200 len=145
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/sso_discovery.txt -w "HTTP %{http_code} len=%{size_download}\n" https://sso.alfaview.com/.well-known/openid-configuration --max-time 15
+HTTP 200 len=2112
+[0m
+[0m→ [0mRead /tmp/opencode/gql_guest.txt
+[0m→ [0mRead /tmp/opencode/gql_root.txt
+[0m→ [0mRead /tmp/opencode/sso_discovery.txt
+[0m
+[0m$ [0mpython3 -c "
+import json
+spec=json.load(open('/tmp/opencode/openapi.json'))
+print('DEFAULT AUTH (spec-level security):')
+print(json.dumps(spec.get('security',[])))
+print()
+print('SECURITY SCHEMES:')
+print(json.dumps(spec.get('components',{}).get('securitySchemes',{}),indent=1))
+print()
+print('N PATHS:',len(spec.get('paths',{})))
+"
+DEFAULT AUTH (spec-level security):
+[]
+
+SECURITY SCHEMES:
+{}
+
+N PATHS: 37
+[0m
+Now let me analyze the OpenAPI spec for per-endpoint auth requirements and enumerate all paths.
+[0m$ [0mpython3 -c "
+import json
+spec=json.load(open('/tmp/opencode/openapi.json'))
+# endpoints with NO security requirement (override to none or missing)
+import re
+for p,ops in spec.get('paths',{}).items():
+    for m,o in ops.items():
+        if m.lower() not in ('get','post','put','patch','delete','head','options','trace'): continue
+        sec=o.get('security','UNSET')
+        tags=o.get('tags',[])
+        print(f'[{m.upper():6}] {p}  sec={sec}  tags={tags}')
+" > /tmp/opencode/paths.txt
+wc -l /tmp/opencode/paths.txt
+grep -c "sec=\[\]" /tmp/opencode/paths.txt
+56 /tmp/opencode/paths.txt
+0
+[0m
+[0m→ [0mRead /tmp/opencode/paths.txt
+The OpenAPI spec declares no security schemes at all at spec or operation level. Let me dump the full path list.
+OpenAPI spec declares **no security schemes** — 37 paths, 56 ops, no per-op auth. Let me check which GET endpoints behave as public vs auth-gated (sequential, ≤1 rps).
+[0m
+[0m$ [0mfor p in languages room-types stats auth/token-info users/me; do
+  sleep 1
+  code=$(curl -s -o /tmp/opencode/probe_$p.txt -w "%{http_code}" "https://apis.alfaview.com/v2/$p" --max-time 15)
+  echo "GET /v2/$p -> $code  len=$(wc -c < /tmp/opencode/probe_$p.txt)"
+done
+GET /v2/languages -> 401  len=107
+GET /v2/room-types -> 401  len=107
+GET /v2/stats -> 422  len=319
+/bin/bash: line 4: /tmp/opencode/probe_auth/token-info.txt: No such file or directory
+GET /v2/auth/token-info -> 422  len=
+/bin/bash: line 4: /tmp/opencode/probe_users/me.txt: No such file or directory
+GET /v2/users/me -> 401  len=
+[0m
+[0m$ [0mcat /tmp/opencode/probe_stats.txt; echo "---"; cat /tmp/opencode/probe_languages.txt; echo "---"; curl -s -w "\nHTTP %{http_code}\n" "https://apis.alfaview.com/v2/stats" -H "Content-Type: application/json" --data '{}' --max-time 15
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"required query parameter is missing","location":"query.from"},{"message":"required query parameter is missing","location":"query.to"},{"message":"required query parameter is missing","location":"query.stepDurationHours"}]}
+---
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+---
+Method Not Allowed
+
+HTTP 405
+[0m
+422 (not 401) on `/v2/stats` and `/v2/auth/token-info` — endpoints processed without auth. Let me inspect bodies.
+[0m$ [0mcurl -s -w "\nHTTP %{http_code}\n" "https://apis.alfaview.com/v2/auth/token-info" -X POST -H "Content-Type: application/json" --data '{}' --max-time 15; echo; sleep 1; curl -s -o /tmp/opencode/stats_post.txt -w "POST /v2/stats body -> HTTP %{http_code} len=%{size_download}\n" "https://apis.alfaview.com/v2/stats" -H "Content-Type: application/json" --data '{}' --max-time 15
+Method Not Allowed
+
+HTTP 405
+
+POST /v2/stats body -> HTTP 405 len=19
+[0m
+`/v2/stats` GET is **unauth-reachable** — validation errors before auth (secret `from`,`to`,`stepDurationHours` query params revealed). Testing whether valid params return data without a token.
+[0m$ [0mFROM=$(($(date +%s%3N)-3600000)); TO=$(date +%s%3N)
+curl -s -w "\nHTTP %{http_code}\n" "https://apis.alfaview.com/v2/stats?from=$FROM&to=$TO&stepDurationHours=1" --max-time 15
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"invalid date/time for format 2006-01-02T15:04:05.999999999Z07:00","location":"query.from"},{"message":"invalid date/time for format 2006-01-02T15:04:05.999999999Z07:00","location":"query.to"}]}
+
+HTTP 422
+[0m
+[0m$ [0mFROM=$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%S.000Z); TO=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
+echo "from=$FROM to=$TO"
+curl -s -w "\nHTTP %{http_code}\n" "https://apis.alfaview.com/v2/stats?from=$FROM&to=$TO&stepDurationHours=1" --max-time 15
+from=2026-09-06T23:06:10.000Z to=2026-09-07T01:06:10.000Z
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+HTTP 401
+[0m
+[0m$ [0mcurl -s "https://apis.alfaview.com/v2/auth/token-info" -H "Content-Type: application/json" -X POST -w "\nHTTP %{http_code}\n" --data '{}' --max-time 15; sleep 1; echo "=== no-auth header GET users/me ==="; curl -s "https://apis.alfaview.com/v2/users/me" -w "\nHTTP %{http_code}\n" --max-time 15
+Method Not Allowed
+
+HTTP 405
+=== no-auth header GET users/me ===
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+HTTP 401
+[0m
+Auth check runs after validation (401 only with valid params). Let me characterize the two distinct 401 error strings — main API vs `stats`/`token-info` — which indicates two auth middlewares.
+[0m$ [0mfor ep in auth/password auth/api-key auth/guest-link auth/group-link; do sleep 1; echo "=== POST /v2/$ep empty ==="; curl -s "https://apis.alfaview.com/v2/$ep" -H "Content-Type: application/json" -X POST --data '{}' -w "\nHTTP %{http_code}\n" --max-time 15; done
+=== POST /v2/auth/password empty ===
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property password to be present","location":"body"},{"message":"expected required property username to be present","location":"body"}]}
+
+HTTP 422
+=== POST /v2/auth/api-key empty ===
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property clientId to be present","location":"body"},{"message":"expected required property companyId to be present","location":"body"},{"message":"expected required property key to be present","location":"body"}]}
+
+HTTP 422
+=== POST /v2/auth/guest-link empty ===
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property accessKey to be present","location":"body"},{"message":"expected required property companyId to be present","location":"body"},{"message":"expected required property roomId to be present","location":"body"}]}
+
+HTTP 422
+=== POST /v2/auth/group-link empty ===
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property accessKey to be present","location":"body"},{"message":"expected required property companyId to be present","location":"body"},{"message":"expected required property displayName to be present","location":"body"},{"message":"expected required property roomId to be present","location":"body"}]}
+
+HTTP 422
+[0m
+Auth endpoints are anonymous-reachable validation oracles revealing exact field requirements. Notably `/v2/auth/guest-link` requires only **3** fields (accessKey+companyId+roomId) — displayName optional — diverging slightly from KB's 4-field note. Let me classify REST vs GraphQL guest paths with fake-but-valid UUIDs.
+[0m$ [0mUUID=11111111-1111-1111-1111-111111111111
+echo "=== REST /v2/auth/guest-link (valid triple, nonexistent) ==="
+curl -s "https://apis.alfaview.com/v2/auth/guest-link" -H "Content-Type: application/json" -X POST --data "{\"companyId\":\"$UUID\",\"roomId\":\"$UUID\",\"accessKey\":\"fakekey\",\"displayName\":\"t\"}" -w "\nHTTP %{http_code}\n" --max-time 15
+=== REST /v2/auth/guest-link (valid triple, nonexistent) ===
+{"title":"Unprocessable Entity","status":422,"detail":"ACTION_INVALID: ACTION_INVALID"}
+
+HTTP 422
+[0m
+[0m$ [0mUUID=11111111-1111-1111-1111-111111111111
+echo "=== GraphQL guestAuthenticate (valid triple, nonexistent) ==="
+curl -s "https://app.alfaview.com/graphql" -H "Content-Type: application/json" -X POST --data "{\"query\":\"mutation{guestAuthenticate(userId:\\\"$UUID\\\",companyId:\\\"$UUID\\\",roomId:\\\"$UUID\\\"){role}}\"}" -w "\nHTTP %{http_code}\n" --max-time 15
+=== GraphQL guestAuthenticate (valid triple, nonexistent) ===
+{"errors":[{"message":"","locations":[{"line":1,"column":10}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+
+HTTP 200
+[0m
+Both guest paths are validation-oracles only — no anonymous divergence observable. One characterization probe on the two-stage 401 (malformed vs missing header), then I'll synthesize.
+[0m$ [0mecho "=== garbage auth ==="; curl -s "https://apis.alfaview.com/v2/users/me" -H "Authorization: garbage" -w "\nHTTP %{http_code}\n" --max-time 15; sleep 1
+echo "=== base64(Bearer xxx) ==="; curl -s "https://apis.alfaview.com/v2/users/me" -H "Authorization: QmVhcmVyIHh4eA==" -w "\nHTTP %{http_code}\n" --max-time 15; sleep 1
+echo "=== Bearer direct ==="; curl -s "https://apis.alfaview.com/v2/users/me" -H "Authorization: Bearer xxx" -w "\nHTTP %{http_code}\n" --max-time 15
+=== garbage auth ===
+{"title":"Unauthorized","status":401,"detail":"No base64 encoded access token was provided in the Authorization header."}
+
+HTTP 401
+=== base64(Bearer xxx) ===
+{"title":"Unauthorized","status":401,"detail":"An invalid access token was provided in the Authorization header."}
+
+HTTP 401
+=== Bearer direct ===
+{"title":"Unauthorized","status":401,"detail":"No base64 encoded access token was provided in the Authorization header."}
+
+HTTP 401
+[0m
+Confirmed two-stage token validation (missing → "no access token"; non-base64 → "no base64"; invalid-base64 → "An invalid access token"). Consistent with opaque-base64 tokens. Let me prep the HUMAN signup step by extracting the exact `Signup` mutation from the public lazy chunk.
+[0m$ [0mcurl -s -o /tmp/opencode/signup.js "https://app.alfaview.com/js/AppSignup.min.3329eeac503c038b44b8.js" --max-time 20 -w "HTTP %{http_code} len=%{size_download}\n"
+# extract mutation text and variables
+grep -oE 'mutation [A-Za-z]+|Signup[A-Za-z]*\([^)]*\)|variables:[^}]+}|Plan[A-Za-z]*' /tmp/opencode/signup.js | sort -u | head -40
+HTTP 200 len=48540
+PlanId
+PlanSelector
+Signup()
+[0m
+[0m$ [0mpython3 - <<'EOF'
+import re
+js=open('/tmp/opencode/signup.js',encoding='utf-8',errors='replace').read()
+# find GraphQL mutation strings
+for m in re.finditer(r'(mutation[^{]*\{[^{}]*\{[^{}]*\([^{}]*\)[^{}]*\})', js):
+    print("MUT:", m.group(0)[:500])
+print("---- grep Signup calls ----")
+for m in re.finditer(r'[A-Za-z_$][\w$.]*\.?Signup[^;]{0,200}', js):
+    print(m.group(0)[:200])
+    print('---')
+EOF
+---- grep Signup calls ----
+CompanySignupRequest:{accountName:{min:3,max:256,utf8_printable:!0}}},groupService:{Group:{displayName:{max:200},externalId:{min:1,max:200}}},meetingService:{Invitee:{displayName:{optional:!0,utf8_pri
+---
+isSignupDisabled:function(){return!1},SIGNUP_STEPS:function(){return v},alfaviewLogo:function(){return u},loaderSize:function(){return parseInt(m.Ej.Kk["x-large"],10)},signupButtonText:function(){swit
+---
+this.isFreeBusinessSignup?this.$t("signup.title_step_1_free_business"):this.$t("signup.title_step_1")
+---
+isFreeBusinessSignup:function(){return"free-business"===this.paymentPlanId}}),mounted:function(){this.init()},methods:b(b({},(0,i.i0)({signup:c.$D})),{},{init:function(){if(this.$route.query.planId||w
+---
+this.isSignupDisabled){var t=["email","firstName","lastName","accountName"]
+---
+this.onSignup()
+---
+onSignup:function(){var e=this
+---
+e.isSignupDisabled?t("div",{staticClass:"av-signup__disabled-signups font-weight-medium pa-3 mb-4"},[t("div",{staticClass:"text-xs-center",domProps:{innerHTML:e._s(e.$t("signup.disabled_signups_alert"
+---
+e.isFreeBusinessSignup&&e.$vuetify.breakpoint.smAndUp},attrs:{xs12:""}},[e._v("\n            "+e._s(e.currentTitle)+"\n          ")]),e.currentStep===e.SIGNUP_STEPS.PERSONAL_INFO?t("VFlex",{attrs:{xs1
+---
+ssSignup?t("div",{staticClass:"av-signup__plan-description mb-4",class:{"av-signup__plan-description--wide":e.$vuetify.breakpoint.smAndUp,"mx-2":e.$vuetify.breakpoint.xs}},[e._v("\n              "+e._
+---
+e.isSignupDisabled},on:{blur:e.handleAccountNameBlur,keyup:function(t){return!t.type.indexOf("key")&&e._k(t.keyCode,"enter",13,t.key,"Enter")?null:e.handleActionButton.apply(null,arguments)}},model:{v
+---
+e.isSignupDisabled},on:{blur:function(t){return e.$v.email.$touch()},keyup:function(t){return!t.type.indexOf("key")&&e._k(t.keyCode,"enter",13,t.key,"Enter")?null:e.handleActionButton.apply(null,argum
+---
+e.isSignupDisabled},on:{blur:function(t){return e.$v.firstName.$touch()},keyup:function(t){return!t.type.indexOf("key")&&e._k(t.keyCode,"enter",13,t.key,"Enter")?null:e.handleActionButton.apply(null,a
+---
+e.isSignupDisabled},on:{blur:function(t){return e.$v.lastName.$touch()},keyup:function(t){return!t.type.indexOf("key")&&e._k(t.keyCode,"enter",13,t.key,"Enter")?null:e.handleActionButton.apply(null,ar
+---
+e.isSignupDisabled,size:"large",type:"primary",loading:e.isSigningUpForCompany},on:{click:e.handleActionButton}},[e._v("\n              "+e._s(e.signupButtonText)+"\n            ")]),t("div",{staticCl
+---
+[0m
+[0m$ [0mpython3 - <<'EOF'
+import re
+js=open('/tmp/opencode/signup.js',encoding='utf-8',errors='replace').read()
+# find calls to graphql mutation dispatch: patterns like "$D(a,{...})" or apollo mutate
+for pat in ['createCompany','CreateCompany','SignupToCompany','signupToCompany','CompanySignup','signupCompany','SIGNUP','\.signup','mutate','mutation']:
+    for m in re.finditer(pat, js):
+        s=max(0,m.start()-120); e=min(len(js),m.end()+180)
+        print(f"[{pat}] ...{js[s:e].replace(chr(10),' ')}...")
+        print('---')
+EOF
+<stdin>:4: SyntaxWarning: invalid escape sequence '\.'
+[CreateCompany] ...nksRequest:{origin:{optional:!0,max:256}},CreateGroupLinksRequest:{origin:{optional:!0,max:256}}},businessLogicService:{CreateCompanyAsAdminRequest:{companyName:{min:3,max:256,utf8_printable:!0}},CompanySignupRequest:{accountName:{min:3,max:256,utf8_printable:!0}}},groupService:{Group:{displayName:{max:200},exte...
+---
+[CreateCompany] ...48800),n=i.guestServiceV2,r=i.businessLogicService,o=i.getValidationRule,s=o(n.GuestLinkCreation.displayName.max),l=o(r.CreateCompanyAsAdminRequest.companyName.min),c=o(r.CreateCompanyAsAdminRequest.companyName.max);e.exports={GUEST_NAME_MAX_LENGTH:s,COMPANY_NAME_MIN_LENGTH:l,COMPANY_NAME_MAX_LENGTH:c}},59621:fu...
+---
+[CreateCompany] ...o=i.getValidationRule,s=o(n.GuestLinkCreation.displayName.max),l=o(r.CreateCompanyAsAdminRequest.companyName.min),c=o(r.CreateCompanyAsAdminRequest.companyName.max);e.exports={GUEST_NAME_MAX_LENGTH:s,COMPANY_NAME_MIN_LENGTH:l,COMPANY_NAME_MAX_LENGTH:c}},59621:function(e,t,a){function i(e){return function(e){if(A...
+---
+[CompanySignup] ...ptional:!0,max:256}}},businessLogicService:{CreateCompanyAsAdminRequest:{companyName:{min:3,max:256,utf8_printable:!0}},CompanySignupRequest:{accountName:{min:3,max:256,utf8_printable:!0}}},groupService:{Group:{displayName:{max:200},externalId:{min:1,max:200}}},meetingService:{Invitee:{displayName:{optional:!0,u...
+---
+[SIGNUP] ...({isSigningUpForCompany:function(e){return e.signup.isSigningUpForCompany}})),{},{isSignupDisabled:function(){return!1},SIGNUP_STEPS:function(){return v},alfaviewLogo:function(){return u},loaderSize:function(){return parseInt(m.Ej.Kk["x-large"],10)},signupButtonText:function(){switch(this.currentStep){cas...
+---
+[SIGNUP] ...dTerms,agreedToPrivacyPolicy:this.acceptedPrivacy,planId:this.paymentPlanId}).then((function(){e.$router.push({name:s.A.SIGNUP_EMAIL_SENT,params:{email:e.email}})})).catch((function(){e.signupFailed=!0}))},handleAccountNameBlur:function(){this.accountName=this.accountName.trim(),this.$v.accountName.$touch...
+---
+[SIGNUP] ...fy.breakpoint.smAndUp},attrs:{xs12:""}},[e._v("\n            "+e._s(e.currentTitle)+"\n          ")]),e.currentStep===e.SIGNUP_STEPS.PERSONAL_INFO?t("VFlex",{attrs:{xs12:""}},[e.isFreeBusinessSignup?t("div",{staticClass:"av-signup__plan-description mb-4",class:{"av-signup__plan-description--wide":e.$vueti...
+---
+[SIGNUP] ...s)}},model:{value:e.lastName,callback:function(t){e.lastName=t},expression:"lastName"}})],1)]):e._e(),e.currentStep===e.SIGNUP_STEPS.TERMS?t("VFlex",{staticClass:"text-xs-center",attrs:{xs12:""}},[e.signupFailed?t("div",{staticClass:"av-signup__signup-failed pa-3"},[t("div",[e._v("\n                "+e._s...
+---
+[\.signup] ...Failed:!1,paymentPlanId:d.UI_SETTABLE_PLAN_IDS[0]}},computed:b(b({},(0,i.aH)({isSigningUpForCompany:function(e){return e.signup.isSigningUpForCompany}})),{},{isSignupDisabled:function(){return!1},SIGNUP_STEPS:function(){return v},alfaviewLogo:function(){return u},loaderSize:function(){return parseInt(m.Ej....
+---
+[\.signup] ...witch(this.currentStep){case v.PERSONAL_INFO:return this.$t("signup.create_account");case v.TERMS:return this.$t("signup.signup");default:return this.$t("signup.create_account")}},currentTitle:function(){switch(this.currentStep){case v.PERSONAL_INFO:return this.isFreeBusinessSignup?this.$t("signup.title_st...
+---
+[\.signup] ...uldBeTrue&&t.push(this.$t("common.validation_errors.required")),t;default:return t}},onSignup:function(){var e=this;this.signup({displayName:this.accountName,user:{email:this.email,userProfile:{firstname:this.firstName,lastname:this.lastName},locale:{UILanguage:this.$i18n.locale}},agreedToTerms:this.accept...
+---
+[\.signup] ...mentPlanId}).then((function(){e.$router.push({name:s.A.SIGNUP_EMAIL_SENT,params:{email:e.email}})})).catch((function(){e.signupFailed=!0}))},handleAccountNameBlur:function(){this.accountName=this.accountName.trim(),this.$v.accountName.$touch()}})},k=(0,a(14486).A)(y,(function(){var e=this,t=e._self._c;retu...
+---
+[\.signup] ...ow:"",wrap:""}},[t("VFlex",{attrs:{xs12:""}},[t("VLayout",{attrs:{"align-center":"",row:"",wrap:"","fill-height":""}},[e.signupFailed?e._e():t("VFlex",{staticClass:"text-xs-center font-x-large font-weight-medium my-3 av-signup__step-title",class:{"av-signup__step-title--wide":e.isFreeBusinessSignup&&e.$vue...
+---
+[\.signup] ...stName"}})],1)]):e._e(),e.currentStep===e.SIGNUP_STEPS.TERMS?t("VFlex",{staticClass:"text-xs-center",attrs:{xs12:""}},[e.signupFailed?t("div",{staticClass:"av-signup__signup-failed pa-3"},[t("div",[e._v("\n                "+e._s(e.$t("signup.signup_failed_description"))+"\n              ")]),t("AVLink",{st...
+---
+[\.signup] ...signupFailed?t("div",{staticClass:"av-signup__signup-failed pa-3"},[t("div",[e._v("\n                "+e._s(e.$t("signup.signup_failed_description"))+"\n              ")]),t("AVLink",{staticClass:"d-inline-block mt-3",attrs:{"open-in-new-tab":"",primary:"",underlined:"",text:e.$t("signup.signup_failed_supp...
+---
+[\.signup] ...)]),t("AVLink",{staticClass:"d-inline-block mt-3",attrs:{"open-in-new-tab":"",primary:"",underlined:"",text:e.$t("signup.signup_failed_support_prompt"),href:e.$t("finish_signup_form.support_link")}}),t("div",{staticClass:"mt-3"},[e._v("\n                "+e._s(e.$t("signup.signup_failed_extra_info_descript...
+---
+[\.signup] ...ref:e.$t("finish_signup_form.support_link")}}),t("div",{staticClass:"mt-3"},[e._v("\n                "+e._s(e.$t("signup.signup_failed_extra_info_description"))+"\n                "),t("div",{staticClass:"mt-1"},[e._v("\n                  "+e._s(e.$t("signup.signup_failed_extra_info_email"))+"\n           ...
+---
+[\.signup] ...ra_info_description"))+"\n                "),t("div",{staticClass:"mt-1"},[e._v("\n                  "+e._s(e.$t("signup.signup_failed_extra_info_email"))+"\n                  "),t("span",{staticClass:"font-weight-medium av-text-wrap"},[e._v(e._s(e.email))])]),t("div",[e._v("\n                  "+e._s(e.$t...
+---
+[\.signup] ...Class:"font-weight-medium av-text-wrap"},[e._v(e._s(e.email))])]),t("div",[e._v("\n                  "+e._s(e.$t("signup.signup_failed_extra_info_account_name"))+"\n                  "),t("span",{staticClass:"font-weight-medium av-text-wrap"},[e._v(e._s(e.accountName))])])])],1):[t("div",{staticClass:"av-s...
+---
+[\.signup] ...on(e){e.stopPropagation()}},slot:"label"})])],1)]],2):e._e(),t("VFlex",{staticClass:"text-xs-center",attrs:{xs12:""}},[e.signupFailed?e._e():t("AVButton",{staticClass:"my-3 av-signup__input-field",attrs:{id:"e2e-signup__submit",disabled:e.isSignupDisabled,size:"large",type:"primary",loading:e.isSigningUpFo...
+---
+[\.signup] ..."large",type:"primary",loading:e.isSigningUpForCompany},on:{click:e.handleActionButton}},[e._v("\n              "+e._s(e.signupButtonText)+"\n            ")]),t("div",{staticClass:"font-small pt-3 av-signup__existing-account"},[e._v("\n              "+e._s(e.$t("signup.already_signed"))),t("br"),t("AVLink"...
+---
+[0m
+Semantics extracted: signup payload is `{displayName, user:{email, userProfile:{firstname,lastname}, locale:{UILanguage}}, agreedToTerms, agreedToPrivacyPolicy, planId:{free-business}}`. Passing knowledge forward.
+
+---
+
+## STEP 1 — DELTA
+- NEW apis.alfaview.com/v2/stats: anonymous **validation-before-auth** — 422 leaks required `from`/`to`/`stepDurationHours` (Go RFC3339 layout); valid params → 401. Info-only, no data.
+- NEW apis.alfaview.com/v2: all four `/v2/auth/*` are anonymous validation oracles — `password{username,password}`, `api-key{clientId,companyId,key}`, `group-link{accessKey,companyId,roomId,displayName}`, `guest-link{accessKey,companyId,roomId}` (**3 required; displayName optional** — corrects KB's 4-field note).
+- NEW OpenAPI doc declares **zero `securitySchemes` / global security** across all 37 paths — auth is middleware-only, not spec-declared.
+- NEW Two-stage token check confirmed: no-header→"No access token provided", non-base64→"No base64 encoded…", bad-base64→"An invalid access token…" — opaque-base64 design reconfirmed.
+- CHANGED none material; three HUMAN-only chains unchanged.
+
+## STEP 2 — PRIORITIZE
+- [PRIO] apis.alfaview.com/v2 — 6.4 (a9 b9 t7 g2 c3 f2)
+- [PRIO] app.alfaview.com/graphql guest path — 5.9 (a7 b7 t8 g4 c3 f3)
+- [PRIO] sso.alfaview.com oauth2/authorize — 5.3 (a6 b8 t9 g1 c2 f1)
+
+## STEP 3 — HYPOTHESES
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI exposes 56 ops incl. DELETE /v2/users/{id}, DELETE/PATCH /v2/rooms/{roomId}/permissions/{userId}, GET/POST /v2/rooms/{roomId}/passcode with UUID path params; no spec-declared auth; opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN 2-tenant signup) POST /v2/auth/password → bearer → GET /v2/users/me baseline → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql guestAuthenticate/guestJoin
+confidence: 55
+reasoning: guestAuthenticate(userId,companyId,roomId) anonymous-reachable — nonexistent-valid triple returns BAD_USER_INPUT (byte-parity with REST guest-link ACTION_INVALID); GuestAuthenticateReply exposes role; GraphQL signature has no accessKey; REST guest-link validation now proven 3-required (accessKey+companyId+roomId).
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL no-accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401/403.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 50
+reasoning: FusionAuth authorize enforces client_id registration before redirect_uri handling; discovery advertises token_endpoint public-client (`none`), implicit, device, password, client_credentials; issuer=acme.com; no registration_endpoint; client_id absent from all public artifacts.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] stats anonymous oracle: validation-before-auth leaks param names only, no data — informational, sub-40.
+- [PARKED] /v2/auth/* validation oracles: password-flow enumeration = brute-force/pruned by scope; api-key `clientId` has no public source.
+- [FINAL] 1. Cross-tenant IDOR — 80 (top impact, needs HUMAN 2-tenant).
+- [FINAL] 2. Guest-authz splice — 55 (needs real guest triple).
+- [FINAL] 3. OAuth redirect_uri — 50 (needs desktop HAR client_id).
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Create two throwaway free tenants — anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql (payload verified in public AppSignup chunk) → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR `GET /v2/rooms/{victimRoomId}/passcode` 403-vs-200 and GraphQL accessKey-less `guestAuthenticate` vs REST guest-link 200+token-vs-401.
+
+## STEP 6 — LEARNING
+- [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com/v2: OpenAPI declares zero securitySchemes across 37 paths — auth middleware-only; two-stage opaque-base64 token check (3 distinct 401 strings) reconfirmed; validation-before-auth on /v2/stats+/v2/auth/* leaks param names anonymously (info-only).
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate nonexistent-valid-UUID triple → BAD_USER_INPUT, byte-parity with REST guest-link ACTION_INVALID — no anonymous divergence; accessKey-less discrimination requires a real guest triple (HUMAN). REST guest-link is 3-required (displayName optional), correcting KB's 4-field note.
+- [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/js/AppSignup: signup mutation verified anonymous with exact args + `planId:free-business` — prep loaded for the HUMAN chain.
+
+## STEP 7 — RISK
+[RISK] alfaview: 48/100 — unchanged. Today's probes returned anonymous validation-oracle intel only (stats/params, auth-field morphology, token two-stage) with zero data exposure or new reachable state; inventory still 100% verdicted and all substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 50).

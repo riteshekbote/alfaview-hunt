@@ -185,3 +185,12 @@
 - 2026-09-06 REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
 - 2026-09-06 REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` `UNAUTHENTICATED`; no PII/config reachable anonymously.
 - 2026-09-06 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
+- 2026-09-07 ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces `client_id` registration before `redirect_uri` handling (`invalid_client`, reason `invalid_client_id`) — redirect_uri testing requires registered `client_id`.
+- 2026-09-07 ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256 listed but only RSA keys in JWKS.
+- 2026-09-07 ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated).
+- 2026-09-07 ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+- 2026-09-07 ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in GraphQL guest signature — diverges from REST 4-field `accessKey` combo.
+- 2026-09-07 REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- 2026-09-07 REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- 2026-09-07 REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` `UNAUTHENTICATED`; no PII/config reachable anonymously.
+- 2026-09-07 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
