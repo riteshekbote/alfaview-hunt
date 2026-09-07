@@ -318,3 +318,8 @@ www.alfaview.com
 - CHANGED sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 (was 404 on root path) — endpoint behavior changed, may indicate deployment update; OIDC discovery unchanged (issuer=acme.com, implicit flow, HS
 - CHANGED apis.alfaview.com/v2/users/{foreign-uuid}: Returns HTTP 405 (Method Not Allowed) — DELETE not allowed without auth; PATCH /v2/rooms/{roomId}/permissions/{userId} returns 401.
 - CHANGED Inventory: 100% probed — all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout).
+
+## 2026-09-07 18:00:22 UTC
+- CHANGED sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 (was 404 on root path) — endpoint behavior changed, may indicate deployment update; OIDC discovery unchanged (issuer=acme.com, implicit flow ena
+- CHANGED apis.alfaview.com/v2/users/{foreign-uuid}: Returns HTTP 405 (Method Not Allowed) — DELETE not allowed without auth; PATCH /v2/rooms/{roomId}/permissions/{userId} returns 401.
+- CHANGED Inventory: 100% probed — all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout).
