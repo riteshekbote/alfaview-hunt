@@ -1,7 +1,7 @@
-## 2026-09-07 21:00:26 UTC [target] (model nemotron3)
-[CHANGED] sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 with FusionAuth login page HTML (was 404/empty then invalid_client error) — endpoint behavior changed, now renders login page even for unregistered client_id; OIDC discovery unchanged (issuer=acme.com, HS256/384/512 in supported algs, JWKS RSA-only)
-[CHANGED] apis.alfaview.com/v2/users/{uuid}: Returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token)
-[PRIO] sso.alfaview.com,8.8,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
+## 2026-09-07 23:07:35 UTC [target] (model nemotron3)
+[CHANGED] sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 with FusionAuth login page HTML for unregistered client_id (was 404 → invalid_client error) — endpoint behavior changed, now renders login page before client_id validation; OIDC discovery unchanged (issuer=acme.com, implicit flow, HS256/384/512 in supported algs, JWKS RSA-only 7 keys)
+[CHANGED] apis.alfaview.com/v2/users/{uuid}: Returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token); OpenAPI spec confirmed identical beta/prod
+[PRIO] sso.alfaview.com/oauth2/authorize,8.8,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
 [PRIO] app.alfaview.com/graphql,8.3,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
 [PRIO] apis.alfaview.com/v2,7.8,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8
 [PRIO] test.alfaview.com,6.5,attack_surface=7,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=7

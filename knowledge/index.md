@@ -237,3 +237,5 @@
 - 2026-09-07 ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256/384/512 listed but only RSA keys in JWKS (7 RS256 keys, zero symmetric) — alg confusion vector persists.
 - 2026-09-07 ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated), no `registration_endpoint` → dynamic client registration disabled.
 - 2026-09-07 ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification — supply chain risk.
+- 2026-09-07 ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/authorize` reconfirmed 200 FusionAuth login page (~6189B) for unregistered client_id — validation timing shifted (invalid_client → login page); redirect_uri matrix still client_id-gated.
+- 2026-09-07 ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me reconfirmed 401 unauth, /v2/users/{uuid} 405 (AuthenticationMethod.Token) — no regression in auth gate; cross-tenant authz remains untestable without two tenants.
