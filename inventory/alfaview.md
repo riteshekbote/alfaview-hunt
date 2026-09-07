@@ -306,3 +306,15 @@ www.alfaview.com
 - CHANGED test.alfaview.com unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible
 
 ## 2026-09-07 06:09:48 UTC
+
+## 2026-09-07 12:48:25 UTC
+- NEW beta-ionoscloud-21 fleet (7/7) fully probed: beta-ionoscloud-21-beta-audio-65st7/bdtmf and -beta-video-6pp2m/l5mbv all timeout (000, 12s) — resolves to real distinct IPs (185.127.30.215/.225). Last un
+- CHANGED Inventory now 100% probed: all 55 dedicated hosts have an HTTP verdict; zero genuinely-unprobed hosts remain.
+- CHANGED sso.alfaview.com: OIDC discovery re-fetched today — no `registration_endpoint` advertised → FusionAuth dynamic client registration OFF; GET `/oauth2/register` = 6.2KB generic "Login | FusionAuth" them
+- CHANGED app.alfaview.com/graphql: guestAuthenticate reconfirmed anonymous-reachable (~1 rps) — mutation processed, my field guess returned `GRAPHQL_VALIDATION_FAILED` ("Did you mean `role`?") not UNAUTHENTICA
+- CHANGED sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 (was 404 on root path) — endpoint behavior changed, may indicate deployment update; OIDC discovery unchanged (issuer=acme.com, implicit flow, HS
+- CHANGED apis.alfaview.com/v2/users/{foreign-uuid}: Returns HTTP 405 (Method Not Allowed) — DELETE not allowed without auth; PATCH /v2/rooms/{roomId}/permissions/{userId} returns 401.
+- CHANGED Inventory: 100% probed — all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout).
+- CHANGED sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 (was 404 on root path) — endpoint behavior changed, may indicate deployment update; OIDC discovery unchanged (issuer=acme.com, implicit flow, HS
+- CHANGED apis.alfaview.com/v2/users/{foreign-uuid}: Returns HTTP 405 (Method Not Allowed) — DELETE not allowed without auth; PATCH /v2/rooms/{roomId}/permissions/{userId} returns 401.
+- CHANGED Inventory: 100% probed — all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout).

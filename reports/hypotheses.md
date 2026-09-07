@@ -797,3 +797,63 @@
 - LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
 - LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+
+## RANKED HYPOTHESES 2026-09-07 12:48:25 UTC
+- [80] sso.alfaview.com: OAuth redirect_uri validation bypass on sso.alfaview.com via registered client_id (from art/lead_nemotron3.txt)
+- [80] apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params on REST user/room/permission ops (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Create one throwaway free alfaview company via `app.alfaview.com` signup (unauthenticated `Signup` mutation, planId `free-business`, disposable inbox → c
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow 
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diver
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: field-oracle (error-message) enumeration discloses reply-type field names (providers [JSONObject], http_download_
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/ge
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diver
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diver
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: field-oracle (error-message) enumeration discloses reply-type field names (providers [JSONObject], http_download_
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diver
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: field-oracle (error-message) enumeration discloses reply-type field names (providers [JSONObject], http_download_
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with issuer=acme.com (not alfaview.com), implicit flow enabled, HS256 listed but only RSA keys in 
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, /admin returns 404 (not exposed unauthenticated).
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+- LEARN: ACCEPTED AUTH @ beta-app.alfaview.com: HTTP 401 — HTTP Basic auth gate (not OAuth).
+- LEARN: REJECTED MISCONFIG @ dev.alfaview.com: Timeout/unreachable.
+- LEARN: ACCEPTED MISCONFIG @ www.alfaview.com: 301 redirect to alfaview.com/en (no independent surface).
+- LEARN: REJECTED MISCONFIG @ beta-ionoscloud-21-beta-engine-*.alfaview.com: Both engine hosts timeout (000) — internal/firewalled like alfacheck-* fleet.
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com: Full GraphQL admin schema in public bundle; per-resolver auth (listIdentityProviders unauth data, listComponents unauth 5
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL g
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), no
+- LEARN: ACCEPTED MISCONFIG @ alfaview.com: root 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login
+- LEARN: REJECTED XSS @ alfatraining/bhc/kh-freiburg.alfaview.com: All three multi-tenant hosts serve byte-identical generic alfaview.com SPA shell (1381B, MD5 554a39). 
+- LEARN: REJECTED MISCONFIG @ insider-webclient.alfaview.com: Internal admin/debug endpoints not exposed — SPA shell only, /health=204, all common paths 404. Target exha
+- LEARN: REJECTED MISCONFIG @ beta-webclient.alfaview.com: Identical SPA shell to insider, no internal endpoints. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root. No unauthenticated data exposure.
+- LEARN: REJECTED MISCONFIG @ beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Media/signaling server ("Hi Client"), not OIDC/auth infrastructure. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — media server. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — media server. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ alfacheck-engine.alfaview.com: UNREACHABLE — all 3 probes timed out. Internal/firewalled. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ alfacheck-audio.alfaview.com: UNREACHABLE — all 3 probes timed out. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ alfacheck-video.alfaview.com: UNREACHABLE — root probe timed out. Target exhausted.
+- LEARN: REJECTED MISCONFIG @ beta-ionoscloud-21-audio/video fleet: all 4 audio/video hosts timeout (000, real IPs 185.127.30.215/.225) — firewalled like engine/hydra si
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (2026-09-06) — GuestAuthenticateReply exposes `role`; acce
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery still exposed with issuer=acme.com, implicit + device_code grants, token_endpoint supports public-client (
+- LEARN: REJECTED MISCONFIG @ sso.alfaview.com: GET /oauth2/register is a generic 6.2KB "Login | FusionAuth" theme page (200), not a client-registration or config surfac
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces `client_id` registration before `redirect_uri` handling (`invalid_client`, reason `invalid_client
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256 listed but only RSA keys
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated).
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces `client_id` registration before `redirect_uri` handling (`invalid_client`, reason `invalid_client
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256 listed but only RSA keys
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated).
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification.
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
