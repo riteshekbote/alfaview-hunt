@@ -1455,3 +1455,35 @@ impact: OAuth code theft → ATO via open redirect on public client; HIGH.
 testability: HUMAN_ONLY
 [NEXT] HUMAN: Create two throwaway free tenants — anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql (payload verified in public AppSignup chunk) → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR `GET /v2/rooms/{victimRoomId}/passcode` 403-vs-200 and GraphQL accessKey-less `guestAuthenticate` vs REST guest-link 200+token-vs-401.
 [RISK] alfaview: 48/100 — unchanged. Today's probes returned anonymous validation-oracle intel only (stats/params, auth-field morphology, token two-stage) with zero data exposure or new reachable state; inventory still 100% verdicted and all substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 50).
+## 2026-09-07 06:07:39 UTC [target] (model bigpickle)
+[PRIO] app.alfaview.com/graphql,8.1,a9b8t9g7c6f8
+[PRIO] apis.alfaview.com/v2,7.6,a8b9t8g5c6f8
+[PRIO] sso.alfaview.com,7.4,a7b9t9g4c6f8
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(userId,companyId,roomId) processed anonymously (validation error, never UNAUTHENTICATED); GuestAuthenticateReply exposes role; no accessKey arg in GraphQL guest signature while REST guest-link mandates 4-field accessKey combo.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI spec confirms token-authed UUID path params (DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}); opaque company-scoped bearer; cross-tenant authorization unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN 2-tenant signup) POST /v2/auth/password → bearer → GET /v2/users/me (baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: HUMAN_ONLY
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 50
+reasoning: authorize enforces client_id registration before redirect_uri handling; discovery advertises public-client (`none`) + implicit + device grants; issuer=acme.com misconfig; no registration_endpoint; client_id absent from all public artifacts.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+[RISK] alfafiew: 48/100 — unchanged. All substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 50). Anonymous reconnaissance yield fully exhausted.
