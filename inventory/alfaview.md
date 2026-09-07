@@ -323,3 +323,7 @@ www.alfaview.com
 - CHANGED sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 (was 404 on root path) — endpoint behavior changed, may indicate deployment update; OIDC discovery unchanged (issuer=acme.com, implicit flow ena
 - CHANGED apis.alfaview.com/v2/users/{foreign-uuid}: Returns HTTP 405 (Method Not Allowed) — DELETE not allowed without auth; PATCH /v2/rooms/{roomId}/permissions/{userId} returns 401.
 - CHANGED Inventory: 100% probed — all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout).
+
+## 2026-09-07 21:00:34 UTC
+- CHANGED sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 with FusionAuth login page HTML (was 404/empty then invalid_client error) — endpoint behavior changed, now renders login page even for unregiste
+- CHANGED apis.alfaview.com/v2/users/{uuid}: Returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token)

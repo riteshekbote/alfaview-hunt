@@ -10991,3 +10991,132 @@ NO_NEW_LEARN. All prior REJECTED/ACCEPTED entries already in knowledge base.
 **STEP 7 — RISK**
 
 [RISK] alfaview: 48/100 — unchanged. All substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 50). Anonymous reconnaissance yield fully exhausted.
+===== ANALYST bigpickle 2026-09-07 21:00:34 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m→ [0mSkill "customize-opencode"
+[0m
+[0m$ [0mfind /home/runner/work/alfaview-hunt/alfaview-hunt -name "*.md" -type f | head -20
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-11-41.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-18-21.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-15-56.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-15-37.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-01-01.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-07-14-28.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-05-48.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-20-41.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-16-10.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-01-20.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-18-27.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-22-34.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-00-11.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-23-30.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-09-06.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-12-54.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-23-04.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-21-00.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-15-05.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-20-17.md
+[0m
+[0m→ [0mRead triage/run-2026-09-07-14-28.md
+[0m✱ [0mGlob "**/lead*.md"[90m in . · 6 matches[0m
+[0m✱ [0mGlob "**/hypotheses*.txt"[90m in . · 5 matches[0m
+[0m→ [0mRead leads/lead-bigpickle.md[90m [limit=100][0m
+[0m→ [0mRead reports/hypotheses-bigpickle.txt
+Based on the current state — 5 days of reconnaissance across 55 dedicated hosts, 100% probed, all anonymous attack surface fully exhausted — here's the structured output:
+
+---
+
+**STEP 1 — DELTA**
+
+NO_DELTA — all 3 surviving hypotheses unchanged since 2026-09-07 17:53 UTC. No new probes executed, no new assets discovered. Knowledge base identical to last analysis.
+
+---
+
+**STEP 2 — PRIORITIZE**
+
+```
+[PRIO] app.alfaview.com/graphql, 8.1, a9b8t9g7c6f8
+[PRIO] apis.alfaview.com/v2, 7.6, a8b9t8g5c6f8
+[PRIO] sso.alfaview.com, 7.4, a7b9t9g4c6f8
+```
+
+---
+
+**STEP 3 — HYPOTHESES**
+
+```
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI spec confirms token-authed UUID path params (DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}); opaque company-scoped bearer; cross-tenant authorization unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN 2-tenant signup) POST /v2/auth/password → bearer → GET /v2/users/me (baseline) → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, passcode/recording access, permission/account mutation, user delete; HIGH.
+testability: HUMAN_ONLY
+```
+
+```
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(userId,companyId,roomId) processed anonymously (BAD_USER_INPUT, never UNAUTHENTICATED); GuestAuthenticateReply exposes `role`; no accessKey arg in GraphQL guest signature while REST guest-link mandates 4-field accessKey combo.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+```
+
+```
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 50
+reasoning: authorize enforces client_id registration before redirect_uri handling; discovery advertises public-client (`none`) + implicit + device grants; issuer=acme.com misconfig; no registration_endpoint; client_id absent from all public artifacts.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+```
+
+---
+
+**STEP 4 — SELF-CRITIQUE**
+
+All 3 hypotheses survive the gate (confidence ≥40, in-scope class, verifiable steps). Ranked:
+
+1. **IDOR (80)** — highest structural confidence; OpenAPI spec is definitive evidence. One HUMAN action (2-tenant signup) unlocks one-command proof.
+2. **Guest-authz (55)** — solid behavioral divergence (BAD_USER_INPUT not UNAUTHENTICATED) but proof requires same HUMAN signup + guest link generation.
+3. **OAuth redirect_uri (50)** — weakest: blocked on client_id discovery (3 binary artifacts yielded zero OAuth config; no registration_endpoint). Needs desktop-login HAR capture.
+
+None parked — all have concrete verify_steps. The HUMAN gate is the sole blocker for the top 2.
+
+---
+
+**STEP 5 — NEXT ACTION**
+
+```
+[NEXT] HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401.
+```
+
+---
+
+**STEP 6 — LEARNING**
+
+```
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated test target. Needs account.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains the standing highest-structural authz gap.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces `client_id` registration before `redirect_uri` handling — needs a registered client_id.
+[LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously.
+```
+
+---
+
+**STEP 7 — RISK**
+
+```
+[RISK] alfaview: 48/100 — unchanged. All substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 50). Anonymous reconnaissance yield fully exhausted. Five days across 55 dedicated hosts produced zero unauthenticated data exposure or exploit path. The hunt's success or failure now depends entirely on the HUMAN signup gate.
+```

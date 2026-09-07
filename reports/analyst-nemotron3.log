@@ -8736,3 +8736,398 @@ testability: HUMAN_ONLY
 
 ### STEP 7 — RISK
 [RISK] alfaview: 80/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: `sso.alfaview.com` (FusionAuth 1.63.0) exposes OIDC metadata with `issuer=acme.com` misconfiguration, implicit flow, HS256/384/512 support vs RSA-only JWKS (alg confusion vector). `app.alfaview.com` is primary client but `client_id` not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no `accessKey`). `test.alfaview.com` distributes unsigned binaries (supply chain risk). 7-host beta-ionoscloud fleet fully probed — all firewalled. 31 hosts exhausted. Realistic path: discover `client_id` via `app.alfaview.com` network traffic → probe OAuth `redirect_uri`/`state` on `sso.alfaview.com` (AUTH_HELPED, CRITICAL); verify binary integrity on `test.alfaview.com` (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits.
+===== ANALYST nemotron3 2026-09-07 21:00:34 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mdate -u +"%Y-%m-%d %H:%M:%S UTC"
+2026-09-07 20:53:08 UTC
+[0m
+[0m$ [0mcurl -sI https://sso.alfaview.com/oauth2/authorize 2>&1 | head -20
+HTTP/2 200 
+x-frame-options: DENY
+set-cookie: fusionauth.sso=QkJCAEFvWUZKRlVwM2ZpSDI5X1B6UXh0eWk4UVVnRkR2c0ppSmRLbVhMSmpvZ0JiLTlYSGNjTFU1VXNy; HttpOnly; Max-Age=2147483647; Path=/; SameSite=Lax; Secure
+content-type: text/html; charset=UTF-8
+cache-control: no-store
+content-length: 0
+date: Mon, 07 Sep 2026 20:53:22 GMT
+server: edge-proxy
+[0m
+[0m$ [0mcurl -sI https://apis.alfaview.com/v2/users/00000000-0000-0000-0000-000000000000 2>&1 | head -20
+HTTP/2 405 
+allow: DELETE
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+date: Mon, 07 Sep 2026 20:53:23 GMT
+content-length: 19
+server: edge-proxy
+[0m
+[0m$ [0mcurl -sI https://app.alfaview.com/graphql -H "Content-Type: application/json" -d '{"query":"{__typename}"}' 2>&1 | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/openid-configuration 2>&1 | head -30
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oauth2/device_authorize",
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/graphql -H "Content-Type: application/json" -d '{"query":"{__typename}"}' 2>&1
+{"data":{"__typename":"Query"}}
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/openid-configuration 2>&1 | grep -E '"(issuer|id_token_signing_alg_values_supported|registration_endpoint|token_endpoint_auth_methods_supported)"'
+"id_token_signing_alg_values_supported" : [
+  "issuer" : "acme.com",
+  "token_endpoint_auth_methods_supported" : [
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/jwks.json 2>&1 | head -20
+{
+  "keys" : [
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "kty" : "RSA",
+      "n" : "qT_xytJqFqGysh3-OWpKQAwzzeTwXg8TJs3qI7A0yhe-xkBue5vsyyfT47MIGkVIY9R3kbhY7ysjjv8FV6bbvDk1NyND66QlraPeyJtDoNF6AdBr5d6Zy4zU21aSubgW-OXTf-M-bwqYCpjVn8xU0F0BfXsQeNgO4k3nKG7FME-BKREsyE-5PZRkVpZ7TzFWDhXJ4Vm1Oxut0Vh4OvJdTrX_yji71BSlm65pryVWZ0XSnf12opRFNgMNcDHdDjnRFeQimoT9aN2Ce_cMdrXYazhtu5Hvirb97lnGqXsM5OozheaZgo9iVOUYwstTGd_GZPOzuHUOgM5Xo-bvz3l25w",
+      "use" : "sig",
+      "x5c" : [
+        "MIICrzCCAZegAwIBAQIRAL1bz9UQtEiHnHR4oy8p5yMwDQYJKoZIhvcNAQELBQAwEzERMA8GA1UEAxMIYWNtZS5jb20wHhcNMjExMjAzMTQwMDQ0WhcNMzExMjAzMTQwMDQ0WjATMREwDwYDVQQDEwhhY21lLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKk/8crSahahsrId/jlqSkAMM83k8F4PEybN6iOwNMoXvsZAbnub7Msn0+OzCBpFSGPUd5G4WO8rI47/BVem27w5NTcjQ+ukJa2j3sibQ6DRegHQa+XemcuM1NtWkrm4Fvjl03/jPm8KmAqY1Z/MVNBdAX17EHjYDuJN5yhuxTBPgSkRLMhPuT2UZFaWe08xVg4VyeFZtTsbrdFYeDryXU61/8o4u9QUpZuuaa8lVmdF0p39dqKURTYDDXAx3Q450RXkIpqE/Wjdgnv3DHa12Gs4bbuR74q2/e5Zxql7DOTqM4XmmYKPYlTlGMLLUxnfxmTzs7h1DoDOV6Pm7895ducCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAZokpTeSFu0pUavb5JWBOmHWdFWlVAM+ae0dFODeyjs0a3XzjRrOMhHLsA73Ubn9y5BQ0SaNe/qPAYA2hLA3DfwHUyqx9tD2ubWLXYadXHSTET4oJ9TgVpPctRNaFwjysHXrudh5R0WYAYTr9xeeFxJ5gJx5Lxdom2t+e2UeddcKdFLl5qhx5AYcUkpfg1OU27sS/JPYsy7P7tAEiajuADbu36jf8Gz1ffPmuCJyWdnj7OUFtz+RgpWnKhxiVvNOJBlk8ZxefFBpUCoomvudavVa0eEVMnF7RZ+UepVdQgvyhdIdnPYZycH0nec4Bgkxvuies3sz1Yqsezo30gzmNMA=="
+      ],
+      "x5t" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "x5t#S256" : "aLyCb0zVEdHKyDlDvL3ou0k5FvUpJ7Q4BxirZuEUICQ"
+    },
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "MyYL4tkdByeJy8TYsH9uVDAVfgw",
+      "kty" : "RSA",
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/openid-configuration 2>&1 | python3 -m json.tool 2>&1 | grep -A 20 '"id_token_signing_alg_values_supported"'
+"id_token_signing_alg_values_supported": [
+        "ES256",
+        "ES384",
+        "ES512",
+        "HS256",
+        "HS384",
+        "HS512",
+        "RS256",
+        "RS384",
+        "RS512"
+    ],
+    "issuer": "acme.com",
+    "jwks_uri": "https://sso.alfaview.com/.well-known/jwks.json",
+    "response_modes_supported": [
+        "form_post",
+        "fragment",
+        "query"
+    ],
+    "response_types_supported": [
+        "code",
+        "id_token",
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/openid-configuration 2>&1 | python3 -m json.tool 2>&1 | grep -A 10 '"token_endpoint_auth_methods_supported"'
+"token_endpoint_auth_methods_supported": [
+        "client_secret_basic",
+        "client_secret_post",
+        "none"
+    ],
+    "userinfo_endpoint": "https://sso.alfaview.com/oauth2/userinfo",
+    "userinfo_signing_alg_values_supported": [
+        "ES256",
+        "ES384",
+        "ES512",
+        "RS256",
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/openid-configuration 2>&1 | python3 -m json.tool 2>&1 | grep -i registration
+(no output)
+[0m
+[0m$ [0mcurl -sI --max-time 10 https://sso.alfaview.com/oauth2/register 2>&1 | head -10
+HTTP/2 200 
+x-frame-options: DENY
+set-cookie: fusionauth.sso=QkJCAEF2WG5Ncl9fUm5RWlA0eE4ySHF2YzR0RGNZeDZKRUN1dFRydGxtdWRnNHhKNU5GRFhhM2FKbnhP; HttpOnly; Max-Age=2147483647; Path=/; SameSite=Lax; Secure
+content-type: text/html; charset=UTF-8
+cache-control: no-store
+content-length: 0
+date: Mon, 07 Sep 2026 20:54:52 GMT
+server: edge-proxy
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/ 2>&1 | grep -oE 'client[_-]?id["\s:=]+[a-zA-Z0-9_-]+' | head -10
+(no output)
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js 2>&1 | grep -oE 'client[_-]?id["\s:=]+[a-zA-Z0-9_-]+' | head -10
+(no output)
+[0m
+[0m$ [0mcurl -sI --max-time 10 "https://sso.alfaview.com/oauth2/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" 2>&1 | head -20
+HTTP/2 200 
+x-frame-options: DENY
+set-cookie: fusionauth.sso=QkJCAEFuRTB4Z1Z6RDdmeW1wWlpfTENERjhYZzF6bEw0Mjk3aGNOd25sTzg0UEp5MEhUNmhVendIblJo; HttpOnly; Max-Age=2147483647; Path=/; SameSite=Lax; Secure
+content-type: text/html; charset=UTF-8
+cache-control: no-store
+content-length: 0
+date: Mon, 07 Sep 2026 20:55:39 GMT
+server: edge-proxy
+[0m
+[0m$ [0mcurl -s --max-time 10 "https://sso.alfaview.com/oauth2/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123" 2>&1 | head -50
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-128.png">
+
+
+    <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+
+    <link rel="stylesheet" href="/css/entrypoints/fusionauth-hosted.css?version=1.63.0"/>
+
+    <style>
+    
+    </style>
+
+    <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+    <script src="/js/Util.js?version=1.63.0"></script>
+    <script src="/js/oauth2/LocaleSelect.js?version=1.63.0"></script>
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js 2>&1 | grep -oE '(authorization_endpoint|redirect_uri|client_id|oauth2|sso\.alfaview)' | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js 2>&1 | grep -oE 'alfaview' | wc -l
+309
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js 2>&1 | grep -oE 'sso\.alfaview\.com[^"\s<>]*' | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js 2>&1 | grep -oE 'https://[^"\s<>]*' | grep -v 'assets\.' | head -20
+https://production-alfaview-a
+https://production-alfaview-a
+https://production-alfaview-a
+https://play.google.com/
+https://app
+https://
+https://
+https://
+https://play.google.com/
+https://app
+https://
+https://
+https://
+https://webviewer.dev.alfaview.com:8443/join
+https://
+https://beta-app.alfaview.com/web/join
+https://app.alfaview.com/web/join
+https://
+https://
+https://webclient.alfaview.com
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/js/AppSignup.min.3329eeac503c038b44b8.js 2>&1 | grep -oE '(client[_-]?id|authorization_endpoint|redirect_uri|sso\.alfaview)' | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/js/AppFinishSignup.min.c05a2146b0620d1167ae.js 2>&1 | grep -oE '(client[_-]?id|authorization_endpoint|redirect_uri|sso\.alfaview)' | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/api/config 2>&1 | head -50
+Found. Redirecting to /
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/config 2>&1 | head -50
+Found. Redirecting to /
+[0m
+[0m$ [0mcurl -s --max-time 10 https://test.alfaview.com/ 2>&1 | head -50
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>alfacheck</title>
+	</head>
+	<body>
+		<h1>alfacheck</h1>
+<a href="alfacheck.linux.amd64.470079.bin" download>alfacheck.linux.amd64.470079.bin</a></br>
+<a href="alfacheck.windows.amd64.470079.exe" download>alfacheck.windows.amd64.470079.exe</a></br>
+<a href="alfacheck.mac.amd64.470079.bin" download>alfacheck.mac.amd64.470079.bin</a></br>
+<a href="alfacheck.mac.arm64.470079.bin" download>alfacheck.mac.arm64.470079.bin</a></br>
+	</body>
+</html>
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/graphql -H "Content-Type: application/json" -d '{"query":"mutation{guestAuthenticate(userId:\"test\",companyId:\"test\",roomId:\"test\"){role,__typename}}"}' 2>&1
+{"errors":[{"message":"","locations":[{"line":1,"column":10}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+[0m
+[0m$ [0mcurl -s --max-time 10 https://app.alfaview.com/graphql -H "Content-Type: application/json" -d '{"query":"mutation{guestJoin(userId:\"test\",companyId:\"test\",roomId:\"test\",displayName:\"test\"){__typename}}"}' 2>&1
+{"errors":[{"message":"","locations":[{"line":1,"column":10}],"path":["guestJoin"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+[0m
+[0m$ [0mcurl -sI --max-time 10 https://apis.alfaview.com/v2/rooms/00000000-0000-0000-0000-000000000000/permissions/00000000-0000-0000-0000-000000000000 2>&1 | head -20
+HTTP/2 405 
+allow: DELETE, PATCH
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+date: Mon, 07 Sep 2026 20:58:24 GMT
+content-length: 19
+server: edge-proxy
+[0m
+[0m$ [0mcurl -sI -X PATCH --max-time 10 https://apis.alfaview.com/v2/rooms/00000000-0000-0000-0000-000000000000/permissions/00000000-0000-0000-0000-000000000000 -H "Content-Type: application/json" -d '{}' 2>&1 | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s -X PATCH --max-time 10 https://apis.alfaview.com/v2/rooms/00000000-0000-0000-0000-000000000000/permissions/00000000-0000-0000-0000-000000000000 -H "Content-Type: application/json" -d '{}' 2>&1
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+[0m
+Now I have enough current data. Let me proceed with the 8-step analysis.
+
+---
+
+## STEP 1 — DELTA
+
+[CHANGED] sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 with FusionAuth login page HTML (was 404/empty then invalid_client error) — endpoint behavior changed, now renders login page even for unregistered client_id; OIDC discovery unchanged (issuer=acme.com, HS256/384/512 in supported algs, JWKS RSA-only)
+
+[CHANGED] apis.alfaview.com/v2/users/{uuid}: Returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token)
+
+[NO_DELTA] app.alfaview.com/graphql: guestAuthenticate/guestJoin still return BAD_USER_INPUT (not UNAUTHENTICATED) — accessKey-less GraphQL guest path confirmed
+
+[NO_DELTA] test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification
+
+[NO_DELTA] Inventory: 100% probed — all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain
+
+---
+
+## STEP 2 — PRIORITIZE
+
+[PRIO] sso.alfaview.com,8.8,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
+
+[PRIO] app.alfaview.com/graphql,8.3,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
+
+[PRIO] apis.alfaview.com/v2,7.8,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8
+
+[PRIO] test.alfaview.com,6.5,attack_surface=7,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=7
+
+[PRIO] alfaview.com,4.5,attack_surface=5,business_value=5,tech_exposure=4,gate_ease=10,cloud_surface=5,freshness=6
+
+---
+
+## STEP 3 — HYPOTHESES
+
+[HYP] OAuth redirect_uri validation bypass via unregistered client_id handling change
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 75
+reasoning: authorize endpoint now returns HTTP 200 login page for unregistered client_id (test) instead of invalid_client error; FusionAuth 1.63.0 OIDC discovery shows issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512 in id_token_signing_alg_values_supported but JWKS contains only 7 RSA keys (zero symmetric); token_endpoint_auth_methods_supported includes "none" (public client); no registration_endpoint advertised; /oauth2/register returns theme page not API
+evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); 302 Location header with attacker-controlled redirect_uri after login; state parameter reflection/validation; PKCE code_challenge_method=S256 enforcement
+verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location; repeat without state; test code_challenge_method=S256&code_challenge=<valid>
+impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
+testability: AUTH_HELPED
+
+[HYP] Unauthenticated guest token issuance via GraphQL missing accessKey
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 85
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 4-field combo (companyId+roomId+accessKey+displayName); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field
+evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey; compare token scope/claims vs REST guest token; test cross-tenant room joining with foreign companyId/roomId
+verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and decode (if JWT) or test against APIs; probe cross-tenant with foreign IDs
+impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
+testability: AUTH_HELPED
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI spec (identical beta/prod) exposes DELETE /v2/users/{id} and PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId} with UUID path params; production APIs enforce auth (401 on PATCH permissions without token, 405 on DELETE users without auth); access tokens are opaque/base64 (not JWTs); highest-priority authenticated target — requires valid account to test cross-tenant object references
+evidence_needed: Authenticated account with access to at least one room/user; valid access token; test DELETE /v2/users/{victim-uuid} and PATCH /v2/rooms/{victim-room-id}/permissions/{victim-user-id} with foreign UUIDs; observe 2xx/403 vs 404
+verify_steps: Obtain dev account via HUMAN signup at app.alfaview.com → capture access token from authenticated GraphQL/REST calls → GET https://apis.alfaview.com/v2/users/me (confirm auth) → DELETE https://apis.alfaview.com/v2/users/{foreign-uuid} → PATCH https://apis.alfaview.com/v2/rooms/{foreign-room-id}/permissions/{foreign-user-id} → observe response codes
+impact: Cross-tenant user deletion / permission modification → data destruction, privilege escalation (CRITICAL)
+testability: HUMAN_ONLY
+
+---
+
+## STEP 4 — SELF-CRITIQUE
+
+[PARKED] Cross-tenant IDOR via UUID path params on apis.alfaview.com: Requires authenticated account (gate_ease=3) — cannot verify without valid credentials; parked until account obtained via HUMAN signup.
+
+[PARKED] Unauthenticated guest-authz lifecycle/cross-tenant splice via GraphQL: Requires own tenant guest triple (companyId+roomId+userId) — HUMAN signup needed to create room + guest link.
+
+[FINAL] Ranked survivors:
+1. OAuth redirect_uri validation bypass on sso.alfaview.com (confidence 75, AUTH_HELPED)
+2. Unauthenticated guest token issuance via GraphQL missing accessKey (confidence 85, AUTH_HELPED)
+
+---
+
+## STEP 5 — NEXT ACTION
+
+[NEXT] HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow → test `redirect_uri`/`state`/PKCE on `sso.alfaview.com/oauth2/authorize`; simultaneously use account to create room + guest link → test GraphQL `guestAuthenticate`/`guestJoin` with valid IDs for token issuance proof; test cross-tenant IDOR on `apis.alfaview.com/v2/users/{id}` and `v2/rooms/{roomId}/permissions/{userId}`.
+
+---
+
+## STEP 6 — LEARNING
+
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` now returns HTTP 200 login page for unregistered client_id (was invalid_client) — behavior changed, may indicate FusionAuth config update; redirect_uri testing still requires registered `client_id` but validation timing may have shifted.
+
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256/384/512 listed but only RSA keys in JWKS (7 RS256 keys, zero symmetric) — alg confusion vector persists.
+
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated), no `registration_endpoint` → dynamic client registration disabled.
+
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification — supply chain risk.
+
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in GraphQL guest signature — diverges from REST 4-field `accessKey` combo.
+
+[LEARN] REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+
+[LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` `UNAUTHENTICATED`; no PII/config reachable anonymously.
+
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
+
+---
+
+## STEP 7 — RISK
+
+[RISK] alfaview: 80/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: `sso.alfaview.com` (FusionAuth 1.63.0) exposes OIDC metadata with `issuer=acme.com` misconfiguration, implicit flow, HS256/384/512 support vs RSA-only JWKS (alg confusion vector). `app.alfaview.com` is primary client but `client_id` not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no `accessKey`). `test.alfaview.com` distributes unsigned binaries (supply chain risk). 7-host beta-ionoscloud fleet fully probed — all firewalled. 31 hosts exhausted. Realistic path: discover `client_id` via `app.alfaview.com` network traffic → probe OAuth `redirect_uri`/`state` on `sso.alfaview.com` (AUTH_HELPED, CRITICAL); verify binary integrity on `test.alfaview.com` (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits.
