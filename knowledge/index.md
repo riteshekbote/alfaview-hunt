@@ -262,3 +262,6 @@
 - 2026-09-08 NO_DELTA: re-probes 2026-09-08 10:33 confirm zero surface change — apis /v2/users/me=401(POST=405), sso authorize=200/6189B, OIDC live, openapi prod=beta (MD5 357b94d3, 37 paths). All chains remain HUMAN-gated.
 - 2026-09-08 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
 - 2026-09-08 ACCEPTED AUTH @ sso.alfaview.com: /oauth2/authorize reconfirmed 200 FusionAuth login page (~6189B) for unregistered/bare client_id — validation timing shift persisted overnight; redirect_uri matrix still client_id-gated.
+- 2026-09-08 ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 4-field accessKey combo.
+- 2026-09-08 ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces client_id registration before redirect_uri handling — needs a registered client_id.
+- 2026-09-08 ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 400 for unregistered client_id (not 200 login page) — validation timing still client_id-gated; redirect_uri testing requires registered `client_id`.
