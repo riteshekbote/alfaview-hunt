@@ -994,3 +994,30 @@
 - LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
 - LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+
+## RANKED HYPOTHESES 2026-09-08 18:17:59 UTC
+- [80] apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params on REST user/room/permission ops (from art/lead_bigpickle.txt)
+- [70] sso.alfaview.com/oauth2/authorize: OAuth redirect_uri validation bypass via client_id registration timing shift (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow 
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL g
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces client_id registration before redirect_uri handling — needs a registered client_id.
+- LEARN: REJECTED OATH @ sso.alfaview.com: `/oauth2/authorize` "200 login page" for unregistered client_id is actually a rendered ERROR page — invalid_client "client_id:
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/register` POST returns generic login theme (not RFC7591 dynamic client registration) and is not in discovery — self-r
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); accessKey-le
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me=401 / POST=405 reconfirmed this cycle — auth gate stable, no regression.
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/register` POST returns generic login theme (not RFC7591 dynamic client registration) and is not in discovery — self-r
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); accessKey-le
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me=401 / POST=405 reconfirmed this cycle — auth gate stable, no regression.
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 400 for unregistered client_id (not 200 login page) — validation timing still client_id-gated
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256/384/512 listed but only 
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated), no `registration_endpoint` → dynamic client registratio
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification — supply chai
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab

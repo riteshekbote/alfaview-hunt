@@ -12449,3 +12449,696 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 48/100 — unchanged. All substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 50). Anonymous reconnaissance yield fully exhausted across 55 hosts; zero unauthenticated data exposure or exploit path found in five days. Success now depends entirely on the HUMAN signup gate and desktop HAR capture.
+===== ANALYST bigpickle 2026-09-08 18:17:59 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'm a security analyst for the alfaview bug bounty program. Let me run the 8-step analysis cycle.
+[0m$ [0mcurl -s "https://sso.alfaview.com/.well-known/openid-configuration" 2>&1 | head -c 2000; echo; echo "---JWKS---"; curl -s "https://sso.alfaview.com/.well-known/jwks.json" 2>&1 | head -c 500
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oauth2/device_authorize",
+  "dpop_signing_alg_values_supported" : [
+    "Ed448",
+    "Ed25519",
+    "ES256",
+    "ES384",
+    "ES512",
+    "PS256",
+    "PS384",
+    "PS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "end_session_endpoint" : "https://sso.alfaview.com/oauth2/logout",
+  "frontchannel_logout_supported" : true,
+  "grant_types_supported" : [
+    "authorization_code",
+    "password",
+    "implicit",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "client_credentials"
+  ],
+  "id_token_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "HS256",
+    "HS384",
+    "HS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "issuer" : "acme.com",
+  "jwks_uri" : "https://sso.alfaview.com/.well-known/jwks.json",
+  "response_modes_supported" : [
+    "form_post",
+    "fragment",
+    "query"
+  ],
+  "response_types_supported" : [
+    "code",
+    "id_token",
+    "token id_token"
+  ],
+  "scopes_supported" : [
+    "openid",
+    "offline_access",
+    "email",
+    "phone",
+    "profile"
+  ],
+  "subject_types_supported" : [
+    "public"
+  ],
+  "token_endpoint" : "https://sso.alfaview.com/oauth2/token",
+  "token_endpoint_auth_methods_supported" : [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "userinfo_endpoint" : "https://sso.alfaview.com/oauth2/userinfo",
+  "userinfo_signing_alg_values_supported" : [
+    "ES25
+---JWKS---
+{
+  "keys" : [
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "kty" : "RSA",
+      "n" : "qT_xytJqFqGysh3-OWpKQAwzzeTwXg8TJs3qI7A0yhe-xkBue5vsyyfT47MIGkVIY9R3kbhY7ysjjv8FV6bbvDk1NyND66QlraPeyJtDoNF6AdBr5d6Zy4zU21aSubgW-OXTf-M-bwqYCpjVn8xU0F0BfXsQeNgO4k3nKG7FME-BKREsyE-5PZRkVpZ7TzFWDhXJ4Vm1Oxut0Vh4OvJdTrX_yji71BSlm65pryVWZ0XSnf12opRFNgMNcDHdDjnRFeQimoT9aN2Ce_cMdrXYazhtu5Hvirb97lnGqXsM5OozheaZgo9iVOUYwstTGd_GZPOzuHUOgM5Xo-bvz3l25w",
+      "use"
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "apis /v2/users/me: %{http_code}\n" "https://apis.alfaview.com/v2/users/me" 2>&1; curl -s -o /dev/null -w "apis /v2/users/me POST: %{http_code}\n" -X POST "https://apis.alfaview.com/v2/users/me" 2>&1; curl -s -o /dev/null -w "sso authorize: %{http_code} size:%{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=test&redirect_uri=https://evil.com&response_type=code" 2>&1
+apis /v2/users/me: 401
+apis /v2/users/me POST: 405
+sso authorize: 200 size:6157
+[0m
+Let me test the SSO authorize behavior more carefully, focusing on the OAuth redirect_uri handling which is the key live avenue. Note the previous KB said unregistered client_id → 400, but now it's returning 200 (login page). Let me probe the redirect_uri validation semantics.
+[0m$ [0mB="https://sso.alfaview.com/oauth2/authorize"
+echo "=== compare client_id handling ==="
+curl -s -o /dev/null -w "no client_id: %{http_code} size:%{size_download}\n" "$B?redirect_uri=https://evil.com&response_type=code"
+curl -s -o /dev/null -w "zero client_id: %{http_code} size:%{size_download}\n" "$B?client_id=&redirect_uri=https://evil.com&response_type=code"
+curl -s -o /dev/null -w "random client_id: %{http_code} size:%{size_download}\n" "$B?client_id=xyz123&redirect_uri=https://evil.com&response_type=code"
+curl -s -o /dev/null -w "client_id=app: %{http_code} size:%{size_download}\n" "$B?client_id=app&redirect_uri=https://evil.com&response_type=code"
+=== compare client_id handling ===
+no client_id: 200 size:6183
+zero client_id: 200 size:6183
+random client_id: 200 size:6159
+client_id=app: 200 size:6156
+[0m
+All return 200 (login page). The validation timing appears to render the login page regardless of client_id well-knownness — but historically the KB noted invalid_client errors. Let me check whether the redirect_uri is ever reflected or validated, and whether there's client-side JS in the login page that reveals the client_id handling. Let me look at the actual body content difference.
+[0m$ [0mB="https://sso.alfaview.com/oauth2/authorize"
+echo "=== with client_id=evil + evil redirect ==="
+curl -s "$B?client_id=evil&redirect_uri=https://evil.com&response_type=code" | grep -iE "client_id|redirect|error|hidden|value=" | head -40
+=== with client_id=evil + evil redirect ===
+          button.classList.remove('hidden');
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+  &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: evil is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+        <option value="en" >English</option>
+      <svg aria-hidden="true" class="pointer-events-none text-input-text/50 col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end sm:size-4" data-slot="icon" fill="currentColor" viewBox="0 0 16 16">
+[0m
+Interesting and important finding. When I pass `client_id=evil&redirect_uri=https://evil.com`, the page renders an **error**: `invalid_client`, `client_id: evil is not valid`, reason `invalid_client_id`. So the client_id IS validated — the HTTP 200 is a rendered FusionAuth error page, not a successful login page. This confirms the persistent finding: **redirect_uri testing requires a registered client_id**. The validation timing is client_id-gated as before.
+
+Let me confirm this behavior distinction and check whether a valid-looking client_id changes anything.
+[0m$ [0mB="https://sso.alfaview.com/oauth2/authorize"
+echo "=== bare params, no client_id -> what renders ==="
+curl -s "$B?redirect_uri=https://evil.com&response_type=code" | grep -iE "invalid_client|error|not valid|hidden.*value|client_id" | head -10
+echo "=== Does the login page reflect redirect_uri anywhere when client_id valid? test common ids ==="
+for id in alfaview app web client spa desktop "alfaview.com" "app.alfaview.com"; do
+  out=$(curl -s "$B?client_id=$id&redirect_uri=https://evil.com&response_type=code" | grep -iE "invalid_client|is not valid")
+  echo "client_id=$id -> ${out:-NO_ERROR_RENDERED}"
+done
+=== bare params, no client_id -> what renders ===
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+  &quot;error&quot; : &quot;invalid_request&quot;,
+  &quot;error_description&quot; : &quot;The request is missing a required parameter: client_id&quot;,
+  &quot;error_reason&quot; : &quot;missing_client_id&quot;
+=== Does the login page reflect redirect_uri anywhere when client_id valid? test common ids ===
+client_id=alfaview ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: alfaview is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+client_id=app ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: app is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+client_id=web ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: web is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+client_id=client ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: client is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+client_id=spa ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: spa is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+client_id=desktop ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: desktop is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+client_id=alfaview.com ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: alfaview.com is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+client_id=app.alfaview.com ->   &quot;error&quot; : &quot;invalid_client&quot;,
+  &quot;error_description&quot; : &quot;client_id: app.alfaview.com is not valid.&quot;,
+  &quot;error_reason&quot; : &quot;invalid_client_id&quot;
+[0m
+Clear: all common guesses return `invalid_client`. The redirect_uri is **never even reached** — FusionAuth blocks at client_id validation first. This is consistent: the validation gate is first-party, client_id-bound.
+
+Let me check a few remaining passive angles — whether the error page itself leaks anything, and whether the OIDC dynamic registration endpoint is reachable despite not being advertised.
+[0m$ [0m# Check if registration_endpoint exists despite not being advertised
+curl -s -o /dev/null -w "%{http_code} size:%{size_download}\n" "https://sso.alfaview.com/oauth2/register"
+echo "---"
+# Check if /oauth2/register POST works (dynamic client registration)
+curl -s -o /dev/null -w "%{http_code} size:%{size_download}\n" -X POST -H "Content-Type: application/json" -d '{"client_name":"test","redirect_uris":["https://evil.com"]}' "https://sso.alfaview.com/oauth2/register"
+echo "---"
+# Check device_authorize endpoint (advertised in discovery)
+curl -s -o /dev/null -w "%{http_code} size:%{size_download}\n" -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=evil" "https://sso.alfaview.com/oauth2/device_authorize"
+echo "---"
+# Check /oauth2/userinfo and /oauth2/token unauthenticated
+curl -s -o /dev/null -w "userinfo GET: %{http_code} size:%{size_download}\n" "https://sso.alfaview.com/oauth2/userinfo"
+curl -s -o /dev/null -w "token POST: %{http_code} size:%{size_download}\n" -X POST "https://sso.alfaview.com/oauth2/token"
+200 size:6189
+---
+200 size:6189
+---
+401 size:113
+---
+userinfo GET: 401 size:0
+token POST: 400 size:141
+[0m
+[0m$ [0m# Check device_authorize 401 body for details
+curl -s -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=evil" "https://sso.alfaview.com/oauth2/device_authorize"
+echo "---"
+# Check token 400 body
+curl -s -X POST "https://sso.alfaview.com/oauth2/token"
+echo "---"
+# /oauth2/register POST to see if it accepts registration JSON or just redirects to login
+curl -s -X POST -H "Content-Type: application/json" -d '{"client_name":"test","redirect_uris":["https://evil.com"],"grant_types":["authorization_code"],"response_types":["code"]}' "https://sso.alfaview.com/oauth2/register" | grep -iE "error|invalid|client_id|redirect" | head -10
+{"error":"invalid_client","error_description":"client_id: evil is not valid.","error_reason":"invalid_client_id"}---
+{"error":"invalid_request","error_description":"The request is missing a required parameter: grant_type","error_reason":"missing_grant_type"}---
+            <h2 class="text-2xl font-semibold text-text mb-6 leading-9">Error</h2>
+  &quot;error&quot; : &quot;invalid_request&quot;,
+  &quot;error_description&quot; : &quot;The request is missing a required parameter: redirect_uri&quot;,
+  &quot;error_reason&quot; : &quot;missing_redirect_uri&quot;
+[0m
+[0m$ [0m# /oauth2/register might be live dynamic client registration — try with proper params
+curl -s -X POST -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_name=test&redirect_uris=https://evil.com&grant_types=authorization_code&response_types=code" \
+  "https://sso.alfaview.com/oauth2/register" | head -c 2000
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login | FusionAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="application-name" content="FusionAuth">
+    <meta name="author" content="FusionAuth">
+    <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+    <meta name="robots" content="index, follow">
+
+    <meta name="referrer" content="strict-origin">
+
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-icon-180x180.png">
+
+    <link rel="manifest" href="/images/manifest.json">
+
+    <meta name="msapplication-config" content="/images/browserconfig.xml"/>
+
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/images/ms-icon-144x144.png">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128" href="/images/favicon-1
+[0m
+`/oauth2/register` POST just returns the generic login theme page (it treats the request as if it should render a login page) — the `registration_endpoint` is not enabled (no RFC 7591 dynamic client registration). The body does not show an `invalid_client` error; instead it renders the theme. This confirms dynamic client registration is disabled — self-registration of a client_id remains closed.
+
+Let me examine the device_authorize endpoint more — since the discovery advertises `device_code` grant and `token_endpoint_auth_methods` includes `none` (public clients). The device flow with an unregistered client_id returned `invalid_client`, so that's also gated. But device flow is a known avenue for something else: if we could get a device code via an unauthenticated endpoint, it could enumerate. It's gated by client_id too.
+
+Let me reconsider. The standing situation: everything meaningful is gated behind (a) a registered client_id for OAuth and (b) two-tenant signup for IDOR/guest-authz. Let me do one more check on the device_authorize flow and the GraphQL guest path to reconfirm, then finalize the cycle.
+[0m$ [0m# Reconfirm GraphQL guest path anonymous-reachable (field-oracle behavior)
+curl -s -X POST -H "Content-Type: application/json" \
+  -d '{"query":"mutation{guestAuthenticate(userId:\"00000000-0000-0000-0000-000000000000\",companyId:\"00000000-0000-0000-0000-000000000000\",roomId:\"00000000-0000-0000-0000-000000000000\"){__typename}}"}' \
+  "https://app.alfaview.com/graphql" | head -c 600
+echo
+{"errors":[{"message":"","locations":[{"line":1,"column":10}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt 2>/dev/null; echo "---art---"; ls -la /home/runner/work/alfaview-hunt/alfaview-hunt/art 2>/dev/null
+total 320
+drwxr-xr-x 12 runner runner   4096 Sep  8 18:09 .
+drwxr-xr-x  3 runner runner   4096 Sep  8 18:09 ..
+drwxr-xr-x  7 runner runner   4096 Sep  8 18:09 .git
+drwxr-xr-x  3 runner runner   4096 Sep  8 18:09 .github
+-rw-r--r--  1 runner runner   1883 Sep  8 18:09 README.md
+-rw-r--r--  1 runner runner  15880 Sep  8 18:11 analyst-out.txt
+-rw-r--r--  1 runner runner 104077 Sep  8 18:09 analyst-prompt.txt
+-rw-r--r--  1 runner runner 100167 Sep  8 18:09 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 inventory
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 leads
+-rw-r--r--  1 runner runner  19039 Sep  8 18:09 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 reports
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep  8 18:09 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 scripts
+-rw-r--r--  1 runner runner     33 Sep  8 18:09 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep  8 18:09 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep  8 18:09 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep  8 18:09 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep  8 18:09 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep  8 18:09 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 triage
+---art---
+[0m
+[0m$ [0mfind /home/runner/work/alfaview-hunt/alfaview-hunt -maxdepth 3 -name "*.md" 2>/dev/null | head -40; echo "---"; find /home/runner/work/alfaview-hunt/alfaview-hunt -maxdepth 3 -type d 2>/dev/null | head -40
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-11-41.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-07-23-53.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-18-21.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-15-56.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-15-37.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-01-01.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-07-14-28.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-05-48.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-20-41.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-16-10.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-01-20.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-18-27.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-22-34.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-00-11.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-23-30.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-09-06.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-12-54.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-08-02-33.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-23-04.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-21-00.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-15-05.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-20-17.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-08-12-16.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-07-03-29.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-07-21-51.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-07-08-37.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-22-09.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-13-11.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-18-00.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-08-07-26.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-23-58.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-11-23.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-18-51.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-04-06-01.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-06-04-44.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-03-21-32.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-08-16-42.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-07-18-50.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-05-09-49.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/DEDICATED-DEEP.md
+---
+/home/runner/work/alfaview-hunt/alfaview-hunt
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/hooks
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/logs
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/logs/refs
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/info
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/refs
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/refs/heads
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/refs/tags
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/refs/remotes
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/b5
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/96
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/3e
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/22
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/2b
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/d7
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/ef
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/5a
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/49
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/3a
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/4f
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/a2
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/46
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/97
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/a5
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/93
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/b2
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/4e
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/32
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/7c
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/e4
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/d1
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/67
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/42
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/87
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/98
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/72
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/e8
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/26
+[0m
+Confirmed: `guestAuthenticate` with NULL uuids returns `BAD_USER_INPUT` (not `UNAUTHENTICATED`) — anonymous-reachable, field-oracle validated. The standing highest-structural authz gap persists.
+
+Now I have enough for the cycle. Delta this cycle vs prior: **the `/oauth2/authorize` behavior is now fully resolved** — the "200 login page" is actually a rendered **error page** (`invalid_client`/`missing_client_id`), not a successful login render. Prior KB entries oscillated between interpreting 200 as "login page" vs "validation gate." This closes that interpretive ambiguity: the gate is first-party, client_id-bound, and redirect_uri is never reached without a registered client_id. All standing chains remain HUMAN-gated.
+
+Let me check the workspace for the output files I should write to.
+[0m$ [0mls -la leads/ knowledge/ reports/ 2>/dev/null; echo "=== latest triage ==="; cat triage/run-2026-09-08-16-42.md 2>/dev/null | head -80
+knowledge/:
+total 56
+drwxr-xr-x  2 runner runner  4096 Sep  8 18:09 .
+drwxr-xr-x 12 runner runner  4096 Sep  8 18:09 ..
+-rw-r--r--  1 runner runner 48728 Sep  8 18:09 index.md
+
+leads/:
+total 684
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 .
+drwxr-xr-x 12 runner runner   4096 Sep  8 18:09 ..
+-rw-r--r--  1 runner runner 319909 Sep  8 18:09 lead-bigpickle.md
+-rw-r--r--  1 runner runner   2040 Sep  8 18:09 lead-laguna.md
+-rw-r--r--  1 runner runner   2000 Sep  8 18:09 lead-ling3.md
+-rw-r--r--  1 runner runner   2080 Sep  8 18:09 lead-longcat.md
+-rw-r--r--  1 runner runner     18 Sep  8 18:09 lead-mimo.md
+-rw-r--r--  1 runner runner 341417 Sep  8 18:09 lead-nemotron3.md
+-rw-r--r--  1 runner runner   4211 Sep  8 18:09 reposcan-alfaview.md
+
+reports/:
+total 2752
+drwxr-xr-x  2 runner runner    4096 Sep  8 18:09 .
+drwxr-xr-x 12 runner runner    4096 Sep  8 18:09 ..
+-rw-r--r--  1 runner runner 1150977 Sep  8 18:09 analyst-bigpickle.log
+-rw-r--r--  1 runner runner    8680 Sep  8 18:09 analyst-laguna.log
+-rw-r--r--  1 runner runner    8640 Sep  8 18:09 analyst-ling3.log
+-rw-r--r--  1 runner runner    8720 Sep  8 18:09 analyst-longcat.log
+-rw-r--r--  1 runner runner 1439100 Sep  8 18:09 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    5165 Sep  8 18:09 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Sep  8 18:09 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Sep  8 18:09 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Sep  8 18:09 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner    8603 Sep  8 18:09 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  138112 Sep  8 18:09 hypotheses.md
+-rw-r--r--  1 runner runner    2430 Sep  8 18:09 valid-bugs.md
+=== latest triage ===
+
+===== TRIAGE 2026-09-08 16:42:43 UTC =====
+[0m
+> build · mimo-v2.5-free
+[0m
+You've provided the gate criteria but **no actual leads** — the "LEADS:" section is empty. Please paste the probe results (URLs, findings, details) and I'll triage them.
+[0m
+Let me check the leads directory and the current run's output format by looking at a recent triage run, so my output block matches the expected format.
+[0m$ [0mcat state_bigpickle.json; echo; cat analyst-out.txt | tail -60
+{"phase": "POC", "target": "api"}
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/32
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/7c
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/e4
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/d1
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/67
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/42
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/87
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/98
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/72
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/e8
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects/26
+[0m
+Confirmed: `guestAuthenticate` with NULL uuids returns `BAD_USER_INPUT` (not `UNAUTHENTICATED`) — anonymous-reachable, field-oracle validated. The standing highest-structural authz gap persists.
+
+Now I have enough for the cycle. Delta this cycle vs prior: **the `/oauth2/authorize` behavior is now fully resolved** — the "200 login page" is actually a rendered **error page** (`invalid_client`/`missing_client_id`), not a successful login render. Prior KB entries oscillated between interpreting 200 as "login page" vs "validation gate." This closes that interpretive ambiguity: the gate is first-party, client_id-bound, and redirect_uri is never reached without a registered client_id. All standing chains remain HUMAN-gated.
+
+Let me check the workspace for the output files I should write to.
+[0m$ [0mls -la leads/ knowledge/ reports/ 2>/dev/null; echo "=== latest triage ==="; cat triage/run-2026-09-08-16-42.md 2>/dev/null | head -80
+knowledge/:
+total 56
+drwxr-xr-x  2 runner runner  4096 Sep  8 18:09 .
+drwxr-xr-x 12 runner runner  4096 Sep  8 18:09 ..
+-rw-r--r--  1 runner runner 48728 Sep  8 18:09 index.md
+
+leads/:
+total 684
+drwxr-xr-x  2 runner runner   4096 Sep  8 18:09 .
+drwxr-xr-x 12 runner runner   4096 Sep  8 18:09 ..
+-rw-r--r--  1 runner runner 319909 Sep  8 18:09 lead-bigpickle.md
+-rw-r--r--  1 runner runner   2040 Sep  8 18:09 lead-laguna.md
+-rw-r--r--  1 runner runner   2000 Sep  8 18:09 lead-ling3.md
+-rw-r--r--  1 runner runner   2080 Sep  8 18:09 lead-longcat.md
+-rw-r--r--  1 runner runner     18 Sep  8 18:09 lead-mimo.md
+-rw-r--r--  1 runner runner 341417 Sep  8 18:09 lead-nemotron3.md
+-rw-r--r--  1 runner runner   4211 Sep  8 18:09 reposcan-alfaview.md
+
+reports/:
+total 2752
+drwxr-xr-x  2 runner runner    4096 Sep  8 18:09 .
+drwxr-xr-x 12 runner runner    4096 Sep  8 18:09 ..
+-rw-r--r--  1 runner runner 1150977 Sep  8 18:09 analyst-bigpickle.log
+-rw-r--r--  1 runner runner    8680 Sep  8 18:09 analyst-laguna.log
+-rw-r--r--  1 runner runner    8640 Sep  8 18:09 analyst-ling3.log
+-rw-r--r--  1 runner runner    8720 Sep  8 18:09 analyst-longcat.log
+-rw-r--r--  1 runner runner 1439100 Sep  8 18:09 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    5165 Sep  8 18:09 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Sep  8 18:09 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Sep  8 18:09 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Sep  8 18:09 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner    8603 Sep  8 18:09 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  138112 Sep  8 18:09 hypotheses.md
+-rw-r--r--  1 runner runner    2430 Sep  8 18:09 valid-bugs.md
+=== latest triage ===
+
+===== TRIAGE 2026-09-08 16:42:43 UTC =====
+[0m
+> build · mimo-v2.5-free
+[0m
+You've provided the gate criteria but **no actual leads** — the "LEADS:" section is empty. Please paste the probe results (URLs, findings, details) and I'll triage them.
+[0m
+[0m
+I have enough context. Let me look at the existing hypotheses-bigpickle.txt to understand my output format for appending, and the lead file structure.
+[0m$ [0mcat reports/hypotheses-bigpickle.txt; echo "=== valid-bugs ==="; cat reports/valid-bugs.md
+## 2026-09-08 14:46:17 UTC [target] (model bigpickle)
+[PRIO] apis.alfaview.com/v2,6.25,a=8 b=9 t=6 g=2 c=3 f=5
+[PRIO] app.alfaview.com/graphql,5.85,a=7 b=7 t=9 g=2 c=2 f=5
+[PRIO] sso.alfaview.com,5.80,a=6 b=9 t=8 g=1 c=2 f=5
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI (byte-identical prod/beta, 37 paths) confirms token-authed UUID path params: DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401 unauth, /v2/users/{foreign-uuid}=405, /v2/rooms=401; opaque company-scoped bearer; two-tenant cross-authz never tested.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me baseline → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate(userId,companyId,roomId) processed anonymously — field-oracle returned GRAPHQL_VALIDATION_FAILED "Did you mean `role`?", never UNAUTHENTICATED; GuestAuthenticateReply exposes `role`; GraphQL guest signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field accessKey combo; anonymous resolver slice otherwise closed (listIdentityProviders=[], listComponents=500).
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 50
+reasoning: authorize returns 200 FusionAuth login page (~6189B) even for unregistered client_id (behavior shifted from invalid_client); discovery advertises public-client (`none`), implicit + device grants, issuer=acme.com misconfig, HS256/384/512 listed with RSA-only JWKS; no registration_endpoint; client_id absent from all public artifacts.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+[FINAL] Cross-tenant IDOR (80) — highest payout, whole chain mapped, only gate is 2-tenant signup.
+[FINAL] Guest-authz splice (55) — anonymous-reachable resolver proven, needs one valid room triple.
+[FINAL] OAuth redirect_uri bypass (50) — persistent, needs one registered client_id from desktop login HAR.
+[NEXT] HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401. Secondary: capture OAuth client_id from desktop login HAR for redirect_uri matrix.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 4-field accessKey combo.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` enforces client_id registration before redirect_uri handling — needs a registered client_id.
+[RISK] alfaview: 48/100 — unchanged. All substantive risk sits behind the single HUMAN 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 50). Anonymous reconnaissance yield fully exhausted across 55 hosts; zero unauthenticated data exposure or exploit path found in five days. Success now depends entirely on the HUMAN signup gate and desktop HAR capture.
+=== valid-bugs ===
+# Validated findings (running count 0)
+
+- 11 lead(s) marked VALID at 2026-09-05 16:10:05 UTC
+  - **Verdict: VALID**
+  - | Q4 Provable non-invasively? | PARTIAL | Needs valid companyId+roomId pair + 10+ rapid requests to test rate limiting |
+  - | Q7 Reasonable triager accept? | YES | If rate limiting confirmed absent, this is a valid auth bypass; accessKey entropy matters |
+  - **Verdict: HOLD** — Blocked on obtaining valid companyId+roomId pair. Once obtained, re-triage after rate-limit probe.
+  - | Q4 Provable non-invasively? | NO | Needs valid client_id + registered redirect_uri to test bypass. Web bundle carries no client_id. Desktop installer is only source (S3 buckets 403). |
+  - **Verdict: VALID (low severity)** — Fully provable passively, genuine misconfiguration, but low direct impact.
+  - | Q4 Provable non-invasively? | PARTIAL | OIDC/JWKS metadata is public (passive proof of misconfiguration). Actual exploit needs a valid token sample to test alg confusion. |
+  - **Verdict: HOLD** — Needs valid token to test. Misconfiguration is provable passively but exploit requires AUTH_HELPED step.
+  - | 1 | Cross-tenant IDOR (REST UUID paths) | **VALID** | 7.5 HIGH | Ready to test with free account |
+  - | 4 | FusionAuth issuer=acme.com drift | **VALID** | 5.3 MED | Low severity, fully passive |
+  - | 6 | JWT alg confusion (HS256+RSA JWKS) | **HOLD** | 9.8 CRIT | Needs valid token sample |
+
+- 2 lead(s) marked VALID at 2026-09-05 18:21:43 UTC
+  - | 1 | Cross-tenant IDOR (REST UUID paths) | **VALID** |
+  - | 4 | FusionAuth issuer=acme.com drift | **VALID** |
+
+- 8 lead(s) marked VALID at 2026-09-07 14:28:07 UTC
+  - | Q2 | Attacker reachable? | **YES** — requires valid company-scoped token (two free-tenant signup path mapped) |
+  - | Q7 | Reasonable triager accept? | **YES** — clear misconfiguration with concrete evidence; however, exploitability requires valid token to test alg-confusion on consumer |
+  - **Verdict: VALID** (misconfig finding); alg-confusion exploit remains HOLD (needs token)
+  - **Verdict: VALID**
+  - | Q7 | Reasonable triager accept? | **MARGINAL** — supply chain argument is valid but requires storage compromise assumption |
+  - **Verdict: VALID** (weak but valid)
+  - | Q2 | Attacker reachable? | **YES** — with valid token |
+  - **Verdict: VALID** (informational/low) — inconsistent resolver auth is a valid finding, but no data leaked in observed responses.
+[0m
+I now understand the output format. Let me write my analysis cycle output as a structured block. I'll append it to the hypotheses-bigpickle.txt file to maintain the running log.
+
+My key delta this cycle: I resolved the interpretive ambiguity on `/oauth2/authorize` — the "200 login page" is a rendered **error** page (`invalid_client`/`missing_client_id`), not a successful login render. The client_id validation is blocking at first-party level before `redirect_uri` is ever examined. This means the redirect_uri matrix is definitively client_id-gated and remains HUMAN-only.
+
+Let me write the cycle output to the hypotheses file.
+[0m→ [0mRead reports/hypotheses-bigpickle.txt[90m [limit=3][0m
+I'll append my new cycle block to the file.
+[0m
+[0m$ [0mcat >> reports/hypotheses-bigpickle.txt << 'EOF'
+
+## 2026-09-08 18:11:00 UTC [target] (model bigpickle) — cycle delta resolved
+[PRIO] apis.alfaview.com/v2,6.25,a=8 b=9 t=6 g=2 c=3 f=5
+[PRIO] app.alfaview.com/graphql,5.85,a=7 b=7 t=9 g=2 c=2 f=5
+[PRIO] sso.alfaview.com,5.80,a=6 b=9 t=8 g=1 c=2 f=5
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI (byte-identical prod/beta, 37 paths) confirms token-authed UUID path params DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401 (POST=405) reconfirmed this cycle; opaque company-scoped bearer; two-tenant cross-authz untestable passively.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable this cycle — returned BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `role`; GraphQL guest signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field accessKey combo; anonymous resolver slice otherwise closed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 45
+reasoning: THIS CYCLE RESOLVED the 200-vs-error ambiguity — the "200 login page" is a rendered FusionAuth ERROR page, not a login render. Missing client_id → invalid_request "missing_client_id"; unregistered/bare client_id → invalid_client "client_id: <x> is not valid" reason invalid_client_id. redirect_uri is NEVER reached before client_id validation, for both /authorize and /device_authorize. No client_id guess (alfaview/app/web/client/spa/desktop/alfaview.com/app.alfaview.com) succeeds. POST /oauth2/register returns generic login theme (RP-client self-registration disabled). token_endpoint_auth_methods includes `none` (public client), implicit+device grants advertised, issuer=acme.com, HS256 only in list not JWKS.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+[FINAL] Cross-tenant IDOR (80) — highest payout, whole chain mapped, only gate is 2-tenant signup.
+[FINAL] Guest-authz splice (55) — anonymous-reachable resolver proven, needs one valid room triple.
+[FINAL] OAuth redirect_uri bypass (45) — persistent but client_id gate confirmed at first-party validation; needs registered client_id from desktop login HAR.
+[NEXT] HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401. Secondary: capture OAuth client_id from desktop login HAR for redirect_uri matrix.
+[LEARN] REJECTED OATH @ sso.alfaview.com: `/oauth2/authorize` "200 login page" for unregistered client_id is actually a rendered ERROR page — invalid_client "client_id: x is not valid" / missing_client_id. client_id validation blocks at first-party level BEFORE any redirect_uri handling; no client_id guess succeeds. redirect_uri matrix closed without registered client_id.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/register` POST returns generic login theme (not RFC7591 dynamic client registration) and is not in discovery — self-registration of an OAuth client closed. `/device_authorize` also client_id-gated (invalid_client).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); accessKey-less GraphQL guest path still diverges from REST 4-field combo.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me=401 / POST=405 reconfirmed this cycle — auth gate stable, no regression.
+[RISK] alfaview: 48/100 — unchanged. This cycle resolved the sso authorize 200-vs-400 oscillating interpretation (it is first-party client_id-bound error rendering), eliminating any false-positive signal but confirming all three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80, guest-authz 55) plus desktop OAuth HAR (redirect_uri 45). Anonymous recon fully exhausted across 55 hosts; zero unauthenticated data/exploit path in six days; temporal freshness of standing chains slowly decays.
+
+EOF
+echo "appended"; tail -5 reports/hypotheses-bigpickle.txt
+appended
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/register` POST returns generic login theme (not RFC7591 dynamic client registration) and is not in discovery — self-registration of an OAuth client closed. `/device_authorize` also client_id-gated (invalid_client).
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); accessKey-less GraphQL guest path still diverges from REST 4-field combo.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me=401 / POST=405 reconfirmed this cycle — auth gate stable, no regression.
+[RISK] alfaview: 48/100 — unchanged. This cycle resolved the sso authorize 200-vs-400 oscillating interpretation (it is first-party client_id-bound error rendering), eliminating any false-positive signal but confirming all three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80, guest-authz 55) plus desktop OAuth HAR (redirect_uri 45). Anonymous recon fully exhausted across 55 hosts; zero unauthenticated data/exploit path in six days; temporal freshness of standing chains slowly decays.
+[0m
+Analysis cycle complete. Here is the structured output.
+
+---
+
+**STEP 1 — DELTA**
+- [CHANGED] sso.alfaview.com `/oauth2/authorize`: resolved the 200-vs-400 oscillation — the HTTP 200 "login page" is a rendered **FusionAuth error page**, not a login render. Missing `client_id` → `invalid_request/missing_client_id`; unregistered/bare `client_id` → `invalid_client` "`client_id: <x> is not valid`" `invalid_client_id`.
+- [CHANGED] `redirect_uri` is **never reached** before `client_id` validation — the validation gate is first-party and client_id-bound, for both `/authorize` and `/device_authorize`.
+- [CHANGED] POST `/oauth2/register` returns generic login theme (not RFC7591 dynamic client registration) — self-registration of an OAuth client is definitively closed.
+- [CHANGED] `guestAuthenticate` with NULL uuids reconfirmed this cycle → `BAD_USER_INPUT` (not `UNAUTHENTICATED`); `/v2/users/me` = 401 / POST = 405 reconfirmed.
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] apis.alfaview.com/v2, 6.25, a=8 b=9 t=6 g=2 c=3 f=5
+- [PRIO] app.alfaview.com/graphql, 5.85, a=7 b=7 t=9 g=2 c=2 f=5
+- [PRIO] sso.alfaview.com, 5.80, a=6 b=9 t=8 g=1 c=2 f=5
+
+**STEP 3 — HYPOTHESES** (top 3, max 1 each)
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+- class: IDOR
+- asset: apis.alfaview.com/v2
+- confidence: 80
+- reasoning: OpenAPI (byte-identical prod/beta, 37 paths) confirms token-authed UUID path params DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401(POST=405) reconfirmed this cycle; opaque company-scoped bearer; two-tenant cross-authz untestable passively.
+- evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+- verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+- impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+- testability: HUMAN_ONLY
+
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+- class: AUTH
+- asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+- confidence: 55
+- reasoning: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable this cycle → BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `role`; GraphQL guest signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field accessKey combo; anonymous resolver slice otherwise closed.
+- evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects same triple without accessKey.
+- impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+- testability: HUMAN_ONLY
+
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+- class: OATH
+- asset: sso.alfaview.com/oauth2/authorize
+- confidence: 45
+- reasoning: THIS CYCLE RESOLVED the 200-vs-error ambiguity — the "200 login page" is a rendered ERROR page, not a login render. Missing client_id → invalid_request; unregistered/bare client_id → invalid_client "not valid". redirect_uri never reached before client_id validation, for both /authorize and /device_authorize. No client_id guess succeeds. POST /oauth2/register returns login theme only. token_endpoint_auth_methods includes `none` (public client), implicit+device grants advertised, issuer=acme.com, HS256 listed but RSA-only JWKS.
+- evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+- verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=&lt;x&gt;&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
+- impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+- testability: HUMAN_ONLY
+
+**STEP 4 — SELF-CRITIQUE**
+- [FINAL] Cross-tenant IDOR (80) — highest payout, whole chain mapped, sole gate is 2-tenant signup.
+- [FINAL] Guest-authz splice (55) — anonymous-reachable resolver proven, needs one valid room triple.
+- [FINAL] OAuth redirect_uri bypass (45) — persistent but first-party client_id gate confirmed; needs registered client_id from desktop login HAR.
+- [PARKED] JWT alg confusion (sso.alfaview.com HS256+RSA-JWKS) — needs a valid token sample; folds into the same client_id/HAR gate.
+
+**STEP 5 — NEXT ACTION**
+- [NEXT] HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401. Secondary: capture OAuth client_id from desktop login HAR for redirect_uri matrix.
+
+**STEP 6 — LEARNING**
+- [LEARN] REJECTED OATH @ sso.alfaview.com: `/oauth2/authorize` "200 login page" for unregistered client_id is actually a rendered ERROR page (`invalid_client`/`missing_client_id`); client_id validation blocks at first-party level BEFORE any redirect_uri handling; no client_id guess succeeds.
+- [LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/register` POST returns generic login theme (not RFC7591) and is not in discovery — self-registration of an OAuth client closed; `/device_authorize` also client_id-gated.
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); accessKey-less GraphQL guest path still diverges from REST 4-field combo.
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me=401 / POST=405 reconfirmed this cycle — auth gate stable.
+
+**STEP 7 — RISK**
+- [RISK] alfaview: 48/100 — unchanged. This cycle resolved the sso authorize 200-vs-400 interpretation (first-party client_id-bound error rendering), eliminating a false-positive signal but confirming all three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 45). Anonymous recon fully exhausted across 55 hosts; zero unauthenticated data/explot path in six days; standing chains slowly lose temporal freshness.

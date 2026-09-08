@@ -353,3 +353,11 @@ www.alfaview.com
 - CHANGED apis.alfaview.com: Access tokens confirmed opaque/base64 (distinct 401 "No base64 encoded access token was provided") — JWT alg-confusion against API gateway closed
 
 ## 2026-09-08 14:53:43 UTC
+
+## 2026-09-08 18:17:59 UTC
+- NEW sso.alfaview.com/oauth2/authorize: Now returns HTTP 400 for unregistered client_id (was 200 login page) — validation timing still client_id-gated; redirect_uri matrix remains blocked without registere
+- NEW apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable
+- CHANGED sso.alfaview.com OIDC: issuer=acme.com misconfiguration persists; implicit flow + HS256/384/512 in supported algs but JWKS contains ONLY 7 RSA keys (zero symmetric) — alg confusion vector unchanged
+- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural 
+- CHANGED apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in OpenAPI — requires authenticated account
+- CHANGED test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification — supply chain risk
