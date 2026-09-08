@@ -258,3 +258,4 @@
 - 2026-09-08 REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
 - 2026-09-08 REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` `UNAUTHENTICATED`; no PII/config reachable anonymously.
 - 2026-09-08 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
+- 2026-09-08 NO_DELTA: no new independent learning this cycle — surface unchanged, all three standing chains remain HUMAN-gated and untestable passively.

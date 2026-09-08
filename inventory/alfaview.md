@@ -333,3 +333,12 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/users/{uuid}: Returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token); OpenAPI spec confirmed identical beta/prod
 
 ## 2026-09-08 01:17:28 UTC
+
+## 2026-09-08 06:04:11 UTC
+- NEW sso.alfaview.com/oauth2/authorize behavioral change: now returns HTTP 200 FusionAuth login page (~6189B) for unregistered client_id (was 404 → invalid_client error) — validation timing shifted, may in
+- NEW sso.alfaview.com OIDC discovery reconfirmed: issuer=acme.com (not alfaview.com), implicit flow enabled, HS256/384/512 in id_token_signing_alg_values_supported but JWKS contains ONLY 7 RSA keys (zero s
+- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT, not UNAUTHENTICATED) — accessKey-less GraphQL guest path diverging from REST 4-field combo remain
+- CHANGED apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in identical beta/prod OpenAPI — requires authenticated ac
+- CHANGED test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible — supply chain risk
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero genuinely-unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)
+- CHANGED apis.alfaview.com: Access tokens confirmed opaque/base64 (distinct 401 "No base64 encoded access token was provided") — JWT alg-confusion against API gateway closed
