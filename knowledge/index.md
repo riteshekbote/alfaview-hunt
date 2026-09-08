@@ -259,3 +259,6 @@
 - 2026-09-08 REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` `UNAUTHENTICATED`; no PII/config reachable anonymously.
 - 2026-09-08 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
 - 2026-09-08 NO_DELTA: no new independent learning this cycle — surface unchanged, all three standing chains remain HUMAN-gated and untestable passively.
+- 2026-09-08 NO_DELTA: re-probes 2026-09-08 10:33 confirm zero surface change — apis /v2/users/me=401(POST=405), sso authorize=200/6189B, OIDC live, openapi prod=beta (MD5 357b94d3, 37 paths). All chains remain HUMAN-gated.
+- 2026-09-08 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
+- 2026-09-08 ACCEPTED AUTH @ sso.alfaview.com: /oauth2/authorize reconfirmed 200 FusionAuth login page (~6189B) for unregistered/bare client_id — validation timing shift persisted overnight; redirect_uri matrix still client_id-gated.

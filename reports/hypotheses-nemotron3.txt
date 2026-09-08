@@ -1,5 +1,5 @@
-## 2026-09-08 06:04:01 UTC [target] (model nemotron3)
-[NEW] sso.alfaview.com/oauth2/authorize behavioral change: now returns HTTP 200 FusionAuth login page (~6189B) for unregistered client_id (was 404 → invalid_client error) — validation timing shifted, may indicate FusionAuth config update  
+## 2026-09-08 10:36:08 UTC [target] (model nemotron3)
+[NEW] sso.alfaview.com/oauth2/authorize now returns HTTP 200 FusionAuth login page (~6189B) for unregistered client_id (was 404 → invalid_client error) — validation timing shifted, may indicate FusionAuth config update  
 [NEW] sso.alfaview.com OIDC discovery reconfirmed: issuer=acme.com (not alfaview.com), implicit flow enabled, HS256/384/512 in id_token_signing_alg_values_supported but JWKS contains ONLY 7 RSA keys (zero symmetric) — alg confusion vector persists  
 [CHANGED] app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT, not UNAUTHENTICATED) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural authz gap  
 [CHANGED] apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in identical beta/prod OpenAPI — requires authenticated account (gate_ease=3)  
