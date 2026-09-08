@@ -13142,3 +13142,35 @@ Analysis cycle complete. Here is the structured output.
 
 **STEP 7 — RISK**
 - [RISK] alfaview: 48/100 — unchanged. This cycle resolved the sso authorize 200-vs-400 interpretation (first-party client_id-bound error rendering), eliminating a false-positive signal but confirming all three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80, guest-authz 55) plus the desktop OAuth HAR (redirect_uri 45). Anonymous recon fully exhausted across 55 hosts; zero unauthenticated data/explot path in six days; standing chains slowly lose temporal freshness.
+===== ANALYST bigpickle 2026-09-08 21:14:43 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "sso_authorize_nocid: %{http_code} %{size_download}B\n" "https://sso.alfaview.com/oauth2/authorize?response_type=code" ; sleep 1; curl -s -o /dev/null -w "sso_authorize_badcid: %{http_code} %{size_download}B\n" "https://sso.alfaview.com/oauth2/authorize?client_id=nonexistent-test-123&redirect_uri=https://evil.com&response_type=code"
+sso_authorize_nocid: 200 6189B
+sso_authorize_badcid: 200 6173B
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "apis_users_me: %{http_code}\n" "https://apis.alfaview.com/v2/users/me" ; sleep 1; curl -s -o /dev/null -w "apis_openapi: %{http_code} %{size_download}B\n" -o /tmp/op.json "https://apis.alfaview.com/v2/docs/openapi.json" ; md5sum /tmp/op.json
+apis_users_me: 401
+apis_openapi: 200 127532B
+md5sum: /tmp/op.json: No such file or directory
+[0m
+[0m$ [0mcurl -s -o /tmp/op.json "https://apis.alfaview.com/v2/docs/openapi.json" && md5sum /tmp/op.json && echo "---paths---" && rg -o '"/v2/[a-z/{}-]*"' /tmp/op.json | sort -u | wc -l
+357b94d367909a40b9299b543d23712b  /tmp/op.json
+---paths---
+/bin/bash: line 1: rg: command not found
+0
+[0m
+[0m$ [0mcurl -s -o /tmp/oidc.json "https://sso.alfaview.com/.well-known/openid-configuration" && rg -o '"issuer":"[^"]*"' /tmp/oidc.json && rg -o '"registration_endpoint"' /tmp/oidc.json; echo "exit=$?"; sleep 1; curl -s -X POST "https://app.alfaview.com/graphql" -H "content-type: application/json" --data '{"query":"mutation($userId:String){guestAuthenticate(userId:$userId,companyId:\"\"){role}}"}' | head -c 400
+/bin/bash: line 1: rg: command not found
+exit=127
+{"errors":[{"message":"Field \"guestAuthenticate\" argument \"roomId\" of type \"String!\" is required, but it was not provided.","locations":[{"line":1,"column":26}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Variable \"$userId\" of type \"String\" used in position expecting type \"String!\".","locations":[{"line":1,"column":10},{"line":1,"column":51}],"extensions":{"code":"GR
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mGrep ""issuer"|registration_endpoint|token_endpoint_auth_methods|id_token_signing_alg_values_supported" failed[90m in /tmp/oidc.json[0m
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "guestJoin_null: " -X POST "https://app.alfaview.com/graphql" -H "content-type: application/json" --data '{"query":"mutation{guestJoin(userId:\"null\",companyId:\"null\",roomId:\"null\",displayName:\"t\"){role}}"}' ; echo; sleep 1; curl -s -X POST "https://app.alfaview.com/graphql" -H "content-type: application/json" --data '{"query":"mutation{guestJoin(userId:\"null\",companyId:\"null\",roomId:\"null\",displayName:\"t\"){role}}"}' | head -c 300
+guestJoin_null: 
+{"errors":[{"message":"Cannot query field \"role\" on type \"GuestJoinReply\".","locations":[{"line":1,"column":82}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
