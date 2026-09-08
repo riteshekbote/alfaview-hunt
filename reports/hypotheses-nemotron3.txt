@@ -1,6 +1,4 @@
-## 2026-09-07 23:07:35 UTC [target] (model nemotron3)
-[CHANGED] sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 with FusionAuth login page HTML for unregistered client_id (was 404 → invalid_client error) — endpoint behavior changed, now renders login page before client_id validation; OIDC discovery unchanged (issuer=acme.com, implicit flow, HS256/384/512 in supported algs, JWKS RSA-only 7 keys)
-[CHANGED] apis.alfaview.com/v2/users/{uuid}: Returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token); OpenAPI spec confirmed identical beta/prod
+## 2026-09-08 01:17:20 UTC [target] (model nemotron3)
 [PRIO] sso.alfaview.com/oauth2/authorize,8.8,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
 [PRIO] app.alfaview.com/graphql,8.3,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
 [PRIO] apis.alfaview.com/v2,7.8,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8
@@ -10,7 +8,7 @@
 class: OATH
 asset: sso.alfaview.com/oauth2/authorize
 confidence: 75
-reasoning: authorize endpoint now returns HTTP 200 login page for unregistered client_id (test) instead of invalid_client error; FusionAuth 1.63.0 OIDC discovery shows issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512 in id_token_signing_alg_values_supported but JWKS contains only 7 RSA keys (zero symmetric); token_endpoint_auth_methods_supported includes "none" (public client); no registration_endpoint advertised; /oauth2/register returns theme page not API
+reasoning: authorize endpoint now returns HTTP 200 FusionAuth login page for unregistered client_id (was invalid_client error); FusionAuth 1.63.0 OIDC discovery shows issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512 in id_token_signing_alg_values_supported but JWKS contains only 7 RSA keys (zero symmetric); token_endpoint_auth_methods_supported includes "none" (public client); no registration_endpoint advertised; /oauth2/register returns theme page not API
 evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); 302 Location header with attacker-controlled redirect_uri after login; state parameter reflection/validation; PKCE code_challenge_method=S256 enforcement
 verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location; repeat without state; test code_challenge_method=S256&code_challenge=<valid>
 impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)

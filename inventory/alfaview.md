@@ -331,3 +331,5 @@ www.alfaview.com
 ## 2026-09-07 23:07:47 UTC
 - CHANGED sso.alfaview.com/oauth2/authorize: Now returns HTTP 200 with FusionAuth login page HTML for unregistered client_id (was 404 → invalid_client error) — endpoint behavior changed, now renders login page 
 - CHANGED apis.alfaview.com/v2/users/{uuid}: Returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token); OpenAPI spec confirmed identical beta/prod
+
+## 2026-09-08 01:17:28 UTC
