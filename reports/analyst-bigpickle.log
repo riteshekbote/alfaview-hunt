@@ -13174,3 +13174,73 @@ exit=127
 guestJoin_null: 
 {"errors":[{"message":"Cannot query field \"role\" on type \"GuestJoinReply\".","locations":[{"line":1,"column":82}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
 [0m
+===== ANALYST bigpickle 2026-09-08 23:25:31 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor u in "apis.alfaview.com/v2/users/me" "sso.alfaview.com/.well-known/openid-configuration" "sso.alfaview.com/oauth2/authorize"; do f=/tmp/opencode/probe_$$.t; code=$(curl -sS -o "$f" -w "%{http_code}" --max-time 12 "https://$u"); size=$(wc -c <"$f"); srv=$(grep -oiE '"issuer": *"[^"]+"|"registration_endpoint[^,]*' "$f" | head -c 120); echo "$u -> $code len=$size ${srv:+|$srv}"; sleep 1; done
+apis.alfaview.com/v2/users/me -> 401 len=107 
+sso.alfaview.com/.well-known/openid-configuration -> 200 len=2112 
+sso.alfaview.com/oauth2/authorize -> 200 len=6189
+[0m
+[0m$ [0mcurl -s --max-time 12 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/opencode/oidc.t; python3 -c "import json;d=json.load(open('/tmp/opencode/oidc.t'));print('issuer=',d.get('issuer'));print('reg=',d.get('registration_endpoint'));print('auth_methods=',d.get('token_endpoint_auth_methods_supported'));print('id_signing=',d.get('id_token_signing_alg_values_supported'));print('grants=',d.get('grant_types_supported'))"
+issuer= acme.com
+reg= None
+auth_methods= ['client_secret_basic', 'client_secret_post', 'none']
+id_signing= ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+grants= ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+[0m
+**STEP 1 — DELTA**
+- NO_DELTA: re-probes this cycle confirm zero change — apis `/v2/users/me`=401 (len 107), sso OIDC issuer=acme.com + no `registration_endpoint` + public-client `none` + HS256/384/512 listed (RSA-only JWKS), sso `/oauth2/authorize`=200/6189B (resolved as rendered error page). Inventory 55/55 fully probed; no new host, path, or header delta.
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] apis.alfaview.com/v2,6.25,a=8 b=9 t=6 g=2 c=3 f=5
+- [PRIO] app.alfaview.com/graphql,5.85,a=7 b=7 t=9 g=2 c=2 f=5
+- [PRIO] sso.alfaview.com,5.80,a=6 b=9 t=8 g=1 c=2 f=5
+
+**STEP 3 — HYPOTHESES**
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public+byte-identical prod/beta (37 paths) confirms token-authed UUID path params: DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; this cycle /v2/users/me=401 (len 107) — gate stable, no regression; opaque company-scoped bearer; cross-tenant authz untestable passively.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate with NULL uuids previously reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `role`; GraphQL guest signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field accessKey combo; anonymous resolver slice otherwise closed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 45
+reasoning: this cycle OIDC unchanged — issuer=acme.com, grant_types include implicit+device_code+password, token_endpoint supports public-client (`none`), no registration_endpoint (dyn client reg closed), HS listed but RSA-only JWKS; authorize=200/6189B confirmed as rendered first-party ERROR page; client_id validation blocks redirect_uri handling for /authorize and /device_authorize; no client_id guess succeeds; POST /oauth2/register returns generic login theme.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+
+**STEP 4 — SELF-CRITIQUE**
+- All three survive ≥40 with concrete verify_steps; no REJECTED-class; drop nothing new.
+- [FINAL] Cross-tenant IDOR (80) — highest payout, chain fully mapped, sole gate = 2-tenant signup.
+- [FINAL] Guest-authz splice (55) — anonymous-reachable resolver proven, needs one valid room triple.
+- [FINAL] OAuth redirect_uri bypass (45) — persistent; client_id gate confirmed at first-party validation; needs registered client_id from desktop login HAR.
+
+**STEP 5 — NEXT ACTION**
+- [NEXT] HUMAN: Create two throwaway free tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks both surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401. Secondary: capture OAuth client_id from desktop login HAR for redirect_uri matrix.
+
+**STEP 6 — LEARNING**
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me=401 (len 107) reconfirmed this cycle — auth gate fully stable, no regression; cross-tenant authz still requires two tenants.
+- [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery unchanged this cycle — issuer=acme.com, grant_types include password/devicecode/implicit, token_endpoint_auth_methods includes `none` (public client), no registration_endpoint, HS256/384/512 advertised with RSA-only JWKS; authorize=200/6189B persists as rendered first-party error page.
+
+**STEP 7 — RISK**
+- [RISK] alfaview: 48/100 — unchanged. All three standing chains remain HUMAN-gated (2-tenant signup for IDOR 80 + guest-authz 55; desktop OAuth HAR for redirect_uri 45). Anonymous recon fully exhausted across 55 hosts with byte-stable surfaces for seven days; zero unauthenticated data exposure or exploit path found. Success now depends entirely on the HUMAN signup gate and desktop HAR capture; standing-chain temporal freshness continues to decay.

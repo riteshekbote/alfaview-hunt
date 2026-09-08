@@ -1,4 +1,4 @@
-## 2026-09-08 21:14:32 UTC [target] (model nemotron3)
+## 2026-09-08 23:25:23 UTC [target] (model nemotron3)
 [NEW] sso.alfaview.com/oauth2/authorize: Now returns HTTP 400 for unregistered client_id (was 200 login page) — validation timing still client_id-gated; redirect_uri matrix remains blocked without registered client_id
 [NEW] apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable
 [CHANGED] sso.alfaview.com OIDC: issuer=acme.com misconfiguration persists; implicit flow + HS256/384/512 in supported algs but JWKS contains ONLY 7 RSA keys (zero symmetric) — alg confusion vector unchanged

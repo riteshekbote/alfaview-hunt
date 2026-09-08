@@ -1,1 +1,28 @@
-## 2026-09-08 21:10:45 UTC [target] (model bigpickle)
+## 2026-09-08 23:25:07 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public+byte-identical prod/beta (37 paths) confirms token-authed UUID path params: DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; this cycle /v2/users/me=401 (len 107) — gate stable, no regression; opaque company-scoped bearer; cross-tenant authz untestable passively.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate with NULL uuids previously reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `role`; GraphQL guest signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field accessKey combo; anonymous resolver slice otherwise closed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 45
+reasoning: this cycle OIDC unchanged — issuer=acme.com, grant_types include implicit+device_code+password, token_endpoint supports public-client (`none`), no registration_endpoint (dyn client reg closed), HS listed but RSA-only JWKS; authorize=200/6189B confirmed as rendered first-party ERROR page; client_id validation blocks redirect_uri handling for /authorize and /device_authorize; no client_id guess succeeds; POST /oauth2/register returns generic login theme.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
