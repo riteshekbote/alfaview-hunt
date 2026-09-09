@@ -1069,3 +1069,23 @@
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+
+## RANKED HYPOTHESES 2026-09-09 06:50:32 UTC
+- [70] sso.alfaview.com/oauth2/authorize: OAuth redirect_uri validation bypass via client_id registration timing shift (from art/lead_nemotron3.txt)
+- [45] sso.alfaview.com/oauth2/introspect: Unauthenticated token introspection on FusionAuth (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Create one throwaway free alfaview tenant via `mutation{Signup(...)}` at app.alfaview.com/graphql (exact payload already mapped) → disposable inbox → `fi
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow 
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/introspect` accepts any `client_id` value without verification (200 `{"active":false}` with fake client_id) — br
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/token` with `client_credentials` grant returns 400 `not_licensed` — FusionAuth Community edition (v1.63.0) does 
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: `/v2/auth/password` REST endpoint confirms POST with `{username, password}` → 422 validates input, 401 `invalid credentials` 
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 400 for unregistered client_id (not 200 login page) — validation timing still client_id-gated
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery exposed with `issuer=acme.com` (not `alfaview.com`), implicit flow enabled, HS256/384/512 listed but only 
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: FusionAuth 1.63.0, `/admin` returns 404 (not exposed unauthenticated), no `registration_endpoint` → dynamic client registratio
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079) for 4 platforms, no visible integrity verification — supply chai
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab

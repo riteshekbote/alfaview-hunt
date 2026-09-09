@@ -2489,3 +2489,44 @@ impact: OAuth code theft → ATO via open redirect on public client; HIGH.
 testability: HUMAN_ONLY
 [NEXT] HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401. Secondary: capture OAuth client_id from desktop login HAR for redirect_uri matrix.
 [RISK] alfaview: 48/100 — unchanged. Surface is re-confirmed byte-stable across api (openapi MD5), auth gate (401/107B), and sso error-render (client_id-bound confirms no redirect_uri bypass passively). This cycle closed the final anonymous OAuth client_id source (webclient bundles = media-only). All three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80) + desktop OAuth HAR (redirect_uri 45); anonymous recon across all 55 hosts is fully exhausted, so freshness of the IDOR/GuestAuthz chains decays until signup is performed.
+## 2026-09-09 06:50:22 UTC [target] (model bigpickle)
+[CHANGED] `/oauth2/introspect` — now confirmed broken client authentication: accepts ANY `client_id` value without validation (200 `{"active":false}` with `client_id=does-not-exist-12345`). Without `client_id` → 400. This is new behavioral detail not previously documented.
+[CHANGED] `/oauth2/token` with `client_credentials` grant → 400 `not_licensed` — FusionAuth Community edition, Entity Management feature not available. Confirms license tier.
+[CHANGED] `/v2/auth/password` REST endpoint — POST with `{username, password}` confirmed: 422 validates input schema, 401 `invalid credentials` for bad creds. Generic error (no username enumeration). Now confirmed as a standalone REST auth path alongside GraphQL.
+[PRIO] apis.alfaview.com/v2,9/10,a:9,t:8,g:0,c:8,f:9 — OpenAPI confirms UUID path params on DELETE/PATCH, REST auth endpoint exists, tokens opaque — highest-value target behind signup gate.
+[PRIO] sso.alfaview.com,7/10,a:6,t:8,g:0,c:5,f:8 — FusionAuth OIDC with issuer=acme.com, HS256/384/512 in supported algs but RSA-only JWKS (alg confusion vector persists); broken client auth on introspect; client_credentials "not_licensed" reveals community edition. Auth-gated.
+[PRIO] app.alfaview.com/graphql,6/10,a:7,t:9,g:0,c:4,f:8 — Guest path still anonymous-reachable (BAD_USER_INPUT not UNAUTHENTICATED). Schema leaked in JS bundle. No accessKey in GraphQL signature. Auth-gated behind signup.
+[HYP] Unauthenticated token introspection on FusionAuth
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 45
+reasoning: POST /oauth2/introspect accepts any client_id as a form parameter without verification (200 {"active":false} with client_id=does-not-exist-12345). Without client_id → 400 missing_client_id. This is inconsistent — parameter required but not validated. However, FusionAuth Community edition may permit this for public clients per RFC 7662. token_endpoint_auth_methods_supported includes "none". Practical impact requires a valid FusionAuth-issued access token to introspect, which we cannot obtain.
+evidence_needed: A valid FusionAuth access token introspected without client authentication returning token metadata (sub, scopes, exp).
+verify_steps: (POST-SIGNUP) Obtain FusionAuth token via OAuth flow → POST /oauth2/introspect with token=<valid_token>&client_id=anything → 200 with full token metadata vs 401.
+impact: Token metadata leak (subject, scopes, expiry) without client credentials; enables token validation by unauthorized parties. MEDIUM.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public+byte-identical prod/beta (37 paths, MD5 357b94d3 reconfirmed this cycle) confirms token-authed UUID path params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401/107B gate stable; opaque company-scoped bearer; cross-tenant authz untestable passively with one tenant.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `accessToken` + `role`; GraphQL signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field combo (companyId+roomId+accessKey+displayName); anonymous resolver slice otherwise closed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,accessToken}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[PARKED] Unauthenticated token introspection on FusionAuth: confidence 45 — practical impact requires a valid FusionAuth token (we cannot obtain one), and FusionAuth Community edition may legitimately permit unauthenticated introspection for public clients. Even if confirmed, the token would need to be stolen first, making this a secondary finding.
+[FINAL] Survivors ranked:
+[NEXT] HUMAN: Create one throwaway free alfaview tenant via `mutation{Signup(...)}` at app.alfaview.com/graphql (exact payload already mapped) → disposable inbox → `finishSignup` at /finish-signup → `POST /v2/auth/password` for bearer token. This unlocks ALL three surviving chains: IDOR, guest-authz splice, and token introspection verification. Without this step, the workspace is fully exhausted.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/introspect` accepts any `client_id` value without verification (200 `{"active":false}` with fake client_id) — broken client authentication on token introspection endpoint; parameter required but not validated. FusionAuth Community edition (`not_licensed` on client_credentials) may permit this for public clients. Impact requires a valid token.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/token` with `client_credentials` grant returns 400 `not_licensed` — FusionAuth Community edition (v1.63.0) does not support Entity Management. Advertises client_credentials in OIDC discovery but rejects at runtime.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: `/v2/auth/password` REST endpoint confirms POST with `{username, password}` → 422 validates input, 401 `invalid credentials` for bad creds. Generic error (no username enumeration). Standalone REST auth path alongside GraphQL signup.
+[RISK] alfaview: 48/100 — unchanged. Surface is byte-stable across all vectors (OpenAPI MD5 357b94d3, /v2/users/me=401/107B, sso introspect/client_credentials behavior). New minor finding (introspect broken client auth) but impact gated behind token. All three standing chains (IDOR 80, guest-authz splice 55, introspect 45) remain HUMAN-gated behind 2-tenant signup. Anonymous recon across all 55 hosts fully exhausted; freshness of all chains decays until signup is performed.

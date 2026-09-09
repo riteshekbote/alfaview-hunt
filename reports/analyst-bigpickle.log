@@ -13347,3 +13347,514 @@ testability: HUMAN_ONLY
 
 **STEP 7 — RISK**
 [RISK] alfaview: 48/100 — unchanged. Surface is re-confirmed byte-stable across api (openapi MD5), auth gate (401/107B), and sso error-render (client_id-bound confirms no redirect_uri bypass passively). This cycle closed the final anonymous OAuth client_id source (webclient bundles = media-only). All three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80) + desktop OAuth HAR (redirect_uri 45); anonymous recon across all 55 hosts is fully exhausted, so freshness of the IDOR/GuestAuthz chains decays until signup is performed.
+===== ANALYST bigpickle 2026-09-09 06:50:32 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m• [0mCheck project state files[90m Explore Agent[0m
+[0m• [0mReconnaissance pass - API endpoint probing[90m General Agent[0m
+[0m• [0mExplore new GraphQL attack surface[90m General Agent[0m
+[0m✓ [0mExplore new GraphQL attack surface[90m General Agent[0m
+[0m✓ [0mReconnaissance pass - API endpoint probing[90m General Agent[0m
+[0m✓ [0mCheck project state files[90m Explore Agent[0m
+[0m
+[0m$ [0mcurl -sk -o /tmp/openapi-prod.json -w '%{http_code} %{size_download}' https://apis.alfaview.com/v2/docs/openapi.json 2>/dev/null
+200 127532
+[0m
+[0m$ [0mcurl -sk -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' https://apis.alfaview.com/v2/users/me 2>/dev/null
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+HTTP:401 SIZE:107
+[0m
+[0m$ [0mcurl -sk https://sso.alfaview.com/.well-known/openid-configuration 2>/dev/null | python3 -m json.tool 2>/dev/null | head -80
+{
+    "authorization_endpoint": "https://sso.alfaview.com/oauth2/authorize",
+    "backchannel_logout_supported": false,
+    "claims_supported": [
+        "applicationId",
+        "at_hash",
+        "aud",
+        "authenticationType",
+        "birthdate",
+        "c_hash",
+        "email",
+        "email_verified",
+        "exp",
+        "family_name",
+        "given_name",
+        "iat",
+        "iss",
+        "jti",
+        "middle_name",
+        "name",
+        "nbf",
+        "nonce",
+        "phone_number",
+        "phone_number_verified",
+        "picture",
+        "preferred_username",
+        "roles",
+        "sub"
+    ],
+    "device_authorization_endpoint": "https://sso.alfaview.com/oauth2/device_authorize",
+    "dpop_signing_alg_values_supported": [
+        "Ed448",
+        "Ed25519",
+        "ES256",
+        "ES384",
+        "ES512",
+        "PS256",
+        "PS384",
+        "PS512",
+        "RS256",
+        "RS384",
+        "RS512"
+    ],
+    "end_session_endpoint": "https://sso.alfaview.com/oauth2/logout",
+    "frontchannel_logout_supported": true,
+    "grant_types_supported": [
+        "authorization_code",
+        "password",
+        "implicit",
+        "refresh_token",
+        "urn:ietf:params:oauth:grant-type:device_code",
+        "client_credentials"
+    ],
+    "id_token_signing_alg_values_supported": [
+        "ES256",
+        "ES384",
+        "ES512",
+        "HS256",
+        "HS384",
+        "HS512",
+        "RS256",
+        "RS384",
+        "RS512"
+    ],
+    "issuer": "acme.com",
+    "jwks_uri": "https://sso.alfaview.com/.well-known/jwks.json",
+    "response_modes_supported": [
+        "form_post",
+        "fragment",
+        "query"
+    ],
+    "response_types_supported": [
+        "code",
+        "id_token",
+        "token id_token"
+    ],
+    "scopes_supported": [
+        "openid",
+        "offline_access",
+        "email",
+[0m
+[0m$ [0mcurl -sk -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' 'https://sso.alfaview.com/oauth2/authorize?client_id=nonexistent&redirect_uri=https://evil.com&response_type=code&scope=openid' 2>/dev/null | tail -5
+</body>
+</html>
+
+HTTP:200 SIZE:6164
+[0m
+[0m$ [0mcurl -sk -X POST https://app.alfaview.com/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"mutation{guestAuthenticate(userId:\"test\",companyId:\"test\",roomId:\"test\"){role}}"}' \
+  -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' 2>/dev/null
+{"errors":[{"message":"","locations":[{"line":1,"column":10}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+
+HTTP:200 SIZE:145
+[0m
+[0m$ [0mfor path in /v2/auth/refresh /v2/auth/logout /v2/auth/password /v2/auth/password-reset /v2/users /v2/companies /v2/health; do
+  code=$(curl -sk -w '%{http_code}' -o /dev/null "https://apis.alfaview.com${path}" 2>/dev/null)
+  echo "$code $path"
+done
+404 /v2/auth/refresh
+404 /v2/auth/logout
+405 /v2/auth/password
+404 /v2/auth/password-reset
+401 /v2/users
+404 /v2/companies
+404 /v2/health
+[0m
+[0m$ [0mmd5sum /tmp/openapi-prod.json
+357b94d367909a40b9299b543d23712b  /tmp/openapi-prod.json
+[0m
+[0m$ [0mcurl -sk -X POST https://apis.alfaview.com/v2/auth/password -H 'Content-Type: application/json' -d '{}' -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' 2>/dev/null
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property password to be present","location":"body"},{"message":"expected required property username to be present","location":"body"}]}
+
+HTTP:422 SIZE:250
+[0m
+[0m$ [0mcurl -sk https://apis.alfaview.com/v2/users -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' 2>/dev/null
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+HTTP:401 SIZE:107
+[0m
+[0m$ [0mcurl -sk https://sso.alfaview.com/.well-known/openid-configuration 2>/dev/null | python3 -m json.tool 2>/dev/null | tail -40
+"jwks_uri": "https://sso.alfaview.com/.well-known/jwks.json",
+    "response_modes_supported": [
+        "form_post",
+        "fragment",
+        "query"
+    ],
+    "response_types_supported": [
+        "code",
+        "id_token",
+        "token id_token"
+    ],
+    "scopes_supported": [
+        "openid",
+        "offline_access",
+        "email",
+        "phone",
+        "profile"
+    ],
+    "subject_types_supported": [
+        "public"
+    ],
+    "token_endpoint": "https://sso.alfaview.com/oauth2/token",
+    "token_endpoint_auth_methods_supported": [
+        "client_secret_basic",
+        "client_secret_post",
+        "none"
+    ],
+    "userinfo_endpoint": "https://sso.alfaview.com/oauth2/userinfo",
+    "userinfo_signing_alg_values_supported": [
+        "ES256",
+        "ES384",
+        "ES512",
+        "RS256",
+        "RS384",
+        "RS512",
+        "HS256",
+        "HS384",
+        "HS512"
+    ]
+}
+[0m
+[0m$ [0m# Check the DPoP algs - this is new/discovery update
+curl -sk https://sso.alfaview.com/.well-known/openid-configuration 2>/dev/null | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print('issuer:', d.get('issuer'))
+print('grant_types:', d.get('grant_types_supported'))
+print('dpop:', d.get('dpop_signing_alg_values_supported'))
+print('id_token_algs:', d.get('id_token_signing_alg_values_supported'))
+print('token_endpoint:', d.get('token_endpoint_auth_methods_supported'))
+print('registration:', d.get('registration_endpoint'))
+print('scopes:', d.get('scopes_supported'))
+" 2>/dev/null
+issuer: acme.com
+grant_types: ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+dpop: ['Ed448', 'Ed25519', 'ES256', 'ES384', 'ES512', 'PS256', 'PS384', 'PS512', 'RS256', 'RS384', 'RS512']
+id_token_algs: ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+token_endpoint: ['client_secret_basic', 'client_secret_post', 'none']
+registration: None
+scopes: ['openid', 'offline_access', 'email', 'phone', 'profile']
+[0m
+[0m$ [0m# Try some variations on guest auth to extract more field info
+curl -sk -X POST https://app.alfaview.com/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"mutation{guestAuthenticate(userId:\"00000000-0000-0000-0000-000000000001\",companyId:\"00000000-0000-0000-0000-000000000001\",roomId:\"00000000-0000-0000-0000-000000000001\"){role,accessToken}}"}' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null
+{"errors":[{"message":"","locations":[{"line":1,"column":10}],"path":["guestAuthenticate"],"extensions":{"code":"BAD_USER_INPUT"}}],"data":null}
+
+HTTP:200
+[0m
+[0m$ [0m# Try password auth REST endpoint with invalid creds to see error shape
+curl -sk -X POST https://apis.alfaview.com/v2/auth/password \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"test@test.com","password":"invalidpassword123"}' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null
+{"title":"Unauthorized","status":401,"detail":"AUTHENTICATION_ERROR: invalid credentials"}
+
+HTTP:401
+[0m
+[0m$ [0m# Check if DPoP is enforceable (resource indicator endpoint?)
+curl -sk https://sso.alfaview.com/oauth2/introspect -w '\nHTTP:%{http_code}\n' 2>/dev/null
+curl -sk https://sso.alfaview.com/oauth2/revoke -w '\nHTTP:%{http_code}\n' 2>/dev/null
+curl -sk -X POST https://sso.alfaview.com/oauth2/token -d 'grant_type=client_credentials' -w '\nHTTP:%{http_code}\n' 2>/dev/null | tail -3
+HTTP:405
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Error | FusionAuth</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="application-name" content="FusionAuth">
+  <meta name="author" content="FusionAuth">
+  <meta name="description" content="User Management Redefined. A Single Sign-On solution for your entire enterprise.">
+  <meta name="keywords" content="fusionauth, sso, user management, login, registration, identity management">
+  <meta name="robots" content="index, follow">
+
+  <meta name="referrer" content="strict-origin">
+
+  <link rel="apple-touch-icon-precomposed" sizes="57x57" href="/images/apple-touch-icon-57x57.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="60x60" href="/images/apple-touch-icon-60x60.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="120x120" href="/images/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="128x128" href="/images/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="76x76" href="/images/apple-touch-icon-76x76.png" />
+  <link rel="apple-touch-icon-precomposed" sizes="152x152" href="/images/apple-touch-icon-152x152.png" />
+
+  <link rel="icon" type="image/png" href="/images/favicon-196x196.png" sizes="196x196" />
+  <link rel="icon" type="image/png" href="/images/favicon-128.png" sizes="128x128" />
+  <link rel="icon" type="image/png" href="/images/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32" />
+  <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16" />
+
+  <meta name="msapplication-TileColor" content="#FFFFFF" />
+  <meta name="msapplication-TileImage" content="/images/mstile-144x144.png" />
+  <meta name="msapplication-square70x70logo" content="/images/mstile-70x70.png" />
+  <meta name="msapplication-square150x150logo" content="/images/mstile-150x150.png" />
+  <meta name="msapplication-wide310x150logo" content="/images/mstile-310x150.png" />
+  <meta name="msapplication-square310x310logo" content="/images/mstile-310x310.png" />
+
+  <link rel="stylesheet" href="/css/font-awesome-4.7.0.min.css"/>
+  <link rel="stylesheet" href="/css/entrypoints/fusionauth-admin.css?version=1.63.0"/>
+  <script src="/js/entrypoints/admin/main.js?version=1.63.0" type="module"></script>
+
+  <script src="/js/prime-min-1.7.0.js?version=1.63.0"></script>
+  <script src="/js/ui/AdvancedControls.js?version=1.63.0"></script>
+  <script src="/js/ui/CopyToClipboard-0.1.0.js"></script>
+  <script src="/js/ui/Main.js?version=1.63.0"></script>
+  <script>
+    "use strict";
+    Prime.Document.onReady(function() {
+      Prime.Document.query('.alert').each(function(e) {
+        var dismissButton = e.queryFirst('a.dismiss-button');
+        if (dismissButton !== null) {
+          new Prime.Widgets.Dismissable(e, dismissButton).initialize();
+        }
+      });
+      Prime.Document.query('[data-tooltip]').each(function(e) {
+        new Prime.Widgets.Tooltip(e).withClassName('tooltip').initialize();
+      });
+    });
+  </script>
+</head>
+  <body class="bg-slate-100">
+  <div class="flex items-center justify-between w-full h-16 bg-white py-4 px-9 z-50 shadow-md">
+    <div class="text-2xl font-bold">
+      <img src="/images/logo-black-orange.svg" alt="FusionAuth logo" class="h-10 w-auto">
+    </div>
+
+    <div>
+      <a target="_blank" href="https://fusionauth.link/adminuihelp" class="relative inline-flex items-center rounded-md bg-white px-2 py-2 text-slate-400 hover:bg-slate-100 focus:z-10">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 shrink-0 group-hover:text-indigo-500">
+      <use xlink:href="/assets/icons/heroicons-outline.svg#question-mark-circle"></use>
+    </svg>
+      </a>
+    </div>
+  </div>
+    <main class="page-body w-full flex flex-col pt-15 items-center">
+
+  <div class="p-8 sm:px-6 lg:px-8 bg-slate-100 content-container w-1/2  min-w-[400px] max-w-96">
+    <div class="overflow-hidden rounded-lg bg-white shadow-sm panel relative p-8 flex flex-col card mb-8">
+  <h1 class="text-2xl font-semibold text-slate-900 pb-4 grow">404 Page Missing</h1>
+  <p class="text-sm text-slate-700 font-medium ">
+      Let's get you back where you belong before someone misses you,   <a href="/admin" class="text-indigo-500 hover:text-indigo-700 font-medium focus:outline-none focus:underline text-sm"
+      
+     
+   >
+back to FusionAuth  </a>
+.
+  </p>
+    </div>
+  </div>
+    </main>
+  </body>
+</html>
+
+HTTP:404
+{"error":"not_licensed","error_description":"The Entity Management feature of FusionAuth, which include the Client Credentials Grant, is only supported with a valid license","error_reason":"not_licensed"}
+HTTP:400
+[0m
+[0m$ [0m# Test introspect with POST (no token)
+curl -sk -X POST https://sso.alfaview.com/oauth2/introspect -d 'token=invalid' -w '\nHTTP:%{http_code}\n' 2>/dev/null | tail -3
+{"error":"invalid_request","error_description":"The request is missing a required parameter: client_id","error_reason":"missing_client_id"}
+HTTP:400
+[0m
+[0m$ [0m# Check the FusionAuth version-specific behavior - is there an admin API?
+curl -sk https://sso.alfaview.com/api/status 2>/dev/null | python3 -m json.tool 2>/dev/null
+{
+    "status": "Ok"
+}
+[0m
+[0m$ [0m# Check /oauth2/userinfo (unauthenticated)
+curl -sk https://sso.alfaview.com/oauth2/userinfo -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' 2>/dev/null | tail -5
+HTTP:401 SIZE:0
+[0m
+[0m$ [0m# Check the password auth endpoint more carefully - try username enumeration patterns
+curl -sk -X POST https://apis.alfaview.com/v2/auth/password \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"nonexistent12345@alfaview.com","password":"invalidpassword123"}' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null
+{"title":"Unauthorized","status":401,"detail":"AUTHENTICATION_ERROR: invalid credentials"}
+
+HTTP:401
+[0m
+[0m$ [0mpython3 -c "
+import json
+with open('/tmp/openapi-prod.json') as f:
+    spec = json.load(f)
+print('Paths:', list(spec.get('paths', {}).keys()))
+print()
+# Check for auth endpoints
+for path in spec.get('paths', {}):
+    if 'auth' in path.lower():
+        print(f'{path}: {list(spec[\"paths\"][path].keys())}')
+"
+Paths: ['/v2/auth/api-key', '/v2/auth/group-link', '/v2/auth/guest-link', '/v2/auth/password', '/v2/auth/token-info', '/v2/group-links', '/v2/group-links/{id}', '/v2/guest-links', '/v2/guest-links/{id}', '/v2/languages', '/v2/meetings', '/v2/meetings/{id}', '/v2/meetings/{id}/cancellation', '/v2/permission-groups', '/v2/room-types', '/v2/rooms', '/v2/rooms/{id}', '/v2/rooms/{id}/participants', '/v2/rooms/{roomId}/attendances', '/v2/rooms/{roomId}/features', '/v2/rooms/{roomId}/file-share-limits', '/v2/rooms/{roomId}/file-share-settings', '/v2/rooms/{roomId}/group-links', '/v2/rooms/{roomId}/group-links/{id}', '/v2/rooms/{roomId}/guest-links', '/v2/rooms/{roomId}/guest-links/{id}', '/v2/rooms/{roomId}/language-settings', '/v2/rooms/{roomId}/passcode', '/v2/rooms/{roomId}/permissions', '/v2/rooms/{roomId}/permissions/{userId}', '/v2/rooms/{roomId}/subrooms', '/v2/rooms/{roomId}/subrooms/{subroomId}', '/v2/stats', '/v2/users', '/v2/users/invitation', '/v2/users/me', '/v2/users/{id}']
+
+/v2/auth/api-key: ['post']
+/v2/auth/group-link: ['post']
+/v2/auth/guest-link: ['post']
+/v2/auth/password: ['post']
+/v2/auth/token-info: ['get']
+[0m
+[0m$ [0m# Check if introspect requires client auth (FusionAuth default is basic auth on introspect)
+curl -sk -X POST https://sso.alfaview.com/oauth2/introspect \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'token=invalid&client_id=test' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null | tail -3
+{"active":false}
+HTTP:200
+[0m
+[0m$ [0m# Verify: introspect works with fake client_id but no real client auth
+# Compare with and without client_id to confirm the auth bypass
+echo "=== Without client_id ==="
+curl -sk -X POST https://sso.alfaview.com/oauth2/introspect \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'token=invalidtoken' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null
+
+echo "=== With empty client_id ==="
+curl -sk -X POST https://sso.alfaview.com/oauth2/introspect \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'token=invalidtoken&client_id=' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null
+
+echo "=== With fake client_id ==="
+curl -sk -X POST https://sso.alfaview.com/oauth2/introspect \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'token=invalidtoken&client_id=does-not-exist-12345' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null
+=== Without client_id ===
+{"error":"invalid_request","error_description":"The request is missing a required parameter: client_id","error_reason":"missing_client_id"}
+HTTP:400
+=== With empty client_id ===
+{"error":"invalid_request","error_description":"The request is missing a required parameter: client_id","error_reason":"missing_client_id"}
+HTTP:400
+=== With fake client_id ===
+{"active":false}
+HTTP:200
+[0m
+[0m$ [0m# Check if device_authorize also works without proper client auth
+curl -sk -X POST https://sso.alfaview.com/oauth2/device_authorize \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'client_id=does-not-exist-12345&scope=openid' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null | head -5
+{"error":"invalid_client","error_description":"client_id: does-not-exist-12345 is not valid.","error_reason":"invalid_client_id"}
+HTTP:401
+[0m
+Now I have all the data. Let me compile the full cycle output.
+[0m$ [0m# Quick check: does the REST auth password endpoint accept the same username format as GraphQL signup?
+curl -sk -X POST https://apis.alfaview.com/v2/auth/password \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"test","password":"x"}' \
+  -w '\nHTTP:%{http_code}\n' 2>/dev/null
+{"title":"Unauthorized","status":401,"detail":"AUTHENTICATION_ERROR: invalid credentials"}
+
+HTTP:401
+[0m
+Here is the full structured output for this cycle.
+
+---
+
+**STEP 1 — DELTA**
+
+[CHANGED] `/oauth2/introspect` — now confirmed broken client authentication: accepts ANY `client_id` value without validation (200 `{"active":false}` with `client_id=does-not-exist-12345`). Without `client_id` → 400. This is new behavioral detail not previously documented.
+
+[CHANGED] `/oauth2/token` with `client_credentials` grant → 400 `not_licensed` — FusionAuth Community edition, Entity Management feature not available. Confirms license tier.
+
+[CHANGED] `/v2/auth/password` REST endpoint — POST with `{username, password}` confirmed: 422 validates input schema, 401 `invalid credentials` for bad creds. Generic error (no username enumeration). Now confirmed as a standalone REST auth path alongside GraphQL.
+
+NO_DELTA: OpenAPI MD5 `357b94d3` — byte-identical prod/beta, 37 paths, zero new endpoints. `/v2/users/me` still 401/107B. `guestAuthenticate` still `BAD_USER_INPUT`. OIDC discovery unchanged (`issuer=acme.com`, HS listed/RSA-only JWKS, no `registration_endpoint`). All 55 hosts still exhausted.
+
+---
+
+**STEP 2 — PRIORITIZE**
+
+[PRIO] apis.alfaview.com/v2,9/10,a:9,t:8,g:0,c:8,f:9 — OpenAPI confirms UUID path params on DELETE/PATCH, REST auth endpoint exists, tokens opaque — highest-value target behind signup gate.
+
+[PRIO] sso.alfaview.com,7/10,a:6,t:8,g:0,c:5,f:8 — FusionAuth OIDC with issuer=acme.com, HS256/384/512 in supported algs but RSA-only JWKS (alg confusion vector persists); broken client auth on introspect; client_credentials "not_licensed" reveals community edition. Auth-gated.
+
+[PRIO] app.alfaview.com/graphql,6/10,a:7,t:9,g:0,c:4,f:8 — Guest path still anonymous-reachable (BAD_USER_INPUT not UNAUTHENTICATED). Schema leaked in JS bundle. No accessKey in GraphQL signature. Auth-gated behind signup.
+
+---
+
+**STEP 3 — HYPOTHESES**
+
+[HYP] Unauthenticated token introspection on FusionAuth
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 45
+reasoning: POST /oauth2/introspect accepts any client_id as a form parameter without verification (200 {"active":false} with client_id=does-not-exist-12345). Without client_id → 400 missing_client_id. This is inconsistent — parameter required but not validated. However, FusionAuth Community edition may permit this for public clients per RFC 7662. token_endpoint_auth_methods_supported includes "none". Practical impact requires a valid FusionAuth-issued access token to introspect, which we cannot obtain.
+evidence_needed: A valid FusionAuth access token introspected without client authentication returning token metadata (sub, scopes, exp).
+verify_steps: (POST-SIGNUP) Obtain FusionAuth token via OAuth flow → POST /oauth2/introspect with token=<valid_token>&client_id=anything → 200 with full token metadata vs 401.
+impact: Token metadata leak (subject, scopes, expiry) without client credentials; enables token validation by unauthorized parties. MEDIUM.
+testability: HUMAN_ONLY
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public+byte-identical prod/beta (37 paths, MD5 357b94d3 reconfirmed this cycle) confirms token-authed UUID path params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401/107B gate stable; opaque company-scoped bearer; cross-tenant authz untestable passively with one tenant.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `accessToken` + `role`; GraphQL signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field combo (companyId+roomId+accessKey+displayName); anonymous resolver slice otherwise closed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,accessToken}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+---
+
+**STEP 4 — SELF-CRITIQUE**
+
+[PARKED] Unauthenticated token introspection on FusionAuth: confidence 45 — practical impact requires a valid FusionAuth token (we cannot obtain one), and FusionAuth Community edition may legitimately permit unauthenticated introspection for public clients. Even if confirmed, the token would need to be stolen first, making this a secondary finding.
+
+[FINAL] Survivors ranked:
+1. Cross-tenant IDOR (80) — highest impact, confirmed by OpenAPI spec
+2. Guest-authz splice (55) — structural authz divergence, confirmed anonymous-reachable
+3. Token introspection (45) — PARKED until token available
+
+---
+
+**STEP 5 — NEXT ACTION**
+
+[NEXT] HUMAN: Create one throwaway free alfaview tenant via `mutation{Signup(...)}` at app.alfaview.com/graphql (exact payload already mapped) → disposable inbox → `finishSignup` at /finish-signup → `POST /v2/auth/password` for bearer token. This unlocks ALL three surviving chains: IDOR, guest-authz splice, and token introspection verification. Without this step, the workspace is fully exhausted.
+
+---
+
+**STEP 6 — LEARNING**
+
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/introspect` accepts any `client_id` value without verification (200 `{"active":false}` with fake client_id) — broken client authentication on token introspection endpoint; parameter required but not validated. FusionAuth Community edition (`not_licensed` on client_credentials) may permit this for public clients. Impact requires a valid token.
+
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/token` with `client_credentials` grant returns 400 `not_licensed` — FusionAuth Community edition (v1.63.0) does not support Entity Management. Advertises client_credentials in OIDC discovery but rejects at runtime.
+
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: `/v2/auth/password` REST endpoint confirms POST with `{username, password}` → 422 validates input, 401 `invalid credentials` for bad creds. Generic error (no username enumeration). Standalone REST auth path alongside GraphQL signup.
+
+---
+
+**STEP 7 — RISK**
+
+[RISK] alfaview: 48/100 — unchanged. Surface is byte-stable across all vectors (OpenAPI MD5 357b94d3, /v2/users/me=401/107B, sso introspect/client_credentials behavior). New minor finding (introspect broken client auth) but impact gated behind token. All three standing chains (IDOR 80, guest-authz splice 55, introspect 45) remain HUMAN-gated behind 2-tenant signup. Anonymous recon across all 55 hosts fully exhausted; freshness of all chains decays until signup is performed.

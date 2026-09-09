@@ -379,3 +379,16 @@ www.alfaview.com
 - CHANGED test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification — supply chain risk
 
 ## 2026-09-09 01:31:29 UTC
+
+## 2026-09-09 06:50:32 UTC
+- CHANGED `/oauth2/introspect` — now confirmed broken client authentication: accepts ANY `client_id` value without validation (200 `{"active":false}` with `client_id=does-not-exist-12345`). Without `client_id` 
+- CHANGED `/oauth2/token` with `client_credentials` grant → 400 `not_licensed` — FusionAuth Community edition, Entity Management feature not available. Confirms license tier.
+- CHANGED `/v2/auth/password` REST endpoint — POST with `{username, password}` confirmed: 422 validates input schema, 401 `invalid credentials` for bad creds. Generic error (no username enumeration). Now confir
+- NEW `apis.alfaview.com/v2/docs/openapi.json` still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable this cycle
+- NEW `sso.alfaview.com/oauth2/authorize` returns HTTP 400 for unregistered client_id (not 200 login page) — validation timing still client_id-gated; redirect_uri matrix remains blocked without registered c
+- NEW `app.alfaview.com/graphql` guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural
+- NEW `app.alfaview.com/graphql` field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping
+- CHANGED `apis.alfaview.com/v2/users/{uuid}` returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token)
+- CHANGED `sso.alfaview.com` OIDC discovery unchanged — issuer=acme.com, implicit flow enabled, HS256/384/512 in supported algs but JWKS contains ONLY 7 RSA keys (zero symmetric)
+- CHANGED `test.alfaview.com` unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero genuinely-unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)

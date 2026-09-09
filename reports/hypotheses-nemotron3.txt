@@ -1,4 +1,12 @@
-## 2026-09-09 01:31:20 UTC [target] (model nemotron3)
+## 2026-09-09 06:48:37 UTC [target] (model nemotron3)
+[NEW] `apis.alfaview.com/v2/docs/openapi.json` still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable this cycle
+[NEW] `sso.alfaview.com/oauth2/authorize` returns HTTP 400 for unregistered client_id (not 200 login page) — validation timing still client_id-gated; redirect_uri matrix remains blocked without registered client_id
+[NEW] `app.alfaview.com/graphql` guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural authz gap
+[NEW] `app.alfaview.com/graphql` field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping
+[CHANGED] `apis.alfaview.com/v2/users/{uuid}` returns HTTP 405 (Allow: DELETE) — DELETE method exists but requires auth (401 on PATCH permissions without token)
+[CHANGED] `sso.alfaview.com` OIDC discovery unchanged — issuer=acme.com, implicit flow enabled, HS256/384/512 in supported algs but JWKS contains ONLY 7 RSA keys (zero symmetric)
+[CHANGED] `test.alfaview.com` unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible
+[CHANGED] Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero genuinely-unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)
 [PRIO] sso.alfaview.com/oauth2/authorize,8.8,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
 [PRIO] app.alfaview.com/graphql,8.4,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
 [PRIO] apis.alfaview.com/v2,7.7,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8
