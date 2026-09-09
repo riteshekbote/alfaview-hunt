@@ -2459,3 +2459,33 @@ evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matri
 verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
 impact: OAuth code theft → ATO via open redirect on public client; HIGH.
 testability: HUMAN_ONLY
+## 2026-09-09 01:29:37 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: openapi public+byte-identical prod/beta (37 paths, MD5 357b94d3 reconfirmed this cycle); token-authed UUID path params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401/107B gate stable; opaque company-scoped bearer; cross-tenant authz untestable passively with one tenant.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `role`; GraphQL signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field combo (companyId+roomId+accessKey+displayName); anonymous resolver slice otherwise closed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 45
+reasoning: error-render confirmed again this cycle (200/6154B, client_id-bound before any redirect_uri handling — invalid_client/missing_client_id family); device_authorize also client_id-gated; POST /oauth2/register = generic theme (RFC7591 closed); token_endpoint supports `none` (public client), implicit+device grants advertised, issuer=acme.com, only RSA JWKS; webclient bundles now also confirm no anonymous client_id source.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401. Secondary: capture OAuth client_id from desktop login HAR for redirect_uri matrix.
+[RISK] alfaview: 48/100 — unchanged. Surface is re-confirmed byte-stable across api (openapi MD5), auth gate (401/107B), and sso error-render (client_id-bound confirms no redirect_uri bypass passively). This cycle closed the final anonymous OAuth client_id source (webclient bundles = media-only). All three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80) + desktop OAuth HAR (redirect_uri 45); anonymous recon across all 55 hosts is fully exhausted, so freshness of the IDOR/GuestAuthz chains decays until signup is performed.

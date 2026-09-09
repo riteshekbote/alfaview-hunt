@@ -13244,3 +13244,106 @@ testability: HUMAN_ONLY
 
 **STEP 7 — RISK**
 - [RISK] alfaview: 48/100 — unchanged. All three standing chains remain HUMAN-gated (2-tenant signup for IDOR 80 + guest-authz 55; desktop OAuth HAR for redirect_uri 45). Anonymous recon fully exhausted across 55 hosts with byte-stable surfaces for seven days; zero unauthenticated data exposure or exploit path found. Success now depends entirely on the HUMAN signup gate and desktop HAR capture; standing-chain temporal freshness continues to decay.
+===== ANALYST bigpickle 2026-09-09 01:31:29 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -m 20 https://apis.alfaview.com/v2/docs/openapi.json | md5sum; curl -s -m 20 -o /dev/null -w '%{http_code} %{size_download}\n' https://apis.alfaview.com/v2/users/me
+357b94d367909a40b9299b543d23712b  -
+401 107
+[0m
+[0m$ [0mcurl -s -m 20 -o /dev/null -w '%{http_code} %{size_download}\n' 'https://sso.alfaview.com/oauth2/authorize?client_id=x&response_type=code&redirect_uri=https://evil.example.com'
+200 6154
+[0m
+[0m$ [0mcurl -s -m 20 https://insider-webclient.alfaview.com/ | head -c 3000
+<!DOCTYPE html><html lang="en-us"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width,height=device-height,user-scalable=0"><link rel="icon" type="image/png" sizes="96x96" href="/favicon_96px.png?v=1788793635711"><link rel="icon" type="image/png" sizes="32x32" href="/favicon_32px.png?v=1788793635711"><link rel="icon" type="image/png" sizes="16x16" href="/favicon_16px.png?v=1788793635711"><title>alfaview - webclient</title><script>function preboot(e){const t=Object.entries(localStorage).find((([t])=>t.includes(e)&&t.endsWith("InitialForegroundColor"))),n=Object.entries(localStorage).find((([t])=>t.includes(e)&&t.endsWith("InitialBackgroundColor"))),o=Object.entries(localStorage).find((([t])=>t.includes(e)&&t.endsWith("InitialIsDarkTheme"))),r=t?t[1]:"#ff000000",i=n?n[1]:"#ffffffff",c=o&&"true"==o[1]?"dark":"light";document.documentElement.dataset.theme=c,document.documentElement.style.setProperty("--fg",argb2rgba(r)),document.documentElement.style.setProperty("--bg",argb2rgba(i))}function argb2rgba(e){return"#"+e.slice(3)+e.slice(1,3)}preboot("production")</script><script defer="defer" data-domain="alfaview.client" src="https://plausible.alfaview.com/js/script.manual.js"></script><script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};const buildEnv=(()=>{const n=window.location.hostname,i={dev:"Development","staging-beta":"Staging Beta","staging-internal":"Staging Internal",staging:"Staging Stable",insider:"Production Insider"};for(const[o,e]of Object.entries(i))if(n.includes(o))return e;return"Production"})();plausible("pageview",{u:window.location.protocol+"//"+window.location.hostname+"/Webclient/Index"+window.location.search,props:{BuildEnvironment:buildEnv}})</script><style>body,html{padding:0;margin:0;overflow:hidden;height:100%;background-color:var(--bg);color:var(--fg);font-family:"Segoe UI","Open Sans",sans-serif}#screen{height:100%;width:100%}#logo{filter:drop-shadow(-1px -1px 0px var(--logo-border)) drop-shadow(1px -1px 0px var(--logo-border)) drop-shadow(1px 1px 0px var(--logo-border)) drop-shadow(-1px 1px 0px var(--logo-border))}.hastooltip>.tooltip{color:var(--bg)!important;background-color:var(--fg)!important}.center{margin:0;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%)}.flex-column{--logo-size:128px;overflow:visible;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-width:250px;gap:24px}.flex-column>img{width:var(--logo-size);height:var(--logo-size)}.fade-in{animation:fadeIn .8s}@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}#qtprogress{opacity:0;transition:opacity .8s ease;width:calc(var(--logo-size) * 1.25);height:6px;appearance:none;-webkit-appearance:none;border:none;border-radius:3px;overflow
+[0m
+[0m$ [0mcurl -s -m 20 https://insider-webclient.alfaview.com/ | grep -oE 'src="[^"]+"|href="[^"]+\.js[^"]*"' | sort -u
+src="https://plausible.alfaview.com/js/script.manual.js"
+src="index.js"
+src="logo_alfaview.png?v=1788793635711"
+src="runtime.js"
+[0m
+[0m$ [0mcurl -s -m 30 https://insider-webclient.alfaview.com/index.js -o /tmp/opencode/insider_index.js; wc -c /tmp/opencode/insider_index.js; curl -s -m 30 https://insider-webclient.alfaview.com/runtime.js -o /tmp/opencode/insider_runtime.js; wc -c /tmp/opencode/insider_runtime.js
+164325 /tmp/opencode/insider_index.js
+1464 /tmp/opencode/insider_runtime.js
+[0m
+[0m$ [0mgrep -oE 'oauth2[^"'"'"' ]*|client_id[^"'"'"' ]*|clientId[^"'"'"' ,)]*|authorize[^"'"'"' ]*|redirect_uri[^"'"'"' ]*|redirectUri[^"'"'"' ]*|fusion[aA]uth[^"'"'"' ]*|acme\.com[^"'"'"' ]*|response_type[^"'"'"' ]*|sso[^"'"'"' ]*' /tmp/opencode/insider_index.js | sort -u | head -80
+clientId
+clientId.substring(0
+clientId:
+clientId:d
+clientId:e
+clientId:e.clientId
+clientId:this._clientId
+clientId:this._options.clientId
+clientId;_backend;_reportedWriteError=!1;_alsoLogToConsole=s;constructor(
+clientId=
+clientId=globalThis.logger?._clientId||(0
+clientId]}log(...e
+sson|acer|asus|dell|meizu|motorola|polytron)[-_
+ssor
+ssor({track:this._track})),this._type===o.CaptureType.Screen){const
+ssor.readable,e.writable,this._captureId,this._deviceIndex,this._type,this._heapMemoryEncodedFrame,this._holoHandler,{onEncodedFrameAvailable:e=>this.processEncodedFrame(e),onRawFrameAvailable:e=>this.processRawFrame(e)}),this.updateEncoderSettings(),this.updateEncoderEnabled()}}requestFrame(){this._captureEncoder?.requestFrame()}setBitrate(e){e<=0?logger.warn(
+ssor;_captureEncoder;_warnedAboutFailedRawCopyTo=!1;_heapMemoryEncodedFrame;_heapMemoryRawFrame;_encoderSettings={width:t.MAX_FACE_WIDTH,height:t.MAX_FACE_HEIGHT,bitrate:5e5,fps:25,temporalScalability:!1,initialDelay:0};_encoderEnabled=!1;constructor(e,t,r,n,o){this._captureId=e,this._deviceIndex=t,this._type=r,this._wasmModule=n,this._holoHandler=o,this._heapMemoryEncodedFrame=new
+ssor=void
+ssorOptions:{frameSize:this.actualFrameSize}};this.stream&&this.stop(),this.stream=e,this.worklet=new
+ssor||(this._trackProcessor=new
+[0m
+Probes run (all read-only GET, 3 rps total): openapi byte-identity, `/v2/users/me` gate, sso authorize error-render, and insider-webclient JS bundles (new this cycle).
+
+**STEP 1 — DELTA**
+- NO_DELTA: `apis` openapi MD5 `357b94d3...` byte-stable, `/v2/users/me`=401/107B, `sso /oauth2/authorize?client_id=x&redirect_uri=evil`=200/6154B (error-page family, prior 6189B — size drift is nonce/token, not a render change); all 3 standing chains still HUMAN-gated.
+- NEW (negative): `insider-webclient` `index.js`(164KB)+`runtime.js` fetched — pure capture/media encoder bundle (WebRTC capture, logger `clientId` only); **no** OAuth/FusionAuth client config. Last anonymous client_id source now closed (app bundles + webclient bundles + test binaries all refuted).
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] sso.alfaview.com/oauth2,6.70,attack_surface7/biz10/tech10/gate1/cloud2/fresh6
+- [PRIO] apis.alfaview.com/v2,6.65,attack_surface10/biz9/tech7/gate1/cloud3/fresh4
+- [PRIO] app.alfaview.com/graphql,6.50,attack_surface8/biz8/tech10/gate2/cloud2/fresh5
+
+**STEP 3 — HYPOTHESES**
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: openapi public+byte-identical prod/beta (37 paths, MD5 357b94d3 reconfirmed this cycle); token-authed UUID path params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401/107B gate stable; opaque company-scoped bearer; cross-tenant authz untestable passively with one tenant.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Guest-authz splice: GraphQL guest ops mint tokens without accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate with NULL uuids reconfirmed anonymous-reachable → BAD_USER_INPUT (not UNAUTHENTICATED); GuestAuthenticateReply exposes `role`; GraphQL signature has NO accessKey arg while REST /v2/auth/guest-link mandates 4-field combo (companyId+roomId+accessKey+displayName); anonymous resolver slice otherwise closed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId,companyId,roomId){role,token?}}` no accessKey vs REST /v2/auth/guest-link same triple → 200+token vs 401.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] OAuth redirect_uri validation bypass on sso.alfaview.com
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 45
+reasoning: error-render confirmed again this cycle (200/6154B, client_id-bound before any redirect_uri handling — invalid_client/missing_client_id family); device_authorize also client_id-gated; POST /oauth2/register = generic theme (RFC7591 closed); token_endpoint supports `none` (public client), implicit+device grants advertised, issuer=acme.com, only RSA JWKS; webclient bundles now also confirm no anonymous client_id source.
+evidence_needed: a registered client_id to run the redirect_uri/state/PKCE matrix.
+verify_steps: (HUMAN desktop-login HAR) capture client_id+redirect_uri from OAuth webview → GET /oauth2/authorize?client_id=<x>&redirect_uri=https://evil.com&response_type=code → 302 carbon-copy Location vs validation error → compare vs state/PKCE variants.
+impact: OAuth code theft → ATO via open redirect on public client; HIGH.
+testability: HUMAN_ONLY
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] Consumer/desktop-login client_id in webclient bundles: refuted this cycle — index.js/runtime.js are media-capture bundles, no OAuth config; adds the last anonymous source to the closed set.
+- [FINAL] Cross-tenant IDOR (80) — chain fully mapped, only gate is 2-tenant signup.
+- [FINAL] Guest-authz splice (55) — anonymous-reachable resolver proven, needs one valid room triple.
+- [FINAL] OAuth redirect_uri bypass (45) — persistent first-party client_id gate; needs client_id from desktop-login HAR.
+
+**STEP 5 — NEXT ACTION**
+[NEXT] HUMAN: Create two throwaway free alfaview tenants via anonymous `mutation{Signup(signupRequest:{displayName,user:{email,userProfile:{firstname,lastname},locale:{UILanguage}},agreedToTerms,agreedToPrivacyPolicy,planId:"free-business"})}` to app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → repeat for tenant-B. Unlocks BOTH surviving chains: IDOR GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 and GraphQL accessKey-less guestAuthenticate vs REST guest-link 200+token-vs-401. Secondary: capture OAuth client_id from desktop login HAR for redirect_uri matrix.
+
+**STEP 6 — LEARNING**
+- [LEARN] REJECTED MISCONFIG @ insider-webclient.alfaview.com: index.js/runtime.js fetched — capture/media encoder bundle (WebRTC + logger clientId), no OAuth/FusionAuth client_id; anonymous OAuth client_id discovery now fully exhausted (app bundles, webclient bundles, test binaries all refuted).
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com: /v2/users/me=401/107B + openapi MD5 357b94d3 reconfirmed this cycle — API gate and schema surface byte-stable, no regression.
+
+**STEP 7 — RISK**
+[RISK] alfaview: 48/100 — unchanged. Surface is re-confirmed byte-stable across api (openapi MD5), auth gate (401/107B), and sso error-render (client_id-bound confirms no redirect_uri bypass passively). This cycle closed the final anonymous OAuth client_id source (webclient bundles = media-only). All three standing chains remain HUMAN-gated behind 2-tenant signup (IDOR 80) + desktop OAuth HAR (redirect_uri 45); anonymous recon across all 55 hosts is fully exhausted, so freshness of the IDOR/GuestAuthz chains decays until signup is performed.

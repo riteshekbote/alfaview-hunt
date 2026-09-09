@@ -377,3 +377,5 @@ www.alfaview.com
 - CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural 
 - CHANGED apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId}) confirmed in OpenAPI — requires authenticated account
 - CHANGED test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification — supply chain risk
+
+## 2026-09-09 01:31:29 UTC
