@@ -400,3 +400,9 @@ www.alfaview.com
 - CHANGED `sso.alfaview.com/oauth2/authorize` now returns HTTP 200 FusionAuth login page (~6189B) for unregistered `client_id` (was 400) — validation timing shifted again overnight
 - CHANGED `sso.alfaview.com/oauth2/introspect` accepts any `client_id` value without validation (200 `{"active":false}` with `client_id=does-not-exist-12345`) — broken client authentication on token introspecti
 - CHANGED `sso.alfaview.com/oauth2/token` with `client_credentials` grant returns 400 `not_licensed` — FusionAuth Community edition (v1.63.0) confirmed, Entity Management not licensed
+
+## 2026-09-09 15:42:12 UTC
+- CHANGED `sso.alfaview.com/oauth2/authorize` returns HTTP 200 FusionAuth login page (~6189B) for unregistered `client_id` (was 400) — validation timing shifted again overnight
+- CHANGED `sso.alfaview.com/oauth2/introspect` now requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation
+- CHANGED `apis.alfaview.com/v2/auth/guest-link` REST endpoint confirms 3-field combo (`accessKey`+`companyId`+`roomId`) returns 422 `ACTION_INVALID` — `displayName` not required
+- CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo

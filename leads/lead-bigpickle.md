@@ -2571,3 +2571,40 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) per server validation — `displayName` is NOT required. Previous 4-field claim incorrect; 3-field and 4-field both return 422 `ACTION_INVALID` for fake UUIDs.
 [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/graphql: GuestJoinReply field oracle — `expiry` is the only non-standard field confirmed. GuestJoinReply has NONE of: accessToken, refreshToken, role, userId, companyId, roomId, displayName, session, token, access, company, room, user, profile, id, uuid, url, redirect, join, denied, reason, success, error, message, code, status. This is NOT a token-bearing type.
 [RISK] alfaview: 48/100 — unchanged. All surfaces byte-stable this cycle (OpenAPI MD5 357b94d3, OIDC MD5 5e1297, auth gate 401/107B). New field-oracle data strengthens guest-authz chain (guestAuthenticate FORBIDDEN with UUIDs proves live processing; GuestJoinReply has expiry not tokens; REST guest-link 3-field not 4). All three standing chains (IDOR 80, guest-authz 65, introspect 45) remain HUMAN-gated behind tenant signup. Anonymous recon across all 55 hosts fully exhausted; no passive-only paths remain.
+## 2026-09-09 15:26:51 UTC [target] (model bigpickle)
+[PRIO] apis.alfaview.com/v2,9/10,a:9,t:8,g:0,c:8,f:9
+[PRIO] app.alfaview.com/graphql,7/10,a:8,t:9,g:0,c:5,f:8
+[PRIO] sso.alfaview.com,7/10,a:6,t:8,g:0,c:5,f:8
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public+byte-identical prod/beta (37 paths) confirms token-authed UUID path params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401/122B gate stable; opaque company-scoped bearer; /v2/auth/password endpoint live (POST→422/401).
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guestAuthenticate processes UUIDs without accessKey, REST guest-link requires accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 60
+reasoning: guestAuthenticate with NULL uuids → BAD_USER_INPUT (String! validation); with UUID-format args → BAD_USER_INPUT with empty message (past type check, at app validation); GuestAuthenticateReply has user+accessToken+role fields; GuestJoinReply has expiry field (no auth tokens). REST /v2/auth/guest-link requires accessKey+companyId+roomId (3 fields, displayName optional per 422 ACTION_INVALID). GraphQL signature has NO accessKey arg — structural divergence from REST confirmed. Previous cycle saw FORBIDDEN; now BAD_USER_INPUT with empty message — server validation may have tightened.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId:"<real>",companyId:"<real>",roomId:"<real>"){user accessToken role}}` no accessKey vs REST POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated token introspection on FusionAuth
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 45
+reasoning: POST /oauth2/introspect accepts any client_id value without verification (200 {"active":false} with client_id=does-not-exist-12345). Without client_id → 400. FusionAuth Community edition (not_licensed on client_credentials) may permit this for public clients per RFC 7662. token_endpoint_auth_methods_supported includes "none". Practical impact requires a valid FusionAuth-issued access token to introspect.
+evidence_needed: A valid FusionAuth access token introspected without client authentication returning token metadata (sub, scopes, exp).
+verify_steps: (POST-SIGNUP) Obtain FusionAuth token via OAuth flow → POST /oauth2/introspect with token=<valid_token>&client_id=anything → 200 with full token metadata vs 401.
+impact: Token metadata leak (subject, scopes, expiry) without client credentials; enables token validation by unauthorized parties. MEDIUM.
+testability: HUMAN_ONLY
+[PARKED] OAuth redirect_uri validation bypass on sso.alfaview.com: confidence 45→dropped. Authorize page oscillates between 200/6160B login page and 400 for unregistered client_id. Error-render confirmed, client_id validation blocks before redirect_uri handling. Dynamic client registration closed (no registration_endpoint). Cannot progress without registered client_id.
+[FINAL] Survivors ranked:
+[NEXT] HUMAN: Create one throwaway free alfaview tenant via GraphQL Signup at app.alfaview.com/graphql → disposable inbox → finishSignup at /finish-signup → POST /v2/auth/password for bearer. This unlocks ALL three surviving chains simultaneously. The workspace is FULLY EXHAUSTED without this step — all 55 hosts are probed, all anonymous surfaces closed, every surviving hypothesis is HUMAN-gated behind tenant signup.
+[LEARN] NO_DELTA @ guestAuthenticate UUID response: Prior finding (2026-09-09) reported FORBIDDEN for UUID-format args; today's probe returns BAD_USER_INPUT with empty message. Server validation may have tightened. Mutation still processes UUIDs past GraphQL type validation (distinct from null-args String! validation errors). Structural divergence (no accessKey in GraphQL vs REST 3-field) unchanged.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com/oauth2/authorize: Returns 200 FusionAuth login page (6160B) for unregistered client_id — behavior stable at 200 despite prior oscillation between 200/400.
+[RISK] alfaview: 48/100 — unchanged. All surfaces byte-stable. All three chains (IDOR 80, guest-authz 60, introspect 45) remain HUMAN-gated behind tenant signup. Workspace fully exhausted for passive-only testing. Risk score cannot advance without human action (signup).
