@@ -2608,3 +2608,31 @@ testability: HUMAN_ONLY
 [LEARN] NO_DELTA @ guestAuthenticate UUID response: Prior finding (2026-09-09) reported FORBIDDEN for UUID-format args; today's probe returns BAD_USER_INPUT with empty message. Server validation may have tightened. Mutation still processes UUIDs past GraphQL type validation (distinct from null-args String! validation errors). Structural divergence (no accessKey in GraphQL vs REST 3-field) unchanged.
 [LEARN] ACCEPTED OATH @ sso.alfaview.com/oauth2/authorize: Returns 200 FusionAuth login page (6160B) for unregistered client_id — behavior stable at 200 despite prior oscillation between 200/400.
 [RISK] alfaview: 48/100 — unchanged. All surfaces byte-stable. All three chains (IDOR 80, guest-authz 60, introspect 45) remain HUMAN-gated behind tenant signup. Workspace fully exhausted for passive-only testing. Risk score cannot advance without human action (signup).
+## 2026-09-09 18:51:24 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta (37 paths, MD5 357b94d3) confirms token-authed UUID params: DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}. Auth gate stable (/v2/users/me=401, /v2/auth/password POST→422/401). Company-scoped opaque bearer; per-room authorization unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: POST /v2/auth/password {username,password} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode (403-vs-200) → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} (403-vs-204) → DELETE /v2/users/{victimUserId} (403-vs-204).
+impact: cross-tenant PII read, room passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT (type validation); UUID-format args → BAD_USER_INPUT empty-message (past type check, at app validation, was FORBIDDEN earlier same day — validation tightened). GuestAuthenticateReply exposes user+accessToken+role; GuestJoinReply exposes expiry only (non-token-bearing per field oracle). REST /v2/auth/guest-link requires accessKey+companyId+roomId (3-field, 422 ACTION_INVALID). GraphQL signature has NO accessKey — structural divergence reconfirmed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId:"<real>",companyId:"<real>",roomId:"<real>"){user accessToken role}}` (no accessKey) vs REST POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated token introspection on FusionAuth
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 45
+reasoning: POST /oauth2/introspect once accepted any client_id (200 {"active":false} with fabricated client_id); without client_id → 400 missing_token (client auth now enforced at parameter level per latest probe). token_endpoint_auth_methods_supported includes "none"; client_credentials rejects not_licensed (Community edition). Practical impact needs a valid FusionAuth-issued token.
+evidence_needed: valid FusionAuth access token introspected without real client credentials returns token metadata (sub, scopes, exp).
+verify_steps: (post-signup / OAuth HAR) POST /oauth2/introspect with token=<valid>&client_id=anything → 200 full metadata vs 401.
+impact: token metadata leak (subject/scopes/expiry) to unauthenticated parties; MEDIUM (low because requires a leaked token first).
+testability: HUMAN_ONLY

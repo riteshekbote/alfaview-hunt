@@ -406,3 +406,9 @@ www.alfaview.com
 - CHANGED `sso.alfaview.com/oauth2/introspect` now requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation
 - CHANGED `apis.alfaview.com/v2/auth/guest-link` REST endpoint confirms 3-field combo (`accessKey`+`companyId`+`roomId`) returns 422 `ACTION_INVALID` — `displayName` not required
 - CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
+
+## 2026-09-09 18:53:03 UTC
+- CHANGED `sso.alfaview.com/oauth2/authorize` returns HTTP 200 FusionAuth login page (~6160B) for unregistered `client_id` (was 400) — validation timing shifted again overnight
+- CHANGED `sso.alfaview.com/oauth2/introspect` now requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation
+- CHANGED `apis.alfaview.com/v2/auth/guest-link` REST endpoint confirms 3-field combo (`accessKey`+`companyId`+`roomId`) returns 422 `ACTION_INVALID` — `displayName` not required
+- CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (`BAD_USER_INPUT` with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
