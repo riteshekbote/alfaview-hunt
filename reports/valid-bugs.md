@@ -26,3 +26,9 @@
   - **Verdict: VALID** (weak but valid)
   - | Q2 | Attacker reachable? | **YES** — with valid token |
   - **Verdict: VALID** (informational/low) — inconsistent resolver auth is a valid finding, but no data leaked in observed responses.
+
+- 4 lead(s) marked VALID at 2026-09-09 00:20:51 UTC
+  - **Verdict: HOLD** — issuer=acme.com might be intentional for a specific integration. Need to confirm it's not a dev/test artifact. The implicit flow + HS256 in supported algs (while JWKS is RSA-only) 
+  - | Q3 Impact? | **Yes** — `guestAuthenticate(userId,companyId,roomId)` and `guestJoin(userId,companyId,roomId,displayName)` mutations are processed without accessKey, while the REST guest-link flow req
+  - **Verdict: VALID**
+  - | 2 | GraphQL guest mutations without accessKey | **VALID** | 7.5 | **REPORT** |
