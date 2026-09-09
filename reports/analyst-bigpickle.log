@@ -14490,3 +14490,220 @@ testability: HUMAN_ONLY
 
 ## STEP 7 — RISK
 [RISK] alfaview: 48/100 — unchanged. All surfaces byte-stable this cycle; no new anonymous exposure. All three standing chains (IDOR 80, guest-authz 60, introspect 45) remain HUMAN-gated behind tenant signup; risk score cannot advance without human action.
+===== ANALYST bigpickle 2026-09-09 23:20:30 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && echo "---" && ls art/ 2>/dev/null; ls *.md 2>/dev/null
+total 344
+drwxr-xr-x 12 runner runner   4096 Sep  9 23:19 .
+drwxr-xr-x  3 runner runner   4096 Sep  9 23:18 ..
+drwxr-xr-x  7 runner runner   4096 Sep  9 23:19 .git
+drwxr-xr-x  3 runner runner   4096 Sep  9 23:18 .github
+-rw-r--r--  1 runner runner   1883 Sep  9 23:18 README.md
+-rw-r--r--  1 runner runner     32 Sep  9 23:19 analyst-out.txt
+-rw-r--r--  1 runner runner 120212 Sep  9 23:19 analyst-prompt.txt
+-rw-r--r--  1 runner runner 116302 Sep  9 23:19 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 inventory
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 leads
+-rw-r--r--  1 runner runner  22981 Sep  9 23:18 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 reports
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep  9 23:18 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 scripts
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 triage
+---
+README.md
+probe-results.md
+[0m
+[0m$ [0mcat state_bigpickle.json analyst-out.txt && echo "---MINEOF---" && grep -n "2026-09-09\|2026-09-08" probe-results.md | tail -30
+{"phase": "POC", "target": "api"}[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && echo "---" && ls art/ 2>/dev/null; ls *.md 2>/dev/null
+total 344
+drwxr-xr-x 12 runner runner   4096 Sep  9 23:19 .
+drwxr-xr-x  3 runner runner   4096 Sep  9 23:18 ..
+drwxr-xr-x  7 runner runner   4096 Sep  9 23:19 .git
+drwxr-xr-x  3 runner runner   4096 Sep  9 23:18 .github
+-rw-r--r--  1 runner runner   1883 Sep  9 23:18 README.md
+-rw-r--r--  1 runner runner     32 Sep  9 23:19 analyst-out.txt
+-rw-r--r--  1 runner runner 120212 Sep  9 23:19 analyst-prompt.txt
+-rw-r--r--  1 runner runner 116302 Sep  9 23:19 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 inventory
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 leads
+-rw-r--r--  1 runner runner  22981 Sep  9 23:18 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 reports
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep  9 23:18 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 scripts
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep  9 23:18 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep  9 23:18 triage
+---
+README.md
+probe-results.md
+[0m
+---MINEOF---
+314:## 2026-09-08 01:17:36 UTC
+322:## 2026-09-08 06:04:20 UTC
+330:## 2026-09-08 10:36:26 UTC
+338:## 2026-09-08 14:53:52 UTC
+346:## 2026-09-08 18:18:08 UTC
+354:## 2026-09-08 21:14:52 UTC
+362:## 2026-09-08 23:25:39 UTC
+370:## 2026-09-09 01:31:37 UTC
+378:## 2026-09-09 06:50:41 UTC
+386:## 2026-09-09 12:00:50 UTC
+394:## 2026-09-09 15:42:21 UTC
+402:## 2026-09-09 18:53:12 UTC
+410:## 2026-09-09 21:21:25 UTC
+[0m
+[0m$ [0mecho "== authorize =="; curl -s -o /dev/null -w "%{http_code} %{size_download}B\n" "https://sso.alfaview.com/oauth2/authorize?client_id=probe-x-123&redirect_uri=https://evil.example/cb&response_type=code"; sleep 1; echo "== oidc =="; curl -s "https://sso.alfaview.com/.well-known/openid-configuration" | head -c 600; echo; sleep 1; echo "== openapi prod =="; curl -s "https://apis.alfaview.com/v2/docs/openapi.json" | md5sum; curl -s "https://apis.alfaview.com/v2/docs/openapi.json" | grep -c '"/'; sleep 1
+== authorize ==
+200 6164B
+== oidc ==
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oa
+== openapi prod ==
+357b94d367909a40b9299b543d23712b  -
+1
+[0m
+[0m$ [0mcurl -s "https://apis.alfaview.com/v2/docs/openapi.json" -o /tmp/openapi_prod.json; python3 -c "import json;d=json.load(open('/tmp/openapi_prod.json'));print('paths',len(d['paths']));print([p for p in d['paths']][:5])"; sleep 1; echo "== beta openapi md5 =="; curl -s "https://beta-apis.alfaview.com/v2/docs/openapi.json" | md5sum
+paths 37
+['/v2/auth/api-key', '/v2/auth/group-link', '/v2/auth/guest-link', '/v2/auth/password', '/v2/auth/token-info']
+== beta openapi md5 ==
+357b94d367909a40b9299b543d23712b  -
+[0m
+[0m$ [0mpython3 -c "import json;d=json.load(open('/tmp/openapi_prod.json'));[print(p, sorted(d['paths'][p].keys())) for p in d['paths']]"
+/v2/auth/api-key ['post']
+/v2/auth/group-link ['post']
+/v2/auth/guest-link ['post']
+/v2/auth/password ['post']
+/v2/auth/token-info ['get']
+/v2/group-links ['get']
+/v2/group-links/{id} ['get', 'patch']
+/v2/guest-links ['get']
+/v2/guest-links/{id} ['get', 'patch']
+/v2/languages ['get']
+/v2/meetings ['get', 'post']
+/v2/meetings/{id} ['get', 'patch']
+/v2/meetings/{id}/cancellation ['post']
+/v2/permission-groups ['get']
+/v2/room-types ['get']
+/v2/rooms ['get', 'post']
+/v2/rooms/{id} ['delete', 'get', 'patch']
+/v2/rooms/{id}/participants ['get']
+/v2/rooms/{roomId}/attendances ['get']
+/v2/rooms/{roomId}/features ['delete', 'get', 'patch']
+/v2/rooms/{roomId}/file-share-limits ['get']
+/v2/rooms/{roomId}/file-share-settings ['get', 'patch']
+/v2/rooms/{roomId}/group-links ['get', 'post']
+/v2/rooms/{roomId}/group-links/{id} ['delete']
+/v2/rooms/{roomId}/guest-links ['get', 'post']
+/v2/rooms/{roomId}/guest-links/{id} ['delete']
+/v2/rooms/{roomId}/language-settings ['get', 'patch']
+/v2/rooms/{roomId}/passcode ['get', 'post']
+/v2/rooms/{roomId}/permissions ['get', 'post']
+/v2/rooms/{roomId}/permissions/{userId} ['delete', 'patch']
+/v2/rooms/{roomId}/subrooms ['get', 'post']
+/v2/rooms/{roomId}/subrooms/{subroomId} ['delete', 'patch']
+/v2/stats ['get']
+/v2/users ['get', 'patch']
+/v2/users/invitation ['post']
+/v2/users/me ['get']
+/v2/users/{id} ['delete']
+[0m
+STEP 1 — DELTA
+- NO_DELTA: re-probes ~90min post last cycle confirm zero change — sso `/oauth2/authorize`=200/6164B login page (6160B→6164B size drift only), OIDC discovery live w/ `device_authorization_endpoint` advertised, openapi prod=beta MD5 `357b94d3` 37 paths (full path dump re-enumerated). All three standing chains remain HUMAN-gated.
+
+STEP 2 — PRIORITIZE
+- [PRIO] apis.alfaview.com/v2 (IDOR chain), 6.6, business_value+attack_surface (multi-tenant REST, UUID params, only auth-gated)
+- [PRIO] sso.alfaview.com/oauth2 (introspect/OATH), 6.4, tech_exposure+gate_ease (public-client 'none', arbitrary client_id accepted, login-page reachable)
+- [PRIO] app.alfaview.com/graphql (guest-authz splice), 7.05, tech_exposure+attack_surface (anonymous-reachable guest mutations)
+
+STEP 3 — HYPOTHESES
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta (37 paths, MD5 357b94d3) re-confirmed this cycle; token-authed UUID params DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}. Gate stable (users/me=401; rooms/{uuid}/passcode=401; users/{uuid}=405 Allow:DELETE). Opaque company-scoped bearer; per-room/per-user cross-tenant authorization unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup, HUMAN) POST /v2/auth/password {username,password} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode (403-vs-200) → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} (403-vs-204) → DELETE /v2/users/{victimUserId} (403-vs-204).
+impact: cross-tenant PII read, room passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT; UUID-format args → BAD_USER_INPUT empty-message (oscillated FORBIDDEN earlier same day). GuestAuthenticateReply exposes user+accessToken+role; GuestJoinReply exposes expiry only (non-token-bearing per oracle). REST /v2/auth/guest-link requires accessKey+companyId+roomId (3-field; displayName optional). GraphQL signature has NO accessKey — structural divergence reconfirmed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId:"<real>",companyId:"<real>",roomId:"<real>"){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated token introspection on FusionAuth
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 45
+reasoning: Endpoint historically accepted any client_id (200 {"active":false} w/ fabricated client_id+token); now requires token param (400 missing_token without). token_endpoint_auth_methods_supported includes "none" — public-client path may weaken RFC7662 client authentication. client_credentials rejects not_licensed (Community ed.). Impact conditional on a valid FusionAuth token.
+evidence_needed: valid FusionAuth access token introspected without real client secret returns token metadata (sub, scopes, exp).
+verify_steps: (post-signup / OAuth HAR) POST /oauth2/introspect token=<valid>&client_id=anything → 200 full metadata vs 401.
+impact: token metadata leak (subject/scopes/expiry) to unauthenticated parties; MEDIUM (conditional on leaked token).
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- All three ≥40 and PASSIVE-reamin-derivable; none REJECTED-class. No [PARKED].
+- [FINAL] 1) apis IDOR (80) 2) graphql guest-authz (60) 3) sso introspect (45). Ordering unchanged by this cycle's byte-stable re-probes.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Create one throwaway free alfaview tenant — unauthenticated GraphQL `Signup` mutation (app.alfaview.com/graphql, no token header per AppSignup.min.js) with disposable inbox → `finishSignup({companyId,username,activationToken,password})` activation (email-gated) → POST /v2/auth/password for bearer → unlock all three chains (IDOR 80, guest-authz 60, introspect 45) simultaneously. Passive surface is exhausted; no further read-only probes can advance this program.
+
+STEP 6 — LEARNING
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/authorize`=200/6164B FusionAuth login page for unregistered client_id re-confirmed ~90min after last cycle — validation-timing state stable at 200; redirect_uri matrix remains client_id-gated.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: `/v2/docs/openapi.json` re-fetched — still public, prod=beta byte-identical (MD5 357b94d367909a40b9299b543d23712b, 37 paths, no new endpoints); schema surface fully stable 3rd consecutive cycle.
+[LEARN] NO_DELTA @ full inventory: no surface delta this cycle; graphql (POST) and introspect (POST) stayed idle per GET/HEAD/OPTIONS-only rule.
+
+STEP 7 — RISK
+[RISK] alfaview: 48/100 — unchanged. All surfaces byte-stable; no new anonymous exposure. All three standing chains (IDOR 80, guest-authz 60, introspect 45) remain HUMAN-gated behind tenant signup; risk score cannot advance without human action.

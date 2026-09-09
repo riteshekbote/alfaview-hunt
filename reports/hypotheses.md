@@ -1161,3 +1161,10 @@
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+
+## RANKED HYPOTHESES 2026-09-09 23:20:30 UTC
+- [80] apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params on REST user/room/permission ops (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Create one throwaway free alfaview tenant — unauthenticated GraphQL `Signup` mutation (app.alfaview.com/graphql, no token header per AppSignup.min.js) wi
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/authorize`=200/6164B FusionAuth login page for unregistered client_id re-confirmed ~90min after last cycle — val
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: `/v2/docs/openapi.json` re-fetched — still public, prod=beta byte-identical (MD5 357b94d367909a40b9299b543d23712b, 37 pa
+- LEARN: NO_DELTA @ full inventory: no surface delta this cycle; graphql (POST) and introspect (POST) stayed idle per GET/HEAD/OPTIONS-only rule.

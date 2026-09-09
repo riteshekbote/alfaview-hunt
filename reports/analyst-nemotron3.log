@@ -11338,3 +11338,8 @@ testability: HUMAN_ONLY
 
 **STEP 7 — RISK**
 [RISK] alfaview: 80/100. Broad scope (55 dedicated hosts + 6 main domains). Production APIs auth-gated (401). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: `sso.alfaview.com` (FusionAuth 1.63.0) exposes OIDC metadata with `issuer=acme.com` misconfiguration, implicit flow, HS256/384/512 support vs RSA-only JWKS (alg confusion vector), `/oauth2/introspect` now requires token param. `app.alfaview.com` is primary client but `client_id` not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no `accessKey`). `test.alfaview.com` distributes unsigned binaries (supply chain risk). 7-host beta-ionoscloud fleet fully probed — all firewalled. 31 hosts exhausted. Realistic path: discover `client_id` via `app.alfaview.com` network traffic → probe OAuth `redirect_uri`/`state` on `sso.alfaview.com` (AUTH_HELPED, CRITICAL); verify binary integrity on `test.alfaview.com` (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits.
+===== ANALYST nemotron3 2026-09-09 23:20:30 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[91m[1mError: [0mError from provider (Console): Upstream request failed: [404] Provider returned error
