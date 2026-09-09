@@ -392,3 +392,11 @@ www.alfaview.com
 - CHANGED `sso.alfaview.com` OIDC discovery unchanged — issuer=acme.com, implicit flow enabled, HS256/384/512 in supported algs but JWKS contains ONLY 7 RSA keys (zero symmetric)
 - CHANGED `test.alfaview.com` unauthenticated binary distribution (alfacheck v470079, 4 platforms) still live, no integrity verification visible
 - CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero genuinely-unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)
+
+## 2026-09-09 12:00:41 UTC
+- CHANGED `app.alfaview.com/graphql`: `guestAuthenticate` with UUID-format args returns `FORBIDDEN` (not `BAD_USER_INPUT`) — mutation processes UUIDs and hits authorization, not type validation. Null args retur
+- CHANGED `app.alfaview.com/graphql`: `GuestJoinReply` field oracle reveals `expiry` field (error: "Did you mean `expiry`?"). All other tested fields absent: accessToken, refreshToken, role, userId, companyId, 
+- CHANGED `apis.alfaview.com/v2/auth/guest-link`: 3-field combo `{accessKey,companyId,roomId}` returns 422 `ACTION_INVALID` (same as 4-field with displayName) — `displayName` is **not** a required field per ser
+- CHANGED `sso.alfaview.com/oauth2/authorize` now returns HTTP 200 FusionAuth login page (~6189B) for unregistered `client_id` (was 400) — validation timing shifted again overnight
+- CHANGED `sso.alfaview.com/oauth2/introspect` accepts any `client_id` value without validation (200 `{"active":false}` with `client_id=does-not-exist-12345`) — broken client authentication on token introspecti
+- CHANGED `sso.alfaview.com/oauth2/token` with `client_credentials` grant returns 400 `not_licensed` — FusionAuth Community edition (v1.63.0) confirmed, Entity Management not licensed

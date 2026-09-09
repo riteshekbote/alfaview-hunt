@@ -2530,3 +2530,44 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/token` with `client_credentials` grant returns 400 `not_licensed` — FusionAuth Community edition (v1.63.0) does not support Entity Management. Advertises client_credentials in OIDC discovery but rejects at runtime.
 [LEARN] ACCEPTED AUTH @ apis.alfaview.com: `/v2/auth/password` REST endpoint confirms POST with `{username, password}` → 422 validates input, 401 `invalid credentials` for bad creds. Generic error (no username enumeration). Standalone REST auth path alongside GraphQL signup.
 [RISK] alfaview: 48/100 — unchanged. Surface is byte-stable across all vectors (OpenAPI MD5 357b94d3, /v2/users/me=401/107B, sso introspect/client_credentials behavior). New minor finding (introspect broken client auth) but impact gated behind token. All three standing chains (IDOR 80, guest-authz splice 55, introspect 45) remain HUMAN-gated behind 2-tenant signup. Anonymous recon across all 55 hosts fully exhausted; freshness of all chains decays until signup is performed.
+## 2026-09-09 11:50:13 UTC [target] (model bigpickle)
+[CHANGED] `app.alfaview.com/graphql`: `guestAuthenticate` with UUID-format args returns `FORBIDDEN` (not `BAD_USER_INPUT`) — mutation processes UUIDs and hits authorization, not type validation. Null args return `BAD_USER_INPUT`. This confirms the mutation is real and active.
+[CHANGED] `app.alfaview.com/graphql`: `GuestJoinReply` field oracle reveals `expiry` field (error: "Did you mean `expiry`?"). All other tested fields absent: accessToken, refreshToken, role, userId, companyId, roomId, displayName, session, token, etc. GuestJoinReply is NOT an auth-token-bearing type.
+[CHANGED] `apis.alfaview.com/v2/auth/guest-link`: 3-field combo `{accessKey,companyId,roomId}` returns 422 `ACTION_INVALID` (same as 4-field with displayName) — `displayName` is **not** a required field per server validation. Previous knowledge base claimed 4 required fields; server only requires 3.
+[PRIO] apis.alfaview.com/v2,9/10,a:9,t:8,g:0,c:8,f:9 — OpenAPI UUID path params, REST auth endpoint live, tokens opaque. Highest-value target behind signup gate.
+[PRIO] app.alfaview.com/graphql,7/10,a:8,t:9,g:0,c:5,f:8 — Guest path anonymous-reachable; guestAuthenticate processes UUIDs (FORBIDDEN vs BAD_USER_INPUT); guestJoinReply has expiry field (not auth tokens). **Upgraded from 6** due to new field-oracle data + FORBIDDEN proof that mutation is real.
+[PRIO] sso.alfaview.com,7/10,a:6,t:8,g:0,c:5,f:8 — FusionAuth OIDC, issuer=acme.com, HS256/384/512 in algs but RSA-only JWKS; broken client auth on introspect; client_credentials not_licensed. Auth-gated.
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public+byte-identical prod/beta (37 paths, MD5 357b94d3 reconfirmed) confirms token-authed UUID path params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; /v2/users/me=401/107B gate stable; opaque company-scoped bearer; /v2/auth/password endpoint live (POST→422/401).
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (HUMAN, POST-SIGNUP) POST /v2/auth/password → bearer → GET /v2/users/me → GET /v2/rooms/{victimRoomId}/passcode 403-vs-200 → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} 403-vs-204 → DELETE /v2/users/{victimUserId} 403-vs-204.
+impact: cross-tenant PII read, room passcode access, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guestAuthenticate processes UUIDs without accessKey, REST guest-link requires accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 65
+reasoning: guestAuthenticate with NULL uuids returns BAD_USER_INPUT; with UUID-format args returns FORBIDDEN (NOT BAD_USER_INPUT) — mutation processes UUIDs and attempts authorization. GuestAuthenticateReply has user+accessToken+role fields. GuestJoinReply has expiry field (no auth tokens). REST /v2/auth/guest-link requires accessKey+companyId+roomId (3 fields, NOT 4 — displayName is optional per 422 ACTION_INVALID on both 3-field and 4-field combos). GraphQL signature has NO accessKey arg — structural divergence from REST confirmed.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → capture (userId,companyId,roomId) → GraphQL `mutation{guestAuthenticate(userId:"<real>",companyId:"<real>",roomId:"<real>"){user accessToken role}}` no accessKey vs REST POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated token introspection on FusionAuth
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 45
+reasoning: POST /oauth2/introspect accepts any client_id value without verification (200 {"active":false} with client_id=does-not-exist-12345). Without client_id → 400. FusionAuth Community edition (not_licensed on client_credentials) may permit this for public clients per RFC 7662. token_endpoint_auth_methods_supported includes "none". Practical impact requires a valid FusionAuth-issued access token to introspect.
+evidence_needed: A valid FusionAuth access token introspected without client authentication returning token metadata (sub, scopes, exp).
+verify_steps: (POST-SIGNUP) Obtain FusionAuth token via OAuth flow → POST /oauth2/introspect with token=<valid_token>&client_id=anything → 200 with full token metadata vs 401.
+impact: Token metadata leak (subject, scopes, expiry) without client credentials; enables token validation by unauthorized parties. MEDIUM.
+testability: HUMAN_ONLY
+[PARKED] OAuth redirect_uri validation bypass on sso.alfaview.com: confidence 45→dropped. Error-render confirmed (200/6189B), client_id validation blocks before redirect_uri handling. Dynamic client registration closed (no registration_endpoint). device_authorize also client_id-gated. Cannot progress without a registered client_id which requires either a desktop OAuth HAR capture or FusionAuth admin access. Both HUMAN-only.
+[FINAL] Survivors ranked:
+[NEXT] HUMAN: Create one throwaway free alfaview tenant via `mutation{Signup(signupRequest:{displayName:"test",user:{email:"<disposable>@mailinator.com",userProfile:{firstname:"t",lastname:"t"},locale:{UILanguage:"en"}},agreedToTerms:true,agreedToPrivacyPolicy:true,planId:"free-business"})}` at app.alfaview.com/graphql → disposable inbox → `finishSignup({companyId,username,activationToken,password})` at /finish-signup → POST /v2/auth/password for bearer. This unlocks ALL three surviving chains simultaneously. **Key insight**: guestAuthenticate with UUID-format args returns FORBIDDEN (not BAD_USER_INPUT) — the mutation is live and processing UUIDs. A real tenant's UUIDs may bypass to a token.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate` with UUID-format args returns `FORBIDDEN` (not `BAD_USER_INPUT` as with nulls) — mutation processes UUIDs and attempts authorization. Confirms mutation is active, not just a schema stub. GuestAuthenticateReply has `user`, `accessToken`, `role` fields; GuestJoinReply has `expiry` (no auth tokens).
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) per server validation — `displayName` is NOT required. Previous 4-field claim incorrect; 3-field and 4-field both return 422 `ACTION_INVALID` for fake UUIDs.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/graphql: GuestJoinReply field oracle — `expiry` is the only non-standard field confirmed. GuestJoinReply has NONE of: accessToken, refreshToken, role, userId, companyId, roomId, displayName, session, token, access, company, room, user, profile, id, uuid, url, redirect, join, denied, reason, success, error, message, code, status. This is NOT a token-bearing type.
+[RISK] alfaview: 48/100 — unchanged. All surfaces byte-stable this cycle (OpenAPI MD5 357b94d3, OIDC MD5 5e1297, auth gate 401/107B). New field-oracle data strengthens guest-authz chain (guestAuthenticate FORBIDDEN with UUIDs proves live processing; GuestJoinReply has expiry not tokens; REST guest-link 3-field not 4). All three standing chains (IDOR 80, guest-authz 65, introspect 45) remain HUMAN-gated behind tenant signup. Anonymous recon across all 55 hosts fully exhausted; no passive-only paths remain.
