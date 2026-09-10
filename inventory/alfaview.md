@@ -428,3 +428,11 @@ www.alfaview.com
 - CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (`BAD_USER_INPUT` with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
 - CHANGED OpenAPI specs prod/beta remain byte-identical (37 paths, MD5 357b94d367909a40b9299b543d23712b) — schema surface fully stable
 - CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain
+
+## 2026-09-10 06:04:15 UTC
+- CHANGED `sso.alfaview.com/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered `client_id` (was 400) — validation timing shifted again overnight
+- CHANGED `sso.alfaview.com/oauth2/introspect` now requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation
+- CHANGED `apis.alfaview.com/v2/auth/guest-link` REST endpoint confirms 3-field combo (`accessKey`+`companyId`+`roomId`) returns 422 `ACTION_INVALID` — `displayName` not required
+- CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (`BAD_USER_INPUT` with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
+- CHANGED OpenAPI specs prod/beta remain byte-identical (37 paths, MD5 357b94d367909a40b9299b543d23712b) — schema surface fully stable
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain

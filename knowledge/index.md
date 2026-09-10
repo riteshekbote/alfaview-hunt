@@ -311,3 +311,5 @@
 - 2026-09-10 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
 - 2026-09-10 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated test target. Needs account.
 - 2026-09-10 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
+- 2026-09-10 ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/authorize`=200/6164B FusionAuth login page for unregistered client_id re-confirmed ~90min after last cycle — validation-timing state stable at 200; redirect_uri matrix remains client_id-gated.
+- 2026-09-10 ACCEPTED MISCONFIG @ apis.alfaview.com: `/v2/docs/openapi.json` re-fetched — still public, prod=beta byte-identical (MD5 357b94d367909a40b9299b543d23712b, 37 paths, no new endpoints); schema surface fully stable 3rd consecutive cycle.
