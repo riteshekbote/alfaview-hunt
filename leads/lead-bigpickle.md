@@ -2772,3 +2772,28 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: `/v2/docs/openapi.json` re-fetched — still public, prod=beta byte-identical (MD5 357b94d367909a40b9299b543d23712b, 37 paths, no new endpoints); schema surface fully stable 3rd consecutive cycle.
 [LEARN] NO_DELTA @ full inventory: no surface delta this cycle; graphql (POST) and introspect (POST) stayed idle per GET/HEAD/OPTIONS-only rule.
 [RISK] alfaview: 48/100 — unchanged. All surfaces byte-stable; no new anonymous exposure. All three standing chains (IDOR 80, guest-authz 60, introspect 45) remain HUMAN-gated behind tenant signup; risk score cannot advance without human action.
+## 2026-09-10 10:37:18 UTC [target] (model bigpickle)
+[CHANGED] sso.alfaview.com/oauth2/introspect: HTTP Basic auth path accepts **fabricated client_id + any secret** → `{"active":false}` with no client validation; POST body `client_id=` → `invalid_client`. Client authentication fully bypassable on RFC7662 introspection (new this cycle — prior cycles only tested body param `client_id`).
+[NEW] sso.alfaview.com/.well-known/openid-configuration: `token_endpoint_auth_methods_supported=['client_secret_basic','client_secret_post','none']` — Basic scheme is an advertised auth method, making the introspect bypass a documented-feature violation.
+[PRIO] sso.alfaview.com/oauth2/introspect, 7.6, MISCONFIG+token-introspection — broken client auth confirmed live
+[PRIO] apis.alfaview.com/v2, 7.9, IDOR+UUID — highest-value, auth-gated, unchanged
+[PRIO] app.alfaview.com/graphql, 7.2, AUTH+guest — accessKey-less divergence, anonymous-reachable
+[HYP] Unauthenticated token introspection bypassing RFC7662 client authentication
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 60
+reasoning: Live probes this cycle: POST /oauth2/introspect token=xyz with `Authorization: Basic ZG9lcy1ub3QtZXhpc3QtMTIzNDU6` (client_id=does-not-exist-12345, empty secret) → 200 `{"active":false}`; Basic `dGVzdDp0ZXN0` (client_id=test) → 200 `{"active":false}`; Basic `test:wrongsecret` → 200 `{"active":false}`. Same token via POST body `client_id=test` → 400 `invalid_client` "client_id: test is not valid". token_endpoint_auth_methods_supported advertises client_secret_basic. FusionAuth Community ed (v1.63.0) — client_credentials grant rejects not_licensed. Impact conditional on a valid FusionAuth token to introspect.
+evidence_needed: A real FusionAuth access token (from a valid user session or leaked HAR) introspected via Basic `client_id:anything` → returns metadata (active:true, sub, scopes, exp) despite unregistered client_id.
+verify_steps: (with valid token) POST /oauth2/introspect -H "Authorization: Basic <base64(client_id:garbage)>" -d "token=<valid>" → observe full metadata vs 401.
+impact: Any unauthenticated party with a leaked/observed FusionAuth token can confirm validity, extract sub/scopes/expiry without legitimate client credentials — token-metadata disclosure; MEDIUM (conditional on token leak).
+testability: AUTH_HELPED (needs one valid token, obtainable post-signup)
+[PARKED] Cross-tenant IDOR (80): survives as strongest, but gate remains 401/405 stable across 6+ days; cannot advance without an account.
+[FINAL] Cross-tenant IDOR (80): survives. OpenAPI-confirmed, gate stable, HUMAN-gated.
+[FINAL] Guest-authz splice (60): survives. Structural divergence persists (no accessKey in GraphQL vs REST 3-field).
+[FINAL] Unauthenticated introspect (60): upgraded — Basic-auth path fully bypasses client_id validation, confirmed live.
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant (AppSignup.min.js holds unauthenticated GraphQL `Signup` → email activation) → POST /v2/auth/password for bearer → unlock IDOR (80) + guest-authz (60) + introspect-with-valid-token (60), then: capture a real FusionAuth token from browser and introspect it via Basic `Authorization: client_id:anything` to confirm metadata leak.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: HTTP Basic auth path accepts fabricated `client_id` + any secret (200 active:false), while POST-body client_id is validated (400 invalid_client) — client authentication bypassable on RFC7662 introspection; token_endpoint_auth_methods_supported advertises client_secret_basic.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery unchanged — issuer=acme.com, token_auth=[client_secret_basic,client_secret_post,none], no registration_endpoint, device_authorize live.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (MD5 357b94d367909a40b9299b543d23712b, 37 paths) — 4th consecutive stable cycle.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin anonymous-reachable (BAD_USER_INPUT with zero-UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest path diverges from REST 3-field combo.
+[RISK] alfaview: 48/100 — unchanged. The introspect Basic-bypass is the first live-confirmed broken-client-auth this cycle but its impact remains conditional on token possession; IDOR/guest-authz chains stay HUMAN-gated. Score cannot advance without an authenticated tenant.

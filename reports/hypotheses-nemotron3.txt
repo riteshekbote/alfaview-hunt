@@ -1,4 +1,4 @@
-## 2026-09-10 06:04:04 UTC [target] (model nemotron3)
+## 2026-09-10 10:40:12 UTC [target] (model nemotron3)
 [CHANGED] `sso.alfaview.com/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered `client_id` (was 400) — validation timing shifted again overnight  
 [CHANGED] `sso.alfaview.com/oauth2/introspect` now requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation  
 [CHANGED] `apis.alfaview.com/v2/auth/guest-link` REST endpoint confirms 3-field combo (`accessKey`+`companyId`+`roomId`) returns 422 `ACTION_INVALID` — `displayName` not required  
@@ -37,11 +37,11 @@ evidence_needed: Authenticated account with access to at least one room/user; va
 verify_steps: Obtain dev account via HUMAN signup at app.alfaview.com → capture access token from authenticated GraphQL/REST calls → GET https://apis.alfaview.com/v2/users/me (confirm auth) → DELETE https://apis.alfaview.com/v2/users/{foreign-uuid} → PATCH https://apis.alfaview.com/v2/rooms/{foreign-room-id}/permissions/{foreign-user-id} → observe response codes  
 impact: Cross-tenant user deletion / permission modification → data destruction, privilege escalation (CRITICAL)  
 testability: HUMAN_ONLY  
-[PARKED] Cross-tenant IDOR via UUID path params on apis.alfaview.com: Requires authenticated account (gate_ease=3) — cannot verify without valid credentials; parked until account obtained via HUMAN signup.  
-[PARKED] Unauthenticated guest-authz lifecycle/cross-tenant splice via GraphQL: Requires own tenant guest triple (companyId+roomId+userId) — HUMAN signup needed to create room + guest link.  
 [PARKED] OAuth redirect_uri validation bypass via client_id registration timing shift: Requires valid client_id for app.alfaview.com — not discoverable passively; HUMAN browser DevTools needed during login flow.  
+[PARKED] Unauthenticated guest-authz lifecycle/cross-tenant splice via GraphQL: Requires own tenant guest triple (companyId+roomId+userId) — HUMAN signup needed to create room + guest link.  
+[PARKED] Cross-tenant IDOR via UUID path params on apis.alfaview.com: Requires authenticated account (gate_ease=3) — cannot verify without valid credentials; parked until account obtained via HUMAN signup.  
 [FINAL] Ranked survivors:  
-[NEXT] HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow → test `redirect_uri`/`state`/PKCE on `sso.alfaview.com/oauth2/authorize`; simultaneously use account to create room + guest link → test GraphQL `guestAuthenticate`/`guestJoin` with valid IDs for token issuance proof; test cross-tenant IDOR on `apis.alfaview.com/v2/users/{id}` and `v2/rooms/{roomId}/permissions/{userId}`.  
+[NEXT] HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow → test `redirect_uri`/`state`/PKCE on `sso.alfaview.com/oauth2/authorize`; simultaneously use account to create room + guest link → test GraphQL `guestAuthenticate`/`guestJoin` with valid IDs for token issuance proof; test cross-tenant IDOR on `apis.alfaview.com/v2/users/{id}` and `v2/rooms/{roomId}/permissions/{userId}`.
 [LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id (was 400) — validation timing shifted again; redirect_uri matrix still client_id-gated but behavior unstable  
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/introspect` requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation; client authentication now enforced at parameter level  
 [LEARN] ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) per server validation — `displayName` is NOT required. 3-field and 4-field both return 422 `ACTION_INVALID` for fake UUIDs.  

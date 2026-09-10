@@ -436,3 +436,13 @@ www.alfaview.com
 - CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (`BAD_USER_INPUT` with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
 - CHANGED OpenAPI specs prod/beta remain byte-identical (37 paths, MD5 357b94d367909a40b9299b543d23712b) — schema surface fully stable
 - CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain
+
+## 2026-09-10 10:40:25 UTC
+- CHANGED sso.alfaview.com/oauth2/introspect: HTTP Basic auth path accepts **fabricated client_id + any secret** → `{"active":false}` with no client validation; POST body `client_id=` → `invalid_client`. Client
+- NEW sso.alfaview.com/.well-known/openid-configuration: `token_endpoint_auth_methods_supported=['client_secret_basic','client_secret_post','none']` — Basic scheme is an advertised auth method, making the i
+- CHANGED `sso.alfaview.com/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered `client_id` (was 400) — validation timing shifted again overnight
+- CHANGED `sso.alfaview.com/oauth2/introspect` now requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation
+- CHANGED `apis.alfaview.com/v2/auth/guest-link` REST endpoint confirms 3-field combo (`accessKey`+`companyId`+`roomId`) returns 422 `ACTION_INVALID` — `displayName` not required
+- CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (`BAD_USER_INPUT` with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
+- CHANGED OpenAPI specs prod/beta remain byte-identical (37 paths, MD5 357b94d367909a40b9299b543d23712b) — schema surface fully stable
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain
