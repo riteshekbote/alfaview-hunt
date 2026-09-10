@@ -300,3 +300,14 @@
 - 2026-09-09 ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/authorize`=200/6164B FusionAuth login page for unregistered client_id re-confirmed ~90min after last cycle — validation-timing state stable at 200; redirect_uri matrix remains client_id-gated.
 - 2026-09-09 ACCEPTED MISCONFIG @ apis.alfaview.com: `/v2/docs/openapi.json` re-fetched — still public, prod=beta byte-identical (MD5 357b94d367909a40b9299b543d23712b, 37 paths, no new endpoints); schema surface fully stable 3rd consecutive cycle.
 - 2026-09-09 NO_DELTA @ full inventory: no surface delta this cycle; graphql (POST) and introspect (POST) stayed idle per GET/HEAD/OPTIONS-only rule.
+- 2026-09-10 NO_DELTA @ full inventory: no surface delta this cycle; graphql (POST) and introspect (POST) stayed idle per GET/HEAD/OPTIONS-only rule.
+- 2026-09-10 ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id (was 400) — validation timing shifted again; redirect_uri matrix still client_id-gated but behavior unstable
+- 2026-09-10 ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/introspect` requires `token` parameter (400 `missing_token` without it) — previously accepted any `client_id` without validation; client authentication now enforced at parameter level
+- 2026-09-10 ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) per server validation — `displayName` is NOT required. 3-field and 4-field both return 422 `ACTION_INVALID` for fake UUIDs.
+- 2026-09-10 ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in GraphQL guest signature — diverges from REST 3-field `accessKey` combo
+- 2026-09-10 REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- 2026-09-10 REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- 2026-09-10 REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` `UNAUTHENTICATED`; no PII/config reachable anonymously.
+- 2026-09-10 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
+- 2026-09-10 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated test target. Needs account.
+- 2026-09-10 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
