@@ -15422,3 +15422,161 @@ All three hypotheses survive (confidence ≥ 40, standing class, verified verify
 ```
 [RISK] alfaview: 50/100 — unchanged. All surfaces byte-stable; no new anonymous exposure. All three standing chains (IDOR 80, guest-authz 60, introspect 60) remain HUMAN-gated behind tenant signup; risk score cannot advance without human action.
 ```
+===== ANALYST bigpickle 2026-09-10 22:38:18 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mUA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124"; mkdir -p /tmp/opencode
+curl -sk -A "$UA" -o /tmp/opencode/openapi.json -w "openapi %{http_code} %{size_download}\n" "https://apis.alfaview.com/v2/docs/openapi.json"
+md5sum /tmp/opencode/openapi.json
+sleep 1.2
+curl -sk -A "$UA" -o /dev/null -w "users/me %{http_code} %{size_download}\n" "https://apis.alfaview.com/v2/users/me"
+sleep 1.2
+curl -sk -A "$UA" -o /tmp/opencode/oidc.json -w "oidc %{http_code} %{size_download}\n" "https://sso.alfaview.com/.well-known/openid-configuration"
+sleep 1.2
+curl -sk -A "$UA" -o /tmp/opencode/authz.html -w "authorize %{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=zzzfake_notreal"
+sleep 1.2
+curl -sk -A "$UA" -X OPTIONS -o /dev/null -w "graphql OPTIONS %{http_code} %{size_download}\n" "https://app.alfaview.com/graphql"
+sleep 1.2
+curl -sk -A "$UA" -o /dev/null -w "test root %{http_code} %{size_download}\n" "https://test.alfaview.com/"
+sleep 1.2
+curl -sk -A "$UA" -o /dev/null -w "app root %{http_code} %{size_download}\n" "https://app.alfaview.com/"
+openapi 200 127532
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+users/me 401 107
+oidc 200 2112
+authorize 200 6189
+graphql OPTIONS 204 0
+test root 200 494
+app root 200 1381
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/openapi.json'))
+print('paths', len(d['paths']))
+o=json.load(open('/tmp/opencode/oidc.json'))
+print('issuer', o.get('issuer'))
+print('id_token_signing_alg', o.get('id_token_signing_alg_values_supported'))
+print('userinfo_signing_alg', o.get('userinfo_signing_alg_values_supported'))
+print('token_auth', o.get('token_endpoint_auth_methods_supported'))
+print('grant_types', o.get('grant_types_supported'))
+print('has_reg_endpoint', 'registration_endpoint' in o)
+print('device_authorize', o.get('device_authorization_endpoint'))
+"
+echo "--- authz page sig ---"
+grep -io "fusionauth\|invalid\|acme" /tmp/opencode/authz.html | sort | uniq -c | head
+echo "--- test root ---"
+curl -sk -A "Mozilla/5.0" "https://test.alfaview.com/"
+paths 37
+issuer acme.com
+id_token_signing_alg ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+userinfo_signing_alg ['ES256', 'ES384', 'ES512', 'RS256', 'RS384', 'RS512', 'HS256', 'HS384', 'HS512']
+token_auth ['client_secret_basic', 'client_secret_post', 'none']
+grant_types ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+has_reg_endpoint False
+device_authorize https://sso.alfaview.com/oauth2/device_authorize
+--- authz page sig ---
+      7 FusionAuth
+      2 fusionauth
+      1 invalid
+--- test root ---
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>alfacheck</title>
+	</head>
+	<body>
+		<h1>alfacheck</h1>
+<a href="alfacheck.linux.amd64.483102.bin" download>alfacheck.linux.amd64.483102.bin</a></br>
+<a href="alfacheck.windows.amd64.483102.exe" download>alfacheck.windows.amd64.483102.exe</a></br>
+<a href="alfacheck.mac.amd64.483102.bin" download>alfacheck.mac.amd64.483102.bin</a></br>
+<a href="alfacheck.mac.arm64.483102.bin" download>alfacheck.mac.arm64.483102.bin</a></br>
+	</body>
+</html>
+[0m
+[0m$ [0mUA="Mozilla/5.0"; for p in /SHA256SUMS /sha256sums /checksums.txt /CHECKSUMS /latest /version /manifest.json /hashes.json /RELEASES; do curl -sk -A "$UA" -o /dev/null -w "test$p %{http_code} %{size_download}\n" "https://test.alfaview.com$p"; sleep 1.1; done
+echo "--- binary HEADs ---"
+for b in alfacheck.linux.amd64.483102.bin alfacheck.windows.amd64.483102.exe alfacheck.mac.arm64.483102.bin; do curl -sk -I -A "$UA" -w "HEAD $b %{http_code} %{size_download}\n" -o /dev/null "https://test.alfaview.com/$b"; sleep 1.1; done
+test/SHA256SUMS 404 19
+test/sha256sums 404 19
+test/checksums.txt 404 19
+test/CHECKSUMS 404 19
+test/latest 404 19
+test/version 404 19
+test/manifest.json 404 19
+test/hashes.json 404 19
+test/RELEASES 404 19
+--- binary HEADs ---
+HEAD alfacheck.linux.amd64.483102.bin 200 0
+HEAD alfacheck.windows.amd64.483102.exe 200 0
+HEAD alfacheck.mac.arm64.483102.bin 200 0
+[0m
+[0m$ [0mcurlund=""; UA="Mozilla/5.0"
+curl -sk --head -A "$UA" "https://test.alfaview.com/alfacheck.linux.amd64.483102.bin" 2>&1 | grep -iE "content-length|last-modified|etag"
+echo "---"
+curl -sk -A "$UA" -r 0-200000 -o /tmp/opencode/avc.bin "https://test.alfaview.com/alfacheck.linux.amd64.483102.bin"
+ls -l /tmp/opencode/avc.bin
+strings /tmp/opencode/avc.bin 2>/dev/null | grep -iE "484091|483102|470079|version|client_id|accessKey" | head -20
+content-length: 17137824
+last-modified: Thu, 10 Sep 2026 10:07:07 GMT
+---
+-rw-r--r-- 1 runner runner 200001 Sep 10 22:37 /tmp/opencode/avc.bin
+[0m
+STEP 1 — DELTA
+- NEW test.alfaview.com: alfacheck refreshed — v470079 → build 483102 deployed same-day (files `alfacheck.{linux.amd64.bin,windows.amd64.exe,mac.amd64.bin,mac.arm64.bin}.483102`, linux/amd64 17,137,824 B, Last-Modified 2026-09-10 10:07:07 GMT); root listing carries no checksums and `/SHA256SUMS|checksums.txt|latest|manifest.json|RELEASES` all 404 — integrity verification still absent on the refreshed build.
+- NO_DELTA apis/sso/app: openapi MD5 `357b94d367909a40b9299b543d23712b` (37 paths, 5th stable cycle); `/v2/users/me`=401; OIDC discovery unchanged (issuer=acme.com, ES/HS/RS alg list, token_auth=[basic,post,none], no registration_endpoint); `/oauth2/authorize?client_id=zzzfake_notreal`=200/6189B login page; graphql OPTIONS=204; app root=1381B SPA.
+- introspect/window: POST endpoints idle this cycle (GET/HEAD/OPTIONS-only rule) — last cycle's POST-body `client_id` removal stands un-re-probed.
+
+STEP 2 — PRIORITIZE
+- [PRIO] sso.alfaview.com/oauth2/introspect, 74.0, a=8,b=7,t=9,g=10,c=0,f=8
+- [PRIO] apis.alfaview.com/v2, 61.0, a=8,b=9,t=6,g=3,c=0,f=5
+- [PRIO] app.alfaview.com/graphql, 58.5, a=7,b=7,t=8,g=5,c=0,f=4
+- [PRIO] test.alfaview.com, 57.0, a=5,b=6,t=3,g=10,c=0,f=10
+
+STEP 3 — HYPOTHESES
+[HYP] RFC7662 introspection client-authentication fully removed on both channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: Last-cycle live probes: POST body `client_id=fake` → 200 `{"active":false}` (was 400 invalid_client); Basic `b64(fake:fakesecret)` → 200 `{"active":false}`; only residual gate is Basic-vs-body mismatch 401. Discovery advertises token_endpoint_auth_methods_supported=[client_secret_basic,client_secret_post,none]; FusionAuth Community (not_licensed on client_credentials); no registration_endpoint. Introspect is the only OAuth endpoint where client auth gates token metadata.
+evidence_needed: A real FusionAuth access token POSTed with fabricated client_id returns 200 `{"active":true, sub, scope, exp}` — metadata disclosed to an unauthenticated party.
+verify_steps: (post-signup) POST /oauth2/introspect -d "token=<real>&client_id=fake" and -H "Authorization: Basic b64(fake:fakesecret)" — compare sub/scope/exp to a control introspect.
+impact: holder of a leaked/observed FusionAuth token (network capture, shared device, logs) extracts subject/scopes/expiry and confirms session validity without any client credential; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta 5th consecutive cycle (37 paths, MD5 357b94d3, no new endpoints). Token-authed UUID params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}. Gate stable this cycle (users/me=401). Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, room passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT; UUID-format args → BAD_USER_INPUT (oscillated FORBIDDEN earlier). GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId; GraphQL signature has NO accessKey — structural divergence, unchanged this cycle.
+evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- introspect 75 [FINAL]: credible but sole verifying probes were POST (idle this cycle); impact conditional on token possession.
+- IDOR 80 [FINAL]: highest-rank survivor; HUMAN-gated, no passive oracle.
+- guest-authz 60 [FINAL]: standing structural gap reconfirmed; HUMAN-gated.
+- [PARKED] test.alfaview fresh build 483102 without checksum manifest: no-manifest is descriptive/known-public-file-class; credential-in-binary was refuted on v470079 and a passive re-scan has no oracle until downloaded+strings'd, which alone is weak evidence — revisit only if an authenticated chain needs the desktop client internals.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `Signup` (app.alfaview.com/graphql, AppSignup.min.js) → email activation at `/finish-signup` → POST /v2/auth/password {username,password} for bearer → in ONE authenticated session: (a) introspect a real FusionAuth token with `client_id=fake` + Basic `b64(fake:fakesecret)` vs control (confirm metadata disclosure), (b) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (c) guestAuthenticate real triple without accessKey vs REST guest-link. No further read-only probes can advance this program.
+
+STEP 6 — LEARNING
+- [LEARN] NEW MISCONFIG @ test.alfaview.com: new alfacheck build 483102 deployed 2026-09-10 10:07:07 GMT (linux/amd64 17,137,824 B); root listing revised from v470079; `/SHA256SUMS|sha256sums|checksums.txt|latest|version|manifest.json|hashes.json|RELEASES` all 404 — refreshed binary distributed with no integrity verification, supply-chain surface persists.
+- [LEARN] NO_DELTA @ apis/sso/app: openapi MD5 357b94d3 (37 paths, 5th cycle), users/me=401, OIDC discovery+alg list+token_auth unchanged, authorize=200/6189B, graphql OPTIONS=204, app shell=1381B.
+- [LEARN] PASSIVE-ONLY @ sso/apiauth: introspect/authorize-token POST probes idle this cycle per GET/HEAD/OPTIONS rule — 2026-09-10 20:11 introspect regression stands as the only fresh surface change and remains AUTH_HELPED-gated.
+
+STEP 7 — RISK
+[RISK] alfaview: 50/100 — unchanged. Same-day binary refresh keeps the supply-chain surface live but adds no new exposure; all substantive chains (introspect 75 AUTH_HELPED; IDOR 80, guest-authz 60 HUMAN) remain gated behind tenant signup + token possession, and no anonymous delta appeared this cycle. Score moves only after signup unlocks the authenticated chains.
