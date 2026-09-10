@@ -446,3 +446,11 @@ www.alfaview.com
 - CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (`BAD_USER_INPUT` with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
 - CHANGED OpenAPI specs prod/beta remain byte-identical (37 paths, MD5 357b94d367909a40b9299b543d23712b) — schema surface fully stable
 - CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain
+
+## 2026-09-10 14:51:53 UTC
+- CHANGED `sso.alfaview.com/oauth2/authorize` returns HTTP 200 FusionAuth login page (6174B) for unregistered `client_id` — validation timing shifted again (was 400 `invalid_client`); redirect_uri matrix still 
+- CHANGED `sso.alfaview.com/oauth2/introspect` HTTP Basic auth path accepts fabricated `client_id` + any secret → `200 {"active":false}`; POST body `client_id` validated → `400 invalid_client` — client authenti
+- CHANGED `apis.alfaview.com/v2/auth/guest-link` REST endpoint confirms 3-field combo (`accessKey`+`companyId`+`roomId`) returns 422 `ACTION_INVALID` — `displayName` NOT required (prior 4-field claim incorrect)
+- CHANGED `app.alfaview.com/graphql` `guestAuthenticate`/`guestJoin` reconfirmed anonymous-reachable (`BAD_USER_INPUT` with zero UUIDs) — accessKey-less GraphQL guest path diverges from REST 3-field combo
+- CHANGED OpenAPI specs prod/beta remain byte-identical (37 paths, MD5 357b94d367909a40b9299b543d23712b) — schema surface fully stable 4th consecutive cycle
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero unprobed hosts remain

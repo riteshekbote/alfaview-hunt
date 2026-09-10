@@ -1224,3 +1224,23 @@
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+
+## RANKED HYPOTHESES 2026-09-10 14:51:53 UTC
+- [80] apis.alfaview.com/v2: Cross-tenant IDOR via UUID path params on REST user/room/permission ops (from art/lead_bigpickle.txt)
+- [75] sso.alfaview.com/oauth2/authorize: OAuth redirect_uri validation bypass via client_id registration timing shift (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Sign up one throwaway free alfaview tenant (AppSignup.min.js holds unauthenticated GraphQL `Signup` → email activation) → POST /v2/auth/password for bear
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow 
+- LEARN: NO_DELTA @ full inventory: no surface delta this cycle; all probes (graphql GET, introspect OPTIONS/HEAD, authorize, OIDC discovery, OpenAPI) returned identical
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: HTTP Basic auth path accepts fabricated client_id + any secret (200 active:false), while POST-body clie
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery unchanged — issuer=acme.com, token_auth=[client_secret_basic,client_secret_post,none], no registration_end
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin anonymous-reachable (BAD_USER_INPUT with zero-UUIDs; GRAPHQL_VALIDATION_FAILED if displayN
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id (was 400) — validation timing shifted ag
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: `/oauth2/introspect` HTTP Basic auth accepts fabricated client_id + any secret (200 active:false), POST-body client_id va
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) per server validation — `displayName` 
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
