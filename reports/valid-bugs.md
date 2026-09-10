@@ -32,3 +32,11 @@
   - | Q3 Impact? | **Yes** — `guestAuthenticate(userId,companyId,roomId)` and `guestJoin(userId,companyId,roomId,displayName)` mutations are processed without accessKey, while the REST guest-link flow req
   - **Verdict: VALID**
   - | 2 | GraphQL guest mutations without accessKey | **VALID** | 7.5 | **REPORT** |
+
+- 6 lead(s) marked VALID at 2026-09-10 09:49:26 UTC
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q4 Provable | NO — requires valid companyId+roomId seed to test rate limiting |
+  - | 1 | FusionAuth issuer=acme.com drift | **VALID** | None — passive proof complete |
+  - | 2 | Unauthenticated binary distribution (test.alfaview.com) | **VALID** | None — passive proof complete |
+  - | 7 | JWT algorithm confusion (HS256/RSA) | **HOLD** | Needs valid token sample |
