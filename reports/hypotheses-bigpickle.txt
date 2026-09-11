@@ -1,7 +1,7 @@
-## 2026-09-11 09:45:41 UTC [target] (model bigpickle)
-[PRIO] sso.alfaview.com/oauth2/introspect, 85, attack_surface:9 business_value:8 tech_exposure:9 gate_ease:1 cloud_surface:5 freshness:5
-[PRIO] apis.alfaview.com/v2, 72, attack_surface:8 business_value:8 tech_exposure:7 gate_ease:3 cloud_surface:4 freshness:5
-[PRIO] app.alfaview.com/graphql, 60, attack_surface:7 business_value:7 tech_exposure:8 gate_ease:3 cloud_surface:3 freshness:5
+## 2026-09-11 13:56:36 UTC [target] (model bigpickle)
+[PRIO] sso.alfaview.com/oauth2/introspect,85,attack_surface:9 business_value:8 tech_exposure:9 gate_ease:1 cloud_surface:5 freshness:5
+[PRIO] apis.alfaview.com/v2,72,attack_surface:8 business_value:8 tech_exposure:7 gate_ease:3 cloud_surface:4 freshness:5
+[PRIO] app.alfaview.com/graphql,60,attack_surface:7 business_value:7 tech_exposure:8 gate_ease:3 cloud_surface:3 freshness:5
 [HYP] RFC7662 introspection client-authentication fully removed on both channels
 class: MISCONFIG
 asset: sso.alfaview.com/oauth2/introspect
@@ -29,8 +29,7 @@ evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey
 verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
 impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
 testability: HUMAN_ONLY
-[PARKED] (none)
-[FINAL] (ranked):
+[FINAL]:
 [NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `Signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. No further read-only passive probes can advance this program — all surfaces byte-stable Nth consecutive cycle.
 [LEARN] NO_DELTA: no surface change this cycle — all probes (OpenAPI MD5, OIDC discovery, authorize, introspect POST/Basic, users/me, auth/password, device_authorize) returned byte-identical results to prior cycle.
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body fabricated client_id → 200 `{"active":false}` (no validation); Basic fabricated → 200; only residual is body-vs-Basic mismatch 401. Confirmed stable.

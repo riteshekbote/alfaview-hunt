@@ -488,3 +488,9 @@ https://insider-webclient.alfaview.com/api/health -> HTTP 404
 
 ## 2026-09-11 09:46:07 UTC
 
+
+## 2026-09-11 14:02:32 UTC
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400
