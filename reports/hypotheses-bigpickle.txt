@@ -1,30 +1,30 @@
-## 2026-09-10 22:37:48 UTC [target] (model bigpickle)
-[HYP] RFC7662 introspection client-authentication fully removed on both channels
-class: MISCONFIG
-asset: sso.alfaview.com/oauth2/introspect
-confidence: 75
-reasoning: Last-cycle live probes: POST body `client_id=fake` → 200 `{"active":false}` (was 400 invalid_client); Basic `b64(fake:fakesecret)` → 200 `{"active":false}`; only residual gate is Basic-vs-body mismatch 401. Discovery advertises token_endpoint_auth_methods_supported=[client_secret_basic,client_secret_post,none]; FusionAuth Community (not_licensed on client_credentials); no registration_endpoint. Introspect is the only OAuth endpoint where client auth gates token metadata.
-evidence_needed: A real FusionAuth access token POSTed with fabricated client_id returns 200 `{"active":true, sub, scope, exp}` — metadata disclosed to an unauthenticated party.
-verify_steps: (post-signup) POST /oauth2/introspect -d "token=<real>&client_id=fake" and -H "Authorization: Basic b64(fake:fakesecret)" — compare sub/scope/exp to a control introspect.
-impact: holder of a leaked/observed FusionAuth token (network capture, shared device, logs) extracts subject/scopes/expiry and confirms session validity without any client credential; MEDIUM-HIGH conditional on token possession, LOW without.
-testability: AUTH_HELPED
+## 2026-09-11 00:30:44 UTC [target] (model bigpickle)
 [HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
 class: IDOR
 asset: apis.alfaview.com/v2
 confidence: 80
-reasoning: OpenAPI public + byte-identical prod/beta 5th consecutive cycle (37 paths, MD5 357b94d3, no new endpoints). Token-authed UUID params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}. Gate stable this cycle (users/me=401). Opaque company-scoped bearer; cross-tenant authz unverified.
+reasoning: OpenAPI public + byte-identical prod/beta, 37 paths (MD5 357b94d3, this cycle). Token-authed UUID params on DELETE /v2/users/{id}, GET /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}. Gate stable this cycle (users/me=401). Opaque company-scoped bearer; cross-tenant authz unverified.
 evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
-verify_steps: (post-signup) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
-impact: cross-tenant PII read, room passcode retrieval, permission mutation, user deletion; HIGH.
+verify_steps: (post-signup) POST /v2/auth/password {username,password} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode (403-vs-200) → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} (403-vs-204) → DELETE /v2/users/{victimUserId} (403-vs-204).
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
 testability: HUMAN_ONLY
+[HYP] RFC7662 introspection client-authentication removed on both auth channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: Prior-cycle live probes: POST body fabricated client_id → 200 {"active":false}; Basic b64(fake:fakesecret) → 200 {"active":false}; discovery advertises client_secret_basic/post. Introspect is the only OAuth endpoint where client auth gates token metadata; FusionAuth Community (client_credentials not_licensed).
+evidence_needed: a real FusionAuth access token introspected with fabricated client_id returns 200 {"active":true, sub, scope, exp}.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>" — compare sub/scopes/exp.
+impact: holder of leaked/observed token confirms validity and extracts subject/scopes/expiry without client credential; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
 [HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
 class: AUTH
 asset: app.alfaview.com/graphql
 confidence: 60
-reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT; UUID-format args → BAD_USER_INPUT (oscillated FORBIDDEN earlier). GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId; GraphQL signature has NO accessKey — structural divergence, unchanged this cycle.
-evidence_needed: guestAuthenticate with a real room's valid guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
-verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT, UUID-format args → BAD_USER_INPUT (oscillated FORBIDDEN on 2026-09-09). GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId (3-field, displayName NOT required); GraphQL signature has NO accessKey — structural divergence.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}} (no accessKey) vs POST /v2/auth/guest-link same triple without accessKey → 200+token vs 401/422.
 impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
 testability: HUMAN_ONLY
-[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `Signup` (app.alfaview.com/graphql, AppSignup.min.js) → email activation at `/finish-signup` → POST /v2/auth/password {username,password} for bearer → in ONE authenticated session: (a) introspect a real FusionAuth token with `client_id=fake` + Basic `b64(fake:fakesecret)` vs control (confirm metadata disclosure), (b) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (c) guestAuthenticate real triple without accessKey vs REST guest-link. No further read-only probes can advance this program.
-[RISK] alfaview: 50/100 — unchanged. Same-day binary refresh keeps the supply-chain surface live but adds no new exposure; all substantive chains (introspect 75 AUTH_HELPED; IDOR 80, guest-authz 60 HUMAN) remain gated behind tenant signup + token possession, and no anonymous delta appeared this cycle. Score moves only after signup unlocks the authenticated chains.
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. No further read-only probes can advance this program — surface byte-stable across 5 cycles.
+[RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 5th consecutive cycle; no new anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.

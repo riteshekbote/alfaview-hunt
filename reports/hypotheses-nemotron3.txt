@@ -1,20 +1,9 @@
-## 2026-09-10 22:38:10 UTC [target] (model nemotron3)
-[NEW] sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); Basic and POST-body channels now accept any client_id; only residual check is Basic-vs-body `client_id_mismatch` (401)
-[NEW] sso.alfaview.com OIDC discovery: now lists ES256/384/512 among `id_token_signing_alg_values_supported` (previous cycles: RSA+HS only); JWKS remains RSA-only (7 RS256 keys, zero symmetric/ECDSA)
-[PRIO] sso.alfaview.com/oauth2/authorize,8.85,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
+## 2026-09-11 00:31:46 UTC [target] (model nemotron3)
 [PRIO] sso.alfaview.com/oauth2/introspect,8.65,attack_surface=9,business_value=7,tech_exposure=10,gate_ease=9,cloud_surface=8,freshness=10
-[PRIO] app.alfaview.com/graphql,8.45,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
+[PRIO] sso.alfaview.com/oauth2/authorize,8.50,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
+[PRIO] app.alfaview.com/graphql,8.30,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
 [PRIO] apis.alfaview.com/v2,7.65,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8
 [PRIO] test.alfaview.com,7.15,attack_surface=7,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=7
-[HYP] OAuth redirect_uri validation bypass via client_id registration timing shift
-class: OATH
-asset: sso.alfaview.com/oauth2/authorize
-confidence: 75
-reasoning: OIDC discovery shows issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512/ES256/384/512 in id_token_signing_alg_values_supported but JWKS contains ONLY 7 RSA keys (zero symmetric/ECDSA); token_endpoint_auth_methods_supported includes "none" (public client); no registration_endpoint advertised; authorize returns HTTP 200 login page for unregistered client_id — validation timing shifted, may allow redirect_uri processing before client_id validation completes
-evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); 302 Location header with attacker-controlled redirect_uri after login; state parameter reflection/validation; PKCE code_challenge_method=S256 enforcement
-verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location; repeat without state; test code_challenge_method=S256&code_challenge=<valid>
-impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
-testability: AUTH_HELPED
 [HYP] Unauthenticated token introspection bypassing RFC7662 client authentication
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
@@ -23,6 +12,15 @@ reasoning: HTTP Basic auth path accepts ANY client_id + ANY secret (200 {"active
 evidence_needed: Valid access token from authenticated session; observe if introspection reveals token metadata (scopes, exp, sub, client_id) with fake client credentials
 verify_steps: Obtain valid token via HUMAN login → POST https://sso.alfaview.com/oauth2/introspect -u "fake:any" -d "token=<valid>" → observe response body for token metadata leakage; compare with POST body client_id=fake → 200 active:false
 impact: Token metadata disclosure (scopes, subject, expiration, client_id) with fabricated credentials — info leak enabling token reconnaissance (MEDIUM)
+testability: AUTH_HELPED
+[HYP] OAuth redirect_uri validation bypass via client_id registration timing shift
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 75
+reasoning: OIDC discovery shows issuer=acme.com (misconfiguration), implicit flow enabled, HS256/384/512/ES256/384/512 in id_token_signing_alg_values_supported but JWKS contains ONLY 7 RSA keys (zero symmetric/ECDSA); token_endpoint_auth_methods_supported includes "none" (public client); no registration_endpoint advertised; authorize returns HTTP 200 login page for unregistered client_id — validation timing shifted, may allow redirect_uri processing before client_id validation completes
+evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); 302 Location header with attacker-controlled redirect_uri after login; state parameter reflection/validation; PKCE code_challenge_method=S256 enforcement
+verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location; repeat without state; test code_challenge_method=S256&code_challenge=<valid>
+impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
 testability: AUTH_HELPED
 [HYP] Unauthenticated guest token issuance via GraphQL missing accessKey
 class: AUTH
@@ -35,7 +33,7 @@ impact: Guest token issuance bypassing accessKey requirement → unauthorized ro
 testability: AUTH_HELPED
 [PARKED] OAuth redirect_uri validation bypass via client_id registration timing shift: Requires valid client_id for app.alfaview.com — not discoverable passively; HUMAN browser DevTools needed during login flow.
 [PARKED] Unauthenticated token introspection bypassing RFC7662 client authentication: Requires valid access token — HUMAN login needed to obtain token; parked until token available.
-[PARKED] Unauthenticated guest-authz lifecycle/cross-tenant splice
+[PARKED] Unauthenticated guest-authz lifecycle/cross-tenant splice: Requires valid companyId/roomId/userId from own tenant — HUMAN account signup needed; parked until account obtained.
 [PARKED] Cross-tenant IDOR via UUID path params on apis.alfaview.com: Requires authenticated account (gate_ease=3) — cannot verify without valid credentials; parked until account obtained via HUMAN signup.
 [FINAL] Ranked survivors (all AUTH_HELPED, need HUMAN):
 [NEXT] HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com` via unauthenticated GraphQL `Signup` mutation from AppSignup.min.js → email activation at `/finish-signup`) → capture OAuth `client_id` from browser DevTools network traffic during SSO/login flow → test `redirect_uri`/`state`/PKCE on `sso.alfaview.com/oauth2/authorize`; simultaneously use account to create room + guest link → test GraphQL `guestAuthenticate`/`guestJoin` with valid IDs for token issuance proof; test cross-tenant IDOR on `apis.alfaview.com/v2/users/{id}` and `v2/rooms/{roomId}/permissions/{userId}`.
