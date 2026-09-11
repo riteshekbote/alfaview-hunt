@@ -50,3 +50,13 @@
   - **Verdict: VALID**
   - | 1 | OAuth2 Introspect broken client auth | **VALID** | 5.3 | Reportable as-is |
   - | 3 | GraphQL guest mutations accessKey-less | **VALID** | 8.1 | Highest priority; needs two-account PoC |
+
+- 8 lead(s) marked VALID at 2026-09-11 17:42:01 UTC
+  - | Q4 Provable non-invasively? | **NO** - Blocked by `invalid_client` gate; need valid registered client_id from desktop installer |
+  - | Q7 Reasonable triager? | **NO** (as-is) - `BAD_USER_INPUT` confirms mutation is processed but we cannot confirm it returns an accessToken without a valid guest triple |
+  - **Verdict: VALID**
+  - | Q4 Provable non-invasively? | **PARTIALLY** - Discovery/JWKS are public (passive), but confirming token validation flaw requires valid token + test forge |
+  - | Q7 Reasonable triager? | **NO (as-is)** - Cannot confirm the validation actually fails without a valid token to forge against. The misconfiguration is observable but the exploitability is not proven
+  - | 3 | GraphQL guest-authz gap | **HOLD** | Needs valid guest triple |
+  - | 4 | OIDC issuer=acme.com drift | **VALID** | None — passively provable |
+  - | 5 | JWT alg confusion | **HOLD** | Needs valid token for forge test |
