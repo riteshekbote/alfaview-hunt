@@ -477,3 +477,5 @@ www.alfaview.com
 ## 2026-09-11 14:02:27 UTC
 - NEW sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); Basic and POST-body channels now accept any cli
 - NEW sso.alfaview.com OIDC discovery: now lists ES256/384/512 among `id_token_signing_alg_values_supported` (previous cycles: RSA+HS only); JWKS remains RSA-only (7 RS256 keys, zero symmetric/ECDSA)
+
+## 2026-09-11 17:24:48 UTC

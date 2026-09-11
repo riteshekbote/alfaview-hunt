@@ -348,3 +348,6 @@
 - 2026-09-11 NO_DELTA: no surface change this cycle — all probes (OpenAPI MD5, OIDC discovery, authorize, introspect POST/Basic, users/me, auth/password, device_authorize) returned byte-identical results to prior cycle.
 - 2026-09-11 ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body fabricated client_id → 200 `{"active":false}` (no validation); Basic fabricated → 200; only residual is body-vs-Basic mismatch 401. Confirmed stable.
 - 2026-09-11 ACCEPTED OATH @ sso.alfaview.com/oauth2/authorize: 200/6189B login page for unregistered client_id. Stable.
+- 2026-09-11 NO_DELTA: no surface change this cycle — all probes (OpenAPI MD5, OIDC discovery, authorize, introspect POST/Basic, users/me, graphql) returned byte-identical results to prior cycle.
+- 2026-09-11 ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body fabricated client_id → 200 {"active":false} (no validation); Basic fabricated → 200; only residual is body-vs-Basic mismatch 401. Confirmed stable.
+- 2026-09-11 ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); Basic and POST-body channels now accept any client_id; only residual check is Basic-vs-body `client_id_mismatch` (401)
