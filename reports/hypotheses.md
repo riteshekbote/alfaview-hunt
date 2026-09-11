@@ -1315,3 +1315,30 @@
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+
+## RANKED HYPOTHESES 2026-09-11 05:14:39 UTC
+- [85] sso.alfaview.com/oauth2/introspect: Unauthenticated token introspection bypassing RFC7662 client authentication (from art/lead_nemotron3.txt)
+- [72] apis.alfaview.com: IDOR on room permissions and user deletion (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET `https://beta-apis.alfaview.com/v2/languages` — no Authorization header, compare response code/body vs production `https://apis.alfaview.com/v2/langu
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com` via unauthenticated GraphQL `Signup` mutation from AppSignup.min.js → email activation at
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- LEARN: REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected c
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+- LEARN: REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation removed this cycle — fabricated client_id → 200 `{"active":false}` (wa
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery now lists ES256/384/512 among `id_token_signing_alg_values_supported` (previous cycles: RSA+HS only); JWKS
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id (was 400) — validation timing shifted ag
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) per server validation — `displayName` 
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab

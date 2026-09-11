@@ -1,4 +1,4 @@
-## 2026-09-11 00:31:46 UTC [target] (model nemotron3)
+## 2026-09-11 05:14:29 UTC [target] (model nemotron3)
 [PRIO] sso.alfaview.com/oauth2/introspect,8.65,attack_surface=9,business_value=7,tech_exposure=10,gate_ease=9,cloud_surface=8,freshness=10
 [PRIO] sso.alfaview.com/oauth2/authorize,8.50,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
 [PRIO] app.alfaview.com/graphql,8.30,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9

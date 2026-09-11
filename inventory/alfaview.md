@@ -466,3 +466,8 @@ www.alfaview.com
 - NEW sso.alfaview.com OIDC discovery: now lists ES256/384/512 among `id_token_signing_alg_values_supported` (previous cycles: RSA+HS only); JWKS remains RSA-only (7 RS256 keys, zero symmetric/ECDSA)
 
 ## 2026-09-11 00:31:54 UTC
+
+## 2026-09-11 05:14:39 UTC
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.

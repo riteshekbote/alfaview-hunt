@@ -15740,3 +15740,741 @@ testability: HUMAN_ONLY
 
 **STEP 7 — RISK**
 [RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 5th consecutive cycle; no new anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.
+===== ANALYST bigpickle 2026-09-11 05:14:39 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && ls -la art 2>/dev/null; ls -la *.txt 2>/dev/null
+total 380
+drwxr-xr-x 12 runner runner   4096 Sep 11 05:07 .
+drwxr-xr-x  3 runner runner   4096 Sep 11 05:07 ..
+drwxr-xr-x  7 runner runner   4096 Sep 11 05:07 .git
+drwxr-xr-x  3 runner runner   4096 Sep 11 05:07 .github
+-rw-r--r--  1 runner runner   1883 Sep 11 05:07 README.md
+-rw-r--r--  1 runner runner     32 Sep 11 05:07 analyst-out.txt
+-rw-r--r--  1 runner runner 135237 Sep 11 05:07 analyst-prompt.txt
+-rw-r--r--  1 runner runner 131327 Sep 11 05:07 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 leads
+-rw-r--r--  1 runner runner  25914 Sep 11 05:07 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 reports
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 11 05:07 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 scripts
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 triage
+-rw-r--r-- 1 runner runner     32 Sep 11 05:07 analyst-out.txt
+-rw-r--r-- 1 runner runner 135237 Sep 11 05:07 analyst-prompt.txt
+-rw-r--r-- 1 runner runner 131327 Sep 11 05:07 ctx.txt
+[0m
+[0m$ [0mdate -u
+Fri Sep 11 05:08:09 UTC 2026
+[0m
+[0m$ [0mcat analyst-out.txt; echo "---"; ls leads knowledge triage reports inventory; echo "---"; cat state_bigpickle.json
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && ls -la art 2>/dev/null; ls -la *.txt 2>/dev/null
+total 380
+drwxr-xr-x 12 runner runner   4096 Sep 11 05:07 .
+drwxr-xr-x  3 runner runner   4096 Sep 11 05:07 ..
+drwxr-xr-x  7 runner runner   4096 Sep 11 05:07 .git
+drwxr-xr-x  3 runner runner   4096 Sep 11 05:07 .github
+-rw-r--r--  1 runner runner   1883 Sep 11 05:07 README.md
+-rw-r--r--  1 runner runner     32 Sep 11 05:07 analyst-out.txt
+-rw-r--r--  1 runner runner 135237 Sep 11 05:07 analyst-prompt.txt
+-rw-r--r--  1 runner runner 131327 Sep 11 05:07 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 leads
+-rw-r--r--  1 runner runner  25914 Sep 11 05:07 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 reports
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 11 05:07 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 scripts
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 11 05:07 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 11 05:07 triage
+-rw-r--r-- 1 runner runner     32 Sep 11 05:07 analyst-out.txt
+-rw-r--r-- 1 runner runner 135237 Sep 11 05:07 analyst-prompt.txt
+-rw-r--r-- 1 runner runner 131327 Sep 11 05:07 ctx.txt
+[0m
+[0m$ [0mdate -u
+Fri Sep 11 05:08:09 UTC 2026
+[0m
+---
+inventory:
+alfaview.md
+
+knowledge:
+index.md
+
+leads:
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-alfaview.md
+
+reports:
+analyst-bigpickle.log
+analyst-laguna.log
+analyst-ling3.log
+analyst-longcat.log
+analyst-nemotron3.log
+hypotheses-bigpickle.txt
+hypotheses-laguna.txt
+hypotheses-ling3.txt
+hypotheses-longcat.txt
+hypotheses-nemotron3.txt
+hypotheses.md
+valid-bugs.md
+
+triage:
+run-2026-09-03-11-41.md
+run-2026-09-03-15-37.md
+run-2026-09-03-18-51.md
+run-2026-09-03-21-32.md
+run-2026-09-03-23-30.md
+run-2026-09-04-01-20.md
+run-2026-09-04-06-01.md
+run-2026-09-04-11-23.md
+run-2026-09-04-15-05.md
+run-2026-09-04-18-27.md
+run-2026-09-04-21-00.md
+run-2026-09-04-23-04.md
+run-2026-09-05-01-01.md
+run-2026-09-05-05-48.md
+run-2026-09-05-09-49.md
+run-2026-09-05-13-11.md
+run-2026-09-05-16-10.md
+run-2026-09-05-18-21.md
+run-2026-09-05-20-41.md
+run-2026-09-05-22-34.md
+run-2026-09-06-00-11.md
+run-2026-09-06-04-44.md
+run-2026-09-06-09-06.md
+run-2026-09-06-12-54.md
+run-2026-09-06-15-56.md
+run-2026-09-06-18-00.md
+run-2026-09-06-20-17.md
+run-2026-09-06-22-09.md
+run-2026-09-06-23-58.md
+run-2026-09-07-03-29.md
+run-2026-09-07-08-37.md
+run-2026-09-07-14-28.md
+run-2026-09-07-18-50.md
+run-2026-09-07-21-51.md
+run-2026-09-07-23-53.md
+run-2026-09-08-02-33.md
+run-2026-09-08-07-26.md
+run-2026-09-08-12-16.md
+run-2026-09-08-16-42.md
+run-2026-09-08-19-41.md
+run-2026-09-08-22-16.md
+run-2026-09-09-00-20.md
+run-2026-09-09-04-53.md
+run-2026-09-09-09-21.md
+run-2026-09-09-13-52.md
+run-2026-09-09-17-28.md
+run-2026-09-09-19-59.md
+run-2026-09-09-22-24.md
+run-2026-09-10-00-33.md
+run-2026-09-10-05-12.md
+run-2026-09-10-09-49.md
+run-2026-09-10-14-00.md
+run-2026-09-10-17-37.md
+run-2026-09-10-20-00.md
+run-2026-09-10-22-37.md
+run-2026-09-11-00-32.md
+---
+{"phase": "POC", "target": "api"}
+[0m
+[0m$ [0mls leads knowledge triage reports inventory scripts 2>/dev/null | head -80
+inventory:
+alfaview.md
+
+knowledge:
+index.md
+
+leads:
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-alfaview.md
+
+reports:
+analyst-bigpickle.log
+analyst-laguna.log
+analyst-ling3.log
+analyst-longcat.log
+analyst-nemotron3.log
+hypotheses-bigpickle.txt
+hypotheses-laguna.txt
+hypotheses-ling3.txt
+hypotheses-longcat.txt
+hypotheses-nemotron3.txt
+hypotheses.md
+valid-bugs.md
+
+scripts:
+sync-issues.py
+
+triage:
+run-2026-09-03-11-41.md
+run-2026-09-03-15-37.md
+run-2026-09-03-18-51.md
+run-2026-09-03-21-32.md
+run-2026-09-03-23-30.md
+run-2026-09-04-01-20.md
+run-2026-09-04-06-01.md
+run-2026-09-04-11-23.md
+run-2026-09-04-15-05.md
+run-2026-09-04-18-27.md
+run-2026-09-04-21-00.md
+run-2026-09-04-23-04.md
+run-2026-09-05-01-01.md
+run-2026-09-05-05-48.md
+run-2026-09-05-09-49.md
+run-2026-09-05-13-11.md
+run-2026-09-05-16-10.md
+run-2026-09-05-18-21.md
+run-2026-09-05-20-41.md
+run-2026-09-05-22-34.md
+run-2026-09-06-00-11.md
+run-2026-09-06-04-44.md
+run-2026-09-06-09-06.md
+run-2026-09-06-12-54.md
+run-2026-09-06-15-56.md
+run-2026-09-06-18-00.md
+run-2026-09-06-20-17.md
+run-2026-09-06-22-09.md
+run-2026-09-06-23-58.md
+run-2026-09-07-03-29.md
+run-2026-09-07-08-37.md
+run-2026-09-07-14-28.md
+run-2026-09-07-18-50.md
+run-2026-09-07-21-51.md
+run-2026-09-07-23-53.md
+run-2026-09-08-02-33.md
+run-2026-09-08-07-26.md
+run-2026-09-08-12-16.md
+run-2026-09-08-16-42.md
+run-2026-09-08-19-41.md
+run-2026-09-08-22-16.md
+run-2026-09-09-00-20.md
+run-2026-09-09-04-53.md
+run-2026-09-09-09-21.md
+run-2026-09-09-13-52.md
+run-2026-09-09-17-28.md
+run-2026-09-09-19-59.md
+[0m
+[0m$ [0mcat leads/lead-bigpickle.md; echo "==="; tail -30 triage/run-2026-09-11-00-32.md 2>/dev/null
+...output truncated...
+
+Full output saved to: /home/runner/.local/share/opencode/tool-output/tool_08eddc1d1001C7QXn3mrqFcTX3
+
+---
+
+## Lead 4: GraphQL Schema Leak in Public JS Bundle
+
+**Asset:** `app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js`
+
+| Gate | Answer |
+|------|--------|
+| Q1 In scope? | **Yes** — app.alfaview.com is in-scope |
+| Q2 Reachable? | **Yes** — 1.09MB JS bundle served publicly without auth |
+| Q3 Impact? | **Limited** — full admin GraphQL schema (60+ mutations, 45+ queries) is embedded; enables full API surface mapping; however, introspection is disabled server-side and resolvers are auth-gated |
+| Q4 Provable? | **Yes** — public JS bundle contains full schema with argument types |
+| Q5 Novel? | **No** — client-side schema embedding in SPAs is a well-known information disclosure pattern; out-of-scope per "reports resulting from automated scanning utilities without additional details" |
+| Q6 Always-rejected? | **Borderline** — "descriptive error messages or headers" and "publicly accessible login panels" are rejected; schema leak in JS is similar class |
+| Q7 Reasonable triager? | **No** — OWASP lists this as informational; most programs reject without concrete exploitation |
+
+**Verdict: INVALID**
+
+- **Reason:** Informational disclosure only; no concrete exploit demonstrated; schema is embedded in client-side code (expected behavior for SPAs); program explicitly rejects scanner-only reports without POC.
+
+---
+
+## Summary
+
+| # | Lead | Verdict | CVSS | Notes |
+|---|------|---------|------|-------|
+| 1 | OAuth2 Introspect broken client auth | **VALID** | 5.3 | Reportable as-is |
+| 2 | OIDC Algorithm/JWKS mismatch | **HOLD** | TBD | Needs exploit proof |
+| 3 | GraphQL guest mutations accessKey-less | **VALID** | 8.1 | Highest priority; needs two-account PoC |
+| 4 | GraphQL schema in JS bundle | **INVALID** | N/A | Informational, no exploit |
+[0m
+[0m$ [0mhead -120 leads/lead-bigpickle.md
+## 2026-09-03 14:06:59 UTC [target] (model bigpickle)
+[PRIO] beta-apis.alfaview.com, 8.8, a:7 b:8 t:9(API+OpenAPI) g:6(cloud:3,auth-gate:3) c:3 f:5
+[PRIO] demo-company.alfaview.com, 8.3, a:9 b:8 t:6(web app) g:8(no basic auth gate) c:3 f:5
+[PRIO] internal.alfaview.com, 7.0, a:6 b:9 t:5(Basic auth) g:3(closed) c:3 f:5
+[HYP] IDOR on room permissions and user deletion
+class: IDOR
+asset: apis.alfaview.com
+confidence: 72
+reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
+evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
+verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
+testability: AUTH_HELPED
+[HYP] Guest link access key enumeration via auth oracle
+class: AUTH
+asset: apis.alfaview.com/v2/auth/group-link
+confidence: 65
+reasoning: Group/guest link auth requires companyId + roomId + accessKey. The auth endpoint returns distinct errors: 401 "A guest with the provided information could not be found and authenticated" vs 422 if wrong endpoint type used. If accessKeys are low-entropy or sequential, and rate-limiting is absent per-scope, brute force of accessKey for a known companyId+roomId yields a guest session token.
+evidence_needed: Rate-limited probe of /v2/auth/group-link with a known companyId+roomId and random accessKeys; observe response timing or 429 after N requests confirming (or not) brute-force feasibility.
+verify_steps: POST /v2/auth/group-link with companyId=<known>, roomId=<known>, accessKey=<random-12-char>, displayName="test" — note 401 response time. Repeat 10x at 1 rps to detect rate limiting.
+impact: Guest session impersonation; access to private meeting rooms; severity MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Beta API environment weaker auth enforcement
+class: MISCONFIG
+asset: beta-apis.alfaview.com
+confidence: 55
+reasoning: beta-apis resolves to a separate IP pool (185.127.28.102, 185.245.100.219, 195.201.44.172) from production apis. Beta environments commonly have relaxed validation, disabled features, or test credentials. If the same OpenAPI spec applies but auth middleware differs, unauthenticated access or test API keys may work.
+evidence_needed: Comparison of /v2/languages or /v2/room-types response on beta-apis vs apis without Authorization header; check for different error bodies or 200 vs 401.
+verify_steps: GET https://beta-apis.alfaview.com/v2/languages (no auth) — compare response code and body against the same request on apis.alfaview.com (401).
+impact: Unauthenticated API access to user data, room data, and meeting statistics; severity HIGH.
+testability: PASSIVE (no auth needed to probe response codes)
+[PARKED] IDOR on room permissions: requires valid API credentials to confirm. Confidence 72 is justified by the explicit path-param UUID pattern in the spec but server-side authorization is unverified without auth testing. Remains as highest-priority authenticated test.
+[PARKED] Guest link access key enumeration: needs valid companyId+roomId to confirm rate limiting. Confidence 65 reflects the speculative brute-force angle. Keep for authenticated phase.
+[FINAL] Beta API weaker auth enforcement — **RANK 1 for next probe**. PASSIVE, no auth required, directly testable.
+[NEXT] PROBE: GET `https://beta-apis.alfaview.com/v2/languages` — no Authorization header, compare response code/body vs production `https://apis.alfaview.com/v2/languages` (known 401).
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+[LEARN] REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected class).
+[RISK] alfaview: 65/100. Scope is broad ("all company-owned infrastructure") but active testing on production APIs requires an API key or guest account. 1 rps rate limit constrains brute-force. All high-value endpoints are auth-gated. Realistic path: obtain a developer account, test IDOR and guest-link flows.
+## 2026-09-03 15:10:59 UTC [target] (model bigpickle)
+[CHANGED] beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+[NEW] beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+[NEW] insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+[PRIO] demo-company.alfaview.com, 8.7, a:9 b:9 t:6(web app) g:9(no auth gate) c:3 f:5
+[PRIO] beta-webclient.alfaview.com, 8.2, a:7 b:8 t:7(web client) g:7(no basic auth) c:3 f:4
+[PRIO] apis.alfaview.com, 8.0, a:8 b:8 t:9(API) g:6(cloud:3,auth-gate:3) c:3 f:5
+[HYP] IDOR on room permissions and user deletion
+class: IDOR
+asset: apis.alfaview.com
+confidence: 72
+reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
+evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
+verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
+testability: AUTH_HELPED
+[HYP] Guest link access key enumeration via auth oracle
+class: AUTH
+asset: apis.alfaview.com/v2/auth/group-link
+confidence: 65
+reasoning: Group/guest link auth requires companyId + roomId + accessKey. The auth endpoint returns distinct errors: 401 "A guest with the provided information could not be found and authenticated" vs 422 if wrong endpoint type used. If accessKeys are low-entropy or sequential, and rate-limiting is absent per-scope, brute force of accessKey for a known companyId+roomId yields a guest session token.
+evidence_needed: Rate-limited probe of /v2/auth/group-link with a known companyId+roomId and random accessKeys; observe response timing or 429 after N requests confirming (or not) brute-force feasibility.
+verify_steps: POST /v2/auth/group-link with companyId=<known>, roomId=<known>, accessKey=<random-12-char>, displayName="test" — note 401 response time. Repeat 10x at 1 rps to detect rate limiting.
+impact: Guest session impersonation; access to private meeting rooms; severity MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Demo company exposes test user data via unauthenticated API
+class: MISCONFIG
+asset: demo-company.alfaview.com
+confidence: 60
+reasoning: demo-company.alfaview.com serves HTTP 200 without authentication. Demo/test environments often have weakened security controls, default credentials, or exposed test data. If this is a publicly accessible demo instance, it may leak test user information, company structures, or internal API endpoints.
+evidence_needed: Probe common endpoints (/api, /v1, /v2, /graphql) on demo-company.alfaview.com without auth; check for exposed user lists, company data, or debug interfaces.
+verify_steps: GET https://demo-company.alfaview.com/ and observe response; then GET https://demo-company.alfaview.com/api/v1/users (or similar) to test for unauthenticated data access.
+impact: Exposure of test/demo user data, company structures; severity MEDIUM.
+testability: PASSIVE (no auth needed)
+[PARKED] Beta API weaker auth enforcement — disconfirmed by identical 401 responses.
+[FINAL] IDOR on room permissions: 72% confidence, highest value, AUTH_HELPED.
+[FINAL] Guest link access key enumeration: 65% confidence, requires valid credentials.
+[FINAL] Demo company test data exposure: 60% confidence, PASSIVE, immediate testability.
+[NEXT] PROBE: GET `https://demo-company.alfaview.com/api/v1/users` — no auth, check for exposed user list or test data.
+[LEARN] REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+[LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+[RISK] alfaview: 62/100. Scope is broad but all high-value endpoints are auth-gated. Beta API disconfirmed as weaker. Demo company presents immediate passive test opportunity. Realistic path: obtain demo/test account, test IDOR and guest-link flows; meanwhile probe demo-company for exposed test data.
+## 2026-09-03 18:41:01 UTC [target] (model bigpickle)
+[PRIO] insider-webclient.alfaview.com, 7.2, a:8 b:9 t:7 g:8 c:3 f:4
+[PRIO] beta-webclient.alfaview.com, 6.4, a:6 b:7 t:7 g:7 c:3 f:4
+[PRIO] alfatraining.alfaview.com, 6.3, a:7 b:6 t:5 g:7 c:3 f:3
+[PRIO] demo-company.alfaview.com, 5.5, a:4 b:4 t:3 g:9 c:3 f:5 (SPA disconfirmed)
+[PRIO] bhc.alfaview.com, 5.0, a:5 b:5 t:3 g:5 c:3 f:3
+[HYP] Insider web client exposes internal admin panel without auth
+class: MISCONFIG
+asset: insider-webclient.alfaview.com
+confidence: 55
+reasoning: Returns HTTP 200 with no auth gate. Name explicitly says "insider" — likely internal tooling for employees/admins. Internal tools are frequently deployed with weaker auth controls, debug modes, or default sessions. If this is a React/Vue SPA, client-side routes may expose admin functionality hidden behind JS routing but accessible via direct path.
+evidence_needed: Response body content-type and HTML structure; presence of API base URL, admin routes, or debug flags in bundled JS; probe /api, /admin, /graphql, /internal paths.
+verify_steps: GET https://insider-webclient.alfaview.com/ — observe content-type, title, script tags. GET https://insider-webclient.alfaview.com/api/health or /api/config for exposed backend routes.
+impact: Exposure of internal admin tooling, potential access to user management, room administration, or meeting data; severity MEDIUM-HIGH.
+testability: PASSIVE
+[HYP] Beta web client exposes debug/test routes or weaker CSP
+class: MISCONFIG
+asset: beta-webclient.alfaview.com
+confidence: 45
+reasoning: Beta web clients often have debug flags, source maps, verbose error handling, or test accounts baked in. If the SPA bundles contain dev-mode conditionals (e.g., window.__DEV__, REACT_APP_ENV=beta), these may expose admin functions or API endpoints not present in production. Beta API version drift already confirmed (beta has /v2/languages, prod doesn't).
+evidence_needed: Response body inspection for env flags, source map URLs, test account references in JS bundles; compare CSP headers vs production app.alfaview.com.
+verify_steps: GET https://beta-webclient.alfaview.com/ — observe content-type, title, script src paths. GET https://beta-webclient.alfaview.com/asset-manifest.json or /manifest.json for build info.
+impact: Leaked beta API endpoints, debug functionality, or test credentials; severity MEDIUM.
+testability: PASSIVE
+[HYP] Training platform exposes user data or test accounts
+class: MISCONFIG
+asset: alfatraining.alfaview.com
+confidence: 40
+reasoning: Training platforms often contain test user accounts, course completion data, or internal employee information. Returns HTTP 200 without auth gate. If this is a standalone training LMS, it may have exposed user lists, admin panels, or API endpoints.
+evidence_needed: Response body content-type and structure; probe /api, /users, /admin, /courses paths; check for login page vs direct content access.
+verify_steps: GET https://alfatraining.alfaview.com/ — observe response. GET https://alfatraining.alfaview.com/api/v1/users or /admin.
+impact: Exposure of employee training data, user accounts; severity LOW-MEDIUM.
+testability: PASSIVE
+[NEXT] PROBE: GET https://insider-webclient.alfaview.com/ — observe response body, content-type, title tag, script src URLs. Then GET https://insider-webclient.alfaview.com/api/health or /api/config for exposed backend routes.
+[LEARN] REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+[0m
+[0m$ [0mtail -60 reports/analyst-bigpickle.log
+https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js -> 200 1090319
+https://app.alfaview.com/js/AppSignup.min.3329eeac503c038b44b8.js -> 200 48540
+https://app.alfaview.com/js/AppFinishSignup.min.c05a2146b0620d1167ae.js -> 200 47770
+[0m
+**STEP 1 — DELTA**
+- NO_DELTA: OpenAPI `apis.alfaview.com/v2/docs/openapi.json` MD5 `357b94d367909a40b9299b543d23712b` (127532B) — set unchanged, ≥5th stable cycle.
+- NO_DELTA: `users/me`=401; `app.alfaview.com/graphql` GET=400; SPA shell=200/1381B; JS bundles (`app.min.5b39…`, `AppSignup.min.3329…`, `AppFinishSignup.min.c05a…`) byte-sizes identical — no redeploy.
+- NO_DELTA: `sso.alfaview.com` authorize=200/6154B (login page, ~6160B band), OIDC issuer=acme.com, id_token algs incl. ES256/384/512, JWKS RSA-only (7x RS256), token_auth=[basic,post,none], no registration_endpoint.
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] sso.alfaview.com/oauth2, 7.45, a:7 b:9 t:9(OAuth/FusionAuth) g:6 c:2 f:10
+- [PRIO] app.alfaview.com/graphql, 7.00, a:7 b:9 t:9(GraphQL guest ops) g:3 c:2 f:10
+- [PRIO] apis.alfaview.com/v2, 6.65, a:8 b:9 t:8(OpenAPI UUID-paths) g:2 c:3 f:6
+
+**STEP 3 — HYPOTHESES**
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta, 37 paths (MD5 357b94d3, this cycle). Token-authed UUID params on DELETE /v2/users/{id}, GET /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}. Gate stable this cycle (users/me=401). Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password {username,password} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode (403-vs-200) → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} (403-vs-204) → DELETE /v2/users/{victimUserId} (403-vs-204).
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] RFC7662 introspection client-authentication removed on both auth channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: Prior-cycle live probes: POST body fabricated client_id → 200 {"active":false}; Basic b64(fake:fakesecret) → 200 {"active":false}; discovery advertises client_secret_basic/post. Introspect is the only OAuth endpoint where client auth gates token metadata; FusionAuth Community (client_credentials not_licensed).
+evidence_needed: a real FusionAuth access token introspected with fabricated client_id returns 200 {"active":true, sub, scope, exp}.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>" — compare sub/scopes/exp.
+impact: holder of leaked/observed token confirms validity and extracts subject/scopes/expiry without client credential; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT, UUID-format args → BAD_USER_INPUT (oscillated FORBIDDEN on 2026-09-09). GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId (3-field, displayName NOT required); GraphQL signature has NO accessKey — structural divergence.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}} (no accessKey) vs POST /v2/auth/guest-link same triple without accessKey → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] Guest-link accessKey brute-force: REJECTED class (brute-force/rate-limit policy out of scope per program rules).
+- [PARKED] IDOR value-uncertainty caveat: 80 reflects spec pattern only; server-side room-level authorization may be correctly scoped — evidence gate (post-signup) is the discriminator. Kept as top target, not parked.
+- [PARKED] Introspect acceptance risk: fabrication-only proof is arguably an env-default; report as confirmed finding but severity bounded by token-possession precondition.
+- [FINAL] Cross-tenant IDOR — 80, top. [FINAL] Introspect client-auth removal — 75 (AUTH_HELPED, only chain advanceable with a token). [FINAL] Guest-authz splice — 60.
+
+**STEP 5 — NEXT ACTION**
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. No further read-only probes can advance this program — surface byte-stable across 5 cycles.
+
+**STEP 6 — LEARNING**
+- [LEARN] NO_DELTA @ full inventory: no surface delta this cycle; all probes (OpenAPI MD5 357b94d3, users/me 401, authorize 200/6154B, graphql GET 400, SPA 1381B, JS bundles unchanged, OIDC/JWKS unchanged) identical to prior cycle; all three standing chains remain HUMAN/AUTH-gated.
+- [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: id_token_signing_alg_values_supported now lists ES256/384/512; JWKS still RSA-only (7x RS256, kid 2_u-_Nxz…) — alg-confusion surface unchanged in practice.
+
+**STEP 7 — RISK**
+[RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 5th consecutive cycle; no new anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.
+[0m
+[0m$ [0mmkdir -p /tmp/opencode
+echo "== OpenAPI =="
+curl -s -m 25 https://apis.alfaview.com/v2/docs/openapi.json -o /tmp/opencode/openapi.json -w "code=%{http_code} size=%{size_download} time=%{time_total}\n"
+md5sum /tmp/opencode/openapi.json
+python3 -c "import json;d=json.load(open('/tmp/opencode/openapi.json'));print('paths',len(d.get('paths',{})))" 2>/dev/null || echo "parse-fail"
+sleep 1
+echo "== users/me =="
+curl -s -m 20 -o /dev/null -w "code=%{http_code} size=%{size_download}\n" https://apis.alfaview.com/v2/users/me
+sleep 1
+echo "== sso authorize (unregistered client) =="
+curl -s -m 20 -o /tmp/opencode/auth.html -w "code=%{http_code} size=%{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=does-not-exist-12345&response_type=code&redirect_uri=https%3A%2F%2Fapp.alfaview.com%2Fcallback"
+sleep 1
+echo "== OIDC discovery =="
+curl -s -m 20 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/opencode/oidc.json -w "code=%{http_code} size=%{size_download}\n"
+python3 -c "import json;d=json.load(open('/tmp/opencode/oidc.json'));print('issuer',d.get('issuer'));print('auth_methods',d.get('token_endpoint_auth_methods_supported'));print('id_algs',d.get('id_token_signing_alg_values_supported'));print('reg_endpoint',d.get('registration_endpoint'))" 2>/dev/null || echo "parse-fail"
+sleep 1
+echo "== JWKS =="
+curl -s -m 20 https://sso.alfaview.com/.well-known/jwks.json -o /tmp/opencode/jwks.json -w "code=%{http_code} size=%{size_download}\n"
+python3 -c "import json;d=json.load(open('/tmp/opencode/jwks.json'));ks=d.get('keys',[]);print('keys',len(ks));print('kty',set(k.get('kty') for k in ks));print('alg',set(k.get('alg') for k in ks))" 2>/dev/null || echo "parse-fail"
+== OpenAPI ==
+code=200 size=127532 time=0.952318
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+paths 37
+== users/me ==
+code=401 size=107
+== sso authorize (unregistered client) ==
+code=200 size=6173
+== OIDC discovery ==
+code=200 size=2112
+issuer acme.com
+auth_methods ['client_secret_basic', 'client_secret_post', 'none']
+id_algs ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+reg_endpoint None
+== JWKS ==
+code=200 size=16257
+keys 7
+kty {'RSA'}
+alg {'RS256'}
+[0m
+[0m$ [0msleep 2
+echo "== graphql GET =="
+curl -s -m 20 -o /dev/null -w "code=%{http_code} size=%{size_download}\n" https://app.alfaview.com/graphql
+sleep 1
+echo "== app root =="
+curl -s -m 20 -o /dev/null -w "code=%{http_code} size=%{size_download}\n" https://app.alfaview.com/
+sleep 1
+echo "== api status =="
+curl -s -m 20 -w "\ncode=%{http_code} size=%{size_download}\n" https://sso.alfaview.com/api/status
+sleep 1
+echo "== device_authorize GET =="
+curl -s -m 20 -o /dev/null -w "code=%{http_code} size=%{size_download}\n" "https://sso.alfaview.com/oauth2/device_authorize?client_id=does-not-exist"
+sleep 1
+echo "== introspect OPTIONS =="
+curl -s -m 20 -X OPTIONS -o /dev/null -w "code=%{http_code} allow=%{header_json}\n" https://sso.alfaview.com/oauth2/introspect 2>/dev/null | head -c 400; echo
+== graphql GET ==
+code=400 size=406
+== app root ==
+code=200 size=1381
+== api status ==
+{"status":"Ok"}
+code=200 size=15
+== device_authorize GET ==
+code=405 size=0
+== introspect OPTIONS ==
+code=405 allow={"cache-control":["no-cache"],
+"date":["Fri, 11 Sep 2026 05:08:55 GMT"],
+"content-length":["0"],
+"server":["edge-proxy"]
+}
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/openapi.json'))
+for p,ops in sorted(d.get('paths',{}).items()):
+    ms=','.join(sorted(k.upper() for k in ops if k in ('get','post','put','patch','delete','head','options')))
+    print(f'{ms:20} {p}')
+"
+POST                 /v2/auth/api-key
+POST                 /v2/auth/group-link
+POST                 /v2/auth/guest-link
+POST                 /v2/auth/password
+GET                  /v2/auth/token-info
+GET                  /v2/group-links
+GET,PATCH            /v2/group-links/{id}
+GET                  /v2/guest-links
+GET,PATCH            /v2/guest-links/{id}
+GET                  /v2/languages
+GET,POST             /v2/meetings
+GET,PATCH            /v2/meetings/{id}
+POST                 /v2/meetings/{id}/cancellation
+GET                  /v2/permission-groups
+GET                  /v2/room-types
+GET,POST             /v2/rooms
+DELETE,GET,PATCH     /v2/rooms/{id}
+GET                  /v2/rooms/{id}/participants
+GET                  /v2/rooms/{roomId}/attendances
+DELETE,GET,PATCH     /v2/rooms/{roomId}/features
+GET                  /v2/rooms/{roomId}/file-share-limits
+GET,PATCH            /v2/rooms/{roomId}/file-share-settings
+GET,POST             /v2/rooms/{roomId}/group-links
+DELETE               /v2/rooms/{roomId}/group-links/{id}
+GET,POST             /v2/rooms/{roomId}/guest-links
+DELETE               /v2/rooms/{roomId}/guest-links/{id}
+GET,PATCH            /v2/rooms/{roomId}/language-settings
+GET,POST             /v2/rooms/{roomId}/passcode
+GET,POST             /v2/rooms/{roomId}/permissions
+DELETE,PATCH         /v2/rooms/{roomId}/permissions/{userId}
+GET,POST             /v2/rooms/{roomId}/subrooms
+DELETE,PATCH         /v2/rooms/{roomId}/subrooms/{subroomId}
+GET                  /v2/stats
+GET,PATCH            /v2/users
+POST                 /v2/users/invitation
+GET                  /v2/users/me
+DELETE               /v2/users/{id}
+[0m
+[0m$ [0msleep 2
+echo "== beta-apis users/me =="
+curl -s -m 20 -o /dev/null -w "code=%{http_code} size=%{size_download}\n" https://beta-apis.alfaview.com/v2/users/me
+sleep 1
+echo "== beta openapi md5 =="
+curl -s -m 25 https://beta-apis.alfaview.com/v2/docs/openapi.json -o /tmp/opencode/openapi-beta.json -w "code=%{http_code} size=%{size_download}\n"
+md5sum /tmp/opencode/openapi-beta.json
+sleep 1
+echo "== api v2 languages (unauth) =="
+curl -s -m 20 -o /dev/null -w "code=%{http_code} size=%{size_download}\n" https://apis.alfaview.com/v2/languages
+echo "== beta v2 languages (unauth) =="
+curl -s -m 20 -o /dev/null -w "code=%{http_code} size=%{size_download}\n" https://beta-apis.alfaview.com/v2/languages
+== beta-apis users/me ==
+code=401 size=107
+== beta openapi md5 ==
+code=200 size=127532
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi-beta.json
+== api v2 languages (unauth) ==
+code=401 size=107
+== beta v2 languages (unauth) ==
+code=401 size=107
+[0m
+[0m$ [0mfor p in /v2/auth/token-info /v2/stats /v2/users /v2/rooms /v2/meetings /v2/guest-links /v2/group-links /v2/permission-groups /v2/room-types /v2/languages; do
+  printf "%-28s " "$p"
+  curl -s -m 15 -o /tmp/opencode/body.txt -w "code=%{http_code} size=%{size_download}" "https://apis.alfaview.com$p"
+  echo "  body=$(head -c 90 /tmp/opencode/body.txt | tr -d '\n')"
+  sleep 1
+done
+/v2/auth/token-info          code=422 size=85  body={"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+/v2/stats                    code=422 size=319  body={"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"mess
+/v2/users                    code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+/v2/rooms                    code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+/v2/meetings                 code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+/v2/guest-links              code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+/v2/group-links              code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+/v2/permission-groups        code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+/v2/room-types               code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+/v2/languages                code=401 size=107  body={"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authori
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/openapi.json'))
+for p in ['/v2/stats','/v2/auth/token-info','/v2/auth/guest-link']:
+    ops=d['paths'].get(p,{})
+    print('==',p)
+    for m,op in ops.items():
+        print(' ',m, op.get('summary',''))
+        for pr in op.get('parameters') or []:
+            print('    param', pr.get('name'), pr.get('in'), 'required' if pr.get('required') else 'opt')
+"
+== /v2/stats
+  get List Statistics
+    param Authorization header opt
+    param from query required
+    param to query required
+    param stepDurationHours query required
+== /v2/auth/token-info
+  get Get Access Token Information
+    param Authorization header opt
+== /v2/auth/guest-link
+  post Authenticate a Guest (Guest Link)
+[0m
+[0m$ [0mecho "== /v2/stats full body (unauth) =="
+curl -s -m 15 https://apis.alfaview.com/v2/stats
+echo; echo "== /v2/stats?dateFrom/dateTo guesses =="
+curl -s -m 15 "https://apis.alfaview.com/v2/stats?from=2026-01-01&to=2026-12-31" -o /tmp/opencode/stat1.txt -w "code=%{http_code} size=%{size_download}\n"; head -c 400 /tmp/opencode/stat1.txt; echo
+sleep 1
+curl -s -m 15 "https://apis.alfaview.com/v2/stats?dateFrom=2026-01-01&dateTo=2026-12-31" -o /tmp/opencode/stat2.txt -w "code=%{http_code} size=%{size_download}\n"; head -c 400 /tmp/opencode/stat2.txt; echo
+sleep 1
+echo "== token-info no token =="
+curl -s -m 15 https://apis.alfaview.com/v2/auth/token-info; echo
+== /v2/stats full body (unauth) ==
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"required query parameter is missing","location":"query.from"},{"message":"required query parameter is missing","location":"query.to"},{"message":"required query parameter is missing","location":"query.stepDurationHours"}]}
+
+== /v2/stats?dateFrom/dateTo guesses ==
+code=422 size=377
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"invalid date/time for format 2006-01-02T15:04:05.999999999Z07:00","location":"query.from"},{"message":"invalid date/time for format 2006-01-02T15:04:05.999999999Z07:00","location":"query.to"},{"message":"required query parameter is missing","location":"query.stepDurationHours"}]}
+
+code=422 size=319
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"required query parameter is missing","location":"query.from"},{"message":"required query parameter is missing","location":"query.to"},{"message":"required query parameter is missing","location":"query.stepDurationHours"}]}
+
+== token-info no token ==
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+[0m
+[0m$ [0mecho "== /v2/stats WITH valid query params, no token =="
+curl -s -m 15 "https://apis.alfaview.com/v2/stats?from=2026-09-01T00:00:00Z&to=2026-09-02T00:00:00Z&stepDurationHours=24" -o /tmp/opencode/s.txt -w "code=%{http_code} size=%{size_download}\n"; head -c 300 /tmp/opencode/s.txt; echo
+sleep 1
+echo "== /v2/auth/token-info with base64-looking fake token =="
+curl -s -m 15 -H "Authorization: aW52YWxpZHRva2VuMTIzNDU2Nzg5MA==" https://apis.alfaview.com/v2/auth/token-info -o /tmp/opencode/t.txt -w "code=%{http_code} size=%{size_download}\n"; head -c 300 /tmp/opencode/t.txt; echo
+sleep 1
+echo "== /v2/auth/token-info with random garbage token =="
+curl -s -m 15 -H "Authorization: not-a-token" https://apis.alfaview.com/v2/auth/token-info -o /tmp/opencode/t2.txt -w "code=%{http_code} size=%{size_download}\n"; head -c 300 /tmp/opencode/t2.txt; echo
+== /v2/stats WITH valid query params, no token ==
+code=401 size=107
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+== /v2/auth/token-info with base64-looking fake token ==
+code=422 size=85
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+== /v2/auth/token-info with random garbage token ==
+code=422 size=91
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+[0m
+**STEP 1 — DELTA**
+- NO_DELTA: `apis.alfaview.com/v2/docs/openapi.json` MD5 `357b94d367909a40b9299b543d23712b` (127532B, 37 paths), prod=beta byte-identical; `users/me`=401, `/v2/languages`=401 on both envs — 6th consecutive stable cycle.
+- NO_DELTA: `sso.alfaview.com` authorize=200/6173B FusionAuth login page for unregistered client_id; OIDC issuer=acme.com, token_auth=[client_secret_basic,client_secret_post,none], id_algs incl ES256/384/512; JWKS 7x RS256 RSA-only — no registration_endpoint.
+- NEW: first full GET sweep of all 10 listable OpenAPI paths → uniform 401 auth gate (`/v2/rooms`, `/v2/meetings`, `/v2/users`, `/v2/guest-links`, `/v2/group-links`, `/v2/permission-groups`, `/v2/room-types`). Only `/v2/stats` and `/v2/auth/token-info` return 422 validation-before-auth unauth; both flip to 401 once inputs valid — gateway ordering, no data exposure.
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] sso.alfaview.com/oauth2, 7.45, a:7 b:9 t:9(OAuth/FusionAuth) g:6(no real register) c:2 f:10
+- [PRIO] app.alfaview.com/graphql, 7.00, a:7 b:9 t:9(GraphQL guest ops) g:3(guest reach only) c:2 f:10
+- [PRIO] apis.alfaview.com/v2, 6.65, a:8 b:9 t:8(OpenAPI UUID-paths) g:2(401 gate) c:3 f:6
+
+**STEP 3 — HYPOTHESES**
+[HYP] RFC7662 introspection client-authentication fully removed on both channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: Prior-cycle live probes: POST-body fabricated client_id → 200 `{"active":false}` (was 400 invalid_client); Basic `b64(fake:fakesecret)` → 200; only residual gate is Basic-vs-body `client_id_mismatch` (401). Discovery advertises client_secret_basic/post; FusionAuth Community (client_credentials not_licensed). Introspect is the only OAuth endpoint where client auth gates token metadata.
+evidence_needed: a real FusionAuth access token introspected with fabricated client_id returns 200 `{"active":true, sub, scope, exp}`.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>" — compare sub/scopes/exp.
+impact: holder of leaked/observed token confirms validity and extracts subject/scopes/expiry without any client credential; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta 6th cycle (MD5 357b94d3). Token-authed UUID params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; GET sweep confirms uniform 401 gate. Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT; GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId (displayName NOT required); GraphQL signature has NO accessKey — structural divergence persists.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] `/v2/auth/token-info` base64-format oracle (`access token not in base64 format` vs `invalid access token format`): format-only distinction, requires token, base64 format already public knowledge; no secret reveal — sub-40, dropped.
+- [PARKED] `/v2/stats` validation-before-auth ordering: 422 unauth until params valid, then 401; pure gateway ordering artifact, no data exposure — dropped.
+- [FINAL] Introspect client-auth removal — 75 (only chain advanceable with a token). [FINAL] Cross-tenant IDOR — 80. [FINAL] Guest-authz splice — 60.
+
+**STEP 5 — NEXT ACTION**
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. This cycle's full 10-endpoint GET sweep produced zero new exposure; no further read-only probes can advance.
+
+**STEP 6 — LEARNING**
+- [LEARN] NO_DELTA @ full inventory: no surface delta this cycle; all probes (OpenAPI MD5 357b94d3, users/me=401, languages=401 both envs, authorize=200/6173B, graphql GET=400, app root=1381B, OIDC/JWKS unchanged) identical to prior cycle; all three standing chains remain HUMAN/AUTH-gated.
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com: full GET sweep of all 10 listable OpenAPI paths → uniform 401; `/v2/stats` + `/v2/auth/token-info` show validation-before-auth (422 unauth) but 401 once params/token valid — no unauthenticated data on any endpoint.
+
+**STEP 7 — RISK**
+[RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 6th consecutive cycle; full-path GET sweep confirms uniform auth gating with no anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.

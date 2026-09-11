@@ -2961,3 +2961,179 @@ impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIU
 testability: HUMAN_ONLY
 [NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. No further read-only probes can advance this program — surface byte-stable across 5 cycles.
 [RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 5th consecutive cycle; no new anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.
+## 2026-09-11 05:10:49 UTC [target] (model bigpickle)
+[PRIO] beta-apis.alfaview.com, 8.8, a:7 b:8 t:9(API+OpenAPI) g:6(cloud:3,auth-gate:3) c:3 f:5
+[PRIO] demo-company.alfaview.com, 8.3, a:9 b:8 t:6(web app) g:8(no basic auth gate) c:3 f:5
+[PRIO] internal.alfaview.com, 7.0, a:6 b:9 t:5(Basic auth) g:3(closed) c:3 f:5
+[HYP] IDOR on room permissions and user deletion
+class: IDOR
+asset: apis.alfaview.com
+confidence: 72
+reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
+evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
+verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
+testability: AUTH_HELPED
+[HYP] Guest link access key enumeration via auth oracle
+class: AUTH
+asset: apis.alfaview.com/v2/auth/group-link
+confidence: 65
+reasoning: Group/guest link auth requires companyId + roomId + accessKey. The auth endpoint returns distinct errors: 401 "A guest with the provided information could not be found and authenticated" vs 422 if wrong endpoint type used. If accessKeys are low-entropy or sequential, and rate-limiting is absent per-scope, brute force of accessKey for a known companyId+roomId yields a guest session token.
+evidence_needed: Rate-limited probe of /v2/auth/group-link with a known companyId+roomId and random accessKeys; observe response timing or 429 after N requests confirming (or not) brute-force feasibility.
+verify_steps: POST /v2/auth/group-link with companyId=<known>, roomId=<known>, accessKey=<random-12-char>, displayName="test" — note 401 response time. Repeat 10x at 1 rps to detect rate limiting.
+impact: Guest session impersonation; access to private meeting rooms; severity MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Beta API environment weaker auth enforcement
+class: MISCONFIG
+asset: beta-apis.alfaview.com
+confidence: 55
+reasoning: beta-apis resolves to a separate IP pool (185.127.28.102, 185.245.100.219, 195.201.44.172) from production apis. Beta environments commonly have relaxed validation, disabled features, or test credentials. If the same OpenAPI spec applies but auth middleware differs, unauthenticated access or test API keys may work.
+evidence_needed: Comparison of /v2/languages or /v2/room-types response on beta-apis vs apis without Authorization header; check for different error bodies or 200 vs 401.
+verify_steps: GET https://beta-apis.alfaview.com/v2/languages (no auth) — compare response code and body against the same request on apis.alfaview.com (401).
+impact: Unauthenticated API access to user data, room data, and meeting statistics; severity HIGH.
+testability: PASSIVE (no auth needed to probe response codes)
+[PARKED] IDOR on room permissions: requires valid API credentials to confirm. Confidence 72 is justified by the explicit path-param UUID pattern in the spec but server-side authorization is unverified without auth testing. Remains as highest-priority authenticated test.
+[PARKED] Guest link access key enumeration: needs valid companyId+roomId to confirm rate limiting. Confidence 65 reflects the speculative brute-force angle. Keep for authenticated phase.
+[FINAL] Beta API weaker auth enforcement — **RANK 1 for next probe**. PASSIVE, no auth required, directly testable.
+[NEXT] PROBE: GET `https://beta-apis.alfaview.com/v2/languages` — no Authorization header, compare response code/body vs production `https://apis.alfaview.com/v2/languages` (known 401).
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+[LEARN] REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected class).
+[RISK] alfaview: 65/100. Scope is broad ("all company-owned infrastructure") but active testing on production APIs requires an API key or guest account. 1 rps rate limit constrains brute-force. All high-value endpoints are auth-gated. Realistic path: obtain a developer account, test IDOR and guest-link flows.
+[CHANGED] beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+[NEW] beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+[NEW] insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+[PRIO] demo-company.alfaview.com, 8.7, a:9 b:9 t:6(web app) g:9(no auth gate) c:3 f:5
+[PRIO] beta-webclient.alfaview.com, 8.2, a:7 b:8 t:7(web client) g:7(no basic auth) c:3 f:4
+[PRIO] apis.alfaview.com, 8.0, a:8 b:8 t:9(API) g:6(cloud:3,auth-gate:3) c:3 f:5
+[HYP] IDOR on room permissions and user deletion
+class: IDOR
+asset: apis.alfaview.com
+confidence: 72
+reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
+evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
+verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
+testability: AUTH_HELPED
+[HYP] Guest link access key enumeration via auth oracle
+class: AUTH
+asset: apis.alfaview.com/v2/auth/group-link
+confidence: 65
+reasoning: Group/guest link auth requires companyId + roomId + accessKey. The auth endpoint returns distinct errors: 401 "A guest with the provided information could not be found and authenticated" vs 422 if wrong endpoint type used. If accessKeys are low-entropy or sequential, and rate-limiting is absent per-scope, brute force of accessKey for a known companyId+roomId yields a guest session token.
+evidence_needed: Rate-limited probe of /v2/auth/group-link with a known companyId+roomId and random accessKeys; observe response timing or 429 after N requests confirming (or not) brute-force feasibility.
+verify_steps: POST /v2/auth/group-link with companyId=<known>, roomId=<known>, accessKey=<random-12-char>, displayName="test" — note 401 response time. Repeat 10x at 1 rps to detect rate limiting.
+impact: Guest session impersonation; access to private meeting rooms; severity MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Demo company exposes test user data via unauthenticated API
+class: MISCONFIG
+asset: demo-company.alfaview.com
+confidence: 60
+reasoning: demo-company.alfaview.com serves HTTP 200 without authentication. Demo/test environments often have weakened security controls, default credentials, or exposed test data. If this is a publicly accessible demo instance, it may leak test user information, company structures, or internal API endpoints.
+evidence_needed: Probe common endpoints (/api, /v1, /v2, /graphql) on demo-company.alfaview.com without auth; check for exposed user lists, company data, or debug interfaces.
+verify_steps: GET https://demo-company.alfaview.com/ and observe response; then GET https://demo-company.alfaview.com/api/v1/users (or similar) to test for unauthenticated data access.
+impact: Exposure of test/demo user data, company structures; severity MEDIUM.
+testability: PASSIVE (no auth needed)
+[PARKED] Beta API weaker auth enforcement — disconfirmed by identical 401 responses.
+[FINAL] IDOR on room permissions: 72% confidence, highest value, AUTH_HELPED.
+[FINAL] Guest link access key enumeration: 65% confidence, requires valid credentials.
+[FINAL] Demo company test data exposure: 60% confidence, PASSIVE, immediate testability.
+[NEXT] PROBE: GET `https://demo-company.alfaview.com/api/v1/users` — no auth, check for exposed user list or test data.
+[LEARN] REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+[LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+[RISK] alfaview: 62/100. Scope is broad but all high-value endpoints are auth-gated. Beta API disconfirmed as weaker. Demo company presents immediate passive test opportunity. Realistic path: obtain demo/test account, test IDOR and guest-link flows; meanwhile probe demo-company for exposed test data.
+[PRIO] insider-webclient.alfaview.com, 7.2, a:8 b:9 t:7 g:8 c:3 f:4
+[PRIO] beta-webclient.alfaview.com, 6.4, a:6 b:7 t:7 g:7 c:3 f:4
+[PRIO] alfatraining.alfaview.com, 6.3, a:7 b:6 t:5 g:7 c:3 f:3
+[PRIO] demo-company.alfaview.com, 5.5, a:4 b:4 t:3 g:9 c:3 f:5 (SPA disconfirmed)
+[PRIO] bhc.alfaview.com, 5.0, a:5 b:5 t:3 g:5 c:3 f:3
+[HYP] Insider web client exposes internal admin panel without auth
+class: MISCONFIG
+asset: insider-webclient.alfaview.com
+confidence: 55
+reasoning: Returns HTTP 200 with no auth gate. Name explicitly says "insider" — likely internal tooling for employees/admins. Internal tools are frequently deployed with weaker auth controls, debug modes, or default sessions. If this is a React/Vue SPA, client-side routes may expose admin functionality hidden behind JS routing but accessible via direct path.
+evidence_needed: Response body content-type and HTML structure; presence of API base URL, admin routes, or debug flags in bundled JS; probe /api, /admin, /graphql, /internal paths.
+verify_steps: GET https://insider-webclient.alfaview.com/ — observe content-type, title, script tags. GET https://insider-webclient.alfaview.com/api/health or /api/config for exposed backend routes.
+impact: Exposure of internal admin tooling, potential access to user management, room administration, or meeting data; severity MEDIUM-HIGH.
+testability: PASSIVE
+[HYP] Beta web client exposes debug/test routes or weaker CSP
+class: MISCONFIG
+asset: beta-webclient.alfaview.com
+confidence: 45
+reasoning: Beta web clients often have debug flags, source maps, verbose error handling, or test accounts baked in. If the SPA bundles contain dev-mode conditionals (e.g., window.__DEV__, REACT_APP_ENV=beta), these may expose admin functions or API endpoints not present in production. Beta API version drift already confirmed (beta has /v2/languages, prod doesn't).
+evidence_needed: Response body inspection for env flags, source map URLs, test account references in JS bundles; compare CSP headers vs production app.alfaview.com.
+verify_steps: GET https://beta-webclient.alfaview.com/ — observe content-type, title, script src paths. GET https://beta-webclient.alfaview.com/asset-manifest.json or /manifest.json for build info.
+impact: Leaked beta API endpoints, debug functionality, or test credentials; severity MEDIUM.
+testability: PASSIVE
+[HYP] Training platform exposes user data or test accounts
+class: MISCONFIG
+asset: alfatraining.alfaview.com
+confidence: 40
+reasoning: Training platforms often contain test user accounts, course completion data, or internal employee information. Returns HTTP 200 without auth gate. If this is a standalone training LMS, it may have exposed user lists, admin panels, or API endpoints.
+evidence_needed: Response body content-type and structure; probe /api, /users, /admin, /courses paths; check for login page vs direct content access.
+verify_steps: GET https://alfatraining.alfaview.com/ — observe response. GET https://alfatraining.alfaview.com/api/v1/users or /admin.
+impact: Exposure of employee training data, user accounts; severity LOW-MEDIUM.
+testability: PASSIVE
+[NEXT] PROBE: GET https://insider-webclient.alfaview.com/ — observe response body, content-type, title tag, script src URLs. Then GET https://insider-webclient.alfaview.com/api/health or /api/config for exposed backend routes.
+[LEARN] REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta, 37 paths (MD5 357b94d3, this cycle). Token-authed UUID params on DELETE /v2/users/{id}, GET /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}. Gate stable this cycle (users/me=401). Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password {username,password} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode (403-vs-200) → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} (403-vs-204) → DELETE /v2/users/{victimUserId} (403-vs-204).
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] RFC7662 introspection client-authentication removed on both auth channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: Prior-cycle live probes: POST body fabricated client_id → 200 {"active":false}; Basic b64(fake:fakesecret) → 200 {"active":false}; discovery advertises client_secret_basic/post. Introspect is the only OAuth endpoint where client auth gates token metadata; FusionAuth Community (client_credentials not_licensed).
+evidence_needed: a real FusionAuth access token introspected with fabricated client_id returns 200 {"active":true, sub, scope, exp}.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>" — compare sub/scopes/exp.
+impact: holder of leaked/observed token confirms validity and extracts subject/scopes/expiry without client credential; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT, UUID-format args → BAD_USER_INPUT (oscillated FORBIDDEN on 2026-09-09). GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId (3-field, displayName NOT required); GraphQL signature has NO accessKey — structural divergence.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}} (no accessKey) vs POST /v2/auth/guest-link same triple without accessKey → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. No further read-only probes can advance this program — surface byte-stable across 5 cycles.
+[RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 5th consecutive cycle; no new anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.
+[HYP] RFC7662 introspection client-authentication fully removed on both channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: Prior-cycle live probes: POST-body fabricated client_id → 200 `{"active":false}` (was 400 invalid_client); Basic `b64(fake:fakesecret)` → 200; only residual gate is Basic-vs-body `client_id_mismatch` (401). Discovery advertises client_secret_basic/post; FusionAuth Community (client_credentials not_licensed). Introspect is the only OAuth endpoint where client auth gates token metadata.
+evidence_needed: a real FusionAuth access token introspected with fabricated client_id returns 200 `{"active":true, sub, scope, exp}`.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>" — compare sub/scopes/exp.
+impact: holder of leaked/observed token confirms validity and extracts subject/scopes/expiry without any client credential; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta 6th cycle (MD5 357b94d3). Token-authed UUID params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; GET sweep confirms uniform 401 gate. Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT; GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId (displayName NOT required); GraphQL signature has NO accessKey — structural divergence persists.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. This cycle's full 10-endpoint GET sweep produced zero new exposure; no further read-only probes can advance.
+[RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 6th consecutive cycle; full-path GET sweep confirms uniform auth gating with no anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.
