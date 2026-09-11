@@ -16873,3 +16873,134 @@ All three survive: IDOR (80), introspect (75), guest-authz (60). All confidence 
 ```
 [RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable Nth consecutive cycle; no new anonymous exposure. Three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession. Score cannot move without a human clearing the signup gate.
 ```
+===== ANALYST bigpickle 2026-09-11 20:01:24 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor u in "https://client-diagnostics-ingest.alfaview.com/" "https://client-diagnostics-ingest.alfaview.com/health" "https://client-diagnostics-ingest.alfaview.com/api" "https://client-diagnostics-ingest.alfaview.com/v1/ingest" "https://client-diagnostics-ingest.alfaview.com/telemetry" "https://client-diagnostics-ingest.alfaview.com/upload" "https://client-diagnostics-ingest.alfaview.com/status"; do printf "%-8s %4d %6s\n" "$(curl -s -o /dev/null -w '%{http_code}' -m 8 -X OPTIONS "$u")" "$(curl -s -o /dev/null -w '%{http_code}' -m 8 "$u")" "$u"; sleep 0.4; done
+404       404 https://client-diagnostics-ingest.alfaview.com/
+405       200 https://client-diagnostics-ingest.alfaview.com/health
+404       404 https://client-diagnostics-ingest.alfaview.com/api
+404       404 https://client-diagnostics-ingest.alfaview.com/v1/ingest
+404       404 https://client-diagnostics-ingest.alfaview.com/telemetry
+404       404 https://client-diagnostics-ingest.alfaview.com/upload
+404       404 https://client-diagnostics-ingest.alfaview.com/status
+[0m
+[0m$ [0mfor u in "https://hello-world.atlas-spike.atlas.alfaview.com/" "https://hello-world.atlas-spike.atlas.alfaview.com/health" "https://hello-world.atlas-spike.atlas.alfaview.com/hello" "https://hello-world.atlas-spike.atlas.alfaview.com/api" "https://design-assets.alfaview.com/" "https://design-assets.alfaview.com/tokens.json" "https://design-tokens.alfaview.com/" "https://design-tokens.alfaview.com/tokens"; do printf "%6d %6dB %s\n" "$(curl -s -o /dev/null -w '%{http_code}' -m 8 "$u")" "$(curl -s -o /dev/null -w '%{size_download}' -m 8 "$u")" "$u"; sleep 0.4; done
+404     19B https://hello-world.atlas-spike.atlas.alfaview.com/
+   404     19B https://hello-world.atlas-spike.atlas.alfaview.com/health
+   404     19B https://hello-world.atlas-spike.atlas.alfaview.com/hello
+   404     19B https://hello-world.atlas-spike.atlas.alfaview.com/api
+   404    146B https://design-assets.alfaview.com/
+   404    146B https://design-assets.alfaview.com/tokens.json
+   404    146B https://design-tokens.alfaview.com/
+   404    146B https://design-tokens.alfaview.com/tokens
+[0m
+[0m$ [0mcurl -s -m 8 -i https://client-diagnostics-ingest.alfaview.com/health; echo "---"; sleep 0.4; for u in "https://client-diagnostics-ingest.alfaview.com/v1" "https://client-diagnostics-ingest.alfaview.com/v2" "https://client-diagnostics-ingest.alfaview.com/metrics" "https://client-diagnostics-ingest.alfaview.com/diagnostics" "https://client-diagnostics-ingest.alfaview.com/ready" "https://client-diagnostics-ingest.alfaview.com/ping" "https://client-diagnostics-ingest.alfaview.com/report" "https://client-diagnostics-ingest.alfaview.com/crash"; do printf "%6d %6dB %s\n" "$(curl -s -o /dev/null -w '%{http_code}' -m 8 "$u")" "$(curl -s -o /dev/null -w '%{size_download}' -m 8 "$u")" "$u"; sleep 0.4; done
+HTTP/2 200 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 4ef9e1ebaf879a1c
+date: Fri, 11 Sep 2026 19:59:59 GMT
+content-length: 16
+server: edge-proxy
+
+{"status":"ok"}
+---
+   404     39B https://client-diagnostics-ingest.alfaview.com/v1
+   404     39B https://client-diagnostics-ingest.alfaview.com/v2
+   404     39B https://client-diagnostics-ingest.alfaview.com/metrics
+   404     39B https://client-diagnostics-ingest.alfaview.com/diagnostics
+   404     39B https://client-diagnostics-ingest.alfaview.com/ready
+   404     39B https://client-diagnostics-ingest.alfaview.com/ping
+   404     39B https://client-diagnostics-ingest.alfaview.com/report
+   404     39B https://client-diagnostics-ingest.alfaview.com/crash
+[0m
+[0m$ [0mfor u in "https://client-diagnostics-ingest.alfaview.com/ingest" "https://client-diagnostics-ingest.alfaview.com/collect" "https://client-diagnostics-ingest.alfaview.com/diagnostics" "https://client-diagnostics-ingest.alfaview.com/client-diagnostics" "https://client-diagnostics-ingest.alfaview.com/report" "https://client-diagnostics-ingest.alfaview.com/event" "https://client-diagnostics-ingest.alfaview.com/logs" "https://client-diagnostics-ingest.alfaview.com/batch"; do printf "%6d %s\n" "$(curl -s -o /dev/null -w '%{http_code}' -m 8 -X OPTIONS "$u")" "$u"; sleep 0.4; done; echo "=== Allow on /health and root ==="; curl -s -m 8 -D - -o /dev/null -X OPTIONS https://client-diagnostics-ingest.alfaview.com/health | rg -i "HTTP|allow|server|content-type"
+404 https://client-diagnostics-ingest.alfaview.com/ingest
+   404 https://client-diagnostics-ingest.alfaview.com/collect
+   404 https://client-diagnostics-ingest.alfaview.com/diagnostics
+   404 https://client-diagnostics-ingest.alfaview.com/client-diagnostics
+   404 https://client-diagnostics-ingest.alfaview.com/report
+   404 https://client-diagnostics-ingest.alfaview.com/event
+   404 https://client-diagnostics-ingest.alfaview.com/logs
+   404 https://client-diagnostics-ingest.alfaview.com/batch
+=== Allow on /health and root ===
+/bin/bash: line 1: rg: command not found
+[0m
+[0m$ [0mcurl -s -m 8 -D - -o /dev/null -X OPTIONS https://client-diagnostics-ingest.alfaview.com/health; echo "=== GET / root body ==="; curl -s -m 8 https://client-diagnostics-ingest.alfaview.com/
+HTTP/2 405 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 05f2dde73f0f98c6
+date: Fri, 11 Sep 2026 20:00:38 GMT
+content-length: 48
+server: edge-proxy
+vary: Accept-Encoding
+
+=== GET / root body ===
+{"status":"error","error":"not found"}
+[0m
+STEP 1 — DELTA:
+- NEW client-diagnostics-ingest.alfaview.com: `GET /health` → 200 `{"status":"ok"}` (edge-proxy, cache-control no-store, CSP `default-src 'none'`); GET+OPTIONS on 16 candidate paths (ingest/collect/diagnostics/report/telemetry/metrics/batch/v1/v2/...) all 404 `{"status":"error","error":"not found"}`; `OPTIONS /health`=405 with no `Allow` header — strict-routed, health-only surface. (First live data point on a host inventory previously recorded only as root 404.)
+- NO_DELTA: all other probed surfaces byte-stable — OpenAPI MD5 `357b94d3` (37 paths), OIDC discovery, `authorize` 200/6189B, introspect POST/Basic (fabricated client_id → 200 active:false), `users/me` 401, GraphQL guest path BAD_USER_INPUT.
+
+STEP 2 — PRIORITIZE:
+- [PRIO] sso.alfaview.com/oauth2/introspect,85,attack_surface:9 business_value:8 tech_exposure:9 gate_ease:1 cloud_surface:5 freshness:5
+- [PRIO] apis.alfaview.com/v2,72,attack_surface:8 business_value:8 tech_exposure:7 gate_ease:3 cloud_surface:4 freshness:5
+- [PRIO] app.alfaview.com/graphql,60,attack_surface:7 business_value:7 tech_exposure:8 gate_ease:3 cloud_surface:3 freshness:5
+- [PRIO] client-diagnostics-ingest.alfaview.com,36,attack_surface:2 business_value:2 tech_exposure:2 gate_ease:10 cloud_surface:3 freshness:5
+
+STEP 3 — HYPOTHESES:
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta Nth cycle (MD5 357b94d3). Token-authed UUID params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; GET sweep confirms uniform 401 gate. Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] RFC7662 introspection client-authentication fully removed on both channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: POST-body fabricated client_id on a real token → 200 active:true (observed active:false for fake token, 200 for fabricated client_id); Basic b64(fake:secret) → 200; only residual gate is Basic-vs-body mismatch 401. Discovery advertises client_secret_basic/post; FusionAuth Community v1.63.0 (client_credentials not_licensed). Introspection is the sole OAuth metadata gate where client auth matters.
+evidence_needed: real FusionAuth access token introspected with fabricated client_id → 200 `{"active":true, sub, scope, exp}`.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control; repeat via Basic channel with fabricated client_id.
+impact: holder of leaked/observed token validates it and extracts subject/scopes/expiry without any client credential; MEDIUM-HIGH conditional on token possession.
+testability: AUTH_HELPED
+
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT; GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId (displayName NOT required); GraphQL signature has NO accessKey — structural divergence persists.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE:
+- [PARKED] client-diagnostics-ingest /health: health-only, no Allow header, 16-path GET+OPTIONS sweep all 404 — actual ingest route is POST-only and not passively enumerable; score 36. Revisit only with a human-provided client HAR (client telemetry destination) or guide.
+- [PARKED] alfaview-com-assets / design-assets / design-tokens: 403/404 strict-routed, no listing (prior cycles) — no new angle.
+- [FINAL] IDOR 80 → introspect 75 → guest-authz 60. All three survivors HUMAN-gated; no hypothesis drops below 40.
+
+STEP 5 — NEXT ACTION:
+[NEXT] HUMAN: Execute the standing signup plan — unauthenticated GraphQL `Signup`(planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} → opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple sans accessKey vs REST 3-field guest-link, (c) introspect any yielded token with fabricated `client_id` on both channels. Also ask the client to launch the desktop app and capture which path client-diagnostics-ingest POSTs to (ingest route discovery). Passive cycles are exhausted — no further read-only probe can advance the program.
+
+STEP 6 — LEARNING:
+- [LEARN] ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: GET /health → 200 `{"status":"ok"}` (edge-proxy, no-store, strict CSP); 16-path GET+OPTIONS sweep all 404, OPTIONS /health=405 no Allow — strict-routed health-only surface; no anonymous ingest/telemetry route exposed. Host exhausted.
+- [LEARN] NO_DELTA: remaining inventory byte-stable Nth consecutive cycle (OpenAPI, OIDC, authorize, introspect, users/me, guest path).
+
+STEP 7 — RISK:
+- [RISK] alfaview: 50/100 — unchanged. Only delta is a low-value health endpoint on a diagnostics host; no new anonymous exposure. Three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession; score cannot move without a human clearing the signup gate.

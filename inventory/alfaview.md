@@ -479,3 +479,5 @@ www.alfaview.com
 - NEW sso.alfaview.com OIDC discovery: now lists ES256/384/512 among `id_token_signing_alg_values_supported` (previous cycles: RSA+HS only); JWKS remains RSA-only (7 RS256 keys, zero symmetric/ECDSA)
 
 ## 2026-09-11 17:24:48 UTC
+
+## 2026-09-11 20:01:24 UTC
