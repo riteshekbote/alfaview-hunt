@@ -40,3 +40,13 @@
   - | 1 | FusionAuth issuer=acme.com drift | **VALID** | None — passive proof complete |
   - | 2 | Unauthenticated binary distribution (test.alfaview.com) | **VALID** | None — passive proof complete |
   - | 7 | JWT algorithm confusion (HS256/RSA) | **HOLD** | Needs valid token sample |
+
+- 8 lead(s) marked VALID at 2026-09-11 00:32:19 UTC
+  - | Q6 Always-rejected? | **No** — broken client auth on OAuth endpoints is a valid class |
+  - **Verdict: VALID**
+  - | Q6 Always-rejected? | **No** — JWT algorithm confusion is a valid finding class |
+  - | Q4 Provable? | **Yes** — mutation returns `BAD_USER_INPUT` (with zero UUIDs) or `FORBIDDEN` (with valid UUIDs), not `UNAUTHENTICATED`; confirms the mutation is reachable and processes input |
+  - | Q6 Always-rejected? | **No** — authentication bypass / inconsistent auth is a valid class |
+  - **Verdict: VALID**
+  - | 1 | OAuth2 Introspect broken client auth | **VALID** | 5.3 | Reportable as-is |
+  - | 3 | GraphQL guest mutations accessKey-less | **VALID** | 8.1 | Highest priority; needs two-account PoC |
