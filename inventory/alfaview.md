@@ -481,3 +481,6 @@ www.alfaview.com
 ## 2026-09-11 17:24:48 UTC
 
 ## 2026-09-11 20:01:24 UTC
+
+## 2026-09-11 22:20:38 UTC
+- NEW NO_DELTA: all probes (OpenAPI MD5 357b94d3, OIDC discovery issuer=acme.com + ES256/HS256/RS256 algs, introspect Basic/POST-body both accept fake client_id, authorize 200 login page, GraphQL guestAuthe
