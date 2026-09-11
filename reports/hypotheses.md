@@ -1342,3 +1342,10 @@
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+
+## RANKED HYPOTHESES 2026-09-11 09:46:07 UTC
+- [75] sso.alfaview.com/oauth2/introspect: RFC7662 introspection client-authentication fully removed on both channels (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `Signup` (planId "free-business") → email activation at `/finish-signup/{companyId
+- LEARN: NO_DELTA: no surface change this cycle — all probes (OpenAPI MD5, OIDC discovery, authorize, introspect POST/Basic, users/me, auth/password, device_authorize) r
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body fabricated client_id → 200 `{"active":false}` (no validation); Basic fabricated → 200; only r
+- LEARN: ACCEPTED OATH @ sso.alfaview.com/oauth2/authorize: 200/6189B login page for unregistered client_id. Stable.

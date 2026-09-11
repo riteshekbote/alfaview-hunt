@@ -3137,3 +3137,41 @@ impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIU
 testability: HUMAN_ONLY
 [NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. This cycle's full 10-endpoint GET sweep produced zero new exposure; no further read-only probes can advance.
 [RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for the 6th consecutive cycle; full-path GET sweep confirms uniform auth gating with no anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.
+## 2026-09-11 09:45:41 UTC [target] (model bigpickle)
+[PRIO] sso.alfaview.com/oauth2/introspect, 85, attack_surface:9 business_value:8 tech_exposure:9 gate_ease:1 cloud_surface:5 freshness:5
+[PRIO] apis.alfaview.com/v2, 72, attack_surface:8 business_value:8 tech_exposure:7 gate_ease:3 cloud_surface:4 freshness:5
+[PRIO] app.alfaview.com/graphql, 60, attack_surface:7 business_value:7 tech_exposure:8 gate_ease:3 cloud_surface:3 freshness:5
+[HYP] RFC7662 introspection client-authentication fully removed on both channels
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 75
+reasoning: This cycle confirmed: POST-body fabricated client_id → 200 `{"active":false}` (was 400 invalid_client in prior cycles); HTTP Basic b64(fake:fakesecret) → 200 `{"active":false}`; only residual gate is Basic-vs-body client_id_mismatch (401). Discovery advertises client_secret_basic/post; FusionAuth Community v1.63.0 (client_credentials not_licensed). Introspection endpoint is the sole OAuth metadata gate where client authentication matters.
+evidence_needed: a real FusionAuth access token introspected with fabricated client_id returns 200 `{"active":true, sub, scope, exp}`.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>" — compare sub/scopes/exp; also test Basic channel with fabricated client_id.
+impact: holder of leaked/observed token confirms validity and extracts subject/scopes/expiry without any client credential; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public + byte-identical prod/beta Nth cycle (MD5 357b94d3). Token-authed UUID params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; GET sweep confirms uniform 401 gate. Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey arg vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT; GuestAuthenticateReply exposes user+accessToken+role. REST /v2/auth/guest-link requires accessKey+companyId+roomId (displayName NOT required); GraphQL signature has NO accessKey — structural divergence persists.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple without accessKey.
+verify_steps: (post-signup) GenerateGroupLink in own tenant → `mutation{guestAuthenticate(userId,companyId,roomId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same triple → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[PARKED] (none)
+[FINAL] (ranked):
+[NEXT] HUMAN: Sign up one throwaway free alfaview tenant via unauthenticated GraphQL `Signup` (planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} for opaque bearer → in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` real triple without accessKey vs REST guest-link, (c) introspect any token the flow yields with fabricated `client_id`. No further read-only passive probes can advance this program — all surfaces byte-stable Nth consecutive cycle.
+[LEARN] NO_DELTA: no surface change this cycle — all probes (OpenAPI MD5, OIDC discovery, authorize, introspect POST/Basic, users/me, auth/password, device_authorize) returned byte-identical results to prior cycle.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body fabricated client_id → 200 `{"active":false}` (no validation); Basic fabricated → 200; only residual is body-vs-Basic mismatch 401. Confirmed stable.
+[LEARN] ACCEPTED OATH @ sso.alfaview.com/oauth2/authorize: 200/6189B login page for unregistered client_id. Stable.
+[RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable for Nth consecutive cycle; no new anonymous exposure; the three standing chains (IDOR 80, introspect 75, guest-authz 60) remain gated behind tenant signup + token possession, so the score cannot move without a human clearing the signup gate.

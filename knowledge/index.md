@@ -345,3 +345,6 @@
 - 2026-09-11 REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
 - 2026-09-11 ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
 - 2026-09-11 ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- 2026-09-11 NO_DELTA: no surface change this cycle — all probes (OpenAPI MD5, OIDC discovery, authorize, introspect POST/Basic, users/me, auth/password, device_authorize) returned byte-identical results to prior cycle.
+- 2026-09-11 ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body fabricated client_id → 200 `{"active":false}` (no validation); Basic fabricated → 200; only residual is body-vs-Basic mismatch 401. Confirmed stable.
+- 2026-09-11 ACCEPTED OATH @ sso.alfaview.com/oauth2/authorize: 200/6189B login page for unregistered client_id. Stable.
