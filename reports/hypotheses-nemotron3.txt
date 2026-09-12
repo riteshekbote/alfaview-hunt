@@ -1,10 +1,9 @@
-## 2026-09-12 21:46:36 UTC [target] (model nemotron3)
+## 2026-09-12 23:32:25 UTC [target] (model nemotron3)
 [PRIO] sso.alfaview.com/oauth2/introspect,9.10,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
 [PRIO] sso.alfaview.com/oauth2/authorize,8.55,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
 [PRIO] app.alfaview.com/graphql,8.20,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
 [PRIO] apis.alfaview.com/v2,7.65,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8
-[PRIO] test.alfaview.com,7.15,attack_surface=7,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=9
-[PRIO] client-diagnostics-ingest.alfaview.com,5.25,attack_surface=5,business_value=4,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=8
+[PRIO] te[0m
 [HYP] Unauthenticated token introspection bypassing RFC7662 client authentication
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect

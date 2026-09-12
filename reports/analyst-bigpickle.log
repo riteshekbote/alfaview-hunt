@@ -18666,3 +18666,23 @@ STEP 6 — LEARNING
 STEP 7 — RISK
 
 [RISK] alfaview gmbh: 55 — 55/55 hosts probed, OpenAPI surface byte-stable (MD5 357b94d3), no new unauthenticated surface this cycle (`token-info` decode oracle unexploitable without a valid token; `stats` correctly gated); JWKS 404 removes the metadata alg-confusion scare; three cred-plausible auth chains stand (RFC7662 fabricated client-auth on both channels, expanded cross-tenant IDOR matrix incl. attendances/participants/stats, accessKey-less GraphQL guest) — all confirmations HUMAN-gated on account/token acquisition; alfacheck v483102 still ships unsigned.
+===== ANALYST bigpickle 2026-09-12 23:32:36 UTC =====
+[0m
+> build · big-pickle
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcurl -s --max-time 20 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/oidc.json; python3 -c "import json;d=json.load(open('/tmp/oidc.json'));print('issuer',d.get('issuer'));print('algs',d.get('id_token_signing_alg_values_supported'));print('auth_methods',d.get('token_endpoint_auth_methods_supported'));print('introspection_endpoint',d.get('introspection_endpoint');print('registration_endpoint',d.get('registration_endpoint'));print('device',d.get('device_authorization_endpoint'))" 2>/dev/null || cat /tmp/oidc.json failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "apis_openapi %{http_code} %{size_download}\n" --max-time 20 https://apis.alfaview.com/v2/docs/openapi.json; curl -s --max-time 20 https://apis.alfaview.com/v2/docs/openapi.json | md5sum; curl -s -o /dev/null -w "beta_openapi %{http_code} %{size_download}\n" --max-time 20 https://beta-apis.alfaview.com/v2/docs/openapi.json; curl -s --max-time 20 https://beta-apis.alfaview.com/v2/docs/openapi.json | md5sum
+apis_openapi 200 127532
+357b94d367909a40b9299b543d23712b  -
+beta_openapi 200 127532
+357b94d367909a40b9299b543d23712b  -
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "jwks %{http_code} %{size_download}\n" --max-time 20 https://sso.alfaview.com/oauth2/jwks; curl -s -o /dev/null -w "authorize %{http_code} %{size_download}\n" --max-time 20 "https://sso.alfaview.com/oauth2/authorize?client_id=abc123&response_type=code"; curl -s -o /dev/null -w "users_me %{http_code} %{size_download}\n" --max-time 20 https://apis.alfaview.com/v2/users/me; curl -s -o /dev/null -w "api_status %{http_code} %{size_download}\n" --max-time 20 https://sso.alfaview.com/api/status
+jwks 404 4955
+authorize 200 6189
+users_me 401 107
+api_status 200 15
+[0m
