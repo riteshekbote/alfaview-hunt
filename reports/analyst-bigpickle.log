@@ -17077,3 +17077,713 @@ testability: HUMAN_ONLY
 
 **STEP 7 — RISK**
 - [RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable; no new anonymous exposure. Standing chains (introspect 85, IDOR 80, guest-authz 60) remain gated on tenant signup + token possession; score cannot move without a human clearing the signup gate.
+===== ANALYST bigpickle 2026-09-12 00:22:37 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && find . -maxdepth 2 -type f | head -50
+total 380
+drwxr-xr-x 12 runner runner   4096 Sep 12 00:19 .
+drwxr-xr-x  3 runner runner   4096 Sep 12 00:19 ..
+drwxr-xr-x  7 runner runner   4096 Sep 12 00:19 .git
+drwxr-xr-x  3 runner runner   4096 Sep 12 00:19 .github
+-rw-r--r--  1 runner runner   1883 Sep 12 00:19 README.md
+-rw-r--r--  1 runner runner     32 Sep 12 00:19 analyst-out.txt
+-rw-r--r--  1 runner runner 138090 Sep 12 00:19 analyst-prompt.txt
+-rw-r--r--  1 runner runner 134180 Sep 12 00:19 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 leads
+-rw-r--r--  1 runner runner  27994 Sep 12 00:19 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 reports
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 12 00:19 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 scripts
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 triage
+./.git/opencode
+./.git/index
+./.git/HEAD
+./.git/config
+./.git/config.worktree
+./.git/FETCH_HEAD
+./.git/shallow
+./.git/description
+./analyst-out.txt
+./state_nemotron3.json
+./triage/run-2026-09-03-11-41.md
+./triage/run-2026-09-07-23-53.md
+./triage/run-2026-09-10-20-00.md
+./triage/run-2026-09-05-18-21.md
+./triage/run-2026-09-11-00-32.md
+./triage/run-2026-09-11-09-46.md
+./triage/run-2026-09-09-13-52.md
+./triage/run-2026-09-06-15-56.md
+./triage/run-2026-09-10-05-12.md
+./triage/run-2026-09-03-15-37.md
+./triage/run-2026-09-09-04-53.md
+./triage/run-2026-09-09-09-21.md
+./triage/run-2026-09-05-01-01.md
+./triage/run-2026-09-09-19-59.md
+./triage/run-2026-09-07-14-28.md
+./triage/run-2026-09-05-05-48.md
+./triage/run-2026-09-09-22-24.md
+./triage/run-2026-09-11-13-59.md
+./triage/run-2026-09-05-20-41.md
+./triage/run-2026-09-05-16-10.md
+./triage/run-2026-09-04-01-20.md
+./triage/run-2026-09-04-18-27.md
+./triage/run-2026-09-05-22-34.md
+./triage/run-2026-09-10-00-33.md
+./triage/run-2026-09-06-00-11.md
+./triage/run-2026-09-03-23-30.md
+./triage/.gitkeep
+./triage/run-2026-09-06-09-06.md
+./triage/run-2026-09-06-12-54.md
+./triage/run-2026-09-08-02-33.md
+./triage/run-2026-09-04-23-04.md
+./triage/run-2026-09-04-21-00.md
+./triage/run-2026-09-04-15-05.md
+./triage/run-2026-09-10-09-49.md
+./triage/run-2026-09-06-20-17.md
+./triage/run-2026-09-08-12-16.md
+./triage/run-2026-09-07-03-29.md
+./triage/run-2026-09-11-22-38.md
+./triage/run-2026-09-07-21-51.md
+./triage/run-2026-09-07-08-37.md
+[0m
+[0m$ [0mcat state_bigpickle.json analyst-out.txt && echo "---LEADS---" && ls -la leads/ && echo "---KNOWLEDGE---" && ls -la knowledge/ && echo "---RECON---" && ls -la recon-notes/
+{"phase": "POC", "target": "api"}[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && find . -maxdepth 2 -type f | head -50
+total 380
+drwxr-xr-x 12 runner runner   4096 Sep 12 00:19 .
+drwxr-xr-x  3 runner runner   4096 Sep 12 00:19 ..
+drwxr-xr-x  7 runner runner   4096 Sep 12 00:19 .git
+drwxr-xr-x  3 runner runner   4096 Sep 12 00:19 .github
+-rw-r--r--  1 runner runner   1883 Sep 12 00:19 README.md
+-rw-r--r--  1 runner runner     32 Sep 12 00:19 analyst-out.txt
+-rw-r--r--  1 runner runner 138090 Sep 12 00:19 analyst-prompt.txt
+-rw-r--r--  1 runner runner 134180 Sep 12 00:19 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 leads
+-rw-r--r--  1 runner runner  27994 Sep 12 00:19 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 reports
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 12 00:19 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 scripts
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 12 00:19 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 triage
+./.git/opencode
+./.git/index
+./.git/HEAD
+./.git/config
+./.git/config.worktree
+./.git/FETCH_HEAD
+./.git/shallow
+./.git/description
+./analyst-out.txt
+./state_nemotron3.json
+./triage/run-2026-09-03-11-41.md
+./triage/run-2026-09-07-23-53.md
+./triage/run-2026-09-10-20-00.md
+./triage/run-2026-09-05-18-21.md
+./triage/run-2026-09-11-00-32.md
+./triage/run-2026-09-11-09-46.md
+./triage/run-2026-09-09-13-52.md
+./triage/run-2026-09-06-15-56.md
+./triage/run-2026-09-10-05-12.md
+./triage/run-2026-09-03-15-37.md
+./triage/run-2026-09-09-04-53.md
+./triage/run-2026-09-09-09-21.md
+./triage/run-2026-09-05-01-01.md
+./triage/run-2026-09-09-19-59.md
+./triage/run-2026-09-07-14-28.md
+./triage/run-2026-09-05-05-48.md
+./triage/run-2026-09-09-22-24.md
+./triage/run-2026-09-11-13-59.md
+./triage/run-2026-09-05-20-41.md
+./triage/run-2026-09-05-16-10.md
+./triage/run-2026-09-04-01-20.md
+./triage/run-2026-09-04-18-27.md
+./triage/run-2026-09-05-22-34.md
+./triage/run-2026-09-10-00-33.md
+./triage/run-2026-09-06-00-11.md
+./triage/run-2026-09-03-23-30.md
+./triage/.gitkeep
+./triage/run-2026-09-06-09-06.md
+./triage/run-2026-09-06-12-54.md
+./triage/run-2026-09-08-02-33.md
+./triage/run-2026-09-04-23-04.md
+./triage/run-2026-09-04-21-00.md
+./triage/run-2026-09-04-15-05.md
+./triage/run-2026-09-10-09-49.md
+./triage/run-2026-09-06-20-17.md
+./triage/run-2026-09-08-12-16.md
+./triage/run-2026-09-07-03-29.md
+./triage/run-2026-09-11-22-38.md
+./triage/run-2026-09-07-21-51.md
+./triage/run-2026-09-07-08-37.md
+[0m
+---LEADS---
+total 1064
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 .
+drwxr-xr-x 12 runner runner   4096 Sep 12 00:19 ..
+-rw-r--r--  1 runner runner 452209 Sep 12 00:19 lead-bigpickle.md
+-rw-r--r--  1 runner runner   3264 Sep 12 00:19 lead-laguna.md
+-rw-r--r--  1 runner runner   3200 Sep 12 00:19 lead-ling3.md
+-rw-r--r--  1 runner runner   3328 Sep 12 00:19 lead-longcat.md
+-rw-r--r--  1 runner runner     18 Sep 12 00:19 lead-mimo.md
+-rw-r--r--  1 runner runner 600355 Sep 12 00:19 lead-nemotron3.md
+-rw-r--r--  1 runner runner   6672 Sep 12 00:19 reposcan-alfaview.md
+---KNOWLEDGE---
+total 76
+drwxr-xr-x  2 runner runner  4096 Sep 12 00:19 .
+drwxr-xr-x 12 runner runner  4096 Sep 12 00:19 ..
+-rw-r--r--  1 runner runner 68379 Sep 12 00:19 index.md
+---RECON---
+total 192
+drwxr-xr-x  2 runner runner   4096 Sep 12 00:19 .
+drwxr-xr-x 12 runner runner   4096 Sep 12 00:19 ..
+-rw-r--r--  1 runner runner   4789 Sep 12 00:19 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Sep 12 00:19 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Sep 12 00:19 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Sep 12 00:19 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Sep 12 00:19 alfaview-openapi.yaml
+[0m
+[0m$ [0mcd /tmp/opencode
+probe() {
+  url="$1"
+  echo "=== $url"
+  curl -sS -m 15 -o /tmp/opencode/body.out -w "HTTP %{http_code} | len=%{size_download} | type=%{content_type}\n" "$url" 2>&1
+  head -c 300 /tmp/opencode/body.out | tr -d '\n' ; echo
+}
+sleep 1.2; probe "https://apis.alfaview.com/v2/docs/openapi.json"
+sleep 1.2; probe "https://sso.alfaview.com/.well-known/openid-configuration"
+sleep 1.2; probe "https://apis.alfaview.com/v2/users/me"
+=== https://apis.alfaview.com/v2/docs/openapi.json
+HTTP 200 | len=127532 | type=application/openapi+json
+{"components":{"schemas":{"APICredentials":{"additionalProperties":false,"properties":{"clientId":{"description":"The alias of the API key.","type":"string"},"companyId":{"description":"The company ID.","type":"string"},"key":{"description":"The API key to authenticate.","type":"string"}},"required"
+=== https://sso.alfaview.com/.well-known/openid-configuration
+HTTP 200 | len=2112 | type=application/json; charset=UTF-8
+{  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",  "backchannel_logout_supported" : false,  "claims_supported" : [    "applicationId",    "at_hash",    "aud",    "authenticationType",    "birthdate",    "c_hash",    "email",    "email_verified",    "exp",    "fa
+=== https://apis.alfaview.com/v2/users/me
+HTTP 401 | len=107 | type=application/problem+json
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+[0m
+[0m$ [0mcd /tmp/opencode
+curl -sS -m 15 -o openapi.json "https://apis.alfaview.com/v2/docs/openapi.json"
+md5sum openapi.json
+curl -sS -m 15 -o oidc.json "https://sso.alfaview.com/.well-known/openid-configuration"
+python3 -c "import json;d=json.load(open('oidc.json'));print('issuer:',d.get('issuer'));print('id_token_signing:',d.get('id_token_signing_alg_values_supported'));print('token_auth:',d.get('token_endpoint_auth_methods_supported'));print('registration_endpoint:',d.get('registration_endpoint'));print('grant_types:',d.get('grant_types_supported'))"
+sleep 1.2
+curl -sS -m 15 -o /dev/null -w "authorize: HTTP %{http_code} len=%{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=does-not-exist-12345"
+sleep 1.2
+curl -sS -m 15 -o /dev/null -w "graphql GET: HTTP %{http_code} len=%{size_download}\n" "https://app.alfaview.com/graphql"
+sleep 1.2
+curl -sS -m 15 -o /dev/null -w "client-diagnostics-ingest: HTTP %{http_code} len=%{size_download}\n" "https://client-diagnostics-ingest.alfaview.com/"
+sleep 1.2
+curl -sS -m 15 -o /dev/null -w "client-diagnostics-ingest /health: HTTP %{http_code} len=%{size_download}\n" "https://client-diagnostics-ingest.alfaview.com/health"
+sleep 1.2
+curl -sS -m 15 -o /dev/null -w "design-assets: HTTP %{http_code} len=%{size_download}\n" "https://design-assets.alfaview.com/"
+sleep 1.2
+curl -sS -m 15 -o /dev/null -w "alfaview-com-assets: HTTP %{http_code} len=%{size_download}\n" "https://alfaview-com-assets.alfaview.com/"
+357b94d367909a40b9299b543d23712b  openapi.json
+issuer: acme.com
+id_token_signing: ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+token_auth: ['client_secret_basic', 'client_secret_post', 'none']
+registration_endpoint: None
+grant_types: ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+authorize: HTTP 200 len=6189
+graphql GET: HTTP 400 len=406
+client-diagnostics-ingest: HTTP 404 len=39
+client-diagnostics-ingest /health: HTTP 200 len=16
+design-assets: HTTP 404 len=146
+alfaview-com-assets: HTTP 403 len=263
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "== / =="; curl -sS -m 15 "https://client-diagnostics-ingest.alfaview.com/"; echo
+sleep 1.2
+echo "== /health =="; curl -sS -m 15 -i "https://client-diagnostics-ingest.alfaview.com/health"; echo
+sleep 1.2
+echo "== OPTIONS / =="; curl -sS -m 15 -X OPTIONS -i "https://client-diagnostics-ingest.alfaview.com/"
+sleep 1.2
+echo "== HEAD /health =="; curl -sS -m 15 -I "https://client-diagnostics-ingest.alfaview.com/health"
+== / ==
+{"status":"error","error":"not found"}
+
+== /health ==
+HTTP/2 200 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: ae24c2e81db13d28
+date: Sat, 12 Sep 2026 00:20:20 GMT
+content-length: 16
+server: edge-proxy
+
+{"status":"ok"}
+
+== OPTIONS / ==
+HTTP/2 404 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 138ed273a255415f
+date: Sat, 12 Sep 2026 00:20:22 GMT
+content-length: 39
+server: edge-proxy
+vary: Accept-Encoding
+
+{"status":"error","error":"not found"}
+== HEAD /health ==
+HTTP/2 405 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 1c4742d596d6ae52
+date: Sat, 12 Sep 2026 00:20:23 GMT
+content-length: 48
+server: edge-proxy
+vary: Accept-Encoding
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import json
+d=json.load(open('openapi.json'))
+print("securitySchemes:", json.dumps(d.get('components',{}).get('securitySchemes',{}), indent=1)[:600])
+print("global security:", json.dumps(d.get('security',{}))[:200])
+print("server:", d.get('servers'))
+paths=d.get('paths',{})
+print("paths:", len(paths))
+for p in sorted(paths):
+    methods=list(paths[p].keys())
+    print(p, methods)
+EOF
+securitySchemes: {}
+global security: {}
+server: [{'url': 'https://apis.alfaview.com'}]
+paths: 37
+/v2/auth/api-key ['post']
+/v2/auth/group-link ['post']
+/v2/auth/guest-link ['post']
+/v2/auth/password ['post']
+/v2/auth/token-info ['get']
+/v2/group-links ['get']
+/v2/group-links/{id} ['get', 'patch']
+/v2/guest-links ['get']
+/v2/guest-links/{id} ['get', 'patch']
+/v2/languages ['get']
+/v2/meetings ['get', 'post']
+/v2/meetings/{id} ['get', 'patch']
+/v2/meetings/{id}/cancellation ['post']
+/v2/permission-groups ['get']
+/v2/room-types ['get']
+/v2/rooms ['get', 'post']
+/v2/rooms/{id} ['delete', 'get', 'patch']
+/v2/rooms/{id}/participants ['get']
+/v2/rooms/{roomId}/attendances ['get']
+/v2/rooms/{roomId}/features ['delete', 'get', 'patch']
+/v2/rooms/{roomId}/file-share-limits ['get']
+/v2/rooms/{roomId}/file-share-settings ['get', 'patch']
+/v2/rooms/{roomId}/group-links ['get', 'post']
+/v2/rooms/{roomId}/group-links/{id} ['delete']
+/v2/rooms/{roomId}/guest-links ['get', 'post']
+/v2/rooms/{roomId}/guest-links/{id} ['delete']
+/v2/rooms/{roomId}/language-settings ['get', 'patch']
+/v2/rooms/{roomId}/passcode ['get', 'post']
+/v2/rooms/{roomId}/permissions ['get', 'post']
+/v2/rooms/{roomId}/permissions/{userId} ['delete', 'patch']
+/v2/rooms/{roomId}/subrooms ['get', 'post']
+/v2/rooms/{roomId}/subrooms/{subroomId} ['delete', 'patch']
+/v2/stats ['get']
+/v2/users ['get', 'patch']
+/v2/users/invitation ['post']
+/v2/users/me ['get']
+/v2/users/{id} ['delete']
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import json
+d=json.load(open('openapi.json'))
+paths=d['paths']
+for target in ['/v2/auth/api-key','/v2/auth/token-info','/v2/auth/password','/v2/users/invitation','/v2/group-links','/v2/guest-links']:
+    print("=====", target)
+    print(json.dumps(paths[target], indent=1)[:1200])
+EOF
+===== /v2/auth/api-key
+{
+ "post": {
+  "description": "Authenticates via an API key and returns an access token. Refer to the [related support article](https://support.alfaview.com/en/developers/request-your-api-credentials/) to generate API keys.",
+  "operationId": "AuthenticateAPIKey",
+  "requestBody": {
+   "content": {
+    "application/json": {
+     "schema": {
+      "$ref": "#/components/schemas/APICredentials"
+     }
+    }
+   },
+   "description": "The API credentials.",
+   "required": true
+  },
+  "responses": {
+   "200": {
+    "content": {
+     "application/json": {
+      "schema": {
+       "$ref": "#/components/schemas/AccessToken"
+      }
+     }
+    },
+    "description": "The request was processed successfully."
+   },
+   "400": {
+    "description": "The request was not valid."
+   },
+   "401": {
+    "description": "The authentication did not succeed because of invalid credentials."
+   },
+   "403": {
+    "description": "The authentication did not succeed because of the account's status or permissions (e.g., account is inactive)."
+   },
+   "422": {
+    "description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."
+  
+===== /v2/auth/token-info
+{
+ "get": {
+  "description": "Retrieves details about the access token provided in the Authorization header.",
+  "operationId": "GetTokenInfo",
+  "parameters": [
+   {
+    "description": "A valid access token (can be obtained by authenticating).",
+    "in": "header",
+    "name": "Authorization",
+    "schema": {
+     "description": "A valid access token (can be obtained by authenticating).",
+     "type": "string"
+    }
+   }
+  ],
+  "responses": {
+   "200": {
+    "content": {
+     "application/json": {
+      "schema": {
+       "$ref": "#/components/schemas/TokenInfo"
+      }
+     }
+    },
+    "description": "The request was processed successfully."
+   },
+   "422": {
+    "description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."
+   }
+  },
+  "summary": "Get Access Token Information",
+  "tags": [
+   "Authentication"
+  ],
+  "x-sort-index": 14
+ }
+}
+===== /v2/auth/password
+{
+ "post": {
+  "description": "Authenticates a user via username and password and returns an access token.",
+  "operationId": "AuthenticatePassword",
+  "requestBody": {
+   "content": {
+    "application/json": {
+     "schema": {
+      "$ref": "#/components/schemas/PasswordCredentials"
+     }
+    }
+   },
+   "description": "The user credentials.",
+   "required": true
+  },
+  "responses": {
+   "200": {
+    "content": {
+     "application/json": {
+      "schema": {
+       "$ref": "#/components/schemas/AccessToken"
+      }
+     }
+    },
+    "description": "The request was processed successfully."
+   },
+   "400": {
+    "description": "The request was not valid."
+   },
+   "401": {
+    "description": "The authentication did not succeed because of invalid credentials."
+   },
+   "403": {
+    "description": "The authentication did not succeed because of the account's status or permissions (e.g., account is inactive)."
+   },
+   "422": {
+    "description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."
+   }
+  },
+  "summary": "Authenticate via Password",
+  "tags": [
+   "Authentication"
+  ],
+  "x-sort-index": 1
+ }
+===== /v2/users/invitation
+{
+ "post": {
+  "description": "Invites a user to the company of the requester.",
+  "operationId": "InviteUser",
+  "parameters": [
+   {
+    "description": "A valid access token (can be obtained by authenticating).",
+    "in": "header",
+    "name": "Authorization",
+    "schema": {
+     "description": "A valid access token (can be obtained by authenticating).",
+     "type": "string"
+    }
+   }
+  ],
+  "requestBody": {
+   "content": {
+    "application/json": {
+     "schema": {
+      "$ref": "#/components/schemas/UserInvitation"
+     }
+    }
+   },
+   "description": "The user to invite.",
+   "required": true
+  },
+  "responses": {
+   "202": {
+    "description": "The invitation request was successful. Note that the user might not be available immediately after the response was sent. This can take up to a few minutes."
+   },
+   "400": {
+    "description": "The request was not valid."
+   },
+   "401": {
+    "description": "The 'Authorization' header did not contain a valid API token."
+   },
+   "403": {
+    "description": "The requesting user does not have the necessary permissions."
+   },
+   "422": {
+    "description": "An entity in the request cannot be processed. Either a validation (e.g. ID
+===== /v2/group-links
+{
+ "get": {
+  "description": "Lists group links.",
+  "operationId": "ListGroupLinks",
+  "parameters": [
+   {
+    "description": "A valid access token (can be obtained by authenticating).",
+    "in": "header",
+    "name": "Authorization",
+    "schema": {
+     "description": "A valid access token (can be obtained by authenticating).",
+     "type": "string"
+    }
+   },
+   {
+    "description": "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request.",
+    "explode": false,
+    "in": "query",
+    "name": "pageToken",
+    "schema": {
+     "description": "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request.",
+     "type": "string"
+    }
+   },
+   {
+    "description": "For pagination: Limit the number of returned group links.",
+    "explode": false,
+    "in": "query",
+    "name": "limit",
+    "schema": {
+     "default": 100,
+     "description": "For pagination: Limit the number of returned group links.",
+     "format": "int32",
+     "maximum": 500,
+     "minimum": 0,
+     "type": "integer"
+    }
+   }
+  ],
+  "responses": {
+   "200": {
+    "content": {
+     "appli
+===== /v2/guest-links
+{
+ "get": {
+  "description": "Lists guest links.",
+  "operationId": "ListGuestLinks",
+  "parameters": [
+   {
+    "description": "A valid access token (can be obtained by authenticating).",
+    "in": "header",
+    "name": "Authorization",
+    "schema": {
+     "description": "A valid access token (can be obtained by authenticating).",
+     "type": "string"
+    }
+   },
+   {
+    "description": "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request.",
+    "explode": false,
+    "in": "query",
+    "name": "pageToken",
+    "schema": {
+     "description": "For pagination: Pass the nextPageToken from the last successful request to obtain the next page. Omit on first request.",
+     "type": "string"
+    }
+   },
+   {
+    "description": "For pagination: Limit the number of returned guest links.",
+    "explode": false,
+    "in": "query",
+    "name": "limit",
+    "schema": {
+     "default": 100,
+     "description": "For pagination: Limit the number of returned guest links.",
+     "format": "int32",
+     "maximum": 500,
+     "minimum": 0,
+     "type": "integer"
+    }
+   }
+  ],
+  "responses": {
+   "200": {
+    "content": {
+     "appli
+[0m
+[0m$ [0mcd /tmp/opencode
+probe2() {
+  url="$1"
+  echo "=== $url"
+  curl -sS -m 15 -w "\nHTTP %{http_code} | len=%{size_download}\n" "$url" | tr -d '\n' | head -c 400; echo
+}
+sleep 1.2; probe2 "https://apis.alfaview.com/v2/auth/token-info"
+sleep 1.2; probe2 "https://apis.alfaview.com/v2/auth/token-info?token=does-not-exist"
+sleep 1.2; probe2 "https://apis.alfaview.com/v2/group-links"
+sleep 1.2; probe2 "https://apis.alfaview.com/v2/languages"
+=== https://apis.alfaview.com/v2/auth/token-info
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}HTTP 422 | len=85
+=== https://apis.alfaview.com/v2/auth/token-info?token=does-not-exist
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}HTTP 422 | len=85
+=== https://apis.alfaview.com/v2/group-links
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}HTTP 401 | len=107
+=== https://apis.alfaview.com/v2/languages
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}HTTP 401 | len=107
+[0m
+[0m$ [0mcd /tmp/opencode
+b64() { python3 -c "import base64,sys;print(base64.b64encode(sys.argv[1].encode()).decode())" "$1"; }
+T1=$(b64 'abc')
+T2=$(b64 '{"companyId":"00000000-0000-0000-0000-000000000000","userId":"00000000-0000-0000-0000-000000000000","exp":9999999999}')
+T3=$(base64 <<< '{"sub":"x"}')
+for T in "$T1" "$T2" "$T3"; do
+  curl -sS -m 15 -w " | HTTP %{http_code}\n" -H "Authorization: $T" "https://apis.alfaview.com/v2/users/me"
+  sleep 1.2
+done
+{"title":"Unauthorized","status":401,"detail":"An invalid access token was provided in the Authorization header."}
+ | HTTP 401
+{"title":"Unauthorized","status":401,"detail":"An invalid access token was provided in the Authorization header."}
+ | HTTP 401
+{"title":"Unauthorized","status":401,"detail":"An invalid access token was provided in the Authorization header."}
+ | HTTP 401
+[0m
+## STEP 1 — DELTA
+
+- [NEW] client-diagnostics-ingest.alfaview.com probed beyond inventory's `404`: live strict-routed JSON service — `GET /health` → 200 `{"status":"ok"}` (no-store, x-request-id, `edge-proxy`), `GET /` and `OPTIONS /` → 404 `{"status":"error","error":"not found"}`, `HEAD /health` → 405. Ingest route is POST-only, not observable read-only.
+- [CHANGED] apis.alfaview.com/v2/auth/token-info: `GET` without any `Authorization` → 422 `{"detail":"invalid access token format"}` (route parses token at app-layer, bypassing the gateway's uniform 401 gate seen on /v2/users/me, /v2/group-links, /v2/languages). Fabricated base64 tokens later rejected 401 on users/me — deviation yields nothing without a real token.
+- [NO_DELTA] OpenAPI MD5 357b94d367909a40b9299b543d23712b (37 paths) stable; `/v2/users/me`=401; `/v2/group-links`=401; OIDC (issuer=acme.com, ES/HS/RS512 algs, RSA-only JWKS, no registration_endpoint); authorize=200/6189B; graphql GET=400. All byte-stable Nth consecutive cycle. All 3 standing chains remain HUMAN-gated.
+
+## STEP 2 — PRIORITIZE
+
+- [PRIO] apis.alfaview.com/v2, 7.0 (attack 8, value 9, tech 8, gate 3, cloud 3, fresh 8) — UUID IDOR surface, spec-stable; account-gated.
+- [PRIO] sso.alfaview.com/oauth2/introspect, 6.9 (attack 6, value 8, tech 9, gate 7, cloud 2, fresh 8) — RFC7662 client-auth removed on both channels; real-token confirmation pending.
+- [PRIO] app.alfaview.com/graphql, 6.9 (attack 7, value 8, tech 9, gate 6, cloud 2, fresh 7) — anonymous-reachable guest mutations, accessKey-less divergence.
+- [PRIO] client-diagnostics-ingest.alfaview.com, 4.6 (attack 3, value 5, tech 5, gate 4, cloud 3, fresh 9) — fresh host, but anonymous surface = /health only; POST route requires desktop HAR.
+
+## STEP 3 — HYPOTHESES
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public and byte-identical prod/beta Nth cycle (MD5 357b94d3, 37 paths). Token-authed UUID params on DELETE /v2/users/{id}, GET/POST /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; this-cycle GET sweep confirms uniform 401 gate (group-links, languages, users/me). Opaque company-scoped bearer; cross-tenant authz still unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password {username,password} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] RFC7662 introspection accepts fabricated client_id on both channels (real-token confirmation pending)
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 85
+reasoning: POST-body fabricated client_id → 200 `{"active":false}`; HTTP Basic b64(fake:fake) → 200; residual gate only Basic-vs-body mismatch (401). Discovery advertises client_secret_basic/post + grant_types includes client_credentials (runtime not_licensed). No valid FusionAuth token ever tested against it.
+evidence_needed: real access token introspected with fabricated client_id → 200 `{"active":true, sub, scope, exp}`.
+verify_steps: (post-signup or OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control POST /oauth2/introspect -d "token=<real>"; repeat via Basic b64(fake:fake). Capture active/sub/scope/exp.
+impact: holder of any observed/leaked token confirms validity and extracts subject/scopes/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate NULL-uuids → BAD_USER_INPUT (non-Strict processing); GuestAuthenticateReply exposes user+accessToken+role, GuestJoinReply only expiry. REST /v2/auth/guest-link requires accessKey+companyId+roomId (displayName NOT required); GraphQL guest signature has NO accessKey — structural divergence persists.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) yields a session token where REST rejects the same triple sans accessKey.
+verify_steps: (post-signup) create own room+guest link → `mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}}` (no accessKey) vs POST /v2/auth/guest-link same {companyId,roomId} → 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+
+- [PARKED] client-diagnostics-ingest.alfaview.com POST route: anonymous surface is /health-only; ingest route discoverable only from desktop-app HAR (out of passive/read-only reach). Folded into THIS-cycle NEXT as human step, not a standalone hypothesis.
+- [FINAL] introspect (85, AUTH_HELPED) → IDOR (80, HUMAN_ONLY) → guest-authz (60, HUMAN_ONLY). None dropped below 40; all three require a tenant + token, unchanged.
+
+## STEP 5 — NEXT ACTION
+
+- [NEXT] HUMAN: Execute the standing signup plan — unauthenticated GraphQL `Signup`(planId "free-business") → email activation at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password → opaque bearer. Then in ONE session: (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE users/{id}), (b) guestAuthenticate on own real triple sans accessKey vs REST 3-field guest-link, (c) introspect any yielded token with fabricated client_id on both channels, (d) launch desktop app and record which path client-diagnostics-ingest POSTs to (ingest route discovery — POST may be unauthenticated). Passive read-only cycles are exhausted; no GET/HEAD/OPTIONS probe can move any chain.
+
+## STEP 6 — LEARNING
+
+- [LEARN] ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: strict-routed JSON health service — GET /health=200 `{"status":"ok"}` (no-store, x-request-id, edge-proxy); GET / + OPTIONS / =404 `{"status":"error","error":"not found"}`; HEAD=405. Anonymous ingest surface nil; PO신 route POST-only.
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com/v2/auth/token-info: GET without Authorization → 422 `invalid access token format` (app-layer parse, gateway 401 gate not applied on this route) — token-info gating deviates from /v2/users/me; benign without a token.
+- [LEARN] REJECTED AUTH @ apis.alfaview.com: crafted opaque access tokens (plain, JSON-shaped base64) → uniform 401 `An invalid access token was provided` on /v2/users/me — token validation is signature/DB-backed, fabricated-token bypass closed.
+- [LEARN] NO_DELTA @ API surface: OpenAPI MD5 357b94d3 (37 paths), users/me=401, group-links=401, token-info=422, OIDC issuer=acme.com + ES/HS/RS algs RSA-only JWKS, authorize=200/6189B, graphql GET=400 — all byte-stable.
+
+## STEP 7 — RISK
+
+- [RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable further consecutive cycles; new host (client-diagnostics-ingest) adds no anonymous exposure; token-info route deviation yields no data. The three standing chains (IDOR 80, introspect 85, guest-authz 60) remain gated behind tenant signup + token possession. Score cannot move without a human clearing the signup/account gate or supplying an observed token.
