@@ -1,9 +1,4 @@
-## 2026-09-12 19:49:50 UTC [target] (model nemotron3)
-[CHANGED] sso.alfaview.com/oauth2/jwks: Now returns 404 FusionAuth error page (was accessible with 7 RSA keys) — JWKS endpoint broken/removed
-[CHANGED] test.alfaview.com: alfacheck release bumped v470079→v483102 confirmed on index page (4 platforms); still no sha256/signatures
-[CHANGED] sso.alfaview.com/.well-known/openid-configuration: id_token_signing_alg_values_supported lists ES256/384/512 + HS256/384/512 + RS256/384/512; JWKS now 404 — alg confusion surface expanded in metadata but no keys published
-[CHANGED] sso.alfaview.com/oauth2/introspect: Both POST-body and HTTP Basic auth accept ANY client_id (fabricated) → 200 {"active":false}; only residual check is Basic-vs-body client_id_mismatch (401) — client authentication fully unenforced on RFC7662
-[NEW] client-diagnostics-ingest.alfaview.com/health: 200 {"status":"ok"} with strict CSP (default-src 'none', frame-ancestors 'none'), all other GET paths 39B JSON 404 — minimal POST-only ingest confirmed
+## 2026-09-12 21:46:36 UTC [target] (model nemotron3)
 [PRIO] sso.alfaview.com/oauth2/introspect,9.10,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
 [PRIO] sso.alfaview.com/oauth2/authorize,8.55,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
 [PRIO] app.alfaview.com/graphql,8.20,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9

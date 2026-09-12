@@ -525,3 +525,5 @@ www.alfaview.com
 - CHANGED sso.alfaview.com/.well-known/openid-configuration: id_token_signing_alg_values_supported lists ES256/384/512 + HS256/384/512 + RS256/384/512; JWKS now 404 — alg confusion surface expanded in metadata 
 - CHANGED sso.alfaview.com/oauth2/introspect: Both POST-body and HTTP Basic auth accept ANY client_id (fabricated) → 200 {"active":false}; only residual check is Basic-vs-body client_id_mismatch (401) — client 
 - NEW client-diagnostics-ingest.alfaview.com/health: 200 {"status":"ok"} with strict CSP (default-src 'none', frame-ancestors 'none'), all other GET paths 39B JSON 404 — minimal POST-only ingest confirmed
+
+## 2026-09-12 21:47:15 UTC
