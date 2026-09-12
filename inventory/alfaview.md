@@ -504,3 +504,10 @@ www.alfaview.com
 - CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest 
 - CHANGED apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) — `displayName` NOT required (prior 4-field claim incorrect)
 - CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero genuinely-unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)
+
+## 2026-09-12 15:58:13 UTC
+- CHANGED sso.alfaview.com/oauth2/jwks: Now returns 404 FusionAuth error page (was accessible with 7 RSA keys) — JWKS endpoint broken/removed
+- CHANGED test.alfaview.com: alfacheck release bumped v470079→v483102 confirmed on index page (4 platforms); still no sha256/signatures
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: id_token_signing_alg_values_supported lists ES256/384/512 + HS256/384/512 + RS256/384/512; JWKS now 404 — alg confusion surface expanded in metadata 
+- CHANGED sso.alfaview.com/oauth2/introspect: Both POST-body and HTTP Basic auth accept ANY client_id (fabricated) → 200 {"active":false}; only residual check is Basic-vs-body client_id_mismatch (401) — client 
+- NEW client-diagnostics-ingest.alfaview.com/health: 200 {"status":"ok"} with strict CSP (default-src 'none', frame-ancestors 'none'), all other GET paths 39B JSON 404 — minimal POST-only ingest confirmed

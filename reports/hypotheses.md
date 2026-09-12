@@ -1539,3 +1539,20 @@
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
 - LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` with strict headers (CSP default-src 'none', frame-ancestors 'none'
 - LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har
+
+## RANKED HYPOTHESES 2026-09-12 15:58:13 UTC
+- [90] sso.alfaview.com/oauth2/introspect: Unauthenticated token introspection bypassing RFC7662 client authentication (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-nemotron3.txt): HUMAN: In ONE session execute the standing signup chain — unauthenticated GraphQL `Signup`(planId "free-business") → email-gated `finishSignup` at /finish-signu
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery lists ES256/384/512 among `id_token_signing_alg_values_supported`; JWKS now returns 404 (zero keys publish
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_ur
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) — `displayName` NOT required
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+- LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` with strict headers (CSP default-src 'none', frame-ancestors 'none'
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har

@@ -3427,3 +3427,4 @@ evidence_needed: guestAuthenticate with a real room triple (no accessKey) return
 verify_steps: (post-signup own tenant) create room+guest link → POST /graphql {"query":"mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}}"} sans accessKey vs POST /v2/auth/guest-link {companyId,roomId} minus accessKey → compare 200+token vs 401/422.
 impact: bypass of accessKey-gated room entry, cross-room guest impersonation; MEDIUM-HIGH.
 testability: HUMAN_ONLY
+## 2026-09-12 15:47:01 UTC [target] (model bigpickle)

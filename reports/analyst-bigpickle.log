@@ -18112,3 +18112,8 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] alfaview gmbh: 55 (unchanged) — 55-host fleet 100% probed with zero unprobed hosts; three cred-plausible authz/auth gaps (RFC7662 client-auth bypass, UUID cross-tenant IDOR candidates, accessKey-less GraphQL guest) persist but every confirmation is HUMAN-gated on account/token acquisition; passive surface stable across consecutive cycles with no new exploitable exposure; supply-chain note (alfacheck v483102 unsigned) continues but is LOW.
+===== ANALYST bigpickle 2026-09-12 15:58:13 UTC =====
+[0m
+> build · big-pickle
+[0m
+[91m[1mError: [0mError from provider (Console): Upstream request failed: [invalid_request_error] Unrecognized request argument supplied: prompt_cache_key
