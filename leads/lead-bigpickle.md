@@ -3399,3 +3399,31 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
 [LEARN] NO_DELTA @ afces-core: OpenAPI MD5 357b94d3 (37 paths), users/me=401, users/{uuid}=405 Allow:DELETE, authorize=200/6189B, OIDC (introspection_endpoint absent) all byte-identical — surface stable; three standing chains remain HUMAN-gated.
 [RISK] alfaview gmbh: 55 — entire 55-host fleet fully enumerated with zero unprobed hosts; three cred-plausible authz/auth gaps (RFC7662 client-auth bypass, IDOR candidates, accessKey-less GraphQL guest) persist but every confirmation is HUMAN-gated on account/token acquisition; shipping cadence active (alfacheck v483102) yet release integrity unverified; probe-budget now fully allocated to passive stability checks with no new exploitable exposure this cycle.
+## 2026-09-12 12:29:20 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspect client-auth bypass — real-token confirmation pending
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 85
+reasoning: POST-body fabricated client_id and HTTP Basic b64(fake:fake) both return 200 {"active":false} (validation removed); only residual gate is body-vs-Basic client_id_mismatch (401); endpoint live but absent from OIDC discovery; token_endpoint_auth_methods_supported advertises client_secret_basic; no valid FusionAuth token ever tested on either channel.
+evidence_needed: a real FusionAuth access token introspected with fabricated client_id → 200 {"active":true, sub, scope, exp} on POST-body or Basic channel.
+verify_steps: (post-signup/token in hand) control POST /oauth2/introspect -d token=<real> → expect 400/401 baseline; then -d token=<real>&client_id=fake; then Basic b64(fake:fake) + token=<real> body; diff active/sub/scope/exp across the three.
+impact: holder of any leaked/observed token validates it and extracts subject/scopes/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession.
+testability: AUTH_HELPED
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2 (DELETE /v2/users/{id}, GET /v2/rooms/{roomId}/passcode, PATCH /v2/rooms/{roomId}/permissions/{userId})
+confidence: 80
+reasoning: OpenAPI public, prod=beta byte-identical 37 paths; token-authed UUID path params on destructive/PII ops; users/{uuid} returns 405 Allow:DELETE unauth (route exists); opaque company-scoped bearer; cross-tenant ownership checks never verified because no account/two-tenant setup exists.
+evidence_needed: tenant-A bearer returns 200/204 on a tenant-B userId/roomId where 403 is the correct cross-tenant response.
+verify_steps: (post-signup) POST /v2/auth/password {username,password} → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, room passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] GraphQL guest path lacks accessKey vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 60
+reasoning: guestAuthenticate/guestJoin anonymous-reachable (zero-UUID args → BAD_USER_INPUT; UUID-format args → FORBIDDEN — mutation processes real IDs past GraphQL type validation); GuestAuthenticateReply exposes user+accessToken+role fields; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID without valid combo; displayName NOT required).
+evidence_needed: guestAuthenticate with a real room triple (no accessKey) returns 200 + accessToken where REST guest-link rejects the identical triple sans accessKey.
+verify_steps: (post-signup own tenant) create room+guest link → POST /graphql {"query":"mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}}"} sans accessKey vs POST /v2/auth/guest-link {companyId,roomId} minus accessKey → compare 200+token vs 401/422.
+impact: bypass of accessKey-gated room entry, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY

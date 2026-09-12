@@ -493,3 +493,14 @@ www.alfaview.com
 - NEW sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); HTTP Basic auth also accepts any client_i
 - NEW sso.alfaview.com OIDC discovery: `id_token_signing_alg_values_supported` now lists ES256/384/512 alongside RSA+HS; JWKS unchanged (7 RS256 keys, zero symmetric/ECDSA) — alg confusion surface expanded 
 - NEW sso.alfaview.com/oauth2/authorize: Returns HTTP 200 FusionAuth login page (~6173B) for unregistered client_id — validation timing shifted again (was 400); redirect_uri matrix still client_id-gated but
+
+## 2026-09-12 12:31:51 UTC
+- NEW sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); HTTP Basic auth also accepts any client_i
+- NEW sso.alfaview.com OIDC discovery: `id_token_signing_alg_values_supported` now lists ES256/384/512 alongside RSA+HS; JWKS unchanged (7 RS256 keys, zero symmetric/ECDSA) — alg confusion surface expanded 
+- NEW sso.alfaview.com/oauth2/authorize: Returns HTTP 200 FusionAuth login page (~6173B) for unregistered client_id — validation timing shifted again (was 400); redirect_uri matrix still client_id-gated but
+- NEW client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B
+- NEW test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
+- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d367909a40b9299b543d23712b) — 5th+ consecutive stable cycle
+- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest 
+- CHANGED apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) — `displayName` NOT required (prior 4-field claim incorrect)
+- CHANGED Inventory 100% probed: all 55 dedicated hosts have HTTP verdict; zero genuinely-unprobed hosts remain (beta-ionoscloud-21 fleet fully timeout)
