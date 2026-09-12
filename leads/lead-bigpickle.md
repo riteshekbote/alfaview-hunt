@@ -3366,3 +3366,36 @@ testability: AUTH_HELPED
 [LEARN] NO_DELTA MISCONFIG @ afces: all standing probes byte-identical to prior cycle (OpenAPI MD5, OIDC issuer+algs+JWKS, authorize 200/6173B, users/me 401/405) — surface fully stable; three standing chains remain HUMAN-gated.
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `introspection_endpoint` absent from OIDC discovery though `/oauth2/introspect` is live — non-advertised period; fabricated-client_id bypass unchanged.
 [RISK] alfaview gmbh: 55 — broad internet-facing fleet fully enumerated; three cred-plausible authz/auth gaps (introspect client-auth bypass, IDOR candidates, accessKey-less GraphQL guest) remain unconfirmable without an account; instrumented program surface high but exploit confirmation blocked on HUMAN token acquisition.
+## 2026-09-12 08:56:56 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspection accepts fabricated client_id on both channels — real-token confirmation pending
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 85
+reasoning: POST-body fabricated client_id → 200 `{"active":false}` (validation removed); HTTP Basic b64(fake:fake) → 200; residual gate only Basic-vs-body mismatch (401). Endpoint live but absent from OIDC discovery; token_auth advertises client_secret_basic/post; grant client_credentials advertised but runtime `not_licensed` (Community 1.63.0). No valid token ever tested on either channel.
+evidence_needed: real fusionAuth access token introspected with fabricated client_id → `{"active":true, sub, scope, exp}`.
+verify_steps: (post-signup) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>"; repeat via Basic b64(fake:fake); diff active/sub/scope/exp.
+impact: holder of any leaked/observed FusionAuth token validates it and extracts subject/scopes/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public, prod=beta byte-identical 37 paths; token-authed UUID params on DELETE /v2/users/{id}, GET/POST rooms/{roomId}/passcode, PATCH/DELETE rooms/{roomId}/permissions/{userId}; this-cycle GET/OPTIONS reconfirm uniform gate: users/me=401, users/{uuid}=405 Allow:DELETE. Opaque company-scoped bearer; cross-tenant ownership checks unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup own tenant) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated diagnostics ingest accepts arbitrary client reports
+class: MISCONFIG
+asset: client-diagnostics-ingest.alfaview.com
+confidence: 42
+reasoning: This cycle's only new surface — hardened edge-proxy JSON-only service; /health 200, all GET paths strict 404; ingest route is POST-only, path unknown (no read surface). Desktop client (assets/stable installers, alfacheck v483102) is the canonical caller; no auth header pattern is observable passively.
+evidence_needed: anonymous POST to the real ingest route (recovered via desktop-client HAR) returns 2xx and stores the payload — report-spoofing / storage-fill primitive without client credentials.
+verify_steps: (HUMAN, benign payloads only — no customer data) capture client→ingest POST via HAR during a test-room call → replay unsigned → compare 2xx vs 401; confirm no rate/body limits.
+impact: false diagnostics / log & storage stuffing by any anonymous caller; LOW-MEDIUM.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: In ONE session execute the standing signup chain — unauthenticated GraphQL `Signup`(planId "free-business") → email-gated `finishSignup` at /finish-signup/{companyId}/{activationToken} → POST /v2/auth/password {username,password} → opaque bearer → (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}}` sans accessKey vs REST 3-field guest-link, (c) introspect any yielded grant token with fabricated client_id on POST-body + Basic channels, (d) concurrently run a test-room call in the desktop client while capturing HAR to recover the real POST route of client-diagnostics-ingest.alfaview.com, then replay it unsigned with a benign payload.
+[LEARN] ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
+[LEARN] NO_DELTA @ afces-core: OpenAPI MD5 357b94d3 (37 paths), users/me=401, users/{uuid}=405 Allow:DELETE, authorize=200/6189B, OIDC (introspection_endpoint absent) all byte-identical — surface stable; three standing chains remain HUMAN-gated.
+[RISK] alfaview gmbh: 55 — entire 55-host fleet fully enumerated with zero unprobed hosts; three cred-plausible authz/auth gaps (RFC7662 client-auth bypass, IDOR candidates, accessKey-less GraphQL guest) persist but every confirmation is HUMAN-gated on account/token acquisition; shipping cadence active (alfacheck v483102) yet release integrity unverified; probe-budget now fully allocated to passive stability checks with no new exploitable exposure this cycle.

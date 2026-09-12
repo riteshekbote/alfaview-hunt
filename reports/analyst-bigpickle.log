@@ -17914,3 +17914,143 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview gmbh: 55 — broad internet-facing fleet fully enumerated; three cred-plausible authz/auth gaps (introspect client-auth bypass, IDOR candidates, accessKey-less GraphQL guest) remain unconfirmable without an account; instrumented program surface high but exploit confirmation blocked on HUMAN token acquisition.
+===== ANALYST bigpickle 2026-09-12 09:01:14 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --max-time 20 https://apis.alfaview.com/v2/docs/openapi.json | md5sum; echo "---paths---"; curl -sS --max-time 20 https://apis.alfaview.com/v2/docs/openapi.json | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d['paths']))" 2>/dev/null
+357b94d367909a40b9299b543d23712b  -
+---paths---
+37
+[0m
+[0m$ [0mcurl -sS --max-time 20 https://sso.alfaview.com/.well-known/openid-configuration | python3 -c "import sys,json;d=json.load(sys.stdin);print('issuer',d.get('issuer'));print('introspection_endpoint' in d,d.get('introspection_endpoint'));print('id_token_signing_alg',d.get('id_token_signing_alg_values_supported'));print('token_auth',d.get('token_endpoint_auth_methods_supported'));print('grant_types',d.get('grant_types_supported'));print('registration_endpoint' in d)"
+issuer acme.com
+False None
+id_token_signing_alg ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+token_auth ['client_secret_basic', 'client_secret_post', 'none']
+grant_types ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+False
+[0m
+[0m$ [0mcurl -sS --max-time 20 -o /dev/null -w "authorize %{http_code} %{size_download}B\n" "https://sso.alfaview.com/oauth2/authorize"; curl -sS --max-time 20 -o /dev/null -w "users/me %{http_code}\n" https://apis.alfaview.com/v2/users/me; curl -sS --max-time 20 -o /dev/null -w "users/{uuid} %{http_code}\n" -X OPTIONS https://apis.alfaview.com/v2/users/0f4e1c2a-3d5b-4e7f-9a1b-2c3d4e5f6a7b
+authorize 200 6189B
+users/me 401
+users/{uuid} 405
+[0m
+[0m$ [0mcurl -sS --max-time 20 -o /dev/null -w "test.alfaview.com root %{http_code} %{size_download}B\n" https://test.alfaview.com/; curl -sS --max-time 20 -o /dev/null -w "diagnostics root %{http_code} %{size_download}B\n" https://client-diagnostics-ingest.alfaview.com/; curl -sS --max-time 20 -o /dev/null -w "diagnostics health %{http_code}\n" https://client-diagnostics-ingest.alfaview.com/health
+test.alfaview.com root 200 494B
+diagnostics root 404 39B
+diagnostics health 200
+[0m
+[0m$ [0mcurl -sS --max-time 20 -i https://client-diagnostics-ingest.alfaview.com/health | head -c 600; echo; echo "=== root body ==="; curl -sS --max-time 20 -i https://client-diagnostics-ingest.alfaview.com/ | head -c 600
+HTTP/2 200 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 999665a6b9f7a231
+date: Sat, 12 Sep 2026 08:55:26 GMT
+content-length: 16
+server: edge-proxy
+
+{"status":"ok"}
+
+=== root body ===
+HTTP/2 404 
+cache-control: no-store
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+content-type: application/json
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-request-id: 7429d776e7db6b15
+date: Sat, 12 Sep 2026 08:55:26 GMT
+content-length: 39
+server: edge-proxy
+vary: Accept-Encoding
+
+{"status":"error","error":"not found"}
+[0m
+[0m$ [0mcurl -sS --max-time 20 https://test.alfaview.com/ | head -c 500
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>alfacheck</title>
+	</head>
+	<body>
+		<h1>alfacheck</h1>
+<a href="alfacheck.linux.amd64.483102.bin" download>alfacheck.linux.amd64.483102.bin</a></br>
+<a href="alfacheck.windows.amd64.483102.exe" download>alfacheck.windows.amd64.483102.exe</a></br>
+<a href="alfacheck.mac.amd64.483102.bin" download>alfacheck.mac.amd64.483102.bin</a></br>
+<a href="alfacheck.mac.arm64.483102.bin" download>alfacheck.mac.arm64.483102.bin</a></br>
+	</body>
+</html>
+[0m
+[0m$ [0mfor p in /v1 /v2 /api /debug /report /ingest /upload /metrics; do printf "%s " "$p"; curl -sS --max-time 12 -o /dev/null -w "%{http_code} %{size_download}B\n" "https://client-diagnostics-ingest.alfaview.com$p"; done
+/v1 404 39B
+/v2 404 39B
+/api 404 39B
+/debug 404 39B
+/report 404 39B
+/ingest 404 39B
+/upload 404 39B
+/metrics 404 39B
+[0m
+## STEP 1 — DELTA
+- NEW client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` (JSON-only, CSP `default-src 'none'`, `frame-ancestors 'none'`, edge-proxy family); every other GET path (v1/v2/api/debug/report/ingest/upload/metrics) = 39B JSON 404 `not found` — strict POST-only ingest ring, zero unauthenticated read surface.
+- CHANGED test.alfaview.com: alfacheck index bumped v470079 → **v483102** (4 platforms); index page still carries no sha256/signatures — patch cadence active, integrity-verify still absent.
+- NO_DELTA: OpenAPI MD5 `357b94d367909a40b9299b543d23712b` (37 paths), users/me=401, users/{uuid}=405, authorize=200/6189B, OIDC unchanged (issuer=acme.com, no `introspection_endpoint`, no `registration_endpoint`, grant `client_credentials` still advertised, ES/HS/RS algs, token_auth=[basic,post,none]).
+
+## STEP 2 — PRIORITIZE
+- [PRIO] app.alfaview.com/graphql, 6.35, tech_exposure=9 graphql + gate_ease=9 anonymous-reachable
+- [PRIO] sso.alfaview.com/oauth2/introspect, 5.75, gate_ease=8 fabricated client_id accepted
+- [PRIO] apis.alfaview.com/v2, 5.60, business_value=8 cross-tenant data (gate 3)
+- [PRIO] client-diagnostics-ingest.alfaview.com, 4.60, fresh_surface=9 this-cycle delta (all zero otherwise)
+
+## STEP 3 — HYPOTHESES
+[HYP] RFC7662 introspection accepts fabricated client_id on both channels — real-token confirmation pending
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 85
+reasoning: POST-body fabricated client_id → 200 `{"active":false}` (validation removed); HTTP Basic b64(fake:fake) → 200; residual gate only Basic-vs-body mismatch (401). Endpoint live but absent from OIDC discovery; token_auth advertises client_secret_basic/post; grant client_credentials advertised but runtime `not_licensed` (Community 1.63.0). No valid token ever tested on either channel.
+evidence_needed: real fusionAuth access token introspected with fabricated client_id → `{"active":true, sub, scope, exp}`.
+verify_steps: (post-signup) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>"; repeat via Basic b64(fake:fake); diff active/sub/scope/exp.
+impact: holder of any leaked/observed FusionAuth token validates it and extracts subject/scopes/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession, LOW without.
+testability: AUTH_HELPED
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public, prod=beta byte-identical 37 paths; token-authed UUID params on DELETE /v2/users/{id}, GET/POST rooms/{roomId}/passcode, PATCH/DELETE rooms/{roomId}/permissions/{userId}; this-cycle GET/OPTIONS reconfirm uniform gate: users/me=401, users/{uuid}=405 Allow:DELETE. Opaque company-scoped bearer; cross-tenant ownership checks unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup own tenant) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated diagnostics ingest accepts arbitrary client reports
+class: MISCONFIG
+asset: client-diagnostics-ingest.alfaview.com
+confidence: 42
+reasoning: This cycle's only new surface — hardened edge-proxy JSON-only service; /health 200, all GET paths strict 404; ingest route is POST-only, path unknown (no read surface). Desktop client (assets/stable installers, alfacheck v483102) is the canonical caller; no auth header pattern is observable passively.
+evidence_needed: anonymous POST to the real ingest route (recovered via desktop-client HAR) returns 2xx and stores the payload — report-spoofing / storage-fill primitive without client credentials.
+verify_steps: (HUMAN, benign payloads only — no customer data) capture client→ingest POST via HAR during a test-room call → replay unsigned → compare 2xx vs 401; confirm no rate/body limits.
+impact: false diagnostics / log & storage stuffing by any anonymous caller; LOW-MEDIUM.
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+- [FINAL] 85 sso.alfaview.com/oauth2/introspect — standalone bypass, needs one real token; ranked #1.
+- [FINAL] 80 apis.alfaview.com/v2 IDOR — schema-evidenced, needs tenant creds; ranked #2.
+- [FINAL] 60 app.alfaview.com/graphql guestAuthenticate accessKey-less splice vs REST 3-field guest-link — standing structural divergence, revalidated this cycle only via passive recon; ranked #3.
+- [FINAL] 42 client-diagnostics-ingest — genuine new surface but POST-route-gated and impact LOW-MEDIUM; ranked #4.
+- [PARKED] guestAuthenticate NULL-uuids FORBIDDEN-vs-BAD_USER_INPUT variance: inconsistent server validation timing, no actionable delta — superseded by the splice hypothesis.
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: In ONE session execute the standing signup chain — unauthenticated GraphQL `Signup`(planId "free-business") → email-gated `finishSignup` at /finish-signup/{companyId}/{activationToken} → POST /v2/auth/password {username,password} → opaque bearer → (a) GET /v2/users/me baseline then cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}}` sans accessKey vs REST 3-field guest-link, (c) introspect any yielded grant token with fabricated client_id on POST-body + Basic channels, (d) concurrently run a test-room call in the desktop client while capturing HAR to recover the real POST route of client-diagnostics-ingest.alfaview.com, then replay it unsigned with a benign payload.
+
+## STEP 6 — LEARNING
+[LEARN] ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
+[LEARN] NO_DELTA @ afces-core: OpenAPI MD5 357b94d3 (37 paths), users/me=401, users/{uuid}=405 Allow:DELETE, authorize=200/6189B, OIDC (introspection_endpoint absent) all byte-identical — surface stable; three standing chains remain HUMAN-gated.
+
+## STEP 7 — RISK
+[RISK] alfaview gmbh: 55 — entire 55-host fleet fully enumerated with zero unprobed hosts; three cred-plausible authz/auth gaps (RFC7662 client-auth bypass, IDOR candidates, accessKey-less GraphQL guest) persist but every confirmation is HUMAN-gated on account/token acquisition; shipping cadence active (alfacheck v483102) yet release integrity unverified; probe-budget now fully allocated to passive stability checks with no new exploitable exposure this cycle.

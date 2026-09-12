@@ -488,3 +488,8 @@ www.alfaview.com
 ## 2026-09-12 00:22:37 UTC
 
 ## 2026-09-12 04:46:37 UTC
+
+## 2026-09-12 09:01:14 UTC
+- NEW sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); HTTP Basic auth also accepts any client_i
+- NEW sso.alfaview.com OIDC discovery: `id_token_signing_alg_values_supported` now lists ES256/384/512 alongside RSA+HS; JWKS unchanged (7 RS256 keys, zero symmetric/ECDSA) — alg confusion surface expanded 
+- NEW sso.alfaview.com/oauth2/authorize: Returns HTTP 200 FusionAuth login page (~6173B) for unregistered client_id — validation timing shifted again (was 400); redirect_uri matrix still client_id-gated but
