@@ -362,3 +362,8 @@
 - 2026-09-12 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
 - 2026-09-12 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated test target. Needs account.
 - 2026-09-12 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
+- 2026-09-12 NO_DELTA MISCONFIG @ afces: all standing probes byte-identical to prior cycle (OpenAPI MD5, OIDC issuer+algs+JWKS, authorize 200/6173B, users/me 401/405) — surface fully stable; three standing chains remain HUMAN-gated.
+- 2026-09-12 ACCEPTED MISCONFIG @ sso.alfaview.com: `introspection_endpoint` absent from OIDC discovery though `/oauth2/introspect` is live — non-advertised period; fabricated-client_id bypass unchanged.
+- 2026-09-12 ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery lists ES256/384/512 among `id_token_signing_alg_values_supported`; JWKS remains RSA-only (7 RS256 keys, zero symmetric/ECDSA) — alg-confusion surface unchanged in practice
+- 2026-09-12 ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_uri matrix still client_id-gated but behavior unstable
+- 2026-09-12 ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) — `displayName` NOT required

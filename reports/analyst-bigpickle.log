@@ -17787,3 +17787,130 @@ testability: HUMAN_ONLY
 ## STEP 7 — RISK
 
 - [RISK] alfaview: 50/100 — unchanged. All probed surfaces byte-stable further consecutive cycles; new host (client-diagnostics-ingest) adds no anonymous exposure; token-info route deviation yields no data. The three standing chains (IDOR 80, introspect 85, guest-authz 60) remain gated behind tenant signup + token possession. Score cannot move without a human clearing the signup/account gate or supplying an observed token.
+===== ANALYST bigpickle 2026-09-12 04:46:37 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/openid-configuration | tr ',' '\n' | grep -E '"issuer"|id_token_signing_alg_values_supported|token_endpoint_auth_methods_supported|"registration_endpoint"|grant_types_supported' | head -20; echo "---"; curl -s -o /dev/null -w "authorize GET=%{http_code} size=%{size_download}\n" --max-time 10 "https://sso.alfaview.com/oauth2/authorize?client_id=does-not-exist-12345&response_type=code&redirect_uri=https://evil.example/cb"; echo "---"; curl -s -o /dev/null -w "api/status GET=%{http_code}\n" --max-time 10 https://sso.alfaview.com/api/status
+"grant_types_supported" : [
+  "id_token_signing_alg_values_supported" : [
+  "issuer" : "acme.com"
+  "token_endpoint_auth_methods_supported" : [
+---
+authorize GET=200 size=6173
+---
+api/status GET=200
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "graphql GET=%{http_code}\n" --max-time 10 https://app.alfaview.com/graphql; echo "---"; curl -s --max-time 10 -X POST https://apis.alfaview.com/v2/auth/password -H 'Content-Type: application/json' -d '{"username":"x","password":"y"}'; echo; echo "---"; curl -s --max-time 10 -X POST https://apis.alfaview.com/v2/auth/guest-link -H 'Content-Type: application/json' -d '{"clientGuid":"00000000-0000-0000-0000-000000000000","companyId":"00000000-0000-0000-0000-000000000000","roomId":"00000000-0000-0000-0000-000000000000","accessKey":"x"}' -w "\nguest-link POST=%{http_code}\n"
+graphql GET=400
+---
+{"title":"Unauthorized","status":401,"detail":"AUTHENTICATION_ERROR: invalid credentials"}
+
+---
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"unexpected property","location":"body.clientGuid"}]}
+
+guest-link POST=422
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "openapi_md5_check_start\n"; curl -s https://apis.alfaview.com/v2/docs/openapi.json 2>/dev/null | md5sum; echo "---"; for p in /v2/users/me /v2/languages; do curl -s -o /dev/null -w "apis$p GET=%{http_code}\n" --max-time 10 "https://apis.alfaview.com$p"; done; echo "---"; curl -s -o /dev/null -w "posAUTH /v2/users/me POST=%{http_code}\n" --max-time 10 -X POST https://apis.alfaview.com/v2/users/me
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+357b94d367909a40b9299b543d23712b  -
+---
+apis/v2/users/me GET=401
+apis/v2/languages GET=401
+---
+posAUTH /v2/users/me POST=405
+[0m
+[0m$ [0mcurl -s --max-time 10 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/oidc.json; python3 -c "
+import json
+d=json.load(open('/tmp/oidc.json'))
+print('issuer:',d.get('issuer'))
+print('id_token_signing_alg:',d.get('id_token_signing_alg_values_supported'))
+print('token_auth:',d.get('token_endpoint_auth_methods_supported'))
+print('grant_types:',d.get('grant_types_supported'))
+print('reg_endpoint:',d.get('registration_endpoint'))
+print('introspect:',d.get('introspection_endpoint'))
+print('device:',d.get('device_authorization_endpoint'))
+"; echo "---"; curl -s --max-time 10 "https://sso.alfaview.com/oauth2/oidc/jwks" | python3 -c "import json,sys; d=json.load(sys.stdin); print('jwks keys:',len(d.get('keys',[])), 'kids:', [k.get('alg') for k in d.get('keys',[])])"
+issuer: acme.com
+id_token_signing_alg: ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+token_auth: ['client_secret_basic', 'client_secret_post', 'none']
+grant_types: ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+reg_endpoint: None
+introspect: None
+device: https://sso.alfaview.com/oauth2/device_authorize
+---
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.12/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
+[0m
+[0m$ [0mpython3 -c "import json; d=json.load(open('/tmp/oidc.json')); print('jwks_uri:',d.get('jwks_uri'))"; J=$(python3 -c "import json; d=json.load(open('/tmp/oidc.json')); print(d.get('jwks_uri'))"); curl -s --max-time 10 "$J" -o /tmp/jwks.json -w "jwks GET=%{http_code}\n"; python3 -c "import json; d=json.load(open('/tmp/jwks.json')); print('keys:',len(d.get('keys',[])), [k.get('kty')+':'+k.get('alg') for k in d.get('keys',[])])" 2>/dev/null || echo "jwks parse fail"
+jwks_uri: https://sso.alfaview.com/.well-known/jwks.json
+jwks GET=200
+keys: 7 ['RSA:RS256', 'RSA:RS256', 'RSA:RS256', 'RSA:RS256', 'RSA:RS256', 'RSA:RS256', 'RSA:RS256']
+[0m
+STEP 1 — DELTA
+- NO_DELTA: apis OpenAPI MD5 `357b94d3…` unchanged (37 paths); users/me GET=401 POST=405; languages=401.
+- NO_DELTA: OIDC discovery identical — issuer=acme.com, id_token algs [ES,HS,RS]-256/384/512, token_auth [basic,post,none], grants incl. client_credentials+device_code, no registration_endpoint; JWKS still 7×RSA/RS256 (zero symmetric/ECDSA).
+- NO_DELTA: authorize GET=200/6173B login page (prior band 6160–6189); api/status=200.
+- NO_DELTA: auth/password POST=401 invalid credentials; guest-link POST=422 (strict schema, `clientGuid` unexpected property).
+- [LEARN] NEW-MINOR: introspection_endpoint is NOT advertised in OIDC discovery (live off-spec endpoint only) — reduces it to a non-advertised but reachable path; impact unchanged conditional on token possession.
+
+STEP 2 — PRIORITIZE
+- [PRIO] app.alfaview.com/graphql,6.9,a=7,b=8,t=9,g=8,c=0,f=6 (guestAuth splice, highest weighted)
+- [PRIO] apis.alfaview.com/v2,6.7,a=9,b=9,t=7,g=3,c=0,f=7 (IDOR, auth-gated)
+- [PRIO] sso.alfaview.com/oauth2/introspect,6.0,a=7,b=6,t=8,g=7,c=0,f=5 (fabricated client_id, AUTH_HELPED)
+
+STEP 3 — HYPOTHESES
+[HYP] Guest-authz splice: GraphQL guestAuthenticate lacks accessKey vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 60
+reasoning: guestAuthenticate/guestJoin anonymous-reachable (BAD_USER_INPUT with zero-UUIDs); GuestAuthenticateReply exposes user+accessToken+role; REST /v2/auth/guest-link validates 3 fields {accessKey,companyId,roomId} (422 ACTION_INVALID; displayName NOT required); GraphQL guest signature has NO accessKey — structural divergence persists across all cycles.
+evidence_needed: guestAuthenticate with a real room's guest triple (no accessKey) returns accessToken where POST /v2/auth/guest-link rejects the identical triple sans accessKey.
+verify_steps: (post-signup in own tenant) create room+guest link → POST /graphql {"query":"mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}}"} (no accessKey) vs POST /v2/auth/guest-link {accessKey,companyId,roomId} minus accessKey → compare 200+token vs 401/422.
+impact: bypass of accessKey-gated room entry, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2
+confidence: 80
+reasoning: OpenAPI public, byte-identical prod/beta MD5 357b94d3, 37 paths; token-authed UUID params on DELETE /v2/users/{id}, rooms/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}; GET sweep confirms uniform 401 gate; users/{uuid} Allow:DELETE 405 unauth. Opaque company-scoped bearer; cross-tenant authz unverified.
+evidence_needed: tenant-A bearer returns 200/204 on tenant-B userId/roomId where 403 expected.
+verify_steps: (post-signup) POST /v2/auth/password → bearer → GET /v2/users/me (200 baseline) → GET /v2/rooms/{victimRoomId}/passcode → PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} → DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] RFC7662 introspection accepts fabricated client_id on both channels (real-token confirmation pending)
+class: MISCONFIG
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 85
+reasoning: POST-body fabricated client_id → 200 {"active":false}; HTTP Basic b64(fake:fake) → 200; residual gate only Basic-vs-body client_id_mismatch (401); endpoint live but NOT advertised in discovery; discovery advertises client_secret_basic/post + grant_types client_credentials (runtime not_licensed); FusionAuth Community v1.63.0; no valid token ever tested.
+evidence_needed: real FusionAuth access token introspected with fabricated client_id → 200 {"active":true, sub, scope, exp} on either channel.
+verify_steps: (post-signup/OAuth HAR) POST /oauth2/introspect -d "token=<real>&client_id=fake" vs control -d "token=<real>" ; repeat via Basic b64(fake:fake); compare active/sub/scope/exp.
+impact: any observed/leaked token confirms validity and yields sub/scope/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession.
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] none — all three survivors cleared REJECTED-class and have concrete verify_steps; guest splice held at 60 (structural divergence only).
+- [FINAL] 1) introspect fabricated client_id (85), 2) cross-tenant IDOR (80), 3) guest-authz splice (60).
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Execute the standing signup chain in ONE session — unauthenticated GraphQL `Signup`(planId "free-business") → email-gated `finishSignup` at /finish-signup/{companyId}/{activationToken} → POST /v2/auth/password {username,password} → opaque bearer → then (a) GET /v2/users/me baseline → cross-tenant UUID probes (passcode → permissions → DELETE), (b) `mutation{guestAuthenticate(...){user accessToken role}}` sans accessKey vs REST 3-field guest-link, (c) introspect any yielded token with fabricated client_id on POST-body + Basic channels, (d) capture desktop client-diagnostics-ingest.alfaview.com POST path via HAR. Passive read-only cycles are exhausted — no further GET/HEAD/OPTIONS probe advances the program.
+
+STEP 6 — LEARNING
+[LEARN] NO_DELTA MISCONFIG @ afces: all standing probes byte-identical to prior cycle (OpenAPI MD5, OIDC issuer+algs+JWKS, authorize 200/6173B, users/me 401/405) — surface fully stable; three standing chains remain HUMAN-gated.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: `introspection_endpoint` absent from OIDC discovery though `/oauth2/introspect` is live — non-advertised period; fabricated-client_id bypass unchanged.
+
+STEP 7 — RISK
+[RISK] alfaview gmbh: 55 — broad internet-facing fleet fully enumerated; three cred-plausible authz/auth gaps (introspect client-auth bypass, IDOR candidates, accessKey-less GraphQL guest) remain unconfirmable without an account; instrumented program surface high but exploit confirmation blocked on HUMAN token acquisition.

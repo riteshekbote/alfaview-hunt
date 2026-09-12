@@ -1482,3 +1482,22 @@
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+
+## RANKED HYPOTHESES 2026-09-12 04:46:37 UTC
+- [85] sso.alfaview.com/oauth2/introspect: Unauthenticated token introspection bypassing RFC7662 client authentication (from art/lead_nemotron3.txt)
+- [60] app.alfaview.com/graphql: Guest-authz splice: GraphQL guestAuthenticate lacks accessKey vs REST 3-field guest-link (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Execute the standing signup chain in ONE session — unauthenticated GraphQL `Signup`(planId "free-business") → email-gated `finishSignup` at /finish-signu
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Obtain alfaview developer account (signup at `app.alfaview.com` via unauthenticated GraphQL `Signup` mutation from AppSignup.min.js → email activation at
+- LEARN: NO_DELTA MISCONFIG @ afces: all standing probes byte-identical to prior cycle (OpenAPI MD5, OIDC issuer+algs+JWKS, authorize 200/6173B, users/me 401/405) — surf
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: `introspection_endpoint` absent from OIDC discovery though `/oauth2/introspect` is live — non-advertised period; fabricat
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation removed — fabricated client_id → 200 `{"active":false}` (was 400 `inva
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery lists ES256/384/512 among `id_token_signing_alg_values_supported`; JWKS remains RSA-only (7 RS256 keys, ze
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_ur
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) — `displayName` NOT required
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`); no `accessKey` in
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompa
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetP
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
