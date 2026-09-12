@@ -18333,3 +18333,131 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview gmbh: 55 — full fleet enumerated (55/55 probed); three cred-plausible auth gaps stand (RFC7662 client-auth bypass with fabricated creds on both channels, cross-tenant IDOR candidates, accessKey-less GraphQL guest) but every confirmation is HUMAN-gated on account/token acquisition; JWKS confirmed live with active key rotation (corrects metadata scare, no new exploitable surface); release cadence (alfacheck v483102) still ships without integrity hashes; surface otherwise byte-stable this cycle.
+===== ANALYST bigpickle 2026-09-12 19:50:05 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mdate -u +"%Y-%m-%d %H:%M:%S UTC"; which curl md5sum; ls
+2026-09-12 19:46:22 UTC
+/usr/bin/curl
+/usr/bin/md5sum
+README.md
+analyst-out.txt
+analyst-prompt.txt
+ctx.txt
+inventory
+knowledge
+leads
+probe-results.md
+recon-notes
+reports
+reposcan-raw
+scope.yml
+scripts
+state_bigpickle.json
+state_laguna.json
+state_ling3.json
+state_longcat.json
+state_mimo.json
+state_nemotron3.json
+triage
+[0m
+[0m$ [0mcurl -s -m 15 https://apis.alfaview.com/v2/docs/openapi.json | md5sum; curl -s -m 15 -o /dev/null -w "users/me GET: %{http_code}\n" https://apis.alfaview.com/v2/users/me; curl -s -m 15 -o /dev/null -w "users/{uuid}: %{http_code}\n" -X GET https://apis.alfaview.com/v2/users/00000000-0000-0000-0000-000000000000
+357b94d367909a40b9299b543d23712b  -
+users/me GET: 401
+users/{uuid}: 405
+[0m
+[0m$ [0mcurl -s -m 15 https://sso.alfaview.com/.well-known/openid-configuration | md5sum; curl -s -m 15 -o /dev/null -w "jwks: %{http_code}\n" https://sso.alfaview.com/oauth2/jwks; curl -s -m 15 -o /dev/null -w "authorize: %{http_code} len=%{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=xxx&response_type=code&redirect_uri=https://evil.example/cb"
+5e1297736d3df716968724bd9c43b9ac  -
+jwks: 404
+authorize: 200 len=6156
+[0m
+[0m$ [0mcurl -s -m 15 https://test.alfaview.com/ | md5sum; curl -s -m 15 -o /dev/null -w "client-diag /health: %{http_code}\n" https://client-diagnostics-ingest.alfaview.com/health; curl -s -m 15 -o /dev/null -w "app.graphql GET: %{http_code}\n" https://app.alfaview.com/graphql; curl -s -m 15 -o /dev/null -w "app root: %{http_code}\n" https://app.alfaview.com/
+208218d0fd9f6c8a5099eb9a3a5d6ba7  -
+client-diag /health: 200
+app.graphql GET: 400
+app root: 200
+[0m
+[0m$ [0mcurl -s -m 15 https://sso.alfaview.com/oauth2/jwks | head -c 300; echo; curl -s -m 15 https://sso.alfaview.com/.well-known/openid-configuration | python3 -c "import json,sys; d=json.load(sys.stdin); print('issuer:',d.get('issuer')); print('introspection_endpoint:',d.get('introspection_endpoint')); print('id_token_algs:',d.get('id_token_signing_alg_values_supported')); print('token_auth:',d.get('token_endpoint_auth_methods_supported')); print('registration_endpoint:',d.get('registration_endpoint'))"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Error | FusionAuth</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="application-name" content="FusionAuth">
+  <meta na
+issuer: acme.com
+introspection_endpoint: None
+id_token_algs: ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+token_auth: ['client_secret_basic', 'client_secret_post', 'none']
+registration_endpoint: None
+[0m
+[0m$ [0mcurl -s -m 15 https://test.alfaview.com/ | grep -oiE 'v[0-9]{5,7}' | head -3; curl -s -m 15 -o /dev/null -w "introspect OPTIONS: %{http_code}\n" -X OPTIONS https://sso.alfaview.com/oauth2/introspect; curl -s -m 15 -o /dev/null -w "device_authorize: %{http_code}\n" -X GET https://sso.alfaview.com/oauth2/device_authorize
+introspect OPTIONS: 405
+device_authorize: 405
+[0m
+[0m$ [0mcurl -s -m 15 https://test.alfaview.com/ | grep -oiE 'alfacheck[^<]{0,80}|v[0-9]{4,9}|[0-9]{4,7}[a-z]?\.(zip|tar|gz)|windows|linux|darwin|macos' | sort -u | head -20
+alfacheck
+alfacheck.linux.amd64.483102.bin" download>alfacheck.linux.amd64.483102.bin
+alfacheck.mac.amd64.483102.bin" download>alfacheck.mac.amd64.483102.bin
+alfacheck.mac.arm64.483102.bin" download>alfacheck.mac.arm64.483102.bin
+alfacheck.windows.amd64.483102.exe" download>alfacheck.windows.amd64.483102.exe
+[0m
+STEP 1 — DELTA
+- NO_DELTA @ apis.alfaview.com: OpenAPI MD5 357b94d367909a40b9299b543d23712b (37 paths), /v2/users/me GET=401, /v2/users/{zero-uuid} GET=405 Allow:DELETE — schema + auth gate byte-stable, 6th consecutive cycle.
+- NO_DELTA @ sso.alfaview.com: OIDC stable (issuer=acme.com; introspection_endpoint ABSENT; id_token algs ES256/384/512+HS256/384/512+RS256/384/512; token_auth [client_secret_basic, client_secret_post, none]; no registration_endpoint); /oauth2/jwks STILL 404 FusionAuth Error page — prior same-model "key rotation live" claim not reproducible this cycle; /oauth2/authorize 200 len=6156 (was 6173/6189 — theme/CSRF drift only, status stable); /oauth2/introspect + /oauth2/device_authorize 405 on OPTIONS/GET (POST-only, consistent).
+- NO_DELTA @ test.alfaview.com: alfacheck still v483102 (4 platforms), no sha256/signatures visible.
+- NO_DELTA @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"}, strict CSP (default-src 'none'), other GET paths 39B JSON 404.
+- NO_DELTA @ app.alfaview.com: root 200, /graphql GET=400 (POST-only standing behavior).
+- NO_DELTA inventory: 55/55 hosts probed, zero unprobed.
+
+STEP 2 — PRIORITIZE
+- [PRIO] sso.alfaview.com/oauth2/introspect,7.2,atk6/biz8/tech-8(OAuth-RFC7662)/gate-10(noauth)/cloud2/fresh7
+- [PRIO] app.alfaview.com/graphql,6.9,atk7/biz8/tech-9(GraphQL)/gate-8(guest-reachable)/cloud2/fresh4
+- [PRIO] apis.alfaview.com/v2,6.05,atk8/biz9/tech-7(OpenAPI-UUID)/gate-1(auth)/cloud3/fresh3
+
+STEP 3 — HYPOTHESES
+[HYP] RFC7662 token introspection accepts fabricated client authentication on both channels
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST; OPTIONS 405)
+confidence: 85
+reasoning: OIDC discovery advertises token_endpoint_auth_methods_supported=[client_secret_basic, client_secret_post, none]; endpoint live but absent from discovery; prior cycles: POST-body fabricated client_id -> 200 {"active":false}, HTTP Basic b64(fake:fake) -> 200 {"active":false}, only residual gate body-vs-Basic mismatch 401; token param required (400 missing_token). No valid FusionAuth token ever submitted on either channel; this cycle 405 on GET/OPTIONS confirms POST-only routing.
+evidence_needed: real FusionAuth access token + fabricated client_id -> 200 {"active":true, sub, scope, exp} on POST-body or Basic channel (vs control without client_id).
+verify_steps: (human, token in hand) POST /oauth2/introspect -d "token=<real>" control -> -d "token=<real>&client_id=fake" -> -H "Authorization: Basic <b64(fake:fake)>" -d "token=<real>"; diff active/sub/scope/exp across three.
+impact: holder of any observed/leaked token validates and extracts subject/scopes/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET /v2/rooms/{roomId}/passcode, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, DELETE /v2/users/{id}
+confidence: 80
+reasoning: OpenAPI public prod=beta byte-identical (MD5 357b94d3, 37 paths); token-authed UUID path params on destructive/PII ops; /v2/users/{zero-uuid} GET=405 Allow:DELETE unauth confirms routes exist; opaque company-scoped bearer; cross-tenant ownership checks never verifiable passively (no account).
+evidence_needed: tenant-A bearer -> 200/204 on tenant-B userId/roomId where 403 is the correct cross-tenant response.
+verify_steps: (human, own tenant) POST /v2/auth/password {username,password} -> bearer -> GET /v2/users/me (200 baseline) -> GET /v2/rooms/{victimRoomId}/passcode -> PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId} -> DELETE /v2/users/{victimUserId}.
+impact: cross-tenant PII read, room passcode retrieval, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] GraphQL guest path accessKey-less vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 60
+reasoning: guestAuthenticate/guestJoin anonymous-reachable (zero-UUID -> BAD_USER_INPUT; UUID-format -> FORBIDDEN — processes real IDs past GraphQL type validation); reply-type exposes user/accessToken/role; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise; displayName NOT required).
+evidence_needed: guestAuthenticate with a real room triple (no accessKey) -> 200+accessToken where REST guest-link rejects the identical triple sans accessKey.
+verify_steps: (human, own tenant) create room+guest link -> POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey -> compare 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] JWT alg-confusion @ sso: JWKS=404 this cycle (zero published keys to confuse with); discovery-only HS/ES listing without a registered client secret is unexploitable. Demoted to supporting evidence.
+- [PARKED] authz redirect_uri matrix: remains client_id-gated (200 login page, validation timing unstable); blocked without a registered client_id.
+- [PARKED] client-diagnostics-ingest POST path: unknown schema, POST-only; outside passive GET/HEAD/OPTIONS rule; no read surface to confirm.
+- [FINAL] survivors: introspect OATH 85 > cross-tenant IDOR 80 > GraphQL guest AUTH 60.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: In ONE session execute the standing signup chain — unauth GraphQL Signup(planId:"free-business") -> email-gated finishSignup at /finish-signup/{companyId}/{activationToken} -> POST /v2/auth/password {username,password} -> opaque bearer -> (a) GET /v2/users/me baseline then cross-tenant UUID probes (rooms/{id}/passcode -> permissions/{userId} PATCH -> DELETE /users/{id}); (b) mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}} sans accessKey vs REST 3-field guest-link; (c) introspect the obtained FusionAuth token with fabricated client_id on POST-body and Basic channels (control without client_id).
+
+STEP 6 — LEARNING
+- [LEARN] NO_DELTA @ afces-core: OpenAPI MD5 357b94d3 (37 paths), users/me=401, users/{uuid}=405, OIDC (issuer=acme.com, introspection absent, ES/HS/RS algs, token_auth [basic,post,none]), authorize=200/6156B, jwks=404, alfacheck v483102, client-diag /health=200 — all byte-stable this cycle; three standing chains remain HUMAN-gated.
+- [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/jwks: 404 persists — prior same-model "key rotation live" claim not reproducible; with no keys published the alg-confusion surface is metadata-only (informational).
+
+STEP 7 — RISK
+- [RISK] alfaview gmbh: 55 — fleet 55/55 enumerated, surface byte-stable 6th+ cycle; three cred-plausible gaps stand (RFC7662 introspect client-auth bypass both channels, cross-tenant IDOR candidates, accessKey-less GraphQL guest) but every confirmation is HUMAN-gated on account/token; JWKS 404 removes live alg-confusion keys; alfacheck release integrity still unverified (v483102); no new exploitable exposure this cycle.
