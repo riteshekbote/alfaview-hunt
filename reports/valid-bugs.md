@@ -60,3 +60,12 @@
   - | 3 | GraphQL guest-authz gap | **HOLD** | Needs valid guest triple |
   - | 4 | OIDC issuer=acme.com drift | **VALID** | None — passively provable |
   - | 5 | JWT alg confusion | **HOLD** | Needs valid token for forge test |
+
+- 7 lead(s) marked VALID at 2026-09-13 04:55:02 UTC
+  - | Q4 Provable non-invasively? | NO — requires valid `companyId` + `roomId` seed to test rate limiting; brute-force rate-limit status unknown |
+  - | Q6 On rejected list? | NO — "Enforcement policies for brute force, rate limiting, or account lockout" is on the rejected list, but that's for *testing* brute force, not for *reporting* missing rate 
+  - | Q4 Provable non-invasively? | NO — requires valid `client_id` to test redirect_uri handling; OIDC discovery shows no `registration_endpoint` |
+  - | Q4 Provable non-invasively? | PARTIAL — mutation is reachable (BAD_USER_INPUT response confirms processing), field-oracle reveals `expiry` field, UUID args hit FORBIDDEN (authorization). But cannot 
+  - **Verdict: VALID (with caveat)**
+  - | 3 | OAuth redirect_uri Bypass | **HOLD** | Needs valid client_id |
+  - | 6 | GraphQL guestAuthenticate/guestJoin Missing accessKey | **VALID** | Report — concrete evidence, novel divergence from REST |
