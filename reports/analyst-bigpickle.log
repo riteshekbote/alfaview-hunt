@@ -18797,3 +18797,201 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview gmbh: 55 — 55/55 hosts probed, OpenAPI byte-stable (MD5 357b94d3), jwks 404 removes last metadata scare; RFC7662 fabricated-client-auth, cross-tenant IDOR matrix, and accessKey-less GraphQL guest still the three standing cred-plausible chains, all HIGH impact but HUMAN-gated on account/token acquisition; alfacheck v483102 still ships unsigned.
+===== ANALYST bigpickle 2026-09-13 06:47:39 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m✱ [0mGlob "**/*.md"[90m 89 matches[0m
+[0m
+[0m$ [0mcurl -sS -o /dev/null -w 'jwks %{http_code} %{size_download}\n' --max-time 12 https://sso.alfaview.com/oauth2/jwks ; sleep 1 ; curl -sS --max-time 12 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/opencode/oidc.json -w 'oidc %{http_code} %{size_download}\n' ; sleep 1 ; curl -sS --max-time 15 https://apis.alfaview.com/v2/docs/openapi.json -o /tmp/opencode/openapi.json -w 'openapi %{http_code} %{size_download}\n' ; sleep 1 ; curl -sS -o /dev/null -w 'users/me %{http_code} %{size_download}\n' --max-time 12 https://apis.alfaview.com/v2/users/me
+jwks 404 4955
+oidc 200 2112
+openapi 200 127532
+users/me 401 107
+[0m
+[0m$ [0mmd5sum /tmp/opencode/openapi.json ; echo '---OIDC grep---' ; grep -o '"issuer":"[^"]*"' /tmp/opencode/oidc.json ; grep -o '"id_token_signing_alg_values_supported":[^]]*]' /tmp/opencode/oidc.json ; grep -o '"introspection_endpoint":[^,]*' /tmp/opencode/oidc.json ; grep -o '"registration_endpoint":[^,]*' /tmp/opencode/oidc.json
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+---OIDC grep---
+[0m
+[0m→ [0mRead triage/run-2026-09-13-04-55.md
+[0m
+[0m$ [0mcat /tmp/opencode/oidc.json
+{
+  "authorization_endpoint" : "https://sso.alfaview.com/oauth2/authorize",
+  "backchannel_logout_supported" : false,
+  "claims_supported" : [
+    "applicationId",
+    "at_hash",
+    "aud",
+    "authenticationType",
+    "birthdate",
+    "c_hash",
+    "email",
+    "email_verified",
+    "exp",
+    "family_name",
+    "given_name",
+    "iat",
+    "iss",
+    "jti",
+    "middle_name",
+    "name",
+    "nbf",
+    "nonce",
+    "phone_number",
+    "phone_number_verified",
+    "picture",
+    "preferred_username",
+    "roles",
+    "sub"
+  ],
+  "device_authorization_endpoint" : "https://sso.alfaview.com/oauth2/device_authorize",
+  "dpop_signing_alg_values_supported" : [
+    "Ed448",
+    "Ed25519",
+    "ES256",
+    "ES384",
+    "ES512",
+    "PS256",
+    "PS384",
+    "PS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "end_session_endpoint" : "https://sso.alfaview.com/oauth2/logout",
+  "frontchannel_logout_supported" : true,
+  "grant_types_supported" : [
+    "authorization_code",
+    "password",
+    "implicit",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "client_credentials"
+  ],
+  "id_token_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "HS256",
+    "HS384",
+    "HS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ],
+  "issuer" : "acme.com",
+  "jwks_uri" : "https://sso.alfaview.com/.well-known/jwks.json",
+  "response_modes_supported" : [
+    "form_post",
+    "fragment",
+    "query"
+  ],
+  "response_types_supported" : [
+    "code",
+    "id_token",
+    "token id_token"
+  ],
+  "scopes_supported" : [
+    "openid",
+    "offline_access",
+    "email",
+    "phone",
+    "profile"
+  ],
+  "subject_types_supported" : [
+    "public"
+  ],
+  "token_endpoint" : "https://sso.alfaview.com/oauth2/token",
+  "token_endpoint_auth_methods_supported" : [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "userinfo_endpoint" : "https://sso.alfaview.com/oauth2/userinfo",
+  "userinfo_signing_alg_values_supported" : [
+    "ES256",
+    "ES384",
+    "ES512",
+    "RS256",
+    "RS384",
+    "RS512",
+    "HS256",
+    "HS384",
+    "HS512"
+  ]
+}
+[0m
+Discovery advertises `jwks_uri: /.well-known/jwks.json` — prior cycles probed `/oauth2/jwks` (now 404). Checking the actually-advertised path.
+[0m$ [0mcurl -sS -o /tmp/opencode/jwks.json -w 'jwks-wellknown %{http_code} %{size_download}\n' --max-time 12 https://sso.alfaview.com/.well-known/jwks.json ; sleep 1 ; curl -sS -o /tmp/opencode/jwks2.json -w 'jwks-oauth2 %{http_code} %{size_download}\n' --max-time 12 https://sso.alfaview.com/oauth2/jwks.json
+jwks-wellknown 200 16257
+jwks-oauth2 404 4955
+[0m
+[0m$ [0mgrep -o '"kty":"[A-Z]*"' /tmp/opencode/jwks.json | sort | uniq -c ; echo 'count:' ; grep -o '"kid"' /tmp/opencode/jwks.json | wc -l ; grep -o '"alg":"[A-Z0-9]*"' /tmp/opencode/jwks.json | sort | uniq -c ; echo '--- n/alg sample ---' ; head -c 400 /tmp/opencode/jwks.json
+count:
+7
+--- n/alg sample ---
+{
+  "keys" : [
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "kty" : "RSA",
+      "n" : "qT_xytJqFqGysh3-OWpKQAwzzeTwXg8TJs3qI7A0yhe-xkBue5vsyyfT47MIGkVIY9R3kbhY7ysjjv8FV6bbvDk1NyND66QlraPeyJtDoNF6AdBr5d6Zy4zU21aSubgW-OXTf-M-bwqYCpjVn8xU0F0BfXsQeNgO4k3nKG7FME-BKREsyE-5PZRkVpZ7TzFWDhXJ4Vm1Oxut0Vh4OvJdTrX_yji71BSlm65pryVWZ0XSnf12opRFNgMNcDHdDjnRF
+[0m
+STEP 1 — DELTA
+- [CHANGED] sso.alfaview.com: "JWKS endpoint broken/removed" (2026-09-13, `/oauth2/jwks` → 404) is a path artifact — OIDC discovery advertises `jwks_uri=/.well-known/jwks.json` and that path serves 200/16KB with **7 RS256 keys**; `/oauth2/jwks` (404) and `/oauth2/jwks.json` (404) were the wrong paths.
+- NO_DELTA: OpenAPI prod/beta MD5 `357b94d367909a40b9299b543d23712b` (200), `GET /v2/users/me`=401, OIDC `issuer=acme.com` + `id_token_signing_alg_values_supported=[ES256/384/512, HS256/384/512, RS256/384/512]` unchanged, no `registration_endpoint`, `introspection_endpoint` absent, `token_endpoint_auth_methods_supported=[client_secret_basic, client_secret_post, none]`.
+
+STEP 2 — PRIORITIZE
+- [PRIO] sso.alfaview.com/oauth2/introspect — 6.75 — OAuth token validation, unauthenticated reachable, fabricated-client-auth confirmed on both channels
+  (a=6 b=8 t=9 g=7 c=1 f=6 → 1.5+2.0+1.35+1.05+0.10+0.60)
+- [PRIO] app.alfaview.com/graphql (guestAuthenticate/guestJoin) — 6.25 — GraphQL guest path w/o accessKey, anonymous-reachable oracles
+  (a=5 b=8 t=9 g=7 c=1 f=5)
+- [PRIO] apis.alfaview.com/v2 (UUID path-param IDOR matrix) — 6.05 — PII/room/permission/user-delete ops, token-gated
+  (a=7 b=9 t=6 g=3 c=2 f=5)
+
+STEP 3 — HYPOTHESES
+[HYP] RFC7662 introspection accepts fabricated client auth on both channels
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 90
+reasoning: this cycle re-verified discovery (token auth methods include client_secret_basic/post/none, introspection_endpoint still non-advertised). Prior cycles: POST-body fabricated client_id → 200 {"active":false}; HTTP Basic b64(fake:fake) → 200; only residual gate is body-vs-Basic mismatch (401); token param required (400 missing_token); no valid token ever submitted. Corrected JWKS finding shows /.well-known/jwks.json serves 7 RS256 keys → server key-based validation IS intact, so a real active:true introspection result would be meaningful (subject/scope/exp extraction), and runtime sees no client_secret check.
+evidence_needed: real FusionAuth access token + fabricated client_id → 200 {"active":true, sub, scope, exp} on POST-body or Basic channel vs control without client_id.
+verify_steps: (human, token in hand) POST /oauth2/introspect -d "token=<real>" control → -d "token=<real>&client_id=fake" → -H "Authorization: Basic <b64(fake:fake)>" -d "token=<real>"; diff active/sub/scope/exp across the three; then feed same raw token to GET /v2/auth/token-info (apis) to confirm cross-platform acceptance.
+impact: token-leak holder validates + extracts subject/scopes/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET /v2/rooms/{roomId}/passcode, /v2/rooms/{roomId}/participants, /v2/rooms/{roomId}/attendances, /v2/stats, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, DELETE /v2/users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical MD5 357b94d3 (37 paths, stable this cycle); every PII/business op is token-authed with UUID path params; /v2/users/me=401 unauth and /v2/users/{uuid}=405 Allow:DELETE reconfirm routes live; opaque company-scoped bearer; ownership checks never verifiable passively.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct (passcode, participants, attendances, stats, permissions PATCH, user DELETE).
+verify_steps: (human, own two tenants) POST /v2/auth/password {username,password} → GET /v2/users/me (200 baseline) → repeat across tenant-B IDs: /rooms/{id}/passcode → /participants → /rooms/{id}/attendances → /stats?from&to&stepDurationHours=1 → PATCH permissions → DELETE /users/{id}.
+impact: cross-tenant PII read, room passcode, attendance dump, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] GraphQL guest path accessKey-less vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 60
+reasoning: guestAuthenticate/guestJoin anonymous-reachable (zero-UUID → BAD_USER_INPUT; UUID-format → FORBIDDEN, i.e., real IDs processed past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise, displayName optional). Cross-checked by triage run-2026-09-13-04-55 (Lead 6 verdict VALID for reporting).
+evidence_needed: guestAuthenticate with real room triple (no accessKey) → 200+accessToken where REST guest-link rejects identical triple sans accessKey.
+verify_steps: (human, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey → compare 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] FusionAuth OIDC alg-confusion/issuer misconfig: corrected JWKS is RSA-only while metadata advertises HS/ES/RS — no published symmetric/ECDSA key, no RP trust model known, no exploitation path; demote to supporting evidence.
+- [FINAL] introspect fabricated-client-auth (90) > cross-tenant IDOR matrix (80) > GraphQL accessKey-less guest (60). No hypotheses dropped below 40; all three remain HUMAN-gated on token/account acquisition.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: In ONE session run the standing signup chain — unauth GraphQL `Signup(planId:"free-business")` → email-gated `finishSignup` at `/finish-signup/{companyId}/{activationToken}` → POST /v2/auth/password {username,password} → opaque base64 bearer → (a) GET /v2/users/me baseline, then cross-tenant probes: GET /v2/rooms/{victimRoomId}/passcode, /participants, /attendances, /stats, PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId}, DELETE /v2/users/{victimUserId}; (b) mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}} sans accessKey vs REST 3-field guest-link; (c) introspect the yielded FusionAuth token with fabricated client_id on POST-body + Basic channels, controls without client_id, and feed raw token to GET /v2/auth/token-info.
+
+STEP 6 — LEARNING
+- [LEARN] REJECTED MISCONFIG @ sso.alfaview.com: `/oauth2/jwks` → 404 is NOT a broken/removed JWKS — advertised `jwks_uri=/.well-known/jwks.json` returns 200 (7 RS256 keys, 16KB, kty=RSA, e=AQAB); prior 09-12/09-13 "JWKS 404" finding was a wrong-path artifact. Metadata alg set (ES/HS/RS) with RSA-only keys unchanged in practice.
+
+STEP 7 — RISK
+- [RISK] alfaview gmbh: 55 — 55/55 hosts probed, OpenAPI byte-stable (MD5 357b94d3), users/me=401 stable; JWKS correction removes a false regression but restores a live key-distribution surface with 7 RS256 keys behind the issuer=acme.com misconfig; three cred-plausible auth chains stand (RFC7662 fabricated client-auth on both channels, cross-tenant IDOR matrix incl. attendances/participants/stats, accessKey-less GraphQL guest), all HIGH-impact but HUMAN-gated on account/token acquisition; alfacheck v483102 still ships unsigned.

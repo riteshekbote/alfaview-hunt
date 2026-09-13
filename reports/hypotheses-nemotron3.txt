@@ -1,19 +1,20 @@
-## 2026-09-13 01:24:17 UTC [target] (model nemotron3)
-[NEW] sso.alfaview.com/oauth2/jwks now returns 404 (was accessible with 7 RSA keys) — JWKS endpoint broken/removed
+## 2026-09-13 06:46:46 UTC [target] (model nemotron3)
+[NEW] sso.alfaview.com/oauth2/jwks now returns 404 FusionAuth error page (was accessible with 7 RSA keys) — JWKS endpoint broken/removed
 [NEW] sso.alfaview.com OIDC discovery lists ES256/384/512 + HS256/384/512 + RS256/384/512 in id_token_signing_alg_values_supported; JWKS 404 — alg confusion surface expanded in metadata with zero keys to exploit
 [NEW] client-diagnostics-ingest.alfaview.com/health=200 {"status":"ok"} with strict CSP (default-src 'none', frame-ancestors 'none'), all other GET paths 39B JSON 404 — minimal POST-only ingest confirmed
 [NEW] test.alfaview.com alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
-[CHANGED] sso.alfaview.com/oauth2/introspect: Both POST-body and HTTP Basic auth accept ANY client_id (fabricated) → 200 {"active":false}; only residual check is Basic-vs-body client_id_mismatch (401) — client authentication fully unenforced on RFC7662
+[CHANGED] sso.alfaview.com/oauth2/introspect: Both POST-body and HTTP Basic auth accept ANY client_id (fabricated) → 200 {"active":false}; only residual check is Basic-vs-body client_id_mismatch (401) — client authentication fully unenforced on RFC7662 (stable)
 [CHANGED] sso.alfaview.com/oauth2/authorize returns HTTP 200 FusionAuth login page (~6173B) for unregistered client_id — validation timing shifted again (was 400); redirect_uri matrix still client_id-gated but behavior unstable
 [CHANGED] apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
 [CHANGED] app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest path diverges from REST 3-field combo
 [CHANGED] apis.alfaview.com REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required (prior 4-field claim incorrect)
-[PRIO] sso.alfaview.com/oauth2/introspect,9.25,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
-[PRIO] sso.alfaview.com/oauth2/authorize,8.55,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
-[PRIO] app.alfaview.com/graphql,8.20,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
+[PRIO] sso.alfaview.com/oauth2/introspect,9.55,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
+[PRIO] sso.alfaview.com/oauth2/authorize,8.85,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9
+[PRIO] app.alfaview.com/graphql,8.45,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
+[PRIO] sso.alfaview.com (OIDC misconfig),8.25,attack_surface=8,business_value=7,tech_exposure=8,gate_ease=10,cloud_surface=8,freshness=10
 [PRIO] apis.alfaview.com/v2,7.65,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8
-[PRIO] test.alfaview.com,6.80,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=10,cloud_surface=5,freshness=9
-[PRIO] client-diagnostics-ingest.alfaview.com,4.10,attack_surface=4,business_value=3,tech_exposure=5,gate_ease=10,cloud_surface=4,freshness=8
+[PRIO] test.alfaview.com,7.20,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=10,cloud_surface=5,freshness=9
+[PRIO] client-diagnostics-ingest.alfaview.com,5.20,attack_surface=4,business_value=3,tech_exposure=5,gate_ease=10,cloud_surface=4,freshness=8
 [HYP] Unauthenticated token introspection bypassing RFC7662 client authentication
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
