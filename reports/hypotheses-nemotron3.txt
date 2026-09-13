@@ -1,4 +1,4 @@
-## 2026-09-13 06:46:46 UTC [target] (model nemotron3)
+## 2026-09-13 12:27:29 UTC [target] (model nemotron3)
 [NEW] sso.alfaview.com/oauth2/jwks now returns 404 FusionAuth error page (was accessible with 7 RSA keys) — JWKS endpoint broken/removed
 [NEW] sso.alfaview.com OIDC discovery lists ES256/384/512 + HS256/384/512 + RS256/384/512 in id_token_signing_alg_values_supported; JWKS 404 — alg confusion surface expanded in metadata with zero keys to exploit
 [NEW] client-diagnostics-ingest.alfaview.com/health=200 {"status":"ok"} with strict CSP (default-src 'none', frame-ancestors 'none'), all other GET paths 39B JSON 404 — minimal POST-only ingest confirmed

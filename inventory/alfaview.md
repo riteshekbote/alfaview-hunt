@@ -551,3 +551,14 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
 - CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest 
 - CHANGED apis.alfaview.com REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required (prior 4-field claim incorrect)
+
+## 2026-09-13 12:27:40 UTC
+- NEW sso.alfaview.com/oauth2/jwks now returns 404 FusionAuth error page (was accessible with 7 RSA keys) — JWKS endpoint broken/removed
+- NEW sso.alfaview.com OIDC discovery lists ES256/384/512 + HS256/384/512 + RS256/384/512 in id_token_signing_alg_values_supported; JWKS 404 — alg confusion surface expanded in metadata with zero keys to ex
+- NEW client-diagnostics-ingest.alfaview.com/health=200 {"status":"ok"} with strict CSP (default-src 'none', frame-ancestors 'none'), all other GET paths 39B JSON 404 — minimal POST-only ingest confirmed
+- NEW test.alfaview.com alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
+- CHANGED sso.alfaview.com/oauth2/introspect: Both POST-body and HTTP Basic auth accept ANY client_id (fabricated) → 200 {"active":false}; only residual check is Basic-vs-body client_id_mismatch (401) — client 
+- CHANGED sso.alfaview.com/oauth2/authorize returns HTTP 200 FusionAuth login page (~6173B) for unregistered client_id — validation timing shifted again (was 400); redirect_uri matrix still client_id-gated but 
+- CHANGED apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest 
+- CHANGED apis.alfaview.com REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required (prior 4-field claim incorrect)

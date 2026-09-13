@@ -3575,3 +3575,31 @@ evidence_needed: guestAuthenticate with real room triple (no accessKey) → 200+
 verify_steps: (human, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey → compare 200+token vs 401/422.
 impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
 testability: HUMAN_ONLY
+## 2026-09-13 12:24:33 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspection accepts fabricated client auth on both channels
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 90
+reasoning: this cycle POST-body `token=x&client_id=fake` and HTTP Basic b64(fake:fake) both → 200 `{"active":false}`; discovery advertises `client_secret_basic` but runtime never verifies it; `introspection_endpoint` still absent from discovery (non-advertised period); `token` param required (400 missing_token). JWKS corrected: `/.well-known/jwks.json` publishes 7 RS256 keys, so server-side token validation keys ARE functional — an `active:true` result against a real token would be meaningful, confirming client_secret is never checked on a live token path.
+evidence_needed: real FusionAuth access token + fabricated client_id → 200 `{"active":true, sub, scope, exp}` on POST-body or Basic channel vs control without client_id.
+verify_steps: (human, token in hand) POST /oauth2/introspect -d "token=<real>" control → -d "token=<real>&client_id=fake" → -H "Authorization: Basic <b64(fake:fake)>" -d "token=<real>"; diff active/sub/scope/exp across the three; feed same raw token to GET /v2/auth/token-info (apis) to confirm cross-platform acceptance.
+impact: any token-leak holder validates + extracts subject/scopes/expiry with zero client credentials; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET /v2/rooms/{roomId}/passcode, /participants, /attendances, /v2/stats, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, DELETE /v2/users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical MD5 357b94d3 (37 paths, stable); every PII/business op token-authed with UUID path params; users/me=401 unauth, users/{uuid}=405 Allow:DELETE routes live; opaque company-scoped bearer; ownership checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (human, own two tenants) POST /v2/auth/password {username,password} → GET /v2/users/me baseline → cross-tenant: /rooms/{id}/passcode → /participants → /attendances → /stats?from&to&stepDurationHours=1 → PATCH permissions → DELETE /users/{id}.
+impact: cross-tenant PII read, room passcode, attendance dump, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] GraphQL guest path accessKey-less vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 60
+reasoning: guestAuthenticate/guestJoin anonymous-reachable (zero-UUID → BAD_USER_INPUT; UUID-format → FORBIDDEN — real IDs processed past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise, displayName optional). Unchanged this cycle.
+evidence_needed: guestAuthenticate with real room triple (no accessKey) → 200+accessToken where REST guest-link rejects identical triple sans accessKey.
+verify_steps: (human, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey → compare 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
