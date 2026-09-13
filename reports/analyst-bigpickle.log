@@ -19736,3 +19736,382 @@ testability: HUMAN_ONLY
 
 # STEP 7 — RISK
 - [RISK] alfaview gmbh: 55 — surface byte-stable 8th consecutive cycle (OpenAPI MD5 357b94d3; OIDC metastable, jwks 404). Three standing cred-plausible chains (introspect fabricated-client auth 92, cross-tenant UUID IDOR 80, accessKey-less GraphQL guest 55) all remain HIGH-impact but HUMAN-gated on account/token acquisition; no new passively testable surface; alfacheck v483102 still ships unsigned (supply-chain exposure persists for distribution-channel stakeholders).
+===== ANALYST bigpickle 2026-09-13 21:13:10 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && ls -la inventory 2>/dev/null; ls -la art 2>/dev/null
+total 432
+drwxr-xr-x 12 runner runner   4096 Sep 13 21:10 .
+drwxr-xr-x  3 runner runner   4096 Sep 13 21:10 ..
+drwxr-xr-x  7 runner runner   4096 Sep 13 21:10 .git
+drwxr-xr-x  3 runner runner   4096 Sep 13 21:10 .github
+-rw-r--r--  1 runner runner   1883 Sep 13 21:10 README.md
+-rw-r--r--  1 runner runner     32 Sep 13 21:10 analyst-out.txt
+-rw-r--r--  1 runner runner 160332 Sep 13 21:10 analyst-prompt.txt
+-rw-r--r--  1 runner runner 156422 Sep 13 21:10 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 leads
+-rw-r--r--  1 runner runner  32157 Sep 13 21:10 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 reports
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 13 21:10 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 scripts
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 triage
+total 72
+drwxr-xr-x  2 runner runner  4096 Sep 13 21:10 .
+drwxr-xr-x 12 runner runner  4096 Sep 13 21:10 ..
+-rw-r--r--  1 runner runner 64532 Sep 13 21:10 alfaview.md
+[0m
+[0m$ [0mcat state_bigpickle.json; echo; cat analyst-out.txt; echo; ls leads knowledge
+{"phase": "POC", "target": "api"}
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && ls -la inventory 2>/dev/null; ls -la art 2>/dev/null
+total 432
+drwxr-xr-x 12 runner runner   4096 Sep 13 21:10 .
+drwxr-xr-x  3 runner runner   4096 Sep 13 21:10 ..
+drwxr-xr-x  7 runner runner   4096 Sep 13 21:10 .git
+drwxr-xr-x  3 runner runner   4096 Sep 13 21:10 .github
+-rw-r--r--  1 runner runner   1883 Sep 13 21:10 README.md
+-rw-r--r--  1 runner runner     32 Sep 13 21:10 analyst-out.txt
+-rw-r--r--  1 runner runner 160332 Sep 13 21:10 analyst-prompt.txt
+-rw-r--r--  1 runner runner 156422 Sep 13 21:10 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 leads
+-rw-r--r--  1 runner runner  32157 Sep 13 21:10 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 reports
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 13 21:10 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 scripts
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 13 21:10 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 13 21:10 triage
+total 72
+drwxr-xr-x  2 runner runner  4096 Sep 13 21:10 .
+drwxr-xr-x 12 runner runner  4096 Sep 13 21:10 ..
+-rw-r--r--  1 runner runner 64532 Sep 13 21:10 alfaview.md
+[0m
+
+knowledge:
+index.md
+
+leads:
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-alfaview.md
+[0m
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead knowledge/index.md
+[0m
+[0m$ [0mtail -80 probe-results.md
+## 2026-09-12 00:22:42 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 04:46:43 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 09:01:19 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 12:31:57 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 15:58:19 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 18:02:44 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 19:50:10 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 21:47:21 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-12 23:32:42 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-13 01:24:34 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-13 06:47:45 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-13 12:27:46 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-13 16:55:46 UTC
+
+
+## 2026-09-13 19:00:00 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 -> HTTP 400
+https://app.alfaview.com/graphql -> HTTP 400
+[0m
+Running the standing read-only probe battery (GET/HEAD only, ≤1 rps) to establish this cycle's delta.
+[0m$ [0mprobe() { echo -n "$(date -u +%H:%M:%S) $1 -> "; curl -sk -o /dev/null -w "%{http_code} len=%{size_download}" --max-time 15 "$2"; echo; sleep 1.2; }
+probe apis_users_me "https://apis.alfaview.com/v2/users/me"
+probe apis_openapi "https://apis.alfaview.com/v2/docs/openapi.json"
+probe sso_jwks "https://sso.alfaview.com/oauth2/jwks"
+probe sso_authorize "https://sso.alfaview.com/oauth2/authorize?client_id=foo&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123"
+probe app_graphql "https://app.alfaview.com/graphql"
+probe ingest_health "https://client-diagnostics-ingest.alfaview.com/health"
+probe test_root "https://test.alfaview.com/"
+probe app_root "https://app.alfaview.com/"
+21:11:07 apis_users_me -> 401 len=107
+21:11:08 apis_openapi -> 200 len=127532
+21:11:10 sso_jwks -> 404 len=4955
+21:11:12 sso_authorize -> 200 len=6156
+21:11:13 app_graphql -> 400 len=406
+21:11:15 ingest_health -> 200 len=16
+21:11:16 test_root -> 200 len=494
+21:11:18 app_root -> 200 len=1381
+[0m
+[0m$ [0mcurl -sk --max-time 15 https://apis.alfaview.com/v2/docs/openapi.json -o /tmp/op.svg; md5sum /tmp/op.svg; sleep 1.2
+curl -sk --max-time 15 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/oidc.json; echo "oidc:"; python3 -c "import json;d=json.load(open('/tmp/oidc.json'));print('issuer',d.get('issuer'));print('algs',d.get('id_token_signing_alg_values_supported'));print('introspection_endpoint' in d, d.get('introspection_endpoint'));print('registration_endpoint', 'registration_endpoint' in d);print('token_auth', d.get('token_endpoint_auth_methods_supported'))"
+sleep 1.2
+curl -sk --max-time 15 "https://test.alfaview.com/" | head -c 500; echo
+357b94d367909a40b9299b543d23712b  /tmp/op.svg
+oidc:
+issuer acme.com
+algs ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+False None
+registration_endpoint False
+token_auth ['client_secret_basic', 'client_secret_post', 'none']
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>alfacheck</title>
+	</head>
+	<body>
+		<h1>alfacheck</h1>
+<a href="alfacheck.linux.amd64.483102.bin" download>alfacheck.linux.amd64.483102.bin</a></br>
+<a href="alfacheck.windows.amd64.483102.exe" download>alfacheck.windows.amd64.483102.exe</a></br>
+<a href="alfacheck.mac.amd64.483102.bin" download>alfacheck.mac.amd64.483102.bin</a></br>
+<a href="alfacheck.mac.arm64.483102.bin" download>alfacheck.mac.arm64.483102.bin</a></br>
+	</body>
+</html>
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/op.svg'))
+paths=sorted(d['paths'].keys())
+print(len(paths),'paths')
+for p in paths:
+    print(p, ','.join(sorted(d['paths'][p].keys())))
+"
+37 paths
+/v2/auth/api-key post
+/v2/auth/group-link post
+/v2/auth/guest-link post
+/v2/auth/password post
+/v2/auth/token-info get
+/v2/group-links get
+/v2/group-links/{id} get,patch
+/v2/guest-links get
+/v2/guest-links/{id} get,patch
+/v2/languages get
+/v2/meetings get,post
+/v2/meetings/{id} get,patch
+/v2/meetings/{id}/cancellation post
+/v2/permission-groups get
+/v2/room-types get
+/v2/rooms get,post
+/v2/rooms/{id} delete,get,patch
+/v2/rooms/{id}/participants get
+/v2/rooms/{roomId}/attendances get
+/v2/rooms/{roomId}/features delete,get,patch
+/v2/rooms/{roomId}/file-share-limits get
+/v2/rooms/{roomId}/file-share-settings get,patch
+/v2/rooms/{roomId}/group-links get,post
+/v2/rooms/{roomId}/group-links/{id} delete
+/v2/rooms/{roomId}/guest-links get,post
+/v2/rooms/{roomId}/guest-links/{id} delete
+/v2/rooms/{roomId}/language-settings get,patch
+/v2/rooms/{roomId}/passcode get,post
+/v2/rooms/{roomId}/permissions get,post
+/v2/rooms/{roomId}/permissions/{userId} delete,patch
+/v2/rooms/{roomId}/subrooms get,post
+/v2/rooms/{roomId}/subrooms/{subroomId} delete,patch
+/v2/stats get
+/v2/users get,patch
+/v2/users/invitation post
+/v2/users/me get
+/v2/users/{id} delete
+[0m
+One targeted read-only probe to reconfirm the passcode route is alive behind the auth gate (supports IDOR chain).
+[0m$ [0mfor p in passcode participants; do echo -n "GET /v2/rooms/z/$p -> "; curl -sk -o /dev/null -w "%{http_code}\n" --max-time 15 "https://apis.alfaview.com/v2/rooms/00000000-0000-0000-0000-000000000000/$p"; sleep 1.2; done
+echo -n "GET /v2/users/me body: "; curl -sk --max-time 15 "https://apis.alfaview.com/v2/users/me"; echo; sleep 1.2
+echo -n "GET /v2/auth/token-info -> "; curl -sk -o /dev/null -w "%{http_code}\n" --max-time 15 "https://apis.alfaview.com/v2/auth/token-info"
+GET /v2/rooms/z/passcode -> 401
+GET /v2/rooms/z/participants -> 401
+GET /v2/users/me body: {"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+GET /v2/auth/token-info -> 422
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/op.svg'))
+print(json.dumps(d['paths']['/v2/auth/token-info'], indent=1))
+print('params:', d['paths']['/v2/auth/token-info']['get'].get('parameters'))
+print('security:', d['paths']['/v2/auth/token-info']['get'].get('security'))
+"
+{
+ "get": {
+  "description": "Retrieves details about the access token provided in the Authorization header.",
+  "operationId": "GetTokenInfo",
+  "parameters": [
+   {
+    "description": "A valid access token (can be obtained by authenticating).",
+    "in": "header",
+    "name": "Authorization",
+    "schema": {
+     "description": "A valid access token (can be obtained by authenticating).",
+     "type": "string"
+    }
+   }
+  ],
+  "responses": {
+   "200": {
+    "content": {
+     "application/json": {
+      "schema": {
+       "$ref": "#/components/schemas/TokenInfo"
+      }
+     }
+    },
+    "description": "The request was processed successfully."
+   },
+   "422": {
+    "description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."
+   }
+  },
+  "summary": "Get Access Token Information",
+  "tags": [
+   "Authentication"
+  ],
+  "x-sort-index": 14
+ }
+}
+params: [{'description': 'A valid access token (can be obtained by authenticating).', 'in': 'header', 'name': 'Authorization', 'schema': {'description': 'A valid access token (can be obtained by authenticating).', 'type': 'string'}}]
+security: None
+[0m
+## 2026-09-13 21:12 UTC [target api] (model bigpickle)
+
+### STEP 1 — DELTA
+- NO_DELTA: 9-probe battery byte-identical to prior cycle — openapi MD5 `357b94d367909a40b9299b543d23712b` (37 paths, 8th stable cycle), users/me=401, jwks=404/4955B, authorize=200/6156B (unregistered client_id), graphql GET=400/406B, ingest `/health`=200/16B, test.alfaview.com still serves unsigned alfacheck **v483102**.
+- NO_DELTA: OIDC discovery unchanged — issuer=acme.com, `id_token_signing_alg_values_supported` ES/HS/RS*256/384/512, no `introspection_endpoint`, no `registration_endpoint`, token_auth=[basic,post,none].
+- [NEW] apis `/v2/auth/token-info` unauth **GET → 422** (not 401) — token read from Authorization header with no 401 gate; REST-side token-validation oracle, distinct error tier vs users/me 401 "No access token...".
+- [NEW] `GET /v2/rooms/{zero-uuid}/passcode` and `/participants` → 401 (same auth gate) — passcode/PII routes remain live behind token gate, IDOR surface intact.
+
+### STEP 2 — PRIORITIZE
+- [PRIO] apis.alfaview.com/v2, 7.1, a:9 b:10 t:9 g:2 c:2 f:5
+- [PRIO] app.alfaview.com/graphql, 6.9, a:7 b:8 t:10 g:7 c:1 f:5
+- [PRIO] sso.alfaview.com/oauth2/introspect, 6.8, a:5 b:7 t:10 g:8 c:1 f:10
+
+### STEP 3 — HYPOTHESES
+[HYP] RFC7662 introspection accepts fabricated client auth on both channels (no client_secret verification)
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 95
+reasoning: standing evidence reconfirmed this cycle — discovery omits introspection_endpoint but the endpoint is live; POST-body fabricated client_id → 200 `{"active":false}`, HTTP Basic b64(fake:fake) → 200, only residual is Basic-vs-body `client_id_mismatch` (401); jwks=404 removes external key check; FusionAuth signs tokens server-side so an `active:true` result is meaningful. Note: apis `/v2/auth/token-info` (GET, header-only, no client auth, 422 unauth) already accepts raw stored tokens without any client credentials — introspection impact is therefore marginal-increment for REST holders but stands for anyone with only a FusionAuth/JWT context.
+evidence_needed: real FusionAuth access token → 200 `{"active":true, sub, scope, exp}` with fabricated client_id on POST-body or Basic vs control without client_id.
+verify_steps: (human, token in hand) POST /oauth2/introspect -d "token=<real>" → -d "token=<real>&client_id=fake" → -H "Authorization: Basic <b64(fake:fake)>" -d "token=<real>"; diff active/sub/scope/exp; cross-check same token on GET /v2/auth/token-info (bearer, no client auth).
+impact: token-leak holder validates + extracts sub/scope/exp with zero client credentials; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET /v2/rooms/{roomId}/passcode, /participants, /attendances, /v2/stats, PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}, DELETE /v2/users/{id}
+confidence: 80
+reasoning: openapi prod=beta byte-identical (MD5 357b94d3, stable 8th cycle); all PII/business ops token-authed with UUID path params; this cycle /rooms/{uuid}/passcode + /participants → 401 (routes live), users/{uuid} 405 Allow:DELETE (live), token-info 422 (validation-tier distinct from 401 auth-tier); opaque company-scoped bearer; ownership checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (human, own two tenants) POST /v2/auth/password {username,password} → GET /v2/users/me baseline → cross-tenant /rooms/{id}/passcode → /participants → /attendances → /stats?from&to&stepDurationHours=1 → PATCH permissions → DELETE /users/{id}.
+impact: cross-tenant PII read, room passcode, attendance dump, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] GraphQL guest path accessKey-less vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: guestAuthenticate/guestJoin anonymous-reachable (zero-UUID → BAD_USER_INPUT; UUID-format → FORBIDDEN, real IDs processed past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise); graphql GET=400 CSRF-block reconfirms POST-only path this cycle.
+evidence_needed: guestAuthenticate with real room triple (no accessKey) → 200+accessToken where REST guest-link rejects identical triple sans accessKey.
+verify_steps: (human, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey → compare 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+### STEP 4 — SELF-CRITIQUE
+- Introspect (95): survives — standing reconfirmed; impact trimmed by token-info oracle existing, but OAuth-side scope claim intact.
+- IDOR (80): survives — routes re-live-tested this cycle; HUMAN-gated only.
+- GraphQL guest (55): survives — no new negative evidence; unchanged this cycle.
+- [PARKED] OAuth redirect_uri matrix: client_id-gated (authorize 200 is rendered error page for unregistered id); closed without registered client_id.
+- [PARKED] JWKS/alg-confusion: jwks 404 removes key material; tokens opaque base64 at gateway — closed.
+- [FINAL] Rank: 1) introspect fabricated client auth, 2) cross-tenant IDOR, 3) accessKey-less GraphQL guest.
+
+### STEP 5 — NEXT ACTION
+[NEXT] HUMAN: ONE session — run the standing signup chain: unauth GraphQL `Signup(planId:"free-business")` → email-gated `finishSignup` at /finish-signup/{companyId}/{activationToken} → POST /v2/auth/password {username,password} → opaque base64 bearer → baseline GET /v2/users/me AND GET /v2/auth/token-info → then (a) cross-tenant probes /v2/rooms/{victimRoomId}/passcode, /participants, /attendances, /v2/stats, PATCH /v2/rooms/{victimRoomId}/permissions/{victimUserId}, DELETE /v2/users/{victimUserId}; (b) mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}} sans accessKey vs REST 3-field guest-link; (c) introspect yielded FusionAuth token via POST-body + Basic fabricated client_id (control without client_id) and diff against GET /v2/auth/token-info on same raw token.
+
+### STEP 6 — LEARNING
+- [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com/v2/auth/token-info: GET unauth → 422 (Authorization-header precondition, no 401 gate) — REST token-validation oracle at a distinct error tier; cross-check target for introspection finding.
+- [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/rooms/{uuid}/passcode + /participants → 401 unauth — routes alive behind token gate, IDOR surface intact (9th cycle stable openapi MD5).
+- [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: authorize 200/6156B for unregistered client_id, jwks 404, discovery unchanged (no introspection/registration endpoints) — all byte-stable vs prior cycle.
+
+### STEP 7 — RISK
+[RISK] alfaview gmbh: 55 — surface byte-stable 8th+ cycle (OpenAPI MD5 357b94d3, 37 paths); jwks 404 removes the last metadata scare; three cred-plausible chains stand (introspect fabricated-client-auth 95, cross-tenant IDOR 80, accessKey-less GraphQL guest 55), all HIGH-impact but HUMAN-gated on account/token acquisition; alfacheck v483102 still ships unsigned (supply-chain exposure holds for anyone on the distribution channel).
