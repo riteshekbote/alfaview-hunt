@@ -69,3 +69,7 @@
   - **Verdict: VALID (with caveat)**
   - | 3 | OAuth redirect_uri Bypass | **HOLD** | Needs valid client_id |
   - | 6 | GraphQL guestAuthenticate/guestJoin Missing accessKey | **VALID** | Report — concrete evidence, novel divergence from REST |
+
+- 2 lead(s) marked VALID at 2026-09-13 14:02:07 UTC
+  - | 3 | OAuth redirect_uri Bypass | **HOLD** | Needs valid client_id |
+  - | 6 | GraphQL guestAuthenticate/guestJoin Missing accessKey | **VALID** | Report — concrete evidence, novel divergence from REST |
