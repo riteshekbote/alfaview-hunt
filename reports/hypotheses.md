@@ -1687,3 +1687,7 @@
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
 - LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JS
 - LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har
+
+## RANKED HYPOTHESES 2026-09-13 16:55:46 UTC
+- [95] sso.alfaview.com/oauth2/introspect: RFC7662 introspection accepts fabricated client auth on both channels (no client_secret verification) (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: In ONE session run the standing signup chain — unauth GraphQL `Signup(planId:"free-business")` → email-gated `finishSignup` at /finish-signup/{companyId}

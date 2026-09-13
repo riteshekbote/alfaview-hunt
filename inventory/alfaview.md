@@ -562,3 +562,5 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
 - CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest 
 - CHANGED apis.alfaview.com REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required (prior 4-field claim incorrect)
+
+## 2026-09-13 16:55:46 UTC
