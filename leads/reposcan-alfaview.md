@@ -165,3 +165,40 @@ TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 ## REPOSCAN 2026-09-14 10:45:59 UTC
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
+## REPOSCAN 2026-09-14 16:51:12 UTC
+[HYP] Hardcoded Development Credentials in .env.docker
+class: SECRET
+asset: alfaview/pixelfed/.env.docker
+confidence: 85
+reasoning: .env.docker contains hardcoded plaintext passwords committed to the repo: `DB_PASSWORD=pixelfed_db_pass`, `MYSQL_PASSWORD=pixelfed_db_pass`, `REDIS_PASSWORD=redis_password`. While these are template defaults from upstream pixelfed (not alfaview's own secrets), if deployed to production without changing them, they become live credentials. The file is referenced by docker-compose.yml and mounted into the container.
+impact: medium — if this instance was deployed using the docker-compose setup with defaults, the DB and Redis are exposed with known passwords. Mitigated by the fact this is an upstream template.
+verify_steps: Check if bugs.olivermaicher.eu or any alfaview domain runs this docker-compose stack; scan for `pixelfed_db_pass` or `redis_password` in use on any live service.
+[HYP] Hardcoded APP_KEY in .env.testing
+class: SECRET
+asset: alfaview/pixelfed/.env.testing
+confidence: 70
+reasoning: `.env.testing` contains `APP_KEY=base64:lwX95GbNWX3XsucdMe0XwtOKECta3h/B+p9NbH2jd0E=`. This is a Laravel encryption key committed to the repo. While intended for test environments only, if reused in production it would allow session forgery, cookie tampering, and decryption of encrypted data. Inherited from upstream pixelfed.
+impact: medium — if the same APP_KEY was used in a production instance, an attacker could forge sessions and decrypt sensitive data.
+verify_steps: Check if any deployed alfaview instance uses this specific APP_KEY value.
+[HYP] CORS Wildcard Allows All Origins
+class: MISCONFIG
+asset: alfaview/pixelfed/config/cors.php
+confidence: 75
+reasoning: `cors.php` configures `allowed_origins => ['*']` and `allowed_headers => ['*']`, allowing any origin to make cross-origin requests to the API. Combined with the CSRF bypass on `/api/v1/*`, this could enable cross-site request forgery against authenticated API endpoints from any domain. Inherited from upstream pixelfed.
+impact: medium — an attacker-controlled page can make authenticated API calls on behalf of logged-in users if they know the API endpoints.
+verify_steps: Confirm whether the pixelfed instance at alfaview's domains has CORS headers reflecting `Access-Control-Allow-Origin: *` on API responses.
+[HYP] CSRF Protection Excluded for All API v1 Routes
+class: MISCONFIG
+asset: alfaview/pixelfed/app/Http/Middleware/VerifyCsrfToken.php
+confidence: 70
+reasoning: `VerifyCsrfToken::$except = ['/api/v1/*']` disables CSRF protection for the entire API v1 namespace. While this is common for token-authenticated APIs (Laravel Passport), it means any endpoint under `/api/v1/*` that relies on cookie-based sessions (rather than OAuth tokens) is vulnerable to CSRF. Inherited from upstream pixelfed.
+impact: medium — depends on whether session-based auth is used alongside OAuth on these routes. If so, state-changing operations (follow, unfollow, mute, delete) are CSRF-exploitable.
+verify_steps: Check if alfaview's pixelfed instance has OAuth-only auth for all API routes, or if session cookies are accepted.
+[HYP] Wildcard Trusted Proxies
+class: MISCONFIG
+asset: alfaview/pixelfed/.env.docker / config/trustedproxy
+confidence: 60
+reasoning: `TRUST_PROXIES="*"` tells the application to trust X-Forwarded-For/Proto headers from any source. If deployed behind a reverse proxy that an attacker can reach directly (or bypass), they can spoof IP addresses for rate-limiting bypass, IP-based access controls, or log poisoning. Inherited from upstream pixelfed.
+impact: low — only exploitable if the application is not properly isolated behind a trusted reverse proxy.
+verify_steps: Confirm the deployment architecture; check if the pixelfed instance sits behind a properly configured reverse proxy.
+TARGET_ORG not configured for alfaview; skipping public-org deep scan.
