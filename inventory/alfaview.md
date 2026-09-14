@@ -597,3 +597,5 @@ www.alfaview.com
 - CHANGED apis.alfaview.com REST /v2/auth/guest-link: Requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required (prior 4-field claim incorrect)
 - CHANGED test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
 - CHANGED client-diagnostics-ingest.alfaview.com/health: 200 {"status":"ok"} with strict CSP (default-src 'none', frame-ancestors 'none'), all other GET paths 39B JSON 404 — minimal POST-only ingest confirmed
+
+## 2026-09-14 01:10:10 UTC

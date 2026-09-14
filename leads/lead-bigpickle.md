@@ -3752,3 +3752,33 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 8th consecutive stable cycle — OPTIONS 405 (POST-only, alive), fabricated client_id accepted on POST-body and Basic channels unchanged; front-page still byte-identical.
 [LEARN] NO_DELTA @ afces-core: OpenAPI MD5 357b94d3, jwks 404, authorize 200/6168B, users/me 401, test.alfaview v483102 unsigned, client-diagnostics /health 200 — all probes byte-identical to prior cycle; active surface unchanged, no new endpoints, no regressions.
 [RISK] alfaview gmbh: 55 — surface byte-stable 8th+ consecutive cycle (OpenAPI MD5 357b94d3, 37 paths); jwks 404 removed the last metadata scare; three cred-plausible HIGH-impact chains stand (introspect fabricated-client-auth 95, cross-tenant IDOR 80, accessKey-less GraphQL guest 55), all HUMAN-gated on account/token acquisition; alfacheck v483102 (test.alfaview.com) still ships unsigned across successive releases (supply-chain exposure holds for anyone on the distribution channel). No fresh exploitable surface observed this cycle.
+## 2026-09-14 01:07:17 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspection accepts fabricated client auth on both channels (no client_secret verification)
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 95
+reasoning: standing 8+ cycles — discovery omits introspection_endpoint but endpoint live (OPTIONS 405); POST-body fabricated client_id → 200 {"active":false}; HTTP Basic b64(fake:fake) → 200; only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); JWKS now confirmed live at /.well-known/jwks.json (7 keys) so server-side sig verification exists for FusionAuth-issued JWTs, making an `active:true` introspection result meaningful.
+evidence_needed: real FusionAuth access/JWT → 200 {"active":true, sub, scope, exp} with fabricated client_id (POST-body and Basic) vs control without client_id.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect -d "token=<real>" (control) → +&client_id=fake → -H "Authorization: Basic <b64(fake:fake)>" -d "token=<real>"; diff active/sub/scope/exp; cross-check GET /v2/auth/token-info (bearer, no client auth).
+impact: token-leak holder validates + extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET /rooms/{roomId}/passcode,/participants,/attendances, /stats; PATCH/DELETE /rooms/{roomId}/permissions/{userId}; DELETE /users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, stable); all PII/business ops token-authed with UUID path params; users/me 401 + users/{uuid} 405 Allow:DELETE reconfirm routes live behind opaque company-scoped bearer; ownership checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 correct.
+verify_steps: (HUMAN, two tenants) POST /v2/auth/password {username,password} → GET /v2/users/me baseline → cross-tenant passcode/participants/attendances/stats → PATCH permissions → DELETE users/{id}.
+impact: cross-tenant PII read, room passcode, attendance dump, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] GraphQL guest path accessKey-less vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: reconfirmed anonymous-reachable (zero-UUID → BAD_USER_INPUT; UUID-format → FORBIDDEN past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise).
+evidence_needed: guestAuthenticate real room triple sans accessKey → 200+accessToken where REST rejects identical triple.
+verify_steps: (HUMAN, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: ONE session — run standing chain: unauth GraphQL `Signup(planId:"free-business")` → email-gated `finishSignup` /finish-signup/{companyId}/{activationToken} → POST /v2/auth/password {username,password} → opaque base64 bearer → baseline GET /v2/users/me + GET /v2/auth/token-info → then (a) cross-tenant probes /rooms/{victimRoomId}/passcode,/participants,/attendances,/stats + PATCH /rooms/{victimRoomId}/permissions/{victimUserId} + DELETE /users/{victimUserId}; (b) mutation{guestAuthenticate(companyId,roomId,userId){user accessToken role}} sans accessKey vs REST 3-field guest-link; (c) introspect obtained JWT via POST-body + Basic fabricated client_id (control without client_id), diff against GET /v2/auth/token-info.
+[RISK] alfaview gmbh: 56 — surface byte-stable 9th consecutive cycle (OpenAPI MD5 357b94d3, 37 paths), but JWKS rediscovered live (7 RSA keys) restores the metadata alg-confusion angle slightly above the prior 55; three cred-plausible HIGH-impact chains stand (introspect fabricated-client-auth 95, cross-tenant IDOR 80, accessKey-less GraphQL guest 55), all HUMAN-gated on account/token acquisition; alfacheck v483102 still distributed unsigned. No fresh autonomously-exploitable surface this cycle.
