@@ -406,3 +406,5 @@
 - 2026-09-14 ACCEPTED OATH @ sso.alfaview.com/oauth2/introspect: 9th consecutive stable cycle — OPTIONS 405 (POST-only, alive), fabricated client_id accepted on POST-body and Basic channels unchanged; discovery still advertises client_secret_basic/post/none with no runtime secret verification.
 - 2026-09-14 ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body client_id validation fully removed — fabricated client_id → 200 {"active":false} (was 400 invalid_client); Basic and POST-body channels now accept any client_id; only residual check is Basic-vs-body client_id_mismatch (401)
 - 2026-09-14 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable.
+- 2026-09-14 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+- 2026-09-14 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint now advertised (was absent) — endpoint now in discovery
