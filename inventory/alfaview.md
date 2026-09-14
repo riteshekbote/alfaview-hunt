@@ -607,3 +607,11 @@ www.alfaview.com
 - NEW test.alfaview.com alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
 
 ## 2026-09-14 13:04:48 UTC
+
+## 2026-09-14 18:20:43 UTC
+- NEW sso.alfaview.com/oauth2/jwks: Returns 404 FusionAuth error page (was accessible with 7 RSA keys) — JWKS endpoint broken/removed
+- NEW sso.alfaview.com OIDC discovery: Lists ES256/384/512 + HS256/384/512 + RS256/384/512 in id_token_signing_alg_values_supported; JWKS now 404 — alg confusion surface expanded in metadata with zero keys 
+- CHANGED sso.alfaview.com/oauth2/introspect: 9th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_endpoint_auth_methods_supported advertises client_secret_basic/p
+- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+- CHANGED test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
+- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT with zero UUIDs; GRAPHQL_VALIDATION_FAILED if displayName omitted) — accessKey-less GraphQL guest 

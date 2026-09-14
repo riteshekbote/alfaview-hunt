@@ -3863,3 +3863,31 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
 [LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
 [RISK] alfaview gmbh: 56 — surface byte-stable 9th+ consecutive cycle (OpenAPI MD5 357b94d3, 37 paths); jwks 404 keeps metadata alg-confusion dormant; three cred-plausible HIGH-impact chains stand (introspect fabricated-client-auth 95, cross-tenant IDOR 80, accessKey-less GraphQL guest 55), all HUMAN-gated on account/token acquisition; alfacheck v483102 still distributed unsigned (supply-chain exposure on distribution channel). No fresh autonomously-exploitable surface this cycle.
+## 2026-09-14 18:17:36 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspection accepts fabricated client auth on POST-body and Basic — no client_secret verification
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 95
+reasoning: 10th consecutive byte-stable cycle; discovery omits introspection_endpoint but endpoint live (OPTIONS 405); prior cycles: POST-body fabricated client_id → 200 `{"active":false}`, HTTP Basic b64(fake:fake) → 200, only residual gate Basic-vs-body client_id_mismatch (401), token param enforced (400 missing_token); discovery advertises token_endpoint_auth_methods_supported=[client_secret_basic,client_secret_post,none] with no runtime secret verification. POST kept idle this cycle per read-only rule.
+evidence_needed: real FusionAuth access/JWT → 200 `{"active":true, sub, scope, exp}` with fabricated client_id (POST-body and Basic) vs control without.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real> (control) vs +client_id=fake vs +Basic b64(fake:fake); diff active/sub/scope/exp vs GET /v2/auth/token-info on same raw token.
+impact: token-leak holder validates + extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode,/participants,/attendances, stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths, stable); all PII ops token-authed with UUID path params; users/me 401 + users/{uuid} 405 Allow:DELETE reconfirm routes live behind company-scoped opaque bearer; ownership checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (HUMAN, two own tenants) POST /v2/auth/password → GET /v2/users/me baseline → cross-tenant passcode/participants/attendances/stats → PATCH permissions → DELETE users/{id}.
+impact: cross-tenant PII read, room passcode, attendance dump, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] GraphQL guest path accessKey-less vs REST 3-field guest-link
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: reconfirmed anonymous-reachable (zero-UUID → BAD_USER_INPUT; UUID-format → FORBIDDEN past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise).
+evidence_needed: guestAuthenticate real room triple sans accessKey → 200+accessToken where REST rejects identical triple.
+verify_steps: (HUMAN, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey; compare 200+token vs 401/422.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
