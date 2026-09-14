@@ -1,4 +1,8 @@
-## 2026-09-14 01:10:02 UTC [target] (model nemotron3)
+## 2026-09-14 06:20:48 UTC [target] (model nemotron3)
+[NEW] sso.alfaview.com/oauth2/jwks confirmed 404 FusionAuth error page (was accessible with 7 RSA keys) — JWKS endpoint broken/removed  
+[NEW] sso.alfaview.com OIDC discovery lists ES256/384/512 + HS256/384/512 + RS256/384/512 in id_token_signing_alg_values_supported; JWKS 404 — alg confusion surface expanded in metadata with zero keys to exploit  
+[NEW] sso.alfaview.com/oauth2/introspect: 8th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels unchanged  
+[NEW] test.alfaview.com alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases  
 [PRIO] sso.alfaview.com/oauth2/introspect,9.55,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10  
 [PRIO] sso.alfaview.com/oauth2/authorize,8.85,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=9  
 [PRIO] app.alfaview.com/graphql,8.45,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9  
@@ -6,33 +10,33 @@
 [PRIO] apis.alfaview.com/v2,7.65,attack_surface=8,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=7,freshness=8  
 [PRIO] test.alfaview.com,7.20,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=10,cloud_surface=5,freshness=9  
 [PRIO] client-diagnostics-ingest.alfaview.com,5.20,attack_surface=4,business_value=3,tech_exposure=5,gate_ease=10,cloud_surface=4,freshness=8  
-[HYP] Unauthenticated token introspection bypassing RFC7662 client authentication  
-class: AUTH  
-asset: sso.alfaview.com/oauth2/introspect  
-confidence: 95  
-reasoning: Both POST-body client_id and HTTP Basic auth accept fabricated client_id + any secret → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic; JWKS endpoint now 404 (no key verification possible); FusionAuth Community edition permits this for public clients; requires valid token parameter (400 missing_token without it)  
-evidence_needed: Valid access token from authenticated session; observe if introspection reveals token metadata (scopes, exp, sub, client_id, token_type) with fake client credentials  
-verify_steps: HUMAN login to obtain valid token → POST https://sso.alfaview.com/oauth2/introspect -u "fake:any" -d "token=<valid>" → observe response for token metadata leakage; compare with POST body client_id=fake → 200 active:false  
-impact: Token metadata disclosure (scopes, subject, expiration, client_id, token_type) with fabricated credentials — info leak enabling token reconnaissance and session validation (MEDIUM-HIGH)  
-testability: AUTH_HELPED  
-[HYP] OAuth redirect_uri validation bypass via client_id registration timing shift  
-class: OATH  
-asset: sso.alfaview.com/oauth2/authorize  
-confidence: 80  
-reasoning: OIDC discovery shows issuer=acme.com (misconfiguration vs alfaview.com), implicit flow enabled, HS256/384/512/ES256/384/512 in id_token_signing_alg_values_supported but JWKS returns 404 (zero keys published); token_endpoint_auth_methods_supported includes "none" (public client); no registration_endpoint advertised; authorize returns HTTP 200 login page for unregistered client_id — validation timing shifted, may allow redirect_uri processing before client_id validation completes  
-evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); 302 Location header with attacker-controlled redirect_uri after login; state parameter reflection/validation; PKCE code_challenge_method=S256 enforcement  
-verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location; repeat without state; test code_challenge_method=S256&code_challenge=<valid>  
-impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)  
-testability: AUTH_HELPED  
-[HYP] Unauthenticated guest token issuance via GraphQL missing accessKey  
-class: AUTH  
-asset: app.alfaview.com/graphql  
-confidence: 85  
-reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)  
-evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey; compare token scope/claims vs REST guest token; test cross-tenant room joining with foreign companyId/roomId  
-verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and decode (if JWT) or test against APIs; probe cross-tenant with foreign IDs  
-impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)  
-testability: AUTH_HELPED  
+[HYP] Unauthenticated token introspection bypassing RFC7662 client authentication
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 95
+reasoning: Both POST-body client_id and HTTP Basic auth accept fabricated client_id + any secret → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic; JWKS endpoint now 404 (no key verification possible); FusionAuth Community edition permits this for public clients; requires valid token parameter (400 missing_token without it)
+evidence_needed: Valid access token from authenticated session; observe if introspection reveals token metadata (scopes, exp, sub, client_id, token_type) with fake client credentials
+verify_steps: HUMAN login to obtain valid token → POST https://sso.alfaview.com/oauth2/introspect -u "fake:any" -d "token=<valid>" → observe response for token metadata leakage; compare with POST body client_id=fake → 200 active:false
+impact: Token metadata disclosure (scopes, subject, expiration, client_id, token_type) with fabricated credentials — info leak enabling token reconnaissance and session validation (MEDIUM-HIGH)
+testability: AUTH_HELPED
+[HYP] OAuth redirect_uri validation bypass via client_id registration timing shift
+class: OATH
+asset: sso.alfaview.com/oauth2/authorize
+confidence: 80
+reasoning: OIDC discovery shows issuer=acme.com (misconfiguration vs alfaview.com), implicit flow enabled, HS256/384/512/ES256/384/512 in id_token_signing_alg_values_supported but JWKS returns 404 (zero keys published); token_endpoint_auth_methods_supported includes "none" (public client); no registration_endpoint advertised; authorize returns HTTP 200 login page for unregistered client_id — validation timing shifted, may allow redirect_uri processing before client_id validation completes
+evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); 302 Location header with attacker-controlled redirect_uri after login; state parameter reflection/validation; PKCE code_challenge_method=S256 enforcement
+verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location; repeat without state; test code_challenge_method=S256&code_challenge=<valid>
+impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
+testability: AUTH_HELPED
+[HYP] Unauthenticated guest token issuance via GraphQL missing accessKey
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 85
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
+evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey; compare token scope/claims vs REST guest token; test cross-tenant room joining with foreign companyId/roomId
+verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and decode (if JWT) or test against APIs; probe cross-tenant with foreign IDs
+impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
+testability: AUTH_HELPED
 [PARKED] OAuth redirect_uri validation bypass via client_id registration timing shift: Requires valid client_id for app.alfaview.com — not discoverable passively; HUMAN browser DevTools needed during login flow.  
 [PARKED] Unauthenticated token introspection bypassing RFC7662 client authentication: Requires valid access token — HUMAN login needed to obtain token; parked until token available.  
 [PARKED] Unauthenticated guest-authz lifecycle/cross-tenant splice via GraphQL: Requires own tenant guest triple (companyId+roomId+userId) — HUMAN signup needed to create room + guest link.  
