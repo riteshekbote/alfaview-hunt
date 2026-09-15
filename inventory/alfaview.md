@@ -632,3 +632,10 @@ www.alfaview.com
 - CHANGED app.alfaview.com/graphql: __typename OK unauthenticated, introspection disabled, guestAuthenticate/guestJoin anonymous-reachable (BAD_USER_INPUT)
 
 ## 2026-09-15 14:51:11 UTC
+
+## 2026-09-15 18:38:47 UTC
+- NEW sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404 in prior cycles) — JWKS endpoint restored
+- NEW sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+- CHANGED OIDC discovery unchanged: issuer=acme.com, implicit flow, HS256/384/512/ES256/384/512 in id_token_signing_alg_values_supported, JWKS now 7 RSA keys (zero symmetric/ECDSA)
+- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3)
+- CHANGED app.alfaview.com/graphql: __typename OK unauthenticated, introspection disabled, guestAuthenticate/guestJoin anonymous-reachable (BAD_USER_INPUT)
