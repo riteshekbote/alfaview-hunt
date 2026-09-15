@@ -16744,3 +16744,55 @@ testability: AUTH_HELPED
 [LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
 
 [RISK] alfaview: 85/100. Broad scope (55 dedicated hosts + 6 main domains, 100% probed). Production APIs auth-gated (401 opaque tokens). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: `sso.alfaview.com` (FusionAuth 1.63.0) exposes OIDC metadata with `issuer=acme.com` misconfiguration, implicit flow, HS256/384/512/ES256/384/512 support vs JWKS with only RSA keys, `/oauth2/introspect` client authentication fully unenforced on both Basic and POST-body channels, JWKS endpoint oscillates (404→200), introspection_endpoint advertisement oscillates. `app.alfaview.com` is primary client but `client_id` not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no `accessKey`). `test.alfaview.com` distributes unsigned binaries v483102 (supply chain risk). 31 hosts exhausted. Realistic path: discover `client_id` via `app.alfaview.com` network traffic → probe OAuth `redirect_uri`/`state` on `sso.alfaview.com` (AUTH_HELPED, CRITICAL); verify binary integrity on `test.alfaview.com` (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits.
+===== ANALYST nemotron3 2026-09-15 14:51:11 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/
+total 468
+drwxr-xr-x 12 runner runner   4096 Sep 15 14:30 .
+drwxr-xr-x  3 runner runner   4096 Sep 15 14:30 ..
+drwxr-xr-x  7 runner runner   4096 Sep 15 14:31 .git
+drwxr-xr-x  3 runner runner   4096 Sep 15 14:30 .github
+-rw-r--r--  1 runner runner   1883 Sep 15 14:30 README.md
+-rw-r--r--  1 runner runner     43 Sep 15 14:31 analyst-out.txt
+-rw-r--r--  1 runner runner 178744 Sep 15 14:30 analyst-prompt.txt
+-rw-r--r--  1 runner runner 174834 Sep 15 14:30 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 leads
+-rw-r--r--  1 runner runner  35337 Sep 15 14:30 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 reports
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 15 14:30 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 scripts
+-rw-r--r--  1 runner runner     33 Sep 15 14:30 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 15 14:30 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 15 14:30 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 15 14:30 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 15 14:30 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 15 14:30 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 triage
+[0m
+[0m→ [0mRead probe-results.md[90m [limit=100, offset=1][0m
+[0m→ [0mRead probe-results.md[90m [offset=550, limit=100][0m
+[0m→ [0mRead state_nemotron3.json
+[0m✱ [0mGlob "leads/*.txt"[90m 0 matches[0m
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/leads/
+total 1432
+drwxr-xr-x  2 runner runner   4096 Sep 15 14:30 .
+drwxr-xr-x 12 runner runner   4096 Sep 15 14:30 ..
+-rw-r--r--  1 runner runner 551502 Sep 15 14:30 lead-bigpickle.md
+-rw-r--r--  1 runner runner   4488 Sep 15 14:30 lead-laguna.md
+-rw-r--r--  1 runner runner   4400 Sep 15 14:30 lead-ling3.md
+-rw-r--r--  1 runner runner   4576 Sep 15 14:30 lead-longcat.md
+-rw-r--r--  1 runner runner     18 Sep 15 14:30 lead-mimo.md
+-rw-r--r--  1 runner runner 858173 Sep 15 14:30 lead-nemotron3.md
+-rw-r--r--  1 runner runner  13083 Sep 15 14:30 reposcan-alfaview.md
+[0m
+[0m✗ [0mRead leads/lead-nemotron3.md failed[90m [offset=15000, limit=100][0m
+[91m[1mError: [0mOffset 15000 is out of range for this file (4839 lines)
+[0m→ [0mRead leads/lead-nemotron3.md[90m [limit=150, offset=4700][0m
+[0m→ [0mRead scope.yml

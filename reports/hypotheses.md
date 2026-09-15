@@ -1928,3 +1928,9 @@
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
 - LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JS
 - LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har
+
+## RANKED HYPOTHESES 2026-09-15 14:51:11 UTC
+- [78] app.alfaview.com/graphql: Anonymous signup chain yields valid bearer token to unlock introspect+IDOR chains (from art/lead_bigpickle.txt)
+- LEARN: NO_DELTA @ full inventory: OpenAPI MD5 357b94d3 (37 paths), introspect OPTIONS 405, authorize 200/400, graphql GET 400, users/me 401, JWKS 7 RSA keys, test.alfa
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation confirmed unauthenticated from public JS bundle (AppSignup.min.js sends no token header) — only standi
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 10th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_e

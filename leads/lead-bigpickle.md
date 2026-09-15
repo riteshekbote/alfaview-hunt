@@ -4009,3 +4009,38 @@ verify_steps: (HUMAN, two own tenants) /v2/auth/password → users/me baseline �
 impact: cross-tenant PII, room passcode, attendance dump, permission mutation, user delete; HIGH.
 testability: HUMAN_ONLY
 [NEXT] HUMAN: In ONE session acquire a token: (1) POST https://app.alfaview.com/graphql body `{"query":"mutation { signup(displayName: \"<myname>\", user: {email: \"<OWNED_MAILBOX>\", userProfile: {firstname: \"Probe\", lastname: \"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}`; (2) open activation email from OWNED mailbox, extract `activationToken/companyId/username` from the /finish-signup URL; (3) finishSignup → capture returned bearer; (4) confirm GET /v2/users/me 200; then run introspect matrix (fabricated client_id body+Basic vs control) on that token. Do NOT touch any tenant-B data this pass.
+## 2026-09-15 14:32:16 UTC [target] (model bigpickle)
+[PRIO] sso.alfaview.com,9.5,OAuth/FusionAuth/OIDC discovery/JWKS/introspect/authorize,7(gate_ease=7 via OIDC discovery, 3 via login page),10(business_value=10, SSO central auth),3(tech=3),8(cloud=8, FusionAuth infra),10(freshness=10)
+[PRIO] app.alfaview.com,8.5,GraphQL/guestAuthenticate/signup/finishSignup,8(gate_ease=8, anonymous signup reachable),9(business_value=9, app frontdoor),5(tech=5, GraphQL mutations),7(cloud=7, SPA+backend),9(freshness=9)
+[PRIO] apis.alfaview.com,7.5,REST/OpenAPI/IDOR/guest-link/users/{id},6(gate_ease=6, auth-gated but 3-field guest-link),9(business_value=9, core API),4(tech=4, REST+JWT),6(cloud=6),8(freshness=8)
+[HYP] Anonymous signup chain yields valid bearer token to unlock introspect+IDOR chains
+class: AUTH
+asset: app.alfaview.com/graphql (signup → finishSignup)
+confidence: 78
+reasoning: Signup mutation confirmed unauthenticated (sends no token header in AppSignup.min.js); finishSignup({companyId,username,activationToken,password}) reachable at /finish-signup route in AppFinishSignup.min.js; token_endpoint_auth_methods include client_secret_basic + none; signup is the ONLY standing path to a legit bearer token; all other hypotheses (introspect 95, IDOR 80, GraphQL guest 55) require a token to validate.
+evidence_needed: own mailbox → activationToken → finishSignup → bearer token → GET /v2/users/me 200
+verify_steps: (HUMAN, owned mailbox) POST https://app.alfaview.com/graphql body `{"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_EMAIL>\", userProfile: {firstname: \"Probe\", lastname: \"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}`; extract activationToken from activation email /finish-signup URL; POST finishSignup → capture bearer; GET /v2/users/me with bearer → confirm 200.
+impact: Valid account = unlock key for introspect fabricated-client-id bypass (95 conf) + cross-tenant IDOR (80 conf) + GraphQL guest divergence validation (55 conf); HIGH enabler for 3 chains.
+testability: HUMAN_ONLY
+[HYP] RFC7662 introspection performs no client_secret verification on fabricated client credentials
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 95
+reasoning: 10th+ consecutive byte-stable cycle — OPTIONS 405 (POST-only, alive); fabricated client_id → 200 {"active":false} on POST-body and HTTP Basic b64(fake:fake); only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); discovery advertises client_secret_basic+post+none with no runtime secret verification.
+evidence_needed: real token → 200 {"active":true,sub,scope,exp} under fabricated creds vs control.
+verify_steps: (HUMAN, token in hand) POST https://sso.alfaview.com/oauth2/introspect token=<real_token> client_id=fabricated_id; diff vs same with valid client_id; compare active/sub/scope/exp fields.
+impact: Token-leak holder validates+extracts sub/scope/exp with zero client credentials; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths); PII ops token-authed with raw UUID path params, no syntactic tenant scoping in URL; users/me 401 + users/{uuid} 405 Allow:DELETE confirm routes live behind company-scoped opaque bearer; ownership/tenant checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct response.
+verify_steps: (HUMAN, two own tenants) /v2/auth/password → token → GET /v2/users/me baseline → cross-tenant GET rooms/{tenantB-roomId}/passcode → /participants → /attendances → /stats → PATCH /permissions/{tenantB-userId} → DELETE /users/{tenantB-uuid}.
+impact: Cross-tenant PII dump (participants, attendances), room passcode exfil, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[LEARN] NO_DELTA @ full inventory: OpenAPI MD5 357b94d3 (37 paths), introspect OPTIONS 405, authorize 200/400, graphql GET 400, users/me 401, JWKS 7 RSA keys, test.alfaview v483102 unsigned, client-diagnostics /health 200 — all probes byte-identical to prior cycle; surface fully stable, no new unauthenticated exploit surface.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation confirmed unauthenticated from public JS bundle (AppSignup.min.js sends no token header) — only standing path to a legit bearer token.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 10th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_endpoint_auth_methods_supported advertises client_secret_basic/post/none with no runtime secret verification.
+[RISK] alfaview gmbh: 56 — Surface byte-stable ~10 cycles (OpenAPI MD5 357b94d3); standings unchanged: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) both HIGH-impact but HUMAN/token-gated; GraphQL guest path divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition. The signup→finishSignup chain (78) is the critical unblocking action.
