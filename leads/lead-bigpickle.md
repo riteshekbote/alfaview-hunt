@@ -3980,3 +3980,32 @@ evidence_needed: guestAuthenticate real room triple sans accessKey → 200+acces
 verify_steps: (HUMAN, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey; compare.
 impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
 testability: HUMAN_ONLY
+## 2026-09-15 09:46:15 UTC [target] (model bigpickle)
+[HYP] Anonymous signup yields validated bearer token via email-gated finishSignup
+class: AUTH
+asset: app.alfaview.com/graphql mutation signup → finishSignup
+confidence: 78
+reasoning: signup now confirmed executable anonymously (200 data null, planId free-business, full arg shape from public JS bundle); AppFinishSignup.min.js defines finishSignup({companyId,username,activationToken,password}) at route /finish-signup; token_endpoint_auth_methods include client_secret_basic; signup is the only standing route to a legit token.
+evidence_needed: own mailbox → activationToken → finishSignup → bearer; users/me 200.
+verify_steps: (HUMAN, owned mailbox) POST /graphql signup with real email → open activation link → extract activationToken/companyId/username → POST finishSignup → use token on GET /v2/users/me; compare vs 401 baseline.
+impact: legitimate account = unlock key for introspect fabrication (95) + cross-tenant IDOR (80); HIGH enabler.
+testability: HUMAN_ONLY
+[HYP] RFC7662 introspection performs no client_secret verification on fabricated client credentials
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 95
+reasoning: 10th+ byte-stable cycle; fabricated client_id → 200 {"active":false} on POST-body and Basic b64(fake:fake); only residual gate Basic-vs-body mismatch 401; token param enforced (400 missing_token); discovery advertises client_secret_basic+post+none; introspection_endpoint absent from discovery 2nd cycle while endpoint live (405).
+evidence_needed: real token → 200 {"active":true,sub,scope,exp} under fabricated creds vs control.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real> | +client_id=fake | +Basic b64(fake:fake); diff active/sub/scope/exp.
+impact: token-leak holder validates+extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths); PII ops token-authed with raw UUID params, no syntactic tenant scoping; users/me 401 + users/{uuid} 405 Allow:DELETE; ownership checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 correct.
+verify_steps: (HUMAN, two own tenants) /v2/auth/password → users/me baseline → cross-tenant passcode/participants/attendances/stats → PATCH permissions → DELETE users/{id}.
+impact: cross-tenant PII, room passcode, attendance dump, permission mutation, user delete; HIGH.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: In ONE session acquire a token: (1) POST https://app.alfaview.com/graphql body `{"query":"mutation { signup(displayName: \"<myname>\", user: {email: \"<OWNED_MAILBOX>\", userProfile: {firstname: \"Probe\", lastname: \"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}`; (2) open activation email from OWNED mailbox, extract `activationToken/companyId/username` from the /finish-signup URL; (3) finishSignup → capture returned bearer; (4) confirm GET /v2/users/me 200; then run introspect matrix (fabricated client_id body+Basic vs control) on that token. Do NOT touch any tenant-B data this pass.
