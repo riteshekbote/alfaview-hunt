@@ -408,3 +408,20 @@
 - 2026-09-14 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable.
 - 2026-09-14 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
 - 2026-09-14 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint now advertised (was absent) — endpoint now in discovery
+- 2026-09-15 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was "advertised" last cycle) — advertisement oscillates while /oauth2/introspect stays live (OPTIONS 405); discovery advertisement is not a reliable liveness signal.
+- 2026-09-15 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: 7 RSA RS256 keys (200/16257B, n 342/683 B64) stable at canonical jwks_uri; /oauth2/jwks path 404 persists — metadata/JWKS divergence continues.
+- 2026-09-15 NO_DELTA @ standing probes: OpenAPI MD5 357b94d3 (37 paths), users/me 401, authorize 200/6173B, graphql GET 400, client-diagnostics /health 200, test.alfaview v483102 unsigned — full surface byte-stable, no fresh unauthenticated exploit surface.
+- 2026-09-15 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+- 2026-09-15 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint now advertised (was absent) — endpoint now in discovery
+- 2026-09-15 ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body client_id validation fully removed — fabricated client_id → 200 {"active":false} (was 400 invalid_client); HTTP Basic auth also accepts any client_id; only residual check is Basic-vs-body client_id_mismatch (401)
+- 2026-09-15 ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_uri matrix still client_id-gated but behavior unstable
+- 2026-09-15 ACCEPTED AUTH @ apis.alfaview.com: REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required
+- 2026-09-15 ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 3-field accessKey combo
+- 2026-09-15 REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.
+- 2026-09-15 REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- 2026-09-15 REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously.
+- 2026-09-15 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingUserAccount(userId)) — broader schema-surface mapping.
+- 2026-09-15 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated test target. Needs account.
+- 2026-09-15 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
+- 2026-09-15 ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
+- 2026-09-15 ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.

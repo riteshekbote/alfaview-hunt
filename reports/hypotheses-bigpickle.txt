@@ -1,28 +1,33 @@
-## 2026-09-14 21:52:38 UTC [target] (model bigpickle)
-[HYP] RFC7662 introspection accepts fabricated client auth on POST-body and Basic — no client_secret verification
+## 2026-09-15 00:04:29 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspection performs no client_secret verification on fabricated client credentials
 class: OATH
 asset: sso.alfaview.com/oauth2/introspect (POST)
 confidence: 95
-reasoning: 10th consecutive byte-stable cycle; endpoint live (OPTIONS 405/POST-only) though absent from discovery; prior cycles: fabricated client_id → 200 `{"active":false}` on both POST-body and HTTP Basic b64(fake:fake); only residual gate Basic-vs-body `client_id_mismatch` (401); `token` param enforced (400 missing_token); discovery advertises token_endpoint_auth_methods_supported=[client_secret_basic,client_secret_post,none] with no runtime secret verification. POST kept idle this cycle per read-only rule.
-evidence_needed: real FusionAuth access/JWT → 200 `{"active":true,sub,scope,exp}` with fabricated client creds vs control without.
-verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real> (control) | +client_id=fake | +Basic b64(fake:fake); diff active/sub/scope/exp vs GET /v2/auth/token-info on same raw token.
-impact: token-leak holder validates and extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional on token possession.
+reasoning: 10th+ consecutive cycle endpoint alive (OPTIONS 405, POST-only, edge-proxy) though absent from current discovery (oscillates); prior cycles established POST-body fabricated client_id → 200 `{"active":false}` (was 400 invalid_client), HTTP Basic b64(fake:fake) → 200, only residual gate Basic-vs-body client_id_mismatch 401, token param enforced (400 missing_token); discovery still advertises token_endpoint_auth_methods_supported=[client_secret_basic,client_secret_post,none]; jwks_uri restored 7×RS256 (no HMAC secret possible), issuer=acme.com unchanged.
+evidence_needed: real FusionAuth access token → 200 `{"active":true,sub,scope,exp}` under fabricated client creds (POST-body and Basic) vs control without.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real> control | +client_id=fake | +Basic b64(fake:fake); diff active/sub/scope/exp.
+impact: token-leak holder validates + extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional on token possession.
 testability: HUMAN_ONLY
-[HYP] Cross-tenant IDOR via UUID path params on REST user/room/permission ops
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
 class: IDOR
-asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode,/participants,/attendances, stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+asset: apis.alfaview.com/v2 — DEAD restrictive: GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
 confidence: 80
-reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths, 10th stable cycle); all PII/business ops token-authed with UUID path params; users/me 401 + users/{uuid} 405 Allow:DELETE reconfirm routes live behind opaque company-scoped bearer; ownership checks never passively verifiable.
-evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
-verify_steps: (HUMAN, two own tenants) POST /v2/auth/password → GET /v2/users/me baseline → cross-tenant passcode/participants/attendances/stats → PATCH permissions → DELETE users/{id}.
-impact: cross-tenant PII read, room passcode, attendance dump, permission mutation, user deletion; HIGH.
+reasoning: OpenAPI prod=beta byte-identical 10th+ cycle (MD5 357b94d3, 37 paths); PII ops token-authed with raw UUID path params (no tenant scoping syntactically); users/me 401 + users/{uuid} 405 Allow:DELETE confirm routes live behind company-scoped opaque bearer; ownership checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 correct.
+verify_steps: (HUMAN, two own tenants) POST /v2/auth/password → users/me baseline → cross-tenant passcode/participants/attendances/stats → PATCH permissions → DELETE users/{id}.
+impact: cross-tenant PII, room passcode, attendance dump, permission mutation, user delete; HIGH.
 testability: HUMAN_ONLY
-[HYP] GraphQL guest path accessKey-less vs REST 3-field guest-link
+[HYP] GraphQL guest path authenticates rooms without REST accessKey
 class: AUTH
 asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
 confidence: 55
-reasoning: reconfirmed anonymous-reachable (zero-UUID → BAD_USER_INPUT; UUID-format → FORBIDDEN past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has NO accessKey; REST /v2/auth/guest-link requires {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise).
+reasoning: anonymous-reachable stable (zero-UUID → BAD_USER_INPUT; UUID-format → FORBIDDEN/BAD_USER_INPUT past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has no accessKey; REST /v2/auth/guest-link insists {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise). Resolver behavior oscillated; divergence structural.
 evidence_needed: guestAuthenticate real room triple sans accessKey → 200+accessToken where REST rejects identical triple.
 verify_steps: (HUMAN, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey; compare 200+token vs 401/422.
 impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
 testability: HUMAN_ONLY
+[NEXT] HUMAN: In ONE session run the unlock chain — unauthenticated GraphQL `Signup` (planId "free-business") → email-gated `finishSignup` at /finish-signup → own validated bearer token, then POST /oauth2/introspect with that real token under fabricated client_id (body+Basic) vs control, then two-tenant IDOR matrix on apis /v2. First pass = token acquisition only; do not touch tenant-B data.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was "advertised" last cycle) — advertisement oscillates while /oauth2/introspect stays live (OPTIONS 405); discovery advertisement is not a reliable liveness signal.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: 7 RSA RS256 keys (200/16257B, n 342/683 B64) stable at canonical jwks_uri; /oauth2/jwks path 404 persists — metadata/JWKS divergence continues.
+[LEARN] NO_DELTA @ standing probes: OpenAPI MD5 357b94d3 (37 paths), users/me 401, authorize 200/6173B, graphql GET 400, client-diagnostics /health 200, test.alfaview v483102 unsigned — full surface byte-stable, no fresh unauthenticated exploit surface.
+[RISK] alfaview gmbh: 56 — surface byte-stable ~10 cycles (OpenAPI MD5 357b94d3); standings unchanged: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) both HIGH-impact but HUMAN/token-gated; GraphQL accessKey divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition.

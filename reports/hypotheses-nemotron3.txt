@@ -1,14 +1,18 @@
-## 2026-09-14 21:57:25 UTC [target] (model nemotron3)
-[HYP] Unauthenticated token introspection bypassing RFC7662 client authentication
+## 2026-09-15 00:04:14 UTC [target] (model nemotron3)
+[PRIO] sso.alfaview.com,9.2,a=10,b=10,t=10,g=2,c=10,f=8 — FusionAuth 1.63.0, OIDC metadata misconfig (issuer=acme.com), implicit flow, HS/ES algs vs RSA-only JWKS, introspect client auth fully bypassed, authorize validation timing unstable, no registration_endpoint
+[PRIO] app.alfaview.com/graphql,8.7,a=9,b=9,t=9,g=10,c=5,f=6 — Full admin schema leaked (1.09MB), resolver auth inconsistent, guestAuthenticate/guestJoin anonymous-reachable (no accessKey vs REST 3-field), field-oracle discloses reply types (providers, http_download_url, GetPendingUserAccount)
+[PRIO] apis.alfaview.com,8.3,a=8,b=10,t=7,g=3,c=8,f=7 — OpenAPI public (37 paths), UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} (IDOR), opaque tokens, guest-link 3-field, cross-tenant authz untested
+[PRIO] test.alfaview.com,6.8,a=6,b=7,t=5,g=10,c=3,f=5 — Unauthenticated binary distro v483102 (4 platforms), no sha256/signatures, supply-chain risk, client_id-in-binary refuted
+[HYP] Unauthenticated token introspection leaking token metadata via RFC7662 client auth bypass
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
 confidence: 95
-reasoning: Both POST-body client_id and HTTP Basic auth accept fabricated client_id + any secret → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic; JWKS now returns 7 RSA keys; FusionAuth Community edition permits this for public clients; requires valid token parameter (400 missing_token without it)
+reasoning: POST-body and HTTP Basic auth both accept fabricated client_id + any secret → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic; JWKS restored with 7 RSA keys; FusionAuth Community permits this for public clients; requires valid token parameter (400 missing_token without it)
 evidence_needed: Valid access token from authenticated session; observe if introspection reveals token metadata (scopes, exp, sub, client_id, token_type) with fake client credentials
 verify_steps: HUMAN login to obtain valid token → POST https://sso.alfaview.com/oauth2/introspect -u "fake:any" -d "token=<valid>" → observe response for token metadata leakage; compare with POST body client_id=fake → 200 active:false
 impact: Token metadata disclosure (scopes, subject, expiration, client_id, token_type) with fabricated credentials — info leak enabling token reconnaissance and session validation (MEDIUM-HIGH)
 testability: AUTH_HELPED
-[HYP] OAuth redirect_uri validation bypass via client_id registration timing shift
+[HYP] OAuth authorization code theft via redirect_uri validation bypass after client_id registration timing shift
 class: OATH
 asset: sso.alfaview.com/oauth2/authorize
 confidence: 80
@@ -17,7 +21,7 @@ evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser 
 verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; GET https://sso.alfaview.com/oauth2/authorize?client_id=<found>&redirect_uri=https://evil.com&response_type=code&scope=openid&state=test123 → observe 302 Location; repeat without state; test code_challenge_method=S256&code_challenge=<valid>
 impact: OAuth authorization code theft → full account takeover (CRITICAL, OWASP A07:2021)
 testability: AUTH_HELPED
-[HYP] Unauthenticated guest token issuance via GraphQL missing accessKey
+[HYP] Unauthenticated guest token issuance via GraphQL missing accessKey requirement
 class: AUTH
 asset: app.alfaview.com/graphql
 confidence: 85
