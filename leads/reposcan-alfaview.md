@@ -214,3 +214,12 @@ TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 ## REPOSCAN 2026-09-15 18:17:53 UTC
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
+## REPOSCAN 2026-09-15 21:32:37 UTC
+[HYP] Hardcoded Laravel APP_KEY in upstream `.env.testing`
+class: SECRET
+asset: `alfaview/pixelfed/.env.testing`
+confidence: 15
+reasoning: The file contains `APP_KEY=base64:lwX95GbNWX3XsucdMe0XwtOKECta3h/B+p9NbH2jd0E=` — an identical value to upstream pixelfed/pixelfed. This is a well-known test-only key inherited from the upstream project. alfaview made zero custom changes to this file. The `.env.docker` contains only placeholder dev passwords (`pixelfed_db_pass`, `redis_password`) also identical to upstream.
+impact: Informational (no alfaview-specific risk)
+verify_steps: Compare `diff <(curl -s https://raw.githubusercontent.com/pixelfed/pixelfed/dev/.env.testing) <local .env.testing>` — confirmed identical.
+TARGET_ORG not configured for alfaview; skipping public-org deep scan.
