@@ -22051,3 +22051,144 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 [RISK] alfaview gmbh: 56 — Surface byte-stable now 12 consecutive cycles (OpenAPI MD5 357b94d3, 37 paths); standing chains unchanged and all HUMAN-gated: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) are HIGH-impact but token/tenant-gated; GraphQL guest path divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition via the signup→finishSignup chain (78), the critical unblocking action.
+===== ANALYST bigpickle 2026-09-15 23:48:48 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor p in \
+  "https://apis.alfaview.com/v2/docs/openapi.json" \
+  "https://apis.alfaview.com/v2/users/me" \
+  "https://sso.alfaview.com/.well-known/openid-configuration" \
+  "https://sso.alfaview.com/.well-known/jwks.json"; do
+  curl -s -o /tmp/opencode/probe.out -w "%{http_code} %{size_download} %{url_effective}\n" --max-time 15 "$p"
+  sleep 1
+done
+md5sum /tmp/opencode/probe.out 2>/dev/null; ls -la /tmp/opencode/
+200 127532 https://apis.alfaview.com/v2/docs/openapi.json
+401 107 https://apis.alfaview.com/v2/users/me
+200 2112 https://sso.alfaview.com/.well-known/openid-configuration
+200 16257 https://sso.alfaview.com/.well-known/jwks.json
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/opencode/probe.out
+total 24
+drwxr-xr-x  2 runner runner  4096 Sep 15 23:47 .
+drwxrwxrwt 15 root   root    4096 Sep 15 23:47 ..
+-rw-r--r--  1 runner runner 16257 Sep 15 23:47 probe.out
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://apis.alfaview.com/v2/docs/openapi.json" -o /tmp/opencode/openapi.json
+md5sum /tmp/opencode/openapi.json
+grep -o '"introspection_endpoint"[^,]*' /tmp/opencode/discovery.out 2>/dev/null || true
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://sso.alfaview.com/.well-known/openid-configuration" -o /tmp/opencode/discovery.json
+grep -c 'introspection_endpoint' /tmp/opencode/discovery.json
+grep -o '"issuer":"[^"]*"' /tmp/opencode/discovery.json
+grep -o '"token_endpoint_auth_methods_supported":[^]]*]' /tmp/opencode/discovery.json
+sleep 1
+curl -s -o /dev/null -w "introspect OPTIONS: %{http_code}\n" --max-time 15 -X OPTIONS "https://sso.alfaview.com/oauth2/introspect"
+sleep 1
+curl -s --max-time 15 -o /dev/null -w "authorize GET: %{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=does-not-exist-12345&response_type=code&redirect_uri=https://evil.example.com"
+sleep 1
+curl -s --max-time 15 -o /dev/null -w "graphql GET: %{http_code}\n" "https://app.alfaview.com/graphql"
+sleep 1
+curl -s --max-time 15 -o /dev/null -w "client-diagnostics /health: %{http_code} %{size_download}\n" "https://client-diagnostics-ingest.alfaview.com/health"
+0
+introspect OPTIONS: 405
+authorize GET: 200 6173
+graphql GET: 400
+client-diagnostics /health: 200 16
+[0m
+[0m$ [0mwc -c /tmp/opencode/discovery.json
+grep -o '"issuer":"[^"]*"' /tmp/opencode/discovery.json || echo "no issuer"
+grep -o '"authorization_endpoint":"[^"]*"' /tmp/opencode/discovery.json || echo "no authz"
+2112 /tmp/opencode/discovery.json
+no issuer
+no authz
+[0m
+[0m→ [0mRead /tmp/opencode/discovery.json
+[0m
+[0m$ [0mfor u in "https://sso.alfaview.com/oauth2/userinfo" "https://sso.alfaview.com/oauth2/logout"; do
+  curl -s --max-time 15 -o /dev/null -w "GET %{http_code} %{size_download} $u\n" "$u"
+  sleep 1
+  curl -s --max-time 15 -o /dev/null -w "OPTIONS %{http_code} %{size_download} $u\n" -X OPTIONS "$u"
+  sleep 1
+done
+curl -s --max-time 15 -o /dev/null -w "GET device_authorize %{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/device_authorize?client_id=does-not-exist-12345"
+GET 401 0 https://sso.alfaview.com/oauth2/userinfo
+OPTIONS 405 0 https://sso.alfaview.com/oauth2/userinfo
+GET 302 0 https://sso.alfaview.com/oauth2/logout
+OPTIONS 405 0 https://sso.alfaview.com/oauth2/logout
+GET device_authorize 405 0
+[0m
+[0m$ [0mcurl -s --max-time 15 -o /dev/null -D - "https://sso.alfaview.com/oauth2/logout" | grep -i -E "^(HTTP|location|content-type)"
+echo "---"
+curl -s --max-time 15 -o /dev/null -w "device_authorize OPTIONS: %{http_code}\n" -X OPTIONS "https://sso.alfaview.com/oauth2/device_authorize"
+HTTP/2 302 
+location: /
+---
+device_authorize OPTIONS: 405
+[0m
+[0m$ [0mcurl -s --max-time 15 -o /dev/null -D - "https://sso.alfaview.com/oauth2/logout?post_logout_redirect_uri=https://evil.example.com/cb" | grep -i -E "^(HTTP|location)"
+sleep 1
+curl -s --max-time 15 -o /dev/null -D - "https://sso.alfaview.com/oauth2/logout?redirect_uri=https://evil.example.com/cb" | grep -i -E "^(HTTP|location)"
+HTTP/2 302 
+location: /
+HTTP/2 302 
+location: /
+[0m
+## STEP 1 — DELTA
+- [NO_DELTA] Standing triple byte-stable 13th cycle: OpenAPI MD5 357b94d3 (37 paths/127532B), introspect OPTIONS 405, authorize 200/6173B, JWKS 200/16257B (md5 3f8d456c), users/me 401/107B, graphql GET 400, client-diagnostics /health 200/16B.
+- [NEW] `sso.alfaview.com/oauth2/userinfo` confirmed live (GET 401, OPTIONS 405) — previously-unlogged standard OIDC endpoint; auth-gated, no anonymous data.
+- [NEW] `sso.alfaview.com/oauth2/logout` live (GET 302→`/`); `post_logout_redirect_uri`/`redirect_uri` ignored without session → 302 `/` — no open-redirect variant.
+- [NEW] OIDC discovery (2112B) this cycle advertises `dpop_signing_alg_values_supported` (Ed448/Ed25519/ES/PS/RS) + `password` grant in `grant_types_supported` — first observed; not previously logged.
+
+## STEP 2 — PRIORITIZE
+- [PRIO] sso.alfaview.com,7.3,OAuth/FusionAuth/OIDC,:new=userinfo+logout+DPoP advert,g=6(introspect 200 w/o client-auth, impact token-gated),b=10(central SSO),t=4,token_auth_methods=basic/post/none unchanged
+- [PRIO] app.alfaview.com,7.5,GraphQL signup/finishSignup/guest mutations,:a=7(full schema leaked),g=8(anonymous signup),b=9,t=6
+- [PRIO] apis.alfaview.com,6.1,REST/OpenAPI/IDOR,:a=5(37 paths stable),g=5(token-gated),b=9(core API),t=4
+
+## STEP 3 — HYPOTHESES
+[HYP] RFC7662 introspection performs no client_secret verification on fabricated client credentials
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST; HTTP Basic or POST-body client_id)
+confidence: 95
+reasoning: 13th byte-stable cycle (OPTIONS 405 live); fabricated client_id on POST-body and Basic b64(fake:fake) → 200 {"active":false}; only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); discovery still advertises client_secret_basic/post/none with no runtime secret verification; OAuth2 userinfo now doubly useful as a second claim oracle once a token is held.
+evidence_needed: real token → 200 {"active":true,sub,scope,exp} under fabricated creds vs control.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real>&client_id=fabricated; repeat Basic b64(fabricated:fabricated); diff active/sub/scope/exp vs control; optionally GET /oauth2/userinfo with same token for cross-check.
+impact: Token-leak holder validates + extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths, 13+ stable); PII ops token-authed with raw UUID path params, no syntactic tenant scoping; users/me 401 + users/{uuid} 405 Allow:DELETE confirm routes live behind company-scoped opaque bearer; users/me 401 reconfirmed this cycle.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (HUMAN, two own tenants) /v2/auth/password → token → /v2/users/me baseline → cross-tenant GET rooms/{tenantB}/passcode|participants|attendances|stats → PATCH permissions/{tenantB-userId} → DELETE users/{tenantB-uuid}.
+impact: Cross-tenant PII dump, room passcode exfil, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Anonymous signup chain yields valid bearer token to unlock introspect+userinfo+IDOR chains
+class: AUTH
+asset: app.alfaview.com/graphql (signup → finishSignup at /finish-signup)
+confidence: 78
+reasoning: Signup mutation unauthenticated (AppSignup.min.js sends no token header); finishSignup({companyId,username,activationToken,password}) email-gated; signup is sole standing path to a legit bearer token; introspect (95), userinfo oracle, and IDOR (80) all gate on it; token_endpoint_auth_methods and password grant advertised at sso.
+evidence_needed: owned mailbox → activationToken from /finish-signup URL → finishSignup → bearer → GET /v2/users/me 200 vs 401 baseline.
+verify_steps: (HUMAN, owned mailbox) POST https://app.alfaview.com/graphql `{"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MAIL>\", userProfile: {firstname:\"Probe\", lastname:\"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}` → activation email → extract activationToken/companyId/username → finishSignup → capture bearer → GET /v2/users/me.
+impact: Legit account = unlock key for introspect (95) + IDOR (80) + userinfo claim oracle; HIGH enabler.
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] None dropped — no sub-40; new observations (userinfo 401, logout 302→/, DPoP+password adverts) are endpoint-map/descriptive only, NOT hypotheses; no new REJECTED-class candidates.
+- [FINAL] introspect fabricated-client-auth (95): byte-stable 13 cycles, evidence path (real token) now doubled via userinfo cross-check — rank 1.
+- [FINAL] cross-tenant IDOR (80): OpenAPI evidence solid, needs two own tenants — rank 2.
+- [FINAL] anonymous signup → token (78): only non-HUMAN-blocked entry path to auth — rank 3.
+
+## STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: In ONE session acquire a bearer via the signup chain — (1) POST app.alfaview.com/graphql signup mutation (owned mailbox, planId "free-business"); (2) pull activationToken/companyId/username from the OWNED-mailbox activation link (/finish-signup); (3) finishSignup → capture bearer; (4) confirm GET /v2/users/me 200; (5) run introspect matrix (fabricated client_id body+Basic vs control) AND GET /oauth2/userinfo as second oracle. Do NOT touch any tenant-B data this pass.
+
+## STEP 6 — LEARNING
+- [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: OIDC discovery now advertises dpop_signing_alg_values_supported (Ed448/Ed25519/ES/PS/RS) and password grant in grant_types_supported — first observed this cycle; impact pending a held token, not independently exploitable.
+- [LEARN] REJECTED OATH @ sso.alfaview.com/oauth2/logout: post_logout_redirect_uri/redirect_uri ignored without session (302 → /) — no open-redirect variant; controls needed to test further would require session+registered client.
+- [LEARN] ACCEPTED AUTH @ sso.alfaview.com/oauth2/userinfo: endpoint live (GET 401, OPTIONS 405), auth-gated — new claim-oracle for the introspect chain, consistent with no anonymous data exposure.
+- [LEARN] NO_DELTA @ full standing inventory: OpenAPI MD5 357b94d3 (37 paths), users/me 401, authorize 200/6173B, jwks md5 3f8d456c, introspect OPTIONS 405, graphql GET 400, client-diagnostics /health 200/16B — byte-stable 13th consecutive cycle; no fresh unauthenticated exploit surface.
+
+## STEP 7 — RISK
+- [RISK] alfaview gmbh: 56 — Surface byte-stable 13+ consecutive cycles (OpenAPI MD5 357b94d3, 37 paths). Standing chains unchanged and all HUMAN-gated: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) are HIGH-impact but token/tenant-gated; signup→finishSignup (78) remains the critical unblocking path. New observations this cycle (userinfo/live, logout redirect-inert, DPoP+password adverts) add descriptive surface only — no autonomously-exploitable vector; risk unchanged pending token acquisition.

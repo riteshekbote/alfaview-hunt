@@ -4180,3 +4180,31 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 12th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_endpoint_auth_methods still advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405).
 [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles confirmed); all HIGH-value chains (introspect 95, IDOR 80) gate on executing it.
 [RISK] alfaview gmbh: 56 — Surface byte-stable now 12 consecutive cycles (OpenAPI MD5 357b94d3, 37 paths); standing chains unchanged and all HUMAN-gated: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) are HIGH-impact but token/tenant-gated; GraphQL guest path divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition via the signup→finishSignup chain (78), the critical unblocking action.
+## 2026-09-15 23:48:37 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspection performs no client_secret verification on fabricated client credentials
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST; HTTP Basic or POST-body client_id)
+confidence: 95
+reasoning: 13th byte-stable cycle (OPTIONS 405 live); fabricated client_id on POST-body and Basic b64(fake:fake) → 200 {"active":false}; only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); discovery still advertises client_secret_basic/post/none with no runtime secret verification; OAuth2 userinfo now doubly useful as a second claim oracle once a token is held.
+evidence_needed: real token → 200 {"active":true,sub,scope,exp} under fabricated creds vs control.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real>&client_id=fabricated; repeat Basic b64(fabricated:fabricated); diff active/sub/scope/exp vs control; optionally GET /oauth2/userinfo with same token for cross-check.
+impact: Token-leak holder validates + extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths, 13+ stable); PII ops token-authed with raw UUID path params, no syntactic tenant scoping; users/me 401 + users/{uuid} 405 Allow:DELETE confirm routes live behind company-scoped opaque bearer; users/me 401 reconfirmed this cycle.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (HUMAN, two own tenants) /v2/auth/password → token → /v2/users/me baseline → cross-tenant GET rooms/{tenantB}/passcode|participants|attendances|stats → PATCH permissions/{tenantB-userId} → DELETE users/{tenantB-uuid}.
+impact: Cross-tenant PII dump, room passcode exfil, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Anonymous signup chain yields valid bearer token to unlock introspect+userinfo+IDOR chains
+class: AUTH
+asset: app.alfaview.com/graphql (signup → finishSignup at /finish-signup)
+confidence: 78
+reasoning: Signup mutation unauthenticated (AppSignup.min.js sends no token header); finishSignup({companyId,username,activationToken,password}) email-gated; signup is sole standing path to a legit bearer token; introspect (95), userinfo oracle, and IDOR (80) all gate on it; token_endpoint_auth_methods and password grant advertised at sso.
+evidence_needed: owned mailbox → activationToken from /finish-signup URL → finishSignup → bearer → GET /v2/users/me 200 vs 401 baseline.
+verify_steps: (HUMAN, owned mailbox) POST https://app.alfaview.com/graphql `{"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MAIL>\", userProfile: {firstname:\"Probe\", lastname:\"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}` → activation email → extract activationToken/companyId/username → finishSignup → capture bearer → GET /v2/users/me.
+impact: Legit account = unlock key for introspect (95) + IDOR (80) + userinfo claim oracle; HIGH enabler.
+testability: HUMAN_ONLY

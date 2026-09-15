@@ -1,4 +1,9 @@
-## 2026-09-15 21:45:01 UTC [target] (model nemotron3)
+## 2026-09-15 23:47:31 UTC [target] (model nemotron3)
+[NEW] sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+[NEW] sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+[CHANGED] sso.alfaview.com/oauth2/introspect: 12th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_endpoint_auth_methods still advertise client_secret_basic/post/none with no runtime secret verification
+[CHANGED] app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed)
+[CHANGED] apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3)
 [PRIO] sso.alfaview.com/oauth2/introspect,9.5,a=10,b=10,t=10,g=2,c=10,f=10
 [PRIO] sso.alfaview.com/oauth2/authorize,9.0,a=9,b=10,t=9,g=3,c=10,f=8
 [PRIO] app.alfaview.com/graphql,8.8,a=9,b=9,t=9,g=10,c=5,f=7
