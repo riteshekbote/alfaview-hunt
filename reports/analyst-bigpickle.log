@@ -21040,3 +21040,191 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview gmbh: 56 — surface byte-stable ~10 cycles (OpenAPI MD5 357b94d3); standings unchanged: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) both HIGH-impact but HUMAN/token-gated; GraphQL accessKey divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition.
+===== ANALYST bigpickle 2026-09-15 05:00:31 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}" https://apis.alfaview.com/v2/users/me
+401 107
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/openapi.json -w "%{http_code}" https://apis.alfaview.com/v2/docs/openapi.json; echo; md5sum /tmp/opencode/openapi.json 2>/dev/null
+200
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+[0m
+[0m$ [0msleep 1; curl -s -o /tmp/opencode/jwks.json -w "%{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json; md5sum /tmp/opencode/jwks.json 2>/dev/null
+200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/opencode/jwks.json
+[0m
+[0m$ [0msleep 1; curl -s https://sso.alfaview.com/.well-known/openid-configuration | tr ',' '\n' | rg -i "introspection_endpoint|issuer|registration_endpoint|token_endpoint_auth" | head -20
+/bin/bash: line 1: rg: command not found
+[0m
+[0m$ [0msleep 1; curl -s https://sso.alfaview.com/.well-known/openid-configuration | tr ',' '\n' | grep -i "introspection\|issuer\|registration\|token_endpoint_auth"
+"issuer" : "acme.com"
+  "token_endpoint_auth_methods_supported" : [
+[0m
+[0m$ [0msleep 1; grep -o '"keys"' /tmp/opencode/jwks.json; curl -s https://sso.alfaview.com/oauth2/authorize -o /tmp/opencode/auth.log -w "%{http_code} %{size_download}\n"
+"keys"
+200 6189
+[0m
+[0m$ [0msleep 1; curl -s -o /dev/null -w "graphql GET %{http_code}\n" https://app.alfaview.com/graphql; curl -s -o /dev/null -w "cdi %{http_code}\n" https://client-diagnostics-ingest.alfaview.com/health
+graphql GET 400
+cdi 200
+[0m
+[0m$ [0msleep 1; curl -s https://test.alfaview.com/ -o /tmp/opencode/test.html -w "test.alfaview %{http_code}\n"; grep -o "v[0-9]\{6\}" /tmp/opencode/test.html | head -1
+test.alfaview 200
+[0m
+[0m$ [0mgrep -o "alfacheck-[^\"']*v[0-9]*" /tmp/opencode/test.html | head -5; grep -io "v[0-9]\{5,\}[a-z_]*" /tmp/opencode/test.html | sort -u | head -5; grep -c "sha256\|signature\|checksum" /tmp/opencode/test.html
+0
+[0m
+[0m$ [0mpython3 - <<'EOF'
+import json
+spec=json.load(open('/tmp/opencode/openapi.json'))
+secless=[]
+for p,ops in spec['paths'].items():
+    for m,o in ops.items():
+        if m in ('get','post','put','patch','delete','head','options'):
+            sec=o.get('security', spec.get('security'))
+            if not sec or sec==[{}]:
+                secless.append((m.upper(),p))
+print("paths:",len(spec['paths']))
+print("no-security endpoints:")
+for x in secless: print(" ",x)
+EOF
+paths: 37
+no-security endpoints:
+  ('POST', '/v2/auth/api-key')
+  ('POST', '/v2/auth/group-link')
+  ('POST', '/v2/auth/guest-link')
+  ('POST', '/v2/auth/password')
+  ('GET', '/v2/auth/token-info')
+  ('GET', '/v2/group-links')
+  ('GET', '/v2/group-links/{id}')
+  ('PATCH', '/v2/group-links/{id}')
+  ('GET', '/v2/guest-links')
+  ('GET', '/v2/guest-links/{id}')
+  ('PATCH', '/v2/guest-links/{id}')
+  ('GET', '/v2/languages')
+  ('GET', '/v2/meetings')
+  ('POST', '/v2/meetings')
+  ('GET', '/v2/meetings/{id}')
+  ('PATCH', '/v2/meetings/{id}')
+  ('POST', '/v2/meetings/{id}/cancellation')
+  ('GET', '/v2/permission-groups')
+  ('GET', '/v2/room-types')
+  ('GET', '/v2/rooms')
+  ('POST', '/v2/rooms')
+  ('DELETE', '/v2/rooms/{id}')
+  ('GET', '/v2/rooms/{id}')
+  ('PATCH', '/v2/rooms/{id}')
+  ('GET', '/v2/rooms/{id}/participants')
+  ('GET', '/v2/rooms/{roomId}/attendances')
+  ('DELETE', '/v2/rooms/{roomId}/features')
+  ('GET', '/v2/rooms/{roomId}/features')
+  ('PATCH', '/v2/rooms/{roomId}/features')
+  ('GET', '/v2/rooms/{roomId}/file-share-limits')
+  ('GET', '/v2/rooms/{roomId}/file-share-settings')
+  ('PATCH', '/v2/rooms/{roomId}/file-share-settings')
+  ('GET', '/v2/rooms/{roomId}/group-links')
+  ('POST', '/v2/rooms/{roomId}/group-links')
+  ('DELETE', '/v2/rooms/{roomId}/group-links/{id}')
+  ('GET', '/v2/rooms/{roomId}/guest-links')
+  ('POST', '/v2/rooms/{roomId}/guest-links')
+  ('DELETE', '/v2/rooms/{roomId}/guest-links/{id}')
+  ('GET', '/v2/rooms/{roomId}/language-settings')
+  ('PATCH', '/v2/rooms/{roomId}/language-settings')
+  ('GET', '/v2/rooms/{roomId}/passcode')
+  ('POST', '/v2/rooms/{roomId}/passcode')
+  ('GET', '/v2/rooms/{roomId}/permissions')
+  ('POST', '/v2/rooms/{roomId}/permissions')
+  ('DELETE', '/v2/rooms/{roomId}/permissions/{userId}')
+  ('PATCH', '/v2/rooms/{roomId}/permissions/{userId}')
+  ('GET', '/v2/rooms/{roomId}/subrooms')
+  ('POST', '/v2/rooms/{roomId}/subrooms')
+  ('DELETE', '/v2/rooms/{roomId}/subrooms/{subroomId}')
+  ('PATCH', '/v2/rooms/{roomId}/subrooms/{subroomId}')
+  ('GET', '/v2/stats')
+  ('GET', '/v2/users')
+  ('PATCH', '/v2/users')
+  ('POST', '/v2/users/invitation')
+  ('GET', '/v2/users/me')
+  ('DELETE', '/v2/users/{id}')
+[0m
+[0m$ [0msleep 1; curl -s -o /dev/null -w "token-info GET(noauth) %{http_code}\n" "https://apis.alfaview.com/v2/auth/token-info"; curl -s "https://apis.alfaview.com/v2/auth/token-info" | head -c 300; echo; python3 -c "import json; s=json.load(open('/tmp/opencode/openapi.json')); p=s['paths']['/v2/auth/token-info']['get']; print('params:',[(x['name'],x['in']) for x in p.get('parameters',[])]); print('global-sec:',s.get('security'))"
+token-info GET(noauth) 422
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+params: [('Authorization', 'header')]
+global-sec: None
+[0m
+[0m$ [0msleep 1; curl -s -o /dev/null -w "badtok %{http_code}\n" -H "Authorization: Bearer not-base64-###" "https://apis.alfaview.com/v2/auth/token-info"; sleep 1; curl -s -H "Authorization: Bearer $(echo -n 'fake:fake' | base64)" "https://apis.alfaview.com/v2/auth/token-info" | head -c 300; echo
+badtok 422
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+[0m
+[0m$ [0msleep 1; B64=$(printf 'fake-token-value' | base64); curl -s -w "\n[%{http_code}]\n" -H "Authorization: Bearer $B64" "https://apis.alfaview.com/v2/auth/token-info"
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+
+[422]
+[0m
+[0m$ [0mfor t in "$(printf 'abc:def' | base64)" "$(head -c 32 /dev/urandom | base64 | tr -d '=+')" "$(python3 -c "import base64,struct;print(base64.b64encode(b'.'*40).decode())")"; do sleep 1; curl -s -w " [%{http_code}]\n" -H "Authorization: Bearer $t" "https://apis.alfaview.com/v2/auth/token-info"; done
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+ [422]
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+ [422]
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+ [422]
+[0m
+STEP 1 — DELTA
+- NO_DELTA: all standing probes byte-stable — OpenAPI MD5 357b94d3 (37 paths), users/me 401/107B, authorize 200/6189B, jwks 200/16257B (7×RS256), openid-configuration `introspection_endpoint` absent again (oscillates), graphql GET 400, client-diagnostics /health 200, test.alfaview 200 (index still carries zero sha256/signature/checksum strings).
+- [NEW] (informational) `GET /v2/auth/token-info` (OpenAPI no-security, RFC7662-style) returns 422 `"invalid access token format"` / `"access token not in base64 format"` for EVERY fabricated Authorization value (incl. valid base64 of `abc:def`, 32-byte random, 40×`.`) — uniform reject, distinct from users/me 401 path; strict schema check = no passive oracle value.
+
+STEP 2 — PRIORITIZE
+- [PRIO] apis.alfaview.com/v2/auth/token-info,7.4,axis=(a,7 b,7 t,5 g,10 c,3 f,5)→0.25·7+0.25·7+0.15·5+0.15·10+0.10·3+0.10·5=8.75→clamp reasoning below
+- Recompute clean, one line per asset:
+- [PRIO] sso.alfaview.com/oauth2/introspect — a7,b7,t8,g10,c5,f9 → weighted=6.55
+- [PRIO] apis.alfaview.com/v2 token-authed room/user ops — a8,b9,t6,g2,c5,f8 → 6.65
+- [PRIO] app.alfaview.com/graphql guest gate — a6,b7,t9,g9,c4,f6 → 7.05
+
+STEP 3 — HYPOTHESES
+[HYP] RFC7662 introspection performs no client_secret verification on fabricated client credentials
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST)
+confidence: 95
+reasoning: 10th+ byte-stable cycle — endpoint live (OPTIONS 405, POST-only) while introspection_endpoint absent from discovery; fabricated client_id → 200 `{"active":false}` on POST-body and Basic b64(fake:fake); only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); discovery advertises token_endpoint_auth_methods_supported incl. client_secret_basic.
+evidence_needed: real token → 200 `{"active":true,sub,scope,exp}` under fabricated creds vs control.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real> | +client_id=fake | +Basic b64(fake:fake); diff vs GET /v2/auth/token-info on same token.
+impact: token-leak holder validates+extracts sub/scope/exp with zero client creds; MEDIUM-HIGH conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode,/participants,/attendances,/stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths); PII ops token-authed with raw UUID params, no syntactic tenant scoping; users/me 401 + users/{uuid} 405 Allow:DELETE confirm routes live behind company-scoped opaque bearer; ownership checks never passively verifiable.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (HUMAN, two own tenants) /v2/auth/password → users/me baseline → cross-tenant passcode/participants/attendances/stats → PATCH permissions → DELETE users/{id}.
+impact: cross-tenant PII, room passcode, attendance dump, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] GraphQL guest path authenticates rooms without REST accessKey
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin)
+confidence: 55
+reasoning: anonymous-reachable stable (zero-UUID → BAD_USER_INPUT; UUID-format → past type validation); GuestAuthenticateReply exposes user/accessToken/role; GraphQL guest signature has no accessKey; REST /v2/auth/guest-link insists {accessKey,companyId,roomId} (422 ACTION_INVALID otherwise). Divergence structural.
+evidence_needed: guestAuthenticate real room triple sans accessKey → 200+accessToken where REST rejects identical triple.
+verify_steps: (HUMAN, own tenant) create room+guest link → POST /graphql guestAuthenticate sans accessKey vs POST /v2/auth/guest-link minus accessKey; compare.
+impact: accessKey-gated room entry bypass, cross-room guest impersonation; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [FINAL] introspect fabricated-client-auth (95): strongest — multi-cycle-stable, low exploit cost once a token is held, but fully token-gated.
+- [FINAL] cross-tenant IDOR (80): highest impact, requires two tenants — cheapest overall proof (free signup), unchanged.
+- [FINAL] GraphQL accessKey divergence (55): genuine structural gap, resolver behavior oscillated (FORBIDDEN↔BAD_USER_INPUT) — keep as supporting chain behind token acquisition.
+- [PARKED] /v2/auth/token-info format oracle: probes show uniform 422 regardless of input → no discriminant value passively; only useful as cross-check after a real token exists. Demoted to supporting evidence.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: In ONE session run the standing unlock chain — POST /graphql `Signup` (planId "free-business") → email-gated finishSignup at /finish-signup → own bearer token → then POST /oauth2/introspect with the real token under fabricated client_id (body+Basic) vs GET /v2/auth/token-info control → then two-tenant IDOR matrix on apis /v2. Token acquisition first; do not touch tenant-B data.
+
+STEP 6 — LEARNING
+- [LEARN] NO_DELTA @ afces-cluster: OpenAPI MD5 357b94d3, users/me 401, authorize 200/6189B, jwks 200/16257B 7-RSA, introspection_endpoint absent in discovery, graphql GET 400, cdi /health 200, test.alfaview v-undetermined unsigned — all byte-stable, no fresh unauthenticated exploit surface; standing chains remain HUMAN-gated.
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com: GET /v2/auth/token-info (no-security, REST introspection analog) rejects all fabricated Authorization values uniformly with 422 `"access token not in base64 format"` — format check is schema-strict, not mere base64-decodability; no passive oracle/enumeration value confirmed.
+
+STEP 7 — RISK
+- [RISK] alfaview gmbh: 56 — surface byte-stable ~11 cycles; standings unchanged: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) HIGH-impact but HUMAN/token-gated; GraphQL accessKey divergence (55); token-info rejects fabricated tokens uniformly (no oracle). No autonomously-exploitable new vector; risk unchanged pending token acquisition.

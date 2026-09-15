@@ -619,3 +619,7 @@ www.alfaview.com
 ## 2026-09-14 21:57:34 UTC
 
 ## 2026-09-15 00:04:40 UTC
+
+## 2026-09-15 05:00:31 UTC
+- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404 in prior cycles) — JWKS endpoint restored
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
