@@ -22626,3 +22626,32 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] alfaview gmbh: 56 — Surface byte-stable now 16 consecutive cycles (OpenAPI MD5 357b94d3, 37 paths); standing chains unchanged and all HUMAN-gated: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) are HIGH-impact but token/tenant-gated; GraphQL guest path divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition via the signup→finishSignup chain (78), the critical unblocking action.
+===== ANALYST bigpickle 2026-09-16 22:58:04 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/op.json -w "%{http_code} %{size_download}" https://apis.alfaview.com/v2/docs/openapi.json; md5sum /tmp/op.json
+200 127532357b94d367909a40b9299b543d23712b  /tmp/op.json
+[0m
+[0m$ [0mcurl -s -o /tmp/oidc.json -w "%{http_code} %{size_download}" https://sso.alfaview.com/.well-known/openid-configuration; echo; grep -o 'introspection_endpoint' /tmp/oidc.json | head -1; jq -r '.issuer' /tmp/oidc.json 2>/dev/null
+200 2169
+acme.com
+[0m
+[0m$ [0mcurl -s -o /tmp/jwks.json -w "%{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json; jq '.keys | length' /tmp/jwks.json 2>/dev/null
+200 16257
+7
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcurl -s -o /tmp/intr.txt -w "%{http_code} %{size_download}\n" -d 'token=abc&client_id=fabricated-123' https://sso.alfaview.com/oauth2/introspect; cat /tmp/intr.txt; echo; curl -s -o /tmp/intr2.txt -w "%{http_code} %{size_download}\n" -u fabricated:anysecret -d 'token=abc' https://sso.alfaview.com/oauth2/introspect; cat /tmp/intr2.txt failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}\n" -X OPTIONS https://sso.alfaview.com/oauth2/introspect; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" https://sso.alfaview.com/oauth2/authorize?client_id=foo
+405 0
+200 6176
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}\n" https://apis.alfaview.com/v2/users/me; curl -s https://apis.alfaview.com/v2/users/me | head -c 200; echo; curl -s -o /dev/null -w "%{http_code}\n" https://client-diagnostics-ingest.alfaview.com/health
+401 107
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+200
+[0m
