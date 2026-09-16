@@ -73,3 +73,14 @@
 - 2 lead(s) marked VALID at 2026-09-13 14:02:07 UTC
   - | 3 | OAuth redirect_uri Bypass | **HOLD** | Needs valid client_id |
   - | 6 | GraphQL guestAuthenticate/guestJoin Missing accessKey | **VALID** | Report — concrete evidence, novel divergence from REST |
+
+- 9 lead(s) marked VALID at 2026-09-16 23:00:08 UTC
+  - | Q4 Provable | NO | Cannot prove without authenticated testing (needs valid API key) |
+  - **Verdict: HOLD** — Cannot validate without authenticated testing. Requires valid API key to confirm cross-tenant enforcement failure.
+  - **Verdict: HOLD** — Need valid companyId+roomId seed to test rate limiting.
+  - | Q2 Reachable | PARTIAL | Endpoint returns 200 for unregistered client_id, but needs valid client_id to test redirect_uri |
+  - | Q4 Provable | NO | Cannot test without valid client_id |
+  - **Verdict: HOLD** — Cannot validate without valid client_id.
+  - | Q7 Acceptable | MAYBE | Would need proof of successful guest authentication with valid credentials |
+  - **Verdict: HOLD** — Anonymous access confirmed, but impact depends on whether valid guest credentials can be provided. REST endpoint requires 3-field combo (accessKey+companyId+roomId), but GraphQL pa
+  - | 4 | OAuth redirect_uri bypass | **HOLD** | Needs valid client_id |
