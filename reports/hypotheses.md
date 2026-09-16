@@ -2005,3 +2005,26 @@
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
 - LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JS
 - LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har
+
+## RANKED HYPOTHESES 2026-09-16 01:58:31 UTC
+- [95] sso.alfaview.com/oauth2/introspect: Unauthenticated token introspection leaking token metadata via RFC7662 client auth bypass (from art/lead_nemotron3.txt)
+- [95] sso.alfaview.com/oauth2/introspect: RFC7662 introspection performs no client_secret verification on fabricated client credentials (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: In ONE session acquire a bearer: (1) POST https://app.alfaview.com/graphql `{"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MA
+- NEXT(hypotheses-nemotron3.txt): HUMAN: In ONE session execute the standing signup chain — unauthenticated GraphQL `Signup`(planId "free-business") → email-gated `finishSignup` at /finish-signu
+- LEARN: NO_DELTA @ full inventory: OpenAPI MD5 357b94d3 (37 paths), introspect OPTIONS 405, authorize 200/6189B, JWKS 7 RSA keys (200/16257B), OIDC introspection_endpoi
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 13th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_en
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles confirmed); 
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement o
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body client_id validation fully removed — fabricated client_id → 200 {"active":false} (was 400 inv
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_uri 
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL g
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/ge
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingU
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+- LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JS
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har
