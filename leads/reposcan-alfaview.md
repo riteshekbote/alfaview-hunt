@@ -234,3 +234,12 @@ reasoning: No candidate repositories provided for source-code audit. The cands.t
 impact: N/A
 verify_steps: N/A
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
+## REPOSCAN 2026-09-16 08:50:46 UTC
+[HYP] No source-code findings
+class: OTHER
+asset: (none)
+confidence: 0
+reasoning: No candidate repositories exist — GitHub org unconfigured or nonexistent.
+impact: N/A
+verify_steps: Confirm correct GitHub org handle; add to scope.yml github_orgs; re-run reposcan.
+TARGET_ORG not configured for alfaview; skipping public-org deep scan.
