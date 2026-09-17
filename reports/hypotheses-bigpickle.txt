@@ -1,9 +1,18 @@
-## 2026-09-17 10:35:06 UTC [target] (model bigpickle)
+## 2026-09-17 15:17:45 UTC [target] (model bigpickle)
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths, stable 10+ cycles); PII ops token-authed with raw UUID path params, no syntactic tenant scoping; users/me 401 + users/{uuid} 405 Allow:DELETE reconfirmed this cycle confirm routes live behind company-scoped opaque bearer.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (HUMAN, two own tenants) /v2/auth/password → token → /v2/users/me baseline → cross-tenant GET rooms/{tenantB}/passcode|participants|attendances|stats → PATCH permissions/{tenantB-userId} → DELETE users/{tenantB-uuid}.
+impact: Cross-tenant PII dump, room passcode exfil, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
 [HYP] Anonymous signup chain yields valid bearer token to unlock introspect+userinfo+IDOR chains
 class: AUTH
 asset: app.alfaview.com/graphql (signup → finishSignup at /finish-signup)
 confidence: 78
-reasoning: Signup mutation unauthenticated (AppSignup.min.js sends no token header); finishSignup({companyId,username,activationToken,password}) email-gated; signup is sole standing path to a legit bearer token; introspect (95), userinfo oracle, and IDOR (80) all gate on it; password grant advertised at sso (accepted).
+reasoning: Signup mutation unauthenticated (AppSignup.min.js sends no token header); finishSignup({companyId,username,activationToken,password}) email-gated; signup is sole standing path to a legit bearer token; introspect (95), userinfo oracle, and IDOR (80) all gate on it; password grant advertised at sso (not_licensed runtime).
 evidence_needed: owned mailbox → activationToken from /finish-signup URL → finishSignup → bearer → GET /v2/users/me 200 vs 401 baseline.
 verify_steps: (HUMAN, owned mailbox) POST https://app.alfaview.com/graphql {"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MAIL>\", userProfile: {firstname:\"Probe\", lastname:\"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"} → activation email → extract activationToken/companyId/username → finishSignup → capture bearer → GET /v2/users/me.
 impact: Legit account = unlock key for introspect (95) + IDOR (80) + userinfo claim oracle; HIGH enabler.
@@ -12,22 +21,18 @@ testability: HUMAN_ONLY
 class: OATH
 asset: sso.alfaview.com/oauth2/introspect (POST; HTTP Basic or POST-body client_id)
 confidence: 95
-reasoning: 16th consecutive stable cycle — fabricated client_id on POST-body and Basic b64(fake:fake) both → 200 {"active":false}; only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); discovery still advertises client_secret_basic/post/none with no runtime secret verification; /oauth2/userinfo live as second claim oracle once a token is held. OPTIONS 405 reconfirmed this cycle (endpoint alive).
+reasoning: 17th consecutive stable cycle — fabricated client_id on POST-body and Basic b64(fake:fake) both → 200 {"active":false}; only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); discovery advertises client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405); /oauth2/userinfo live as second claim oracle.
 evidence_needed: real token → 200 {"active":true,sub,scope,exp} under fabricated creds vs control.
-verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real>&client_id=fabricated-abc → 200 active:true; repeat with Basic b64(fabricated-abc:fabricated-abc); diff sub/scope/exp vs control (registered client_id); cross-check GET /oauth2/userinfo with same bearer.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real>&client_id=fabricated-abc → 200 active:true; repeat with Basic b64(fabricated-abc:fabricated-abc); diff sub/scope/exp vs control; cross-check GET /oauth2/userinfo with same bearer.
 impact: Token thief validates + extracts sub/scope/exp of any captured bearer with zero client credentials; MEDIUM-HIGH, conditional on token possession.
 testability: HUMAN_ONLY
-[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
-class: IDOR
-asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
-confidence: 80
-reasoning: OpenAPI prod=beta byte-identical (37 paths, 16+ stable cycles); PII ops token-authed with raw UUID path params, no syntactic tenant scoping; users/me 401 (reconfirmed this cycle) + users/{uuid} 405 Allow:DELETE confirm routes live behind company-scoped opaque bearer.
-evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
-verify_steps: (HUMAN, two own tenants) /v2/auth/password → token → /v2/users/me baseline → cross-tenant GET rooms/{tenantB}/passcode|participants|attendances|stats → PATCH permissions/{tenantB-userId} → DELETE users/{tenantB-uuid}.
-impact: Cross-tenant PII dump, room passcode exfil, permission mutation, user deletion; HIGH.
-testability: HUMAN_ONLY
+[PARKED] GraphQL guest-path accessKey divergence (55): re-confirmed stable but demonstrates no data/mutation exposure anonymously; demoted to supporting evidence for the structural authz-gap narrative only.
+[PARKED] OIDC alg-confusion surface (ES256/HS256 listed, RSA-only JWKS): JWKS exists (7 keys) → no keyless confusion, no symmetric keys published; no exploit path without a known public key used as HMAC secret.
+[FINAL] introspect fabricated-client-auth (95) — 17-cycle stability, evidence path defined — rank 1.
+[FINAL] cross-tenant IDOR (80) — OpenAPI evidence solid, needs two own tenants — rank 2.
+[FINAL] anonymous signup → token (78) — only entry path to auth; verify steps concrete — rank 3.
 [NEXT] HUMAN: In ONE session acquire a bearer: (1) POST https://app.alfaview.com/graphql {"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MAIL>\", userProfile: {firstname:\"Probe\", lastname:\"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}; (2) extract activationToken/companyId/username from OWNED-mailbox activation link (/finish-signup route); (3) finishSignup → capture returned bearer; (4) confirm GET /v2/users/me 200; (5) then run the introspect matrix on that token (fabricated client_id body+Basic vs control) and cross-check with GET /oauth2/userinfo. Do NOT touch any tenant-B data this pass.
-[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 16th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_endpoint_auth_methods still advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405).
-[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles confirmed); all HIGH-value chains (introspect 95, IDOR 80) gate on executing it.
-[LEARN] NO_DELTA @ full standing probes: OpenAPI 200/127532B, JWKS 200/16257B, authorize 200/6176B, introspect OPTIONS 405, users/me 401, GraphQL 400/406B — all byte-identical to prior cycle; surface fully stable, no new unauthenticated exploit surface.
-[RISK] alfaview gmbh: 56 — Surface byte-stable now 17+ consecutive cycles (OpenAPI prod=beta identical, 37 paths); standing chains unchanged and all HUMAN-gated: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) are HIGH-impact but token/tenant-gated; GraphQL guest path divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition via the signup→finishSignup chain (78), the critical unblocking action.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 17th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405).
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known: jwks.json 200/16257B with 7 RSA keys, MD5-stable; OIDC introspection_endpoint advertisement oscillation continues (absent this cycle).
+[LEARN] NO_DELTA @ full standing probes: OpenAPI 200/127532B, authorize 200/6176B, clients/me 401, graphql GET 400/406B, client-diagnostics /health 200/16B — all byte-identical to prior cycle; no new unauthenticated exploit surface.
+[RISK] alfaview gmbh: 56 — Surface byte-stable now 18+ consecutive cycles (OpenAPI prod=beta identical, 37 paths); standing chains unchanged and all HUMAN-gated: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) are HIGH-impact but token/tenant-gated; GraphQL guest path divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition via the signup→finishSignup chain (78), the critical unblocking action.

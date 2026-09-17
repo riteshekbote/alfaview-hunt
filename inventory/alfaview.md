@@ -688,3 +688,12 @@ www.alfaview.com
 - CHANGED app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed)
 - CHANGED apis.alfaview.com/v2/docs/openapi.json: byte-identical prod/beta (37 paths, MD5 357b94d3), no new endpoints — 10+ stable cycles
 - CHANGED All 55 dedicated hosts probed; 31 exhausted; zero genuinely-unprobed hosts remain
+
+## 2026-09-17 15:18:46 UTC
+- NEW sso.alfaview.com/.well-known/jwks.json oscillates (200↔404), currently 200 with 7 RSA keys (MD5 3f8d456c)
+- NEW OIDC discovery introspection_endpoint advertisement oscillates (present↔absent) while /oauth2/introspect stays live (OPTIONS 405)
+- NEW alfacheck binary at test.alfaview.com version bumped v470079→v483102 (4 platforms), still no sha256/signatures
+- CHANGED sso.alfaview.com/oauth2/introspect: 16th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_endpoint_auth_methods advertises client_secret_basic/post/none 
+- CHANGED app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed)
+- CHANGED apis.alfaview.com/v2/docs/openapi.json: byte-identical prod/beta (37 paths, MD5 357b94d3), no new endpoints — 10+ stable cycles
+- CHANGED All 55 dedicated hosts probed; 31 exhausted; zero genuinely-unprobed hosts remain

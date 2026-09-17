@@ -1,5 +1,5 @@
-## 2026-09-17 10:35:06 UTC [target] (model nemotron3)
-[NEW] JWKS endpoint at sso.alfaview.com/.well-known/jwks.json oscillates (200↔404), currently 200 with 7 RSA keys (MD5 3f8d456c)
+## 2026-09-17 15:18:29 UTC [target] (model nemotron3)
+[NEW] sso.alfaview.com/.well-known/jwks.json oscillates (200↔404), currently 200 with 7 RSA keys (MD5 3f8d456c)
 [NEW] OIDC discovery introspection_endpoint advertisement oscillates (present↔absent) while /oauth2/introspect stays live (OPTIONS 405)
 [NEW] alfacheck binary at test.alfaview.com version bumped v470079→v483102 (4 platforms), still no sha256/signatures
 [CHANGED] sso.alfaview.com/oauth2/introspect: 16th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels; token_endpoint_auth_methods advertises client_secret_basic/post/none with no runtime secret verification
