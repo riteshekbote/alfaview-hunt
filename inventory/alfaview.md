@@ -697,3 +697,6 @@ www.alfaview.com
 - CHANGED app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed)
 - CHANGED apis.alfaview.com/v2/docs/openapi.json: byte-identical prod/beta (37 paths, MD5 357b94d3), no new endpoints — 10+ stable cycles
 - CHANGED All 55 dedicated hosts probed; 31 exhausted; zero genuinely-unprobed hosts remain
+
+## 2026-09-17 19:07:00 UTC
+- NEW NO_DELTA: Surface fully stable since last cycle (2026-09-17 15:18). Probes identical: app.alfaview.com (SPA 200), sso.alfaview.com/oauth2/introspect (OPTIONS 405), app.alfaview.com/graphql (GET 400), 
