@@ -257,3 +257,12 @@ TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 ## REPOSCAN 2026-09-17 14:20:09 UTC
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
+## REPOSCAN 2026-09-17 18:22:50 UTC
+[HYP] <title>
+class: SECRET|MISCONFIG|IDOR|SSRF|OTHER
+asset: <repo/path>
+confidence: <0-100>
+reasoning: <facts>
+impact: <severity>
+verify_steps: <how to confirm it is live/in-scope, passive>
+TARGET_ORG not configured for alfaview; skipping public-org deep scan.
