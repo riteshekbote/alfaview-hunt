@@ -4394,3 +4394,4 @@ impact: Legit account = unlock key for introspect (95) + IDOR (80) + userinfo cl
 testability: HUMAN_ONLY
 [NEXT] HUMAN: In ONE session acquire a bearer: (1) POST https://app.alfaview.com/graphql `{"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MAIL>\", userProfile: {firstname:\"Probe\", lastname:\"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}`; (2) extract activationToken/companyId/username from OWNED-mailbox activation link (/finish-signup route); (3) finishSignup → capture returned bearer; (4) confirm GET /v2/users/me 200; (5) then run the introspect matrix on that token (fabricated client_id body+Basic vs control) and cross-check with GET /oauth2/userinfo. Do NOT touch any tenant-B data this pass.
 ## 2026-09-16 22:56:48 UTC [target] (model bigpickle)
+## 2026-09-17 00:58:29 UTC [target] (model bigpickle)

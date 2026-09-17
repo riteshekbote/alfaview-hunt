@@ -22655,3 +22655,41 @@ acme.com
 
 200
 [0m
+===== ANALYST bigpickle 2026-09-17 00:59:42 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/oa.json -w "openapi %{http_code} " https://apis.alfaview.com/v2/docs/openapi.json && md5sum /tmp/oa.json
+openapi 200 357b94d367909a40b9299b543d23712b  /tmp/oa.json
+[0m
+[0m$ [0mcurl -s -o /tmp/oidc.json -w "oidc %{http_code}\n" https://sso.alfaview.com/.well-known/openid-configuration && python3 -c "import json;d=json.load(open('/tmp/oidc.json'));print('issuer',d.get('issuer'));print('introspect',d.get('introspection_endpoint'));print('auth',d.get('token_endpoint_auth_methods_supported'));print('jwks',d.get('jwks_uri'))"
+oidc 200
+issuer acme.com
+introspect None
+auth ['client_secret_basic', 'client_secret_post', 'none']
+jwks https://sso.alfaview.com/.well-known/jwks.json
+[0m
+[0m$ [0mcurl -s -X OPTIONS -o /dev/null -w "introspect OPTIONS %{http_code} allow=%header{allow}\n" https://sso.alfaview.com/oauth2/introspect
+introspect OPTIONS 405 allow=
+[0m
+[0m$ [0mcurl -s -o /tmp/auth.html -w "authorize %{http_code} len=%{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=x&response_type=code&redirect_uri=https://evil.example/cb"
+authorize 200 len=6141
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "users/me %{http_code}\n" https://apis.alfaview.com/v2/users/me; curl -s -o /dev/null -w "users/{uuid} %{http_code} allow=%header{allow}\n" https://apis.alfaview.com/v2/users/00000000-0000-0000-0000-000000000000
+users/me 401
+users/{uuid} 405 allow=DELETE
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "client-diagnostics /health %{http_code}\n" https://client-diagnostics-ingest.alfaview.com/health; curl -s -o /dev/null -w "jwks %{http_code}\n" https://sso.alfaview.com/.well-known/jwks.json; curl -s -o /dev/null -w "graphql GET %{http_code}\n" https://app.alfaview.com/graphql
+client-diagnostics /health 200
+jwks 200
+graphql GET 400
+[0m
+[0m$ [0mcurl -s https://test.alfaview.com/ | grep -oiE "v[0-9]{6}" | head -3; curl -s -o /dev/null -w "appstats check n/a\n" --max-time 5 https://appstats.alfaview.com/ 2>/dev/null || true
+appstats check n/a
+[0m
+[0m$ [0mcurl -s --max-time 10 https://test.alfaview.com/ -o /tmp/test.html -w "test.alfaview %{http_code} len=%{size_download}\n"; grep -oiE "v[0-9]{5,6}" /tmp/test.html | sort -u | head -5
+test.alfaview 200 len=494
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcat /tmp/test.html failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
