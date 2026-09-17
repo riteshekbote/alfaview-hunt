@@ -674,3 +674,8 @@ www.alfaview.com
 ## 2026-09-16 22:58:04 UTC
 
 ## 2026-09-17 00:59:42 UTC
+
+## 2026-09-17 05:42:24 UTC
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
