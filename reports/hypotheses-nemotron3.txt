@@ -1,4 +1,4 @@
-## 2026-09-17 19:06:48 UTC [target] (model nemotron3)
+## 2026-09-17 22:10:56 UTC [target] (model nemotron3)
 [NEW] NO_DELTA: Surface fully stable since last cycle (2026-09-17 15:18). Probes identical: app.alfaview.com (SPA 200), sso.alfaview.com/oauth2/introspect (OPTIONS 405), app.alfaview.com/graphql (GET 400), apis.alfaview.com/v2/users/{uuid} (405). OpenAPI MD5 357b94d3 unchanged (37 paths, 10+ cycles). JWKS oscillates (200↔404, currently 200/7 RSA keys). Introspection_endpoint advertisement oscillates. alfacheck v483102 unsigned. 55 hosts probed, 31 exhausted, 0 unprobed.
 [PRIO] sso.alfaview.com/oauth2/introspect,9.5,a=10,b=10,t=10,g=10,c=2,f=10
 [PRIO] app.alfaview.com/graphql,9.0,a=9,b=9,t=9,g=10,c=5,f=7

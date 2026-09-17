@@ -4583,3 +4583,31 @@ verify_steps: (HUMAN, owned mailbox) POST https://app.alfaview.com/graphql {"que
 impact: Legit account = unlock key for introspect (95) + IDOR (80) + userinfo claim oracle; HIGH enabler.
 testability: HUMAN_ONLY
 [NEXT] HUMAN: In ONE session acquire a bearer: (1) POST https://app.alfaview.com/graphql {"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MAIL>\", userProfile: {firstname:\"Probe\", lastname:\"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"}; (2) extract activationToken/companyId/username from OWNED-mailbox activation link (/finish-signup route); (3) finishSignup → capture returned bearer; (4) confirm GET /v2/users/me 200; (5) then run the introspect matrix on that token (fabricated client_id body+Basic vs control) and cross-check with GET /oauth2/userinfo. Do NOT touch any tenant-B data this pass.
+## 2026-09-17 22:10:40 UTC [target] (model bigpickle)
+[HYP] RFC7662 introspection performs no client_secret verification on fabricated client credentials
+class: OATH
+asset: sso.alfaview.com/oauth2/introspect (POST; HTTP Basic b64(fake:fake) or POST-body client_id)
+confidence: 95
+reasoning: 18th consecutive stable cycle — fabricated client_id on POST-body and Basic both → 200 {"active":false}; only residual gate is Basic-vs-body client_id_mismatch (401); token param enforced (400 missing_token); token_endpoint_auth_methods advertises client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405 re-probed today); /oauth2/userinfo live as second claim oracle; users/me 401 confirms API bearer gate intact.
+evidence_needed: real token → 200 {"active":true,sub,scope,exp} under fabricated creds vs registered-client control.
+verify_steps: (HUMAN, token in hand) POST /oauth2/introspect token=<real>&client_id=fabricated-abc → 200 active:true; repeat with Basic b64(fabricated-abc:fabricated-abc); diff sub/scope/exp vs control; cross-check GET /oauth2/userinfo with same bearer.
+impact: Token thief validates + extracts sub/scope/exp of any captured bearer with zero client credentials; MEDIUM-HIGH, conditional on token possession.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR via UUID path params on user/room/permission REST ops
+class: IDOR
+asset: apis.alfaview.com/v2 — GET rooms/{roomId}/passcode|participants|attendances|stats; PATCH rooms/{roomId}/permissions/{userId}; DELETE users/{id}
+confidence: 80
+reasoning: OpenAPI prod=beta byte-identical (MD5 357b94d3, 37 paths, stable 18+ cycles); PII ops token-authed with raw UUID path params, no syntactic tenant scoping; users/me 401 + users/{uuid} 405 Allow:DELETE reconfirmed today — routes live behind company-scoped opaque bearer.
+evidence_needed: tenant-A bearer → 200/204 on tenant-B roomId/userId where 403 is correct.
+verify_steps: (HUMAN, two own tenants) /v2/auth/password → token → /v2/users/me baseline → cross-tenant GET rooms/{tenantB}/passcode|participants|attendances|stats → PATCH permissions/{tenantB-userId} → DELETE users/{tenantB-uuid}.
+impact: Cross-tenant PII dump, room passcode exfil, permission mutation, user deletion; HIGH.
+testability: HUMAN_ONLY
+[HYP] Anonymous signup chain yields valid bearer token to unlock introspect+userinfo+IDOR chains
+class: AUTH
+asset: app.alfaview.com/graphql (signup → finishSignup at /finish-signup)
+confidence: 78
+reasoning: Signup mutation unauthenticated (AppSignup.min.js sends no token header); finishSignup({companyId,username,activationToken,password}) email-gated; signup is sole standing path to a legit bearer token; introspect (95), userinfo oracle, and IDOR (80) all gate on it; password grant at sso advertises not_licensed at runtime.
+evidence_needed: owned mailbox → activationToken from /finish-signup URL → finishSignup → bearer → GET /v2/users/me 200 vs 401 baseline (reconfirmed 401 today).
+verify_steps: (HUMAN, owned mailbox) POST https://app.alfaview.com/graphql {"query":"mutation { signup(displayName: \"Probe\", user: {email: \"<OWNED_MAIL>\", userProfile: {firstname:\"Probe\", lastname:\"One\"}}, agreedToTerms: true, agreedToPrivacyPolicy: true, planId: \"free-business\") }"} → activation email → extract activationToken/companyId/username → finishSignup → capture bearer → GET /v2/users/me.
+impact: Legit account = unlock key for introspect (95) + IDOR (80) + userinfo claim oracle; HIGH enabler.
+testability: HUMAN_ONLY
