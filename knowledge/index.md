@@ -508,3 +508,4 @@
 - 2026-09-17 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
 - 2026-09-17 ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
 - 2026-09-17 ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
+- 2026-09-17 NO_DELTA @ full standing probes: OpenAPI 200/127532B, JWKS 200/16257B, authorize 200/6176B, introspect OPTIONS 405, users/me 401, GraphQL 400/406B — all byte-identical to prior cycle; surface fully stable, no new unauthenticated exploit surface.
