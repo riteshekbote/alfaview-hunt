@@ -84,3 +84,10 @@
   - | Q7 Acceptable | MAYBE | Would need proof of successful guest authentication with valid credentials |
   - **Verdict: HOLD** — Anonymous access confirmed, but impact depends on whether valid guest credentials can be provided. REST endpoint requires 3-field combo (accessKey+companyId+roomId), but GraphQL pa
   - | 4 | OAuth redirect_uri bypass | **HOLD** | Needs valid client_id |
+
+- 5 lead(s) marked VALID at 2026-09-17 16:07:36 UTC
+  - **Verdict: VALID (LOW)** — Fully passive proof, genuine misconfiguration. Production FusionAuth IAM retains default tenant metadata (issuer=acme.com, self-signed certs CN=acme.com). Read-only proof: G
+  - **Verdict: VALID (LOW)** — Fully passive, genuine gap. However, this is a TEST environment distributing a health-check utility, not the core product. The production distribution has proper hashes. Sev
+  - | Q4 Non-invasive proof | HOLD | Needs valid companyId+roomId seed |
+  - | 4 | FusionAuth issuer=acme.com drift | **VALID** | LOW (3.7) | None — fully passive, ready to report |
+  - | 5 | test.alfaview.com binary no-integrity | **VALID** | LOW (3.1) | None — fully passive, ready to report |
