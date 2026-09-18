@@ -24119,3 +24119,37 @@ testability: HUMAN_ONLY
 
 === RISK ===
 [RISK] alfaview gmbh: 58 — New non-inventory attack surface (tools/poll gRPC service, staging-tools, whiteboard) breaks the 18-cycle NO_DELTA plateau; poll service has a plausible BOLA/missing-auth endpoint and sits in the same tenant-token model as the known IDOR chain. Raised from 56 → 58 pending the token-gated `list` adjudication; all three new hypotheses remain HUMAN/token-gated, so no autonomous exploitation yet.
+===== ANALYST bigpickle 2026-09-18 05:10:12 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor u in "https://apis.alfaview.com/v2/docs/openapi.json" "https://sso.alfaview.com/.well-known/openid-configuration" "https://sso.alfaview.com/.well-known/jwks.json"; do curl -sk -o /dev/null -w "%{http_code} %{size_download}\n" "$u"; sleep 1; done; echo "--- openapi md5 ---"; curl -sk "https://apis.alfaview.com/v2/docs/openapi.json" | md5sum; sleep 1; echo "--- jwks md5 ---"; curl -sk "https://sso.alfaview.com/.well-known/jwks.json" | md5sum
+200 127532
+200 2169
+200 16257
+--- openapi md5 ---
+357b94d367909a40b9299b543d23712b  -
+--- jwks md5 ---
+3f8d456c7fd92c6107f3fd77732bd0f4  -
+[0m
+[0m$ [0mfor u in "https://sso.alfaview.com/oauth2/introspect" "https://sso.alfaview.com/oauth2/authorize" "https://app.alfaview.com/graphql" "https://tools.alfaview.com/" "https://staging-tools.alfaview.com/" "https://whiteboard.alfaview.com/" "https://status.alfaview.com/" "https://client-diagnostics-ingest.alfaview.com/health"; do echo -n "$u -> "; curl -sk -o /tmp/probe.out -w "%{http_code} %{size_download}\n" -X OPTIONS "$u"; sleep 1; done
+https://sso.alfaview.com/oauth2/introspect -> 405 0
+https://sso.alfaview.com/oauth2/authorize -> 405 0
+https://app.alfaview.com/graphql -> 204 0
+https://tools.alfaview.com/ -> 405 0
+https://staging-tools.alfaview.com/ -> 405 0
+https://whiteboard.alfaview.com/ -> 200 8
+https://status.alfaview.com/ -> 200 0
+https://client-diagnostics-ingest.alfaview.com/health -> 405 48
+[0m
+[0m$ [0mfor u in "https://tools.alfaview.com/" "https://staging-tools.alfaview.com/" "https://whiteboard.alfaview.com/" "https://status.alfaview.com/" "https://qa.alfaview.com/" "https://uni-stuttgart.alfaview.com/"; do echo -n "$u -> "; curl -sk -o /tmp/probe.out -w "%{http_code} %{size_download} %header{server}\n" "$u"; sleep 1; done
+https://tools.alfaview.com/ -> 200 615 edge-proxy
+https://staging-tools.alfaview.com/ -> 200 612 edge-proxy
+https://whiteboard.alfaview.com/ -> 200 386 edge-proxy
+https://status.alfaview.com/ -> 200 53714 HTTP Server
+https://qa.alfaview.com/ -> 200 1381 edge-proxy
+https://uni-stuttgart.alfaview.com/ -> 200 1381 edge-proxy
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcurl -sk "https://tools.alfaview.com/" -o /tmp/tools.out; curl -sk "https://staging-tools.alfaview.com/" -o /tmp/stools.out; sleep 1; echo "=== diff tools vs staging-tools ==="; diff /tmp/tools.out /tmp/stools.out && echo IDENTICAL || echo DIFFER; echo "=== tools root body ==="; cat /tmp/tools.out; sleep 1; for u in "https://tools.alfaview.com/poll/pollservice/list" "https://tools.alfaview.com/poll/view?pollId=00000000-0000-0000-0000-000000000000" "https://tools.alfaview.com/poll/vote?pollId=00000000-0000-0000-0000-000000000000"; do echo -n "$u GET -> "; curl -sk -o /tmp/p.out -w "%{http_code} %{size_download} %header{server}\n" "$u"; sleep 1; done failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.

@@ -749,3 +749,9 @@ https://app.alfaview.com/graphql -> HTTP 400
 https://apis.alfaview.com/v2/users/{other-tenant-user-uuid -> HTTP 405
 https://tools.alfaview.com/poll/pollservice/list` -> HTTP 404
 https://staging-tools.alfaview.com/poll/pollservice/list` -> HTTP 404
+
+## 2026-09-18 05:10:18 UTC
+https://tools.alfaview.com/poll/pollservice/list -> HTTP 501
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400

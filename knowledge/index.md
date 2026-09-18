@@ -530,3 +530,7 @@
 - 2026-09-18 ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
 - 2026-09-18 ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
 - 2026-09-18 ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
+- 2026-09-18 ACCEPTED MISCONFIG @ staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+- 2026-09-18 ACCEPTED MISCONFIG @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`
+- 2026-09-18 ACCEPTED MISCONFIG @ status.alfaview.com: public status page 200/53714B (title "alfaview Status")
+- 2026-09-18 ACCEPTED MISCONFIG @ qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg)
