@@ -270,3 +270,40 @@ TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
 ## REPOSCAN 2026-09-17 23:56:47 UTC
 TARGET_ORG not configured for alfaview; skipping public-org deep scan.
+## REPOSCAN 2026-09-18 03:47:02 UTC
+[HYP] Hardcoded Laravel APP_KEY in .env.testing
+class: SECRET
+asset: alfaview/pixelfed/.env.testing:3
+confidence: 85
+reasoning: File contains `APP_KEY=base64:lwX95GbNWX3XsucdMe0XwtOKECta3h/B+p9NbH2jd0E=` — a base64-encoded 32-byte AES key. While the file is named `.env.testing`, this key is committed to a public repo. If this same key is reused (or was ever used) in a production `.env`, it would allow full session/cookie forgery and decryption of encrypted values (Laravel `encrypt`/`decrypt`). Even as a test key, it represents a leaked cryptographic material in a public repo.
+impact: Medium — test-only key, but could be reused elsewhere or signal weak key management
+verify_steps: Check if this key appears in any production deployment config; confirm no other env files share this value
+[HYP] SSL Verification Disabled in Remote Content Fetch
+class: MISCONFIG
+asset: alfaview/pixelfed/app/Jobs/StoryPipeline/StoryFetch.php:107-110
+confidence: 90
+reasoning: `verify_peer => false` and `verify_peername => false` are set in the stream context before fetching remote story content via `file_get_contents()`. This disables TLS certificate validation, enabling MITM attacks on fetched media. The URL comes from an ActivityPub federation payload, which is attacker-controlled content. Additionally, `StatusActivityPubDeliver.php:97` sets `CURLOPT_SSL_VERIFYPEER => false` for outbound deliveries.
+impact: Medium — MITM could allow injection of malicious content or credential theft during federation
+verify_steps: Confirm the same pattern in any production deployment; check if `verify_peer` is set to `false` globally
+[HYP] SSRF via Unvalidated URL Fetch in Story/Remote-Follow Pipeline
+class: SSRF
+asset: alfaview/pixelfed/app/Jobs/StoryPipeline/StoryFetch.php:113, alfaview/pixelfed/app/Jobs/RemoteFollowPipeline/RemoteFollowImportRecent.php:218
+confidence: 70
+reasoning: `file_get_contents($payload['attachment']['url'])` and `file_get_contents($url)` fetch content from attacker-influenced URLs. While `Helpers::validateUrl()` blocks `http://`, `localhost`, `127.0.0.1`, and `::1`, it does NOT block other RFC 1918/CGNAT ranges (`10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`, `0.0.0.0`). An attacker could craft an ActivityPub story referencing `https://192.168.1.1/admin` or `https://10.0.0.1/metadata` to probe internal services. The `validateUrl` function at `app/Util/ActivityPub/Helpers.php:142` only checks `$localhosts = ['127.0.0.1', 'localhost', '::1']`.
+impact: Medium — Server-Side Request Forgery to internal network; requires federation attack vector
+verify_steps: Verify if `validateUrl` is the sole gate for StoryFetch URLs; confirm no additional private-IP filtering exists downstream
+[HYP] Weak SSL Validation in MediaStorageService Avatar Fetch
+class: MISCONFIG
+asset: alfaview/pixelfed/app/Services/MediaStorageService.php:153,223
+confidence: 75
+reasoning: `file_get_contents($url, false, null, 0, $head['length'])` fetches remote avatar/media content without explicit SSL context options — PHP defaults apply (peer verification on by default). However, `$url` comes from `$avatar->remote_url` which is attacker-controlled in federated contexts. Combined with the fact that `Helpers::validateUrl` blocks only localhost/loopback but not private IP ranges, an attacker-controlled remote profile could reference internal URLs. The `fetchAvatar` method at line 174-178 does call `Helpers::validateUrl($url)` as a gate, but the broader `storeFromUrl` at line 153 does not appear to validate the URL first (the `$url` parameter is passed from caller context).
+impact: Medium — depends on calling context; potential internal network scanning
+verify_steps: Trace callers of `storeFromUrl()` to determine if `validateUrl` is always applied upstream
+[HYP] Hardcoded Docker Dev Credentials in .env.docker
+class: OTHER
+asset: alfaview/pixelfed/.env.docker
+confidence: 60
+reasoning: Contains `DB_PASSWORD=pixelfed_db_pass`, `MYSQL_PASSWORD=pixelfed_db_pass`, `REDIS_PASSWORD=redis_password`. These are clearly placeholder values for Docker development and are not production secrets. However, if any deployment inadvertently uses `.env.docker` in production (e.g., via misconfigured Docker Compose), these become real credentials exposed publicly.
+impact: Low — development-only defaults; risk is deployment misconfiguration
+verify_steps: Confirm no Docker Compose or CI config copies `.env.docker` to production
+TARGET_ORG not configured for alfaview; skipping public-org deep scan.
