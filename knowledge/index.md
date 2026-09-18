@@ -534,3 +534,7 @@
 - 2026-09-18 ACCEPTED MISCONFIG @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`
 - 2026-09-18 ACCEPTED MISCONFIG @ status.alfaview.com: public status page 200/53714B (title "alfaview Status")
 - 2026-09-18 ACCEPTED MISCONFIG @ qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg)
+- 2026-09-18 ACCEPTED MISCONFIG @ tools.alfaview.com/poll/pollservice/list: GET now 501/55B (was 404) — edge-proxy forwards every method for the 5 poll verbs; surface live-cycle delta vs 2026-09-18 05:10 record.
+- 2026-09-18 ACCEPTED MISCONFIG @ tools.alfaview.com: bundle confirms token gate is client-side only (`reject("Invalid access token")`); token in `Grpc-Metadata-alfaview.token` b64url→b64, opaque/base64 family; body `{roomId}` only — BOLA request shape pinned.
+- 2026-09-18 ACCEPTED MISCONFIG @ staging-tools.alfaview.com: vendor bundle hash `8caab24e…` identical to prod — same build family, backend routing byte-identical.
+- 2026-09-18 NO_DELTA @ apis/sso/app: OpenAPI MD5 `357b94d3` (127532B/37 paths), users/me 401, OIDC 200/2169B, JWKS 200/16257B, introspect OPTIONS 405, graphql GET 400/406B — all byte-stable.

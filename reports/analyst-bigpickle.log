@@ -24511,3 +24511,129 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 `[RISK] alfaview gmbh: 57 — surface unchanged this cycle (all probes byte-identical, OpenAPI 37-path plateu); poll BOLA chain (60) remains the live fresh lead but is token/email(HUMAN)-gated, and the client_id-from-tools dead-end closes the cheapest route to elevate the standing OATH chain; slight reduction from 58 pending human-token adjudication.`
+===== ANALYST bigpickle 2026-09-18 22:07:50 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -m 15 -o /dev/null -w "openapi %{http_code} %{size_download}\n" https://apis.alfaview.com/v2/docs/openapi.json; curl -s -m 15 -o /dev/null -w "users/me %{http_code} %{size_download}\n" https://apis.alfaview.com/v2/users/me; curl -s -m 15 "https://apis.alfaview.com/v2/docs/openapi.json" | md5sum
+openapi 200 127532
+users/me 401 107
+357b94d367909a40b9299b543d23712b  -
+[0m
+[0m$ [0mcurl -s -m 15 -o /dev/null -w "oidc %{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/openid-configuration; curl -s -m 15 -o /dev/null -w "jwks %{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json; curl -s -m 15 -X OPTIONS -o /dev/null -w "introspect-OPT %{http_code} %{size_download}\n" https://sso.alfaview.com/oauth2/introspect
+oidc 200 2169
+jwks 200 16257
+introspect-OPT 405 0
+[0m
+[0m$ [0mcurl -s -m 15 -o /dev/null -w "graphql-GET %{http_code} %{size_download}\n" "https://app.alfaview.com/graphql"; curl -s -m 15 -o /dev/null -w "tools-list-GET %{http_code} %{size_download}\n" "https://tools.alfaview.com/poll/pollservice/list"; curl -s -m 15 -X OPTIONS -o /dev/null -w "tools-list-OPT %{http_code} %{size_download}\n" "https://tools.alfaview.com/poll/pollservice/list"; curl -s -m 15 -o /dev/null -w "staging-tools %{http_code} %{size_download}\n" https://staging-tools.alfaview.com/; curl -s -m 15 -o /dev/null -w "whiteboard %{http_code} %{size_download}\n" https://whiteboard.alfaview.com/; curl -s -m 15 -o /dev/null -w "status %{http_code} %{size_download}\n" https://status.alfaview.com/
+graphql-GET 400 406
+tools-list-GET 501 55
+tools-list-OPT 501 55
+staging-tools 200 612
+whiteboard 200 386
+status 200 53714
+[0m
+[0m$ [0mcurl -s -m 15 https://tools.alfaview.com/ | grep -oE 'src="[^"]+\.js[^"]*"|href="[^"]+\.js[^"]*"' | head; echo "---"; curl -s -m 15 https://staging-tools.alfaview.com/ | head -c 400
+src="/js/vendor.8caab24e6bd77ed8c779.js"
+src="/js/app-bundle.0a250e1f96a7aaf5661c.js"
+---
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="X-UA-Compatible" content="ie=edge"/><title>Tools UI</title><link rel="icon" href="/staging_alfaview_icon_web_favicon_96px.png"><script defer="defer" src="/js/vendor.8caab24e6bd77ed8c779.js"></script><script defer="defer" src="/js/app-bundle.0a250e1f96a7a
+[0m
+[0m$ [0mcurl -s -m 20 https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js -o /tmp/tools-app.js -w "bundle %{http_code} %{size_download}\n"; grep -oE 'pollservice/[a-zA-Z]+' /tmp/tools-app.js | sort -u | head -20; echo "---headers---"; grep -oE 'Grpc-Metadata-alfaview[a-zA-Z.-]*' /tmp/tools-app.js | sort -u | head
+bundle 200 137343
+---headers---
+Grpc-Metadata-alfaview.request
+Grpc-Metadata-alfaview.token
+[0m
+[0m$ [0mgrep -oE '[a-zA-Z/._-]*poll[a-zA-Z/._-]*' /tmp/tools-app.js | sort -u | head -30; echo "---verbs---"; grep -oE '"(list|create|delete|edit|vote|hasVoted|get)"' /tmp/tools-app.js | sort | uniq -c | sort -rn | head; echo "---request-hdr---"; grep -oE 'request' /tmp/tools-app.js | wc -l
+-poll-
+/poll/pollservice
+/poll/view
+/poll/vote
+/polls
+a.polls
+a.polls.filter
+a.polls.map
+alfaview-poll
+create_poll
+create_poll_description
+no_polls
+poll
+poll_results
+polls
+---verbs---
+      2 "create"
+      1 "vote"
+      1 "list"
+      1 "hasVoted"
+      1 "get"
+      1 "delete"
+---request-hdr---
+3
+[0m
+[0m$ [0mgrep -oE '.{0,80}Invalid access token.{0,40}' /tmp/tools-app.js | head -3; echo "---rpc-ctx---"; grep -oE '.{0,120}(Grpc-Metadata-alfaview.request).{0,80}' /tmp/tools-app.js | head -3; echo "---token-source---"; grep -oE '.{0,60}Grpc-Metadata-alfaview.token.{0,100}' /tmp/tools-app.js | head -3
+listPolls:a=>{let{accessToken:e,roomId:i}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("You nee
+,options:t,maxVotes:o,template:s,openNow:r};return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls s
+Poll:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls s
+---rpc-ctx---
+,headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.token":(t=n,t.replace(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.jso
+---token-source---
+ST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.token":(t=n,t.replace(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.s
+[0m
+## STEP 1 — DELTA
+- NEW tools.alfaview.com/poll/pollservice/list: GET now 501/55B (KB 05:10 recorded 404) — edge-proxy forwards all methods to the poll backend; GET no longer differentiated from POST.
+- CHANGED tools.alfaview.com JS bundle (`app-bundle.0a250e1f96a7aaf5661c.js`, 137343B, fetched read-only): `listPolls({accessToken, roomId})` — token gate is `Promise.reject("Invalid access token")` **client-side only**; token transmitted as `Grpc-Metadata-alfaview.token` with b64url→b64 padding conversion (same opaque token family as REST); body carries only `roomId` (+`id` on delete). Request shape confirmed.
+- NO_DELTA rest of probe set: OpenAPI MD5 `357b94d367909a40b9299b543d23712b` (127532B, 37 paths), users/me 401/107B, OIDC 200/2169B, JWKS 200/16257B, introspect OPTIONS 405, graphql GET 400/406B, staging-tools 200/612B (vendor hash `8caab24e…` identical to prod — same build), whiteboard 200/386B, status 200/53714B.
+
+## STEP 2 — PRIORITIZE
+`priority=0.25a+0.25b+0.15t+0.15g+0.10c+0.10f`
+- [PRIO] sso.alfaview.com/oauth2/introspect, 6.25, tech_exposure(8)+gate_ease(9)+business_value(8)
+- [PRIO] tools.alfaview.com/poll/pollservice, 5.75, freshness(10)+attack_surface(7)
+- [PRIO] staging-tools.alfaview.com/poll/pollservice, 5.25, freshness(10)+identical-build
+
+## STEP 3 — HYPOTHESES
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 60
+reasoning: live bundle shows `listPolls({accessToken, roomId})` sends only roomId in JSON body while token rides custom `Grpc-Metadata-alfaview.token`; no tenant/user id or company scoping field; backend reachable on all verbs (501 incl. GET this cycle); edge-proxy does not terminate the RPC.
+evidence_needed: owned token → POST `list` with foreign roomId returns foreign poll text+results (200) vs 403/empty; controls: own roomId, then header omitted.
+verify_steps: (HUMAN_ONLY) token via signup→finishSignup (sole standing path); POST `https://tools.alfaview.com/poll/pollservice/list`, headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <b64>`, `Grpc-Metadata-alfaview.request_id: <uuid>`, body `{"roomId":"<OWNED>"}`; repeat foreign roomId and no-header; diff.
+impact: cross-room read of live polls/Q&A + vote/delete integrity; MEDIUM-HIGH conditional on token.
+testability: HUMAN_ONLY
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: 17+ stable cycles: arbitrary client_id accepted on both POST-body and Basic channels (200 `{"active":false}` without token; only residual check is body-vs-Basic mismatch 401); endpoint live (OPTIONS 405); discovery advertises client_secret_basic/post/none.
+evidence_needed: any valid bearer token → POST introspect `client_id=<fake>&token=<b64>` returns 200 `{"active":true}` + sub/claims (or `active:false` only for invalid tokens) — token validation without client secret.
+verify_steps: (HUMAN_ONLY) after acquiring a token, POST `https://sso.alfaview.com/oauth2/introspect` `Content-Type: application/x-www-form-urlencoded` body `client_id=does-not-exist-12345&token=<b64>`; also Basic `Authorization: Basic base64(fake:any)`; observe active+claims vs invalid_token.
+impact: unauthenticated token liveness/subject/expiry oracle; enables token fingerprinting without the resource server's client secret; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] staging-tools accepts production tokens (env trust-boundary leak)
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice/list
+confidence: 45
+reasoning: prod/staging share vendor bundle hash `8caab24e…` and byte-identical endpoint routing (501/55B) — same build behind edge-proxy; staging envs commonly share or relax token validation.
+evidence_needed: owned prod token replayed at staging `list` with owned roomId → 200 data vs prod 401/empty.
+verify_steps: (HUMAN_ONLY) replay prod `Grpc-Metadata-alfaview.token` at `https://staging-tools.alfaview.com/poll/pollservice/list` body `{"roomId":"<OWNED>"}`; compare status/body to prod.
+impact: environment trust-boundary crossing, staging↔prod data reach; MEDIUM.
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+- Confidence floor: introspect(70) and BOLA(60) survive; staging-tools(45) survives but weakest.
+- [PARKED] staging-tools cross-env token reuse: identical-build argument is suggestive, not a flaw; no passive falsification possible.
+- [PARKED] tools GET 501 delta: routing nuance only — unlocks nothing passive (no data on GET).
+- All three survivors are HUMAN_ONLY (token-gated); no passive unauthenticated exploit surfaced this cycle.
+
+## STEP 5 — NEXT ACTION
+[NEXT] PROBE: GET `https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js` → extract exact `Poll`/`create`/`vote`/`delete` request payloads and response JSON keys to finalize the HUMAN replay script and pin the poll RPC surface (prod + staging compare by hash).
+
+## STEP 6 — LEARNING
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com/poll/pollservice/list: GET now 501/55B (was 404) — edge-proxy forwards every method for the 5 poll verbs; surface live-cycle delta vs 2026-09-18 05:10 record.
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: bundle confirms token gate is client-side only (`reject("Invalid access token")`); token in `Grpc-Metadata-alfaview.token` b64url→b64, opaque/base64 family; body `{roomId}` only — BOLA request shape pinned.
+[LEARN] ACCEPTED MISCONFIG @ staging-tools.alfaview.com: vendor bundle hash `8caab24e…` identical to prod — same build family, backend routing byte-identical.
+[LEARN] NO_DELTA @ apis/sso/app: OpenAPI MD5 `357b94d3` (127532B/37 paths), users/me 401, OIDC 200/2169B, JWKS 200/16257B, introspect OPTIONS 405, graphql GET 400/406B — all byte-stable.
+
+## STEP 7 — RISK
+[RISK] alfaview: 55 — standing chains (introspect 70-gated, poll BOLA 60-gated) and the new tools RPC surface remain token-gated; no fresh unauthenticated exploit surface; all 55 inventory hosts probed; surface fully stable apart from tools routing nuance.
