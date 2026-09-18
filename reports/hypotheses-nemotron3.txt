@@ -1,4 +1,4 @@
-## 2026-09-18 09:50:08 UTC [target] (model nemotron3)
+## 2026-09-18 14:04:08 UTC [target] (model nemotron3)
 [NEW] tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token` (diverges from REST/GraphQL auth)
 [NEW] staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
 [NEW] whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
@@ -6,6 +6,11 @@
 [NEW] qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
 [NEW] CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalled (000)
 [CHANGED] grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+[CHANGED] sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404 in prior cycles) — JWKS endpoint restored
+[CHANGED] sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+[CHANGED] sso.alfaview.com/oauth2/introspect: POST-body client_id validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); HTTP Basic auth also accepts any client_id; only residual check is Basic-vs-body `client_id_mismatch` (401) — 17+ consecutive stable cycles
+[CHANGED] test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
+[CHANGED] apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
 [PRIO] sso.alfaview.com/oauth2/introspect,9.5,a=10,b=10,t=10,g=10,c=2,f=10
 [PRIO] app.alfaview.com/graphql,9.0,a=9,b=9,t=9,g=10,c=5,f=7
 [PRIO] apis.alfaview.com,8.3,a=8,b=10,t=7,g=3,c=8,f=7
@@ -40,6 +45,9 @@ evidence_needed: Valid room token from owned alfaview room (via signup→finishS
 verify_steps: POST https://tools.alfaview.com/poll/pollservice/list with header `Grpc-Metadata-alfaview.token: <own-room-token>` → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically
 impact: Cross-room poll data access/manipulation (vote rigging, poll deletion, result disclosure) → BOLA in real-time collaboration feature (HIGH)
 testability: AUTH_HELPED
+[PARKED] Whiteboard tenant isolation bypass: whiteboard.alfaview.com root returns "board deleted/access expired" but no IDOR surface visible without valid board ID; all non-root paths redirect to / — no verify steps without board creation flow
+[PARKED] CT subdomain takeover: 110 CT subdomains mostly firewalled (000); no dangling CNAMEs or takeover evidence in live set — requires DNS-level probe which is out of passive scope
+[PARKED] Status page info leak: status.alfaview.com is public status page — no sensitive data exposure confirmed, only operational metrics
 [FINAL] Ranked survivors:
 [NEXT] PROBE: GET https://app.alfaview.com/ (with browser DevTools/HAR capture) → search network requests for OAuth/OIDC config calls returning client_id for app.alfaview.com; then POST https://sso.alfaview.com/oauth2/introspect with token=<valid_token_from_signup_chain>&client_id=fabricated-123 → observe 200 with token metadata (requires valid token from HUMAN signup first)
 [LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: previously-unmapped in-room poll toolbox exposes a verb-based JSON RPC (`/poll/pollservice/<verb>`) using custom header `Grpc-Metadata-alfaview.token` rather than Authorization/Bearer — new auth-surface divergence from REST/GraphQL

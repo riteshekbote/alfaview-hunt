@@ -24170,3 +24170,92 @@ https://uni-stuttgart.alfaview.com/ -> 200 1381 edge-proxy
 [0m✗ [0mecho "=== OPTIONS poll/list ==="; curl -sS -o /tmp/op1 -D - -X OPTIONS "https://tools.alfaview.com/poll/pollservice/list" --max-time 12; echo; echo "=== BODY ==="; cat /tmp/op1 | head -c 400; echo; sleep 1.1 failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
 Proceeding with read-only probes (GET/HEAD/OPTIONS ≤1rps) on the standing top priority — tools.alfaview.com poll service verb routing and client_id discovery.
+===== ANALYST bigpickle 2026-09-18 14:04:20 UTC =====
+[0m
+> build · big-pickle
+[0m
+## STEP 1 — DELTA
+
+Looking at the latest knowledge base entries (2026-09-18), the surface has been fully stable for 10+ cycles with NO_DELTA on core targets. The recent additions from today's cycle are:
+
+- **NEW** `tools.alfaview.com` — live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token`
+- **NEW** `staging-tools.alfaview.com` — live (612B), same Tools UI, separate staging backend
+- **NEW** `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+- **NEW** `status.alfaview.com` — public status page 200/53714B (title "alfaview Status")
+- **NEW** `qa.alfaview.com` / `uni-stuttgart.alfaview.com` — 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+- **NEW** CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalled (000)
+
+All core probes (OpenAPI MD5 `357b94d3`, OIDC discovery, JWKS, authorize, introspect, users/me, GraphQL) remain byte-identical to prior cycles. Surface fully stable; no regressions or new unauthenticated exploit surface on core targets.
+
+## STEP 2 — PRIORITIZE
+
+| Asset | Attack Surface | Business | Tech | Gate Ease | Cloud | Fresh | Score |
+|---|---|---|---|---|---|---|---|
+| `tools.alfaview.com/poll/pollservice` | 8 | 7 | 7 | 2 | 6 | 9 | **6.6** |
+| `apis.alfaview.com` (IDOR) | 8 | 8 | 8 | 2 | 6 | 7 | **6.4** |
+| `sso.alfaview.com` (introspect) | 7 | 8 | 9 | 4 | 5 | 9 | **7.0** |
+| `app.alfaview.com/graphql` | 7 | 7 | 9 | 6 | 5 | 8 | **6.9** |
+| `whiteboard.alfaview.com` | 5 | 5 | 5 | 4 | 5 | 9 | **5.5** |
+
+**[PRIO] sso.alfaview.com, 7.0**
+**[PRIO] app.alfaview.com/graphql, 6.9**
+**[PRIO] tools.alfaview.com, 6.6**
+
+## STEP 3 — HYPOTHESES
+
+**[HYP] Poll service roomId not bound to token subject (cross-room BOLA)**
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list|create|delete|edit (POST JSON)
+confidence: 58
+reasoning: Client passes only `{roomId}` (+`id` for delete/edit) with the bearer in header `Grpc-Metadata-alfaview.token`; no tenant/user id in payload; server-side scoping unknown. Token format mirrors REST opaque/base64 tokens. `list` returns full polls (question/statement text, results) for a room. `vote`/`hasVoted` keyed only by pollId.
+evidence_needed: owned-room token → POST list with foreign roomId returns foreign polls (200 data) instead of 403/empty; control with own roomId.
+verify_steps: (AUTH_HELPED, owned account) capture token+roomId from `/finish-signup` login → POST `https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <b64 token>` body `{"roomId":"<OWNED>"}`; then replace with a second owned/tenant-B roomId; diff. (HUMAN only — POST not run here.)
+impact: Cross-room read of live poll/Q&A content, vote manipulation, poll deletion/edit; MEDIUM-HIGH conditional on token.
+testability: HUMAN_ONLY
+
+**[HYP] Poll service accepts requests without server-side token validation**
+class: AUTH
+asset: tools.alfaview.com/poll/pollservice/{list,create} (POST JSON)
+confidence: 45
+reasoning: Authorization exists only client-side (`e||Promise.reject("Invalid access token")`), and token travels in a custom `Grpc-Metadata-*` header (non-standard, easily omitted); endpoint is edge-proxied and unenumerated. No 401 observed yet because all probes were GET/HEAD-only.
+evidence_needed: header-less POST `list` for a zero/nonexistent roomId returns 200/`{}` (not 401/403).
+verify_steps: (HUMAN, one safe read) POST `https://tools.alfaview.com/poll/pollservice/list`, no auth header, body `{"roomId":"00000000-0000-0000-0000-000000000000"}` → expect 401; if 200 empty/grpc error ≠ auth, token gate absent. Then OPTIONS/HEAD to confirm verb routing.
+impact: Anonymous access to in-room poll create/vote/delete → integrity + content leak; HIGH if confirmed.
+testability: HUMAN_ONLY
+
+**[HYP] staging-tools trusts prod tokens / weaker auth (cross-env reuse)**
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice
+confidence: 42
+reasoning: staging-tools live on same Edge (`edge-proxy`) with separate backend; staging environments commonly share FusionAuth realm or skip validation. Prod token/roomId pair may be replayable to staging and vice versa.
+evidence_needed: owned prod token → staging `list` with owned roomId returns 200 vs 401.
+verify_steps: (AUTH_HELPED) replay same `Grpc-Metadata-alfaview.token` against `https://staging-tools.alfaview.com/poll/pollservice/list` body `{"roomId":"<OWNED>"}`; compare status/body to prod.
+impact: Environment trust-boundary crossing, potential staging→prod data access; MEDIUM.
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+
+All three hypotheses require HUMAN interaction (POST requests, owned account/token). No passive probe can confirm any of them. Confidence scores are moderate (42-58) — plausible but unconfirmed.
+
+- **[HYP] Poll service roomId not bound to token subject (cross-room BOLA)**: 58 — **KEPT** (highest confidence, structurally sound: client-side-only auth pattern, custom header)
+- **[HYP] Poll service accepts requests without server-side token validation**: 45 — **KEPT** (lower confidence but HIGH impact if confirmed; easy to test with one POST)
+- **[HYP] staging-tools trusts prod tokens / weaker auth (cross-env reuse)**: 42 — **PARKED**: requires prod token first (blocked by #1/#2), lower impact than #1/#2, staging→prod chain is speculative without token
+
+**[FINAL] survivors ranked:**
+1. Poll IDOR/roomId scoping (58)
+2. Poll missing token enforcement (45)
+
+## STEP 5 — NEXT ACTION
+
+**[NEXT] HUMAN**: With an owned alfaview room token (from the signup→finishSignup chain), issue exactly `POST https://tools.alfaview.com/poll/pollservice/list` with headers `Content-Type: application/json` + `Grpc-Metadata-alfaview.token: <base64(owned token)>` and body `{"roomId":"<OWNED_ROOM>"}`; capture 200 baseline, then repeat once with a second owned room and once with no auth header — diff status/body to adjudicate hypotheses 1 and 2. Do NOT target non-owned roomIds.
+
+## STEP 6 — LEARNING
+
+- **[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com**: previously-unmapped in-room poll toolbox exposes a verb-based JSON RPC (`/poll/pollservice/<verb>`) using custom header `Grpc-Metadata-alfaview.token` rather than Authorization/Bearer — new auth-surface divergence from REST/GraphQL.
+- **[LEARN] ACCEPTED MISCONFIG @ CT/alfaview.com**: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most are edge-firewalled (000) but tools/whiteboard/staging-tools/status/qa/uni-stuttgart are live.
+- **[LEARN] REJECTED MISCONFIG @ grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev**: all external probes timeout (000) — internal-only, target exhausted.
+- **[LEARN] NO_DELTA @ apis/sso**: OpenAPI MD5 `357b94d3` (37 paths), OIDC 200/2169, JWKS 200/16257 byte-stable.
+
+## STEP 7 — RISK
+
+**[RISK] alfaview gmbh: 58** — New non-inventory attack surface (tools/poll gRPC service, staging-tools, whiteboard) breaks the 18-cycle NO_DELTA plateau; poll service has a plausible BOLA/missing-auth endpoint and sits in the same tenant-token model as the known IDOR chain. Raised from 56 → 58 pending the token-gated `list` adjudication; all three new hypotheses remain HUMAN/token-gated, so no autonomous exploitation yet.
