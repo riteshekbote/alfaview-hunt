@@ -4660,3 +4660,4 @@ testability: HUMAN_ONLY
 [LEARN] NO_DELTA @ apis/sso: OpenAPI MD5 `357b94d3` (37 paths), OIDC 200/2169, JWKS 200/16257 byte-stable.
 [RISK] alfaview gmbh: 58 — New non-inventory attack surface (tools/poll gRPC service, staging-tools, whiteboard) breaks the 18-cycle NO_DELTA plateau; poll service has a plausible BOLA/missing-auth endpoint and sits in the same tenant-token model as the known IDOR chain. Raised from 56 → 58 pending the token-gated `list` adjudication; all three new hypotheses remain HUMAN/token-gated, so no autonomous exploitation yet.
 ## 2026-09-18 05:07:39 UTC [target] (model bigpickle)
+## 2026-09-18 09:47:18 UTC [target] (model bigpickle)

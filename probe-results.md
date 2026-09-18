@@ -755,3 +755,9 @@ https://tools.alfaview.com/poll/pollservice/list -> HTTP 501
 https://app.alfaview.com/ -> 200 len=1381
 https://sso.alfaview.com/oauth2/introspect -> HTTP 405
 https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-09-18 09:50:24 UTC
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400
+https://tools.alfaview.com/poll/pollservice/list -> HTTP 501

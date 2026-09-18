@@ -24153,3 +24153,20 @@ https://uni-stuttgart.alfaview.com/ -> 200 1381 edge-proxy
 [93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
 [0m✗ [0mcurl -sk "https://tools.alfaview.com/" -o /tmp/tools.out; curl -sk "https://staging-tools.alfaview.com/" -o /tmp/stools.out; sleep 1; echo "=== diff tools vs staging-tools ==="; diff /tmp/tools.out /tmp/stools.out && echo IDENTICAL || echo DIFFER; echo "=== tools root body ==="; cat /tmp/tools.out; sleep 1; for u in "https://tools.alfaview.com/poll/pollservice/list" "https://tools.alfaview.com/poll/view?pollId=00000000-0000-0000-0000-000000000000" "https://tools.alfaview.com/poll/vote?pollId=00000000-0000-0000-0000-000000000000"; do echo -n "$u GET -> "; curl -sk -o /tmp/p.out -w "%{http_code} %{size_download} %header{server}\n" "$u"; sleep 1; done failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
+===== ANALYST bigpickle 2026-09-18 09:50:18 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m# [0mTodos
+[•] STEP 1: DELTA — compare inventory+knowledge against current surface
+[ ] STEP 2: PRIORITIZE — score top assets on 6 axes
+[ ] STEP 3: HYPOTHESES — top 3 assets, strict schema
+[ ] STEP 4: SELF-CRITIQUE — drop low-confidence/rejected
+[ ] STEP 5: NEXT ACTION — one concrete probe/scan
+[ ] STEP 6: LEARNING — record new findings
+[ ] STEP 7: RISK — update program risk score
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mecho "=== OPTIONS poll/list ==="; curl -sS -o /tmp/op1 -D - -X OPTIONS "https://tools.alfaview.com/poll/pollservice/list" --max-time 12; echo; echo "=== BODY ==="; cat /tmp/op1 | head -c 400; echo; sleep 1.1 failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+Proceeding with read-only probes (GET/HEAD/OPTIONS ≤1rps) on the standing top priority — tools.alfaview.com poll service verb routing and client_id discovery.

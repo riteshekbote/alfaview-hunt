@@ -724,3 +724,12 @@ www.alfaview.com
 - CHANGED Most new infra hosts firewalled externally (000): grafana, loki, logs, prometheus-*, linkerd*, ops-*, envoy-health, sap, webrtc, stun, gitlab.dev, fusionauth.dev, elitr-recordings — same edge-only pat
 - CHANGED `staging-webclient.alfaview.com` = 401 Basic realm=Protected (unchanged). `ops.alfaview.com` = 404 plaintext (19B)
 - CHANGED `tools.alfaview.com/poll/pollservice/list` → HTTP 404 (GET), `staging-tools.alfaview.com/poll/pollservice/list` → HTTP 404 (GET) — verb API likely POST-only with auth header
+
+## 2026-09-18 09:50:18 UTC
+- NEW tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token` (diverges f
+- NEW staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+- NEW status.alfaview.com: public status page 200/53714B (title "alfaview Status")
+- NEW qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
