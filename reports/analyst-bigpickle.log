@@ -24259,3 +24259,96 @@ All three hypotheses require HUMAN interaction (POST requests, owned account/tok
 ## STEP 7 — RISK
 
 **[RISK] alfaview gmbh: 58** — New non-inventory attack surface (tools/poll gRPC service, staging-tools, whiteboard) breaks the 18-cycle NO_DELTA plateau; poll service has a plausible BOLA/missing-auth endpoint and sits in the same tenant-token model as the known IDOR chain. Raised from 56 → 58 pending the token-gated `list` adjudication; all three new hypotheses remain HUMAN/token-gated, so no autonomous exploitation yet.
+===== ANALYST bigpickle 2026-09-18 17:25:41 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s --max-time 15 -o /tmp/opencode/openapi.json -w "openapi %{http_code} %{size_download}\n" https://apis.alfaview.com/v2/docs/openapi.json; md5sum /tmp/opencode/openapi.json; sleep 1; curl -s --max-time 15 -o /tmp/opencode/oidc.json -w "oidc %{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/openid-configuration; sleep 1; curl -s --max-time 15 -o /tmp/opencode/jwks.json -w "jwks %{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json; sleep 1; curl -s --max-time 15 -o /dev/null -w "authorize %{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/authorize"; sleep 1; curl -s --max-time 15 -o /dev/null -w "tools-root %{http_code} %{size_download}\n" https://tools.alfaview.com/
+openapi 200 127532
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+oidc 200 2169
+jwks 200 16257
+authorize 200 6176
+tools-root 200 615
+[0m
+[0m$ [0msleep 3; curl -s --max-time 15 -o /dev/null -w "tools-list-OPTIONS %{http_code} %{size_download}\n" -X OPTIONS https://tools.alfaview.com/poll/pollservice/list; sleep 1; curl -s --max-time 15 -o /dev/null -w "staging-tools-root %{http_code} %{size_download}\n" https://staging-tools.alfaview.com/; sleep 1; curl -s --max-time 15 -o /dev/null -w "whiteboard %{http_code} %{size_download}\n" https://whiteboard.alfaview.com/; sleep 1; curl -s --max-time 15 -o /dev/null -w "status %{http_code} %{size_download}\n" https://status.alfaview.com/; sleep 1; curl -s --max-time 15 -o /dev/null -w "introspect-OPTIONS %{http_code} %{size_download}\n" -X OPTIONS https://sso.alfaview.com/oauth2/introspect; sleep 1; curl -s --max-time 15 -o /dev/null -w "users-me %{http_code} %{size_download}\n" https://apis.alfaview.com/v2/users/me
+tools-list-OPTIONS 501 55
+staging-tools-root 200 612
+whiteboard 200 386
+status 200 53714
+introspect-OPTIONS 405 0
+users-me 401 107
+[0m
+[0m$ [0mgrep -o '"introspection_endpoint"[^,]*' /tmp/opencode/oidc.json; echo "---"; grep -c '"kid"' /tmp/opencode/jwks.json; echo "---"; grep -o '"alg":"[A-Z0-9]*"' /tmp/opencode/jwks.json | sort | uniq -c; echo "---"; sleep 1; curl -s --max-time 15 -o /dev/null -w "staging-tools-list-OPTIONS %{http_code} %{size_download}\n" -X OPTIONS https://staging-tools.alfaview.com/poll/pollservice/list; sleep 1; curl -s --max-time 15 -o /dev/null -w "whiteboard-nonroot %{http_code} %{size_download} %{redirect_url}\n" https://whiteboard.alfaview.com/abc
+---
+7
+---
+---
+staging-tools-list-OPTIONS 501 55
+whiteboard-nonroot 302 23 https://whiteboard.alfaview.com/
+[0m
+[0m$ [0mfor v in create delete edit vote hasVoted; do curl -s --max-time 10 -o /dev/null -w "tools/$v OPTIONS %{http_code} %{size_download}\n" -X OPTIONS "https://tools.alfaview.com/poll/pollservice/$v"; sleep 1; curl -s --max-time 10 -o /dev/null -w "staging/$v OPTIONS %{http_code} %{size_download}\n" -X OPTIONS "https://staging-tools.alfaview.com/poll/pollservice/$v"; sleep 1; done
+tools/create OPTIONS 501 55
+staging/create OPTIONS 501 55
+tools/delete OPTIONS 501 55
+staging/delete OPTIONS 501 55
+tools/edit OPTIONS 404 45
+staging/edit OPTIONS 404 45
+tools/vote OPTIONS 501 55
+staging/vote OPTIONS 501 55
+tools/hasVoted OPTIONS 501 55
+staging/hasVoted OPTIONS 501 55
+[0m
+STEP 1 — DELTA
+- [NEW] `tools.alfaview.com` & `staging-tools.alfaview.com` `/poll/pollservice/{create,delete,vote,hasVoted,list}` OPTIONS → 501/55B (backend-gated; OPTIONS unimplemented) whereas `/poll/pollservice/edit` → 404/45B (NOT routed) on BOTH envs — verb surface refined to {list, create, delete, vote, hasVoted}; `edit` dispelled as a real route (prior cycle only observed GET 404 on `list`).
+- [NO_DELTA] OpenAPI MD5 `357b94d3` (127532B), OIDC 200/2169 (introspection_endpoint absent), JWKS 200/16257 (7 keys), authorize 200/6176B, whiteboard `/abc` 302→`/`, status 200/53714B, users/me 401/107 — all byte-stable.
+
+STEP 2 — PRIORITIZE
+- [PRIO] sso.alfaview.com/oauth2/introspect, 5.9, existing-top (unchanged, token-gated)
+- [PRIO] tools.alfaview.com/poll/pollservice, 5.75, fresh-BOLA-target
+- [PRIO] staging-tools.alfaview.com/poll/pollservice, 5.05, cross-env-trust
+
+STEP 3 — HYPOTHESES
+[HYP] Poll list/create/vote BOLA keyed only by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/{list,create,delete,vote} (POST JSON)
+confidence: 60
+reasoning: Payload carries only `{roomId}` (+`id` for delete); bearer is in non-standard header `Grpc-Metadata-alfaview.token`; no tenant/user scoping field. OPTIONS 501 confirms all 5 verbs terminate at the gRPC backend (edge-proxy does not 404 them). `list` returns full poll text+results for a room.
+evidence_needed: owned token → POST `list` with foreign roomId returns foreign polls (200 data) vs 403/empty.
+verify_steps: (HUMAN only) capture token/roomId via signup→finishSignup; POST `https://tools.alfaview.com/poll/pollservice/list`, headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <b64>`, body `{"roomId":"<OWNED>"}`; repeat with second owned room and with no header; diff status/body.
+impact: Cross-room read of live poll/Q&A + vote/delete integrity; MEDIUM-HIGH conditional on token.
+testability: HUMAN_ONLY
+[HYP] Poll service accepts requests without server-side token validation
+class: AUTH
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 48
+reasoning: Auth appears client-side only (`Invalid access token` reject in Vue bundle); token rides in custom `Grpc-Metadata-*` header, trivially omittable; backend reachable per OPTIONS 501. All probes to date GET/HEAD/OPTIONS-only — no POST observed.
+evidence_needed: header-less POST `list` zero-roomId → 200/`{}` (not 401/403/grpc-permission).
+verify_steps: (HUMAN, one safe read) POST `https://tools.alfaview.com/poll/pollservice/list` no auth header, body `{"roomId":"00000000-0000-0000-0000-000000000000"}`; 401 ⇒ gate present, 200-empty/grpc-error ⇒ gate absent.
+impact: Anonymous poll create/vote/delete + content leak; HIGH if confirmed.
+testability: HUMAN_ONLY
+[HYP] staging-tools trusts prod tokens (cross-env reuse)
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice
+confidence: 45
+reasoning: Prod and staging return identical 501/55B verb routing incl. identical 404 on `edit` — same backend build; same edge-proxy. Staging envs commonly share/relax token validation.
+evidence_needed: owned prod token replayed against staging `list` with owned roomId → 200 vs 401.
+verify_steps: (HUMAN) replay prod `Grpc-Metadata-alfaview.token` at `https://staging-tools.alfaview.com/poll/pollservice/list` body `{"roomId":"<OWNED>"}`; compare to prod.
+impact: Environment trust-boundary crossing, staging→prod data access; MEDIUM.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] whiteboard: no request primitive (all non-root → 302 `/`), no board-id parameter observable.
+- [PARKED] status.alfaview.com: informational public page, descriptive-only.
+- [PARKED] qa/uni-stuttgart: duplicate of exhausted tenant SPA-shell family.
+- [FINAL] 1) poll BOLA/roomId (60) 2) poll missing server-side token (48) 3) staging cross-env reuse (45). Standing sso introspect (95) unchanged and remains top-value but token-gated.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: POST `https://tools.alfaview.com/poll/pollservice/list` (Content-Type: application/json; `Grpc-Metadata-alfaview.token: <b64 owned token>`; body `{"roomId":"<OWNED>"}`) for a 200 baseline, then once header-less and once with a second owned roomId. Adjudicates H1 (BOLA) and H2 (auth gate). Do NOT target non-owned roomIds; `edit` verb is 404 — skip it.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED MISCONFIG @ tools/staging-tools poll service: OPTIONS verb-map = {list,create,delete,vote,hasVoted}→501/55B, `edit`→404/45B, identical prod+staging — gRPC backend reachable, POST-only, same build both envs.
+- [LEARN] NO_DELTA @ core: OpenAPI MD5 `357b94d3`, OIDC (introspection absent), JWKS 7 keys, authorize 200/6176B, users/me 401 — byte-stable cycle.
+
+STEP 7 — RISK
+- [RISK] alfaview gmbh: 58 — Poll RPC is now fully bounded (5 live verbs, identical prod+staging build), strengthening the cross-env branch and keeping BOLA/missing-auth on the table, but `edit`-404 narrows the mutation surface and all three chains remain HUMAN/token-gated; no autonomous exploitation reached. Status quo preserved.
