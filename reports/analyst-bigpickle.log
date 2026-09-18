@@ -23431,3 +23431,691 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] alfaview gmbh: 56 — Surface byte-stable now 19 consecutive cycles (OpenAPI prod=beta identical, 37 paths); standing chains unchanged and all HUMAN-gated: introspect fabricated-client-auth (95) and cross-tenant IDOR (80) are HIGH-impact but token/tenant-gated; GraphQL guest path divergence (55); alfacheck v483102 still distributed unsigned. No autonomously-exploitable new vector this cycle; risk unchanged pending token acquisition via the signup→finishSignup chain (78), the critical unblocking action.
+===== ANALYST bigpickle 2026-09-18 00:24:18 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run live passive recon first to establish the delta, then reason from it.
+[0m$ [0mcurl -s -m 20 -o /tmp/opencode/openapi.json -w "HTTP:%{http_code} SIZE:%{size_download} MD5:" https://apis.alfaview.com/v2/docs/openapi.json; md5sum /tmp/opencode/openapi.json 2>/dev/null | cut -d' ' -f1
+HTTP:200 SIZE:127532 MD5:357b94d367909a40b9299b543d23712b
+[0m
+[0m$ [0mcurl -s -m 20 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/opencode/oidc.json -w "OIDC HTTP:%{http_code} SIZE:%{size_download}\n"; curl -s -m 20 -o /dev/null -w "JWKS HTTP:%{http_code} SIZE:%{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json
+OIDC HTTP:200 SIZE:2169
+JWKS HTTP:200 SIZE:16257
+[0m
+[0m$ [0mcurl -s -m 25 "https://crt.sh/?q=%25.alfaview.com&output=json" -o /tmp/opencode/crt.json -w "CRT HTTP:%{http_code} SIZE:%{size_download}\n" 2>/dev/null; python3 -c "
+import json
+try:
+    d=json.load(open('/tmp/opencode/crt.json'))
+    names=set()
+    for e in d:
+        for n in e.get('name_value','').split('\n'):
+            names.add(n.strip().lower())
+    print('UNIQUE_NAMES',len(names))
+    for n in sorted(names):
+        if n.endswith('alfaview.com') and '*' not in n:
+            print(n)
+except Exception as ex:
+    print('ERR',ex)
+"
+CRT HTTP:200 SIZE:1668574
+UNIQUE_NAMES 166
+alfatraining.alfaview.com
+alfatraining.dev.alfaview.com
+alfaview-com-assets.alfaview.com
+alfaview-sso.alfaview.com
+alfaview.com
+apis.dev.alfaview.com
+app.alfaview.com
+app.dev.alfaview.com
+assets.dev.alfaview.com
+audio.dev.alfaview.com
+beta-alfaview-com-assets.alfaview.com
+beta-app.alfaview.com
+beta-sap-events.alfaview.com
+beta-sap.alfaview.com
+beta-webrtc.alfaview.com
+cleanup-integrationtest.dev.alfaview.com
+clone.staging-wordpress.alfaview.com
+consul-monitoring.alfaview.com
+csr-test-daniel1.dev.alfaview.com
+csr-test-daniel2.dev.alfaview.com
+csr-test-daniel3.dev.alfaview.com
+csr-test-daniel4.dev.alfaview.com
+csr-test-daniel6.dev.alfaview.com
+csr-test-daniel7.dev.alfaview.com
+demo-company.alfaview.com
+elitr-recordings.alfaview.com
+engine.dev.alfaview.com
+envoy-health.alfaview.com
+equipment.alfaview.com
+fusionauth.dev.alfaview.com
+gitlab.dev.alfaview.com
+grafana.alfaview.com
+hfu.alfaview.com
+hydra.dev.alfaview.com
+integrationtest.dev.alfaview.com
+integrationtest2.dev.alfaview.com
+integrationtest3.dev.alfaview.com
+integrationtest4.dev.alfaview.com
+integrationtest5.dev.alfaview.com
+internal.dev.alfaview.com
+linkerd-c.alfaview.com
+linkerd-hcloud-1.alfaview.com
+linkerd-prometheus-hcloud-1.alfaview.com
+linkerd-prometheus-ops-1.alfaview.com
+linkerd-prometheus-syseleven-1-cbk.alfaview.com
+linkerd-prometheus-syseleven-2-dbl.alfaview.com
+linkerd-prometheus-syseleven-3-cbk.alfaview.com
+linkerd-prometheus-syseleven-4-dbl.alfaview.com
+linkerd-syseleven-1.alfaview.com
+linkerd-syseleven-2.alfaview.com
+linkerd-syseleven-3.alfaview.com
+linkerd-syseleven-4.alfaview.com
+linkerd.alfaview.com
+logs.alfaview.com
+loki.alfaview.com
+media.dev.alfaview.com
+mytestdomain-daniel.dev.alfaview.com
+mytestdomain-daniel10.dev.alfaview.com
+mytestdomain-daniel11.dev.alfaview.com
+mytestdomain-daniel2.dev.alfaview.com
+mytestdomain-daniel3.dev.alfaview.com
+mytestdomain-daniel5.dev.alfaview.com
+mytestdomain-daniel6.dev.alfaview.com
+mytestdomain-daniel8.dev.alfaview.com
+mytestdomain-daniel9.dev.alfaview.com
+mytestdomain.dev.alfaview.com
+mytestdomain0.dev.alfaview.com
+mytestdomain1.dev.alfaview.com
+mytestdomain10.dev.alfaview.com
+mytestdomain11.dev.alfaview.com
+mytestdomain111.dev.alfaview.com
+mytestdomain112.dev.alfaview.com
+mytestdomain113.dev.alfaview.com
+mytestdomain114.dev.alfaview.com
+mytestdomain116.dev.alfaview.com
+mytestdomain117.dev.alfaview.com
+mytestdomain118.dev.alfaview.com
+mytestdomain119.dev.alfaview.com
+mytestdomain12.dev.alfaview.com
+mytestdomain120.dev.alfaview.com
+mytestdomain121.dev.alfaview.com
+mytestdomain122.dev.alfaview.com
+mytestdomain123.dev.alfaview.com
+mytestdomain13.dev.alfaview.com
+mytestdomain14.dev.alfaview.com
+mytestdomain15.dev.alfaview.com
+mytestdomain16.dev.alfaview.com
+mytestdomain17.dev.alfaview.com
+mytestdomain18.dev.alfaview.com
+mytestdomain19.dev.alfaview.com
+mytestdomain2.dev.alfaview.com
+mytestdomain20.dev.alfaview.com
+mytestdomain21.dev.alfaview.com
+mytestdomain22.dev.alfaview.com
+mytestdomain3.dev.alfaview.com
+mytestdomain4.dev.alfaview.com
+mytestdomain5.dev.alfaview.com
+mytestdomain6.dev.alfaview.com
+mytestdomain7.dev.alfaview.com
+mytestdomain8.dev.alfaview.com
+mytestdomain9.dev.alfaview.com
+ops-c.alfaview.com
+ops-hcloud-1.alfaview.com
+ops-syseleven-1.alfaview.com
+ops-syseleven-2.alfaview.com
+ops-syseleven-3.alfaview.com
+ops-syseleven-4.alfaview.com
+ops.alfaview.com
+ops.dev.alfaview.com
+production-alfaview-com-assets.alfaview.com
+production-app.alfaview.com
+production-equipment.alfaview.com
+production-webclient.alfaview.com
+prometheus-hcloud-1.alfaview.com
+prometheus-ops-1.alfaview.com
+prometheus-syseleven-1-cbk.alfaview.com
+prometheus-syseleven-2-dbl.alfaview.com
+prometheus-syseleven-3-cbk.alfaview.com
+prometheus-syseleven-4-dbl.alfaview.com
+qa.alfaview.com
+sap-events.alfaview.com
+sap.alfaview.com
+staging-alfasm.alfaview.com
+staging-alfatraining.alfaview.com
+staging-alfaview-assets.alfaview.com
+staging-alfaview-com-assets.alfaview.com
+staging-alfaview.alfaview.com
+staging-app.alfaview.com
+staging-cert-operator-test.alfaview.com
+staging-consul-cache-hcloud-1.alfaview.com
+staging-consul-cache-syseleven-1-cbk.alfaview.com
+staging-consul-cache-syseleven-2-dbl.alfaview.com
+staging-consul-cache-syseleven-3-cbk.alfaview.com
+staging-elitr-recordings.alfaview.com
+staging-equipment.alfaview.com
+staging-fusionauth.alfaview.com
+staging-internal.alfaview.com
+staging-sap-events.alfaview.com
+staging-sap.alfaview.com
+staging-stun-ionoscloud-txl-1.alfaview.com
+staging-stun-ionoscloud-txl-2.alfaview.com
+staging-support.alfaview.com
+staging-test-ops-1.alfaview.com
+staging-tools.alfaview.com
+staging-web.alfaview.com
+staging-webclient.alfaview.com
+staging-webrtc.alfaview.com
+staging-whiteboard.alfaview.com
+staging-wordpress.alfaview.com
+staging.alfaview.com
+status.alfaview.com
+support.alfaview.com
+support.dev.alfaview.com
+test-cert-manager.alfaview.com
+test.dev.alfaview.com
+test2.dev.alfaview.com
+test3.dev.alfaview.com
+tools.alfaview.com
+tools.dev.alfaview.com
+uni-stuttgart.alfaview.com
+webclient.alfaview.com
+webclient.dev.alfaview.com
+webviewer.dev.alfaview.com
+whiteboard.alfaview.com
+www.alfaview.com
+[0m
+Major delta: CT logs reveal ~110 subdomains not in inventory. Let me sweep the high-value ones read-only.
+[0m$ [0mfor h in grafana.alfaview.com ops.alfaview.com status.alfaview.com gitlab.dev.alfaview.com loki.alfaview.com logs.alfaview.com prometheus-ops-1.alfaview.com prometheus-hcloud-1.alfaview.com ops-c.alfaview.com envoy-health.alfaview.com whiteboard.alfaview.com sap.alfaview.com alfaview-sso.alfaview.com tools.alfaview.com qa.alfaview.com staging-web.alfaview.com hfu.alfaview.com uni-stuttgart.alfaview.com; do
+  code=$(curl -s -m 8 -o /dev/null -w "%{http_code}:%{size_download}:%{redirect_url}" "https://$h/" 2>/dev/null)
+  echo "$h -> $code"
+  sleep 1
+done
+grafana.alfaview.com -> 000:0:
+ops.alfaview.com -> 404:19:
+status.alfaview.com -> 200:53714:
+gitlab.dev.alfaview.com -> 000:0:
+loki.alfaview.com -> 404:0:
+logs.alfaview.com -> 000:0:
+prometheus-ops-1.alfaview.com -> 000:0:
+prometheus-hcloud-1.alfaview.com -> 000:0:
+ops-c.alfaview.com -> 000:0:
+envoy-health.alfaview.com -> 000:0:
+whiteboard.alfaview.com -> 200:386:
+sap.alfaview.com -> 000:0:
+alfaview-sso.alfaview.com -> 000:0:
+tools.alfaview.com -> 200:615:
+qa.alfaview.com -> 200:1381:
+staging-web.alfaview.com -> 000:0:
+hfu.alfaview.com -> 000:0:
+uni-stuttgart.alfaview.com -> 200:1381:
+[0m
+New live: status, whiteboard, tools, qa, uni-stuttgart. Let me inspect the unusual small ones.
+[0m$ [0mecho "=== whiteboard ==="; curl -s -m 10 -D - "https://whiteboard.alfaview.com/" | head -40
+echo; echo "=== tools ==="; curl -s -m 10 -D - "https://tools.alfaview.com/" | head -40
+echo; echo "=== ops ==="; curl -s -m 10 -D - "https://ops.alfaview.com/" | head -20
+=== whiteboard ===
+HTTP/2 200 
+content-type: text/html; charset=utf-8
+content-length: 386
+etag: W/"182-F2/vpxmEhEm7pymlUXnha6lCCnw"
+date: Fri, 18 Sep 2026 00:21:26 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+<html>
+  <head>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link href="/images/favicon.png" rel="icon" type="image/x-icon" />
+  </head>
+<body>
+  <div class="avw-board-error">
+    <div class="avw-board-error__info">
+      This board has been deleted or your access has expired. <br />
+      Please try relaunching from the alfaview client.
+    </div>
+  </div>
+</body>
+
+=== tools ===
+HTTP/2 200 
+accept-ranges: bytes
+content-length: 615
+content-type: text/html; charset=utf-8
+etag: "dihdwophlekgh3"
+last-modified: Wed, 13 May 2026 07:52:37 GMT
+vary: Accept-Encoding
+date: Fri, 18 Sep 2026 00:21:27 GMT
+server: edge-proxy
+
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="X-UA-Compatible" content="ie=edge"/><title>Tools UI</title><link rel="icon" href="/production_alfaview_icon_web_favicon_96px.png"><script defer="defer" src="/js/vendor.8caab24e6bd77ed8c779.js"></script><script defer="defer" src="/js/app-bundle.0a250e1f96a7aaf5661c.js"></script><link href="/styles/vendor.27f4596e7da77f054f2a.css" rel="stylesheet"><link href="/styles/app-bundle.25ae213ec9a28625feee.css" rel="stylesheet"></head><body><div id="app"></div></body></html>
+=== ops ===
+HTTP/2 404 
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+date: Fri, 18 Sep 2026 00:21:27 GMT
+content-length: 19
+server: edge-proxy
+
+404 page not found
+[0m
+[0m$ [0mcurl -s -m 15 "https://status.alfaview.com/" -o /tmp/opencode/status.html -w "HTTP:%{http_code}\n"; python3 - <<'EOF'
+import re
+h=open('/tmp/opencode/status.html',encoding='utf-8',errors='ignore').read()
+print('LEN',len(h))
+print('TITLE',re.findall(r'<title[^>]*>(.*?)</title>',h,re.S)[:1])
+for kw in ['statuspage','instatus','betterstack','atlassian','uptime','api/','internal','alfaview']:
+    print(kw, h.lower().count(kw))
+# service names
+for m in set(re.findall(r'"name"\s*:\s*"([^"]{3,60})"',h))[:60]:
+    print('NAME:',m)
+EOF
+HTTP:200
+LEN 53714
+TITLE ['Current Status | alfaview Status']
+statuspage 0
+instatus 0
+betterstack 0
+atlassian 0
+uptime 0
+api/ 0
+internal 0
+alfaview 17
+Traceback (most recent call last):
+  File "<stdin>", line 8, in <module>
+TypeError: 'set' object is not subscriptable
+[0m
+Two new high-value hosts: `tools.alfaview.com` (internal Tools UI SPA) and `whiteboard.alfaview.com` (board renderer). Fetching the Tools UI bundle.
+[0m$ [0mcd /tmp/opencode
+curl -s -m 20 "https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js" -o tools-app.js -w "APP HTTP:%{http_code} SIZE:%{size_download}\n"
+curl -s -m 20 "https://tools.alfaview.com/js/vendor.8caab24e6bd77ed8c779.js" -o tools-vendor.js -w "VENDOR HTTP:%{http_code} SIZE:%{size_download}\n"
+python3 - <<'EOF'
+import re
+for f in ['tools-app.js','tools-vendor.js']:
+    try: d=open(f,encoding='utf-8',errors='ignore').read()
+    except: continue
+    print('====',f,len(d))
+    for pat in [r'https?://[a-zA-Z0-9._/-]+', r'/[a-zA-Z0-9._/-]*(?:graphql|api|auth|oauth|login|user|admin|token|upload|file)[a-zA-Z0-9._/-]*', r'client_id["\':= ]+["\']?[a-zA-Z0-9._-]+', r'Bearer', r'access[_-]?token', r'query\s+[A-Z][A-Za-z]+']:
+        hits=sorted(set(re.findall(pat,d)))
+        if hits:
+            print(' --',pat[:40],'->')
+            for h in hits[:40]: print('   ',h[:140])
+EOF
+APP HTTP:200 SIZE:137343
+VENDOR HTTP:200 SIZE:684113
+==== tools-app.js 137166
+ -- https?://[a-zA-Z0-9._/-]+ ->
+    http://www.w3.org/2000/svg
+ -- /[a-zA-Z0-9._/-]*(?:graphql|api|auth|oau ->
+    /unauthenticated
+==== tools-vendor.js 684049
+ -- https?://[a-zA-Z0-9._/-]+ ->
+    http://a
+    http://a/c
+    http://www.w3.org/1998/Math/MathML
+    http://www.w3.org/1999/xlink
+    http://www.w3.org/2000/svg
+    http://x
+    https://a
+    https://bit.ly/2ZqJzkp
+    https://github.com/vuejs/vue-devtools
+    https://github.com/vuetifyjs/vuetify/issues/4068
+    https://github.com/zloirock/core-js
+    https://github.com/zloirock/core-js/blob/v3.37.1/LICENSE
+    https://v2.vuejs.org/v2/api/
+    https://v2.vuejs.org/v2/guide/components.html
+    https://v2.vuejs.org/v2/guide/reactivity.html
+    https://vuejs.org/guide/deployment.html
+ -- /[a-zA-Z0-9._/-]*(?:graphql|api|auth|oau ->
+    //v2.vuejs.org/v2/api/
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+d=open('tools-app.js',encoding='utf-8',errors='ignore').read()
+for kw in ['graphql','query ','mutation','/v1','/v2','/api','http','token','authenticate','login','bearer','Authorization','company','room','user','upload','s3','presign']:
+    idxs=[m.start() for m in re.finditer(re.escape(kw),d,re.I)]
+    if idxs:
+        print(f'=== {kw}: {len(idxs)} hits')
+        for i in idxs[:6]:
+            print('   ...'+d[max(0,i-80):i+120].replace('\n',' '))
+EOF
+=== mutation: 1 hits
+   ...ing:!1,toast:{color:"",timeout:0,show:!1,message:"",dismissible:!0}},getters:Ya,mutations:Za,actions:ee,plugins:[]});t().use(Ra.Ay);const ne=()=>i.e(408).then(i.bind(i,69499)),te=new Ra.Ay({routes:[{p
+=== /api: 3 hits
+   ...+12:45) Chatham","de-DE":"(UTC+12:45) Chatham (Neuseeland)"}},{ianaCode:"Pacific/Apia",displayName:{"en-US":"(UTC+13:00) Apia","de-DE":"(UTC+13:00) Apia"}},{ianaCode:"Pacific/Kanton",displayName:{"en-
+   ...-US":"(UTC+12:45) Chatham","de-DE":"(UTC+12:45) Chatham (Neuseeland)"}},"Pacific/Apia":{ianaCode:"Pacific/Apia",displayName:{"en-US":"(UTC+13:00) Apia","de-DE":"(UTC+13:00) Apia"}},"Pacific/Kanton":{i
+   ...","de-DE":"(UTC+12:45) Chatham (Neuseeland)"}},"Pacific/Apia":{ianaCode:"Pacific/Apia",displayName:{"en-US":"(UTC+13:00) Apia","de-DE":"(UTC+13:00) Apia"}},"Pacific/Kanton":{ianaCode:"Pacific/Kanton",
+=== http: 1 hits
+   ...",_="HAS_VOTED_SUCCESS",k="HAS_VOTED_FAILURE"},88634:a=>{a.exports='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 107"><path d="m67.125 36.88-11.699 66.87c-.15 1.134-.803 1.637-1.958 1.637h
+=== token: 52 hits
+   ...,"/")),[e,i]=window.location.href.split("?"),n=new URLSearchParams(i);n.delete("token"),setTimeout((()=>{window.history.replaceState(null,null,`${e}?${n.toString()}`)}),250);const t=e=>{const i=a.sear
+   ...t=e=>{const i=a.searchParams.get(e);if(i)return decodeURIComponent(i)};let o=t("token"),s=t("roomId"),r=t("locale");if(!o||!s||!r){const a=JSON.parse(window.localStorage.getItem(xa))||{};o||(o=a.token
+   ...;if(!o||!s||!r){const a=JSON.parse(window.localStorage.getItem(xa))||{};o||(o=a.token),s||(s=a.roomId),r||(r=a.locale)}const d={};o&&(d.token=o),s&&(d.roomId=s),r&&(d.locale=r),window.localStorage.set
+   ...etItem(xa))||{};o||(o=a.token),s||(s=a.roomId),r||(r=a.locale)}const d={};o&&(d.token=o),s&&(d.roomId=s),r&&(d.locale=r),window.localStorage.setItem(xa,JSON.stringify(d)),r&&Object.values(Ia).includes
+   ...bject.values(Ia).includes(r)&&this.setLocale(r),o&&s?this.setInitialData({accessToken:o,roomId:s}):this.unauthRedirect(new Error("Missing initial data")),window.addEventListener("hashchange",(()=>{win
+   ...ata")),window.addEventListener("hashchange",(()=>{window.location.href.indexOf("token=")>0&&window.location.reload()})),this.loading=!1}}},Ka=Oa,ja=(0,Y.A)(Ka,(function(){var a=this,e=a._self._c;retur
+=== authenticate: 9 hits
+   ...hods:{...(0,oa.PY)({setInitialData:wa.V,clearToast:wa.qF}),unauthRedirect(){"/unauthenticated"!==this.$route.path&&this.$router.replace("/unauthenticated")},init(){const a=new URL(window.location.href
+   ...nauthRedirect(){"/unauthenticated"!==this.$route.path&&this.$router.replace("/unauthenticated")},init(){const a=new URL(window.location.href.replace("/#/","/")),[e,i]=window.location.href.split("?"),n
+   ...IEW,component:()=>i.e(980).then(i.bind(i,22933)),meta:{authRoute:!0}},{path:"/unauthenticated",name:Ha.A.UNAUTHENTICATED,component:()=>i.e(19).then(i.bind(i,83358))},{path:"/unknown-error",name:Ha.A.U
+   ...then(i.bind(i,22933)),meta:{authRoute:!0}},{path:"/unauthenticated",name:Ha.A.UNAUTHENTICATED,component:()=>i.e(19).then(i.bind(i,83358))},{path:"/unknown-error",name:Ha.A.UNKNOWN_ERROR,component:()=>
+   ...t{meta:{authRoute:e}}=a;return e})).length;let s=i;t||n||!o||(s=()=>i({path:"/unauthenticated",replace:!0})),s()}));const oe=te;var se=i(64765);const re="en-US",de="de-DE";Object.keys(Pa.components).f
+   ...n:"Question/Statement",created_at:"Created",state:"Status",actions:"Actions"},unauthenticated:{error:"Your session expired.",suggestion:"Please reopen this page via the alfaview toolbox."},unknown_err
+=== room: 66 hits
+   ...opoverOpen",COLLAPSED_NODES:"collapsedNodes",IS_APP_OUTDATED:"isAppOutdated",IS_ROOM_LIST_ENABLED:"isRoomListEnabled"},la=((0,oa.aH)({isVerticalNavOpen:a=>a.ui[da]}),{mixins:[],props:{title:{type:Stri
+   ..._NODES:"collapsedNodes",IS_APP_OUTDATED:"isAppOutdated",IS_ROOM_LIST_ENABLED:"isRoomListEnabled"},la=((0,oa.aH)({isVerticalNavOpen:a=>a.ui[da]}),{mixins:[],props:{title:{type:String,default:""},type:{
+   ...=a.searchParams.get(e);if(i)return decodeURIComponent(i)};let o=t("token"),s=t("roomId"),r=t("locale");if(!o||!s||!r){const a=JSON.parse(window.localStorage.getItem(xa))||{};o||(o=a.token),s||(s=a.roo
+   ...{const a=JSON.parse(window.localStorage.getItem(xa))||{};o||(o=a.token),s||(s=a.roomId),r||(r=a.locale)}const d={};o&&(d.token=o),s&&(d.roomId=s),r&&(d.locale=r),window.localStorage.setItem(xa,JSON.st
+   ...;o||(o=a.token),s||(s=a.roomId),r||(r=a.locale)}const d={};o&&(d.token=o),s&&(d.roomId=s),r&&(d.locale=r),window.localStorage.setItem(xa,JSON.stringify(d)),r&&Object.values(Ia).includes(r)&&this.setLo
+   ...lues(Ia).includes(r)&&this.setLocale(r),o&&s?this.setInitialData({accessToken:o,roomId:s}):this.unauthRedirect(new Error("Missing initial data")),window.addEventListener("hashchange",(()=>{window.loca
+=== user: 8 hits
+   ...,MP:()=>s});var n=i(74353),t=i.n(n);const o=navigator.systemLanguage||navigator.userLanguage||navigator.language||navigator.browserLanguage||"de",s=(a,e=o,i=!1,n=!1)=>{const s=`${((a,e=o,i=!1,n=!1)=>{
+   ...wnload:"CSV export",duplicate:"Duplicate",delete:"Delete"},max_votes:{votes_per_user:"Number of selectable options",votes_per_user_tip:"Only one option can be selected. | Up to {votes} options can be 
+   ...te:"Delete"},max_votes:{votes_per_user:"Number of selectable options",votes_per_user_tip:"Only one option can be selected. | Up to {votes} options can be selected.",max_votes_per_user:"Up to {votes} v
+   ...option can be selected. | Up to {votes} options can be selected.",max_votes_per_user:"Up to {votes} votes possible per user"},state:{PREPARING:{value:"Draft",button:"Publish",description:"This {type} 
+   ... options can be selected.",max_votes_per_user:"Up to {votes} votes possible per user"},state:{PREPARING:{value:"Draft",button:"Publish",description:"This {type} is not yet visible in the room and can 
+   ...oad:"CSV-Export",duplicate:"Duplizieren",delete:"Löschen"},max_votes:{votes_per_user:"Anzahl Antwortmöglichkeiten",votes_per_user_tip:"Es kann nur eine Antwortmöglichkeit ausgewählt werden. | Es könne
+[0m
+This is the in-room "toolbox" app (polls/Q&A) taking `token`+`roomId` from URL. Let me extract its API chunks and endpoints.
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+d=open('tools-app.js',encoding='utf-8',errors='ignore').read()
+# find webpack chunk filename mapping
+for m in re.finditer(r'\{([0-9]{2,4}:"[0-9a-f]{20}"[,}]?){3,}\}',d):
+    print('CHUNKMAP:',m.group(0)[:400])
+# find "static" publicPath
+for m in re.finditer(r'\.p\s*=\s*[^,;]{0,120}',d):
+    print('PUBLICPATH:',m.group(0)[:160])
+# find endpoints
+for m in re.finditer(r'["\'`]([a-z0-9_./-]*(?:api|v[12]|graphql|toolbox|poll|question|statement|vote|export)[a-z0-9_./-]*)["\'`]',d,re.I):
+    print('EP:',m.group(1)[:120])
+EOF
+CHUNKMAP: {19:"73eb72d4331c3747b8ec",279:"4c0335ca89e76364fd4c",408:"381d8c7b4092269572e2",592:"a63bc88fd99f851f58a1",980:"a7ae2f70f14af46e1f92"}
+CHUNKMAP: {19:"31d6cfe0d16ae931b73c",121:"27f4596e7da77f054f2a",265:"25ae213ec9a28625feee",279:"31d6cfe0d16ae931b73c",408:"b276c2e95e5f4625b30f",592:"6aaba8ce364f465ce29e",980:"e46f9d6b2e65f028c60c"}
+PUBLICPATH: .p="/"
+EP: Pacific/Apia
+EP: Pacific/Apia
+EP: Pacific/Apia
+EP: QUICK_VOTE
+EP: POLL_LIST
+EP: POLL_CREATE
+EP: POLL_EDIT
+EP: POLL_STATE
+EP: POLL_VOTE
+EP: POLL_VIEW
+EP: vote
+EP: hasVoted
+EP: /polls
+EP: /polls
+EP: /poll/vote
+EP: /poll/view
+EP: Poll/Vote
+EP: Question/Statement
+EP: Poll
+EP: alfaview-poll
+EP: Vote
+EP: CSV-Export
+EP: FETCH_POLLS
+EP: CREATE_POLL
+EP: DELETE_POLL
+EP: EDIT_POLL
+EP: GET_POLL
+EP: UPDATE_POLL_STATE
+EP: VOTE
+EP: HAS_VOTED
+EP: FETCH_POLLS_REQUEST
+EP: FETCH_POLLS_SUCCESS
+EP: FETCH_POLLS_FAILURE
+EP: GET_POLL_REQUEST
+EP: GET_POLL_SUCCESS
+EP: GET_POLL_FAILURE
+EP: CREATE_POLL_REQUEST
+EP: CREATE_POLL_SUCCESS
+EP: CREATE_POLL_FAILURE
+EP: DELETE_POLL_REQUEST
+EP: DELETE_POLL_SUCCESS
+EP: DELETE_POLL_FAILURE
+EP: EDIT_POLL_REQUEST
+EP: EDIT_POLL_SUCCESS
+EP: EDIT_POLL_FAILURE
+EP: UPDATE_POLL_STATE_REQUEST
+EP: UPDATE_POLL_STATE_SUCCESS
+EP: UPDATE_POLL_STATE_FAILURE
+EP: VOTE_REQUEST
+EP: VOTE_SUCCESS
+EP: VOTE_FAILURE
+EP: HAS_VOTED_REQUEST
+EP: HAS_VOTED_SUCCESS
+EP: HAS_VOTED_FAILURE
+EP: PollDialog
+EP: PollList
+EP: PollVote
+EP: PollDialog
+EP: PollList
+EP: PollVote
+[0m
+[0m$ [0mcd /tmp/opencode
+for c in "408.381d8c7b4092269572e2" "980.a7ae2f70f14af46e1f92" "19.73eb72d4331c3747b8ec" "279.4c0335ca89e76364fd4c" "592.a63bc88fd99f851f58a1"; do
+  curl -s -m 15 "https://tools.alfaview.com/js/$c.js" -o "chunk-$c.js" -w "$c HTTP:%{http_code} SIZE:%{size_download}\n"
+done
+echo "---- 408 scan ----"
+python3 - <<'EOF'
+import re
+d=open('chunk-408.381d8c7b4092269572e2.js',encoding='utf-8',errors='ignore').read()
+print('LEN',len(d))
+for kw in ['http','graphql','query','mutation','apollo','fetch','axios','token','/v2','/v1','/api','ws','wss','subscription']:
+    for m in list(re.finditer(re.escape(kw),d,re.I))[:4]:
+        i=m.start(); print(f'[{kw}] ...'+d[max(0,i-70):i+130].replace('\n',' '))
+EOF
+408.381d8c7b4092269572e2 HTTP:200 SIZE:615
+980.a7ae2f70f14af46e1f92 HTTP:200 SIZE:615
+19.73eb72d4331c3747b8ec HTTP:200 SIZE:615
+279.4c0335ca89e76364fd4c HTTP:200 SIZE:615
+592.a63bc88fd99f851f58a1 HTTP:200 SIZE:615
+---- 408 scan ----
+LEN 615
+[http] ...a name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="X-UA-Compatible" content="ie=edge"/><title>Tools UI</title><link rel="icon" href="/production_alfaview_icon_web_favico
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+d=open('tools-app.js',encoding='utf-8',errors='ignore').read()
+for pat in [r'\.u\s*=\s*[^;]{0,300}', r'\.miniCssF\s*=\s*[^;]{0,200}', r'static/js', r'static/css', r'js/\s*\+', r'["\']\.js["\']']:
+    for m in list(re.finditer(pat,d))[:5]:
+        print('MATCH:',m.group(0)[:300])
+# find around .e( for url construction
+i=d.find('.e=')
+# also look for chunkId to filename
+for m in re.finditer(r'\.js["\']',d):
+    i=m.start(); print('JSCTX ...'+d[max(0,i-160):i+20].replace('\n',' ')); break
+EOF
+echo "=== try static path ==="
+for c in 408.381d8c7b4092269572e2 980.a7ae2f70f14af46e1f92; do
+ curl -s -m 12 -o /tmp/opencode/s-$c.js -w "static/js/$c.js HTTP:%{http_code} SIZE:%{size_download}\n" "https://tools.alfaview.com/static/js/$c.js"
+done
+MATCH: .u=a=>"js/"+{19:"Unauthenticated",279:"UnknownError",408:"PollDialog",592:"PollList",980:"PollVote"}[a]+"."+{19:"73eb72d4331c3747b8ec",279:"4c0335ca89e76364fd4c",408:"381d8c7b4092269572e2",592:"a63bc88fd99f851f58a1",980:"a7ae2f70f14af46e1f92"}[a]+".js",r.miniCssF=a=>"styles/"+{19:"Unauthenticated",1
+MATCH: .miniCssF=a=>"styles/"+{19:"Unauthenticated",121:"vendor",265:"app-bundle",279:"UnknownError",408:"PollDialog",592:"PollList",980:"PollVote"}[a]+"."+{19:"31d6cfe0d16ae931b73c",121:"27f4596e7da77f054f2a",265:"25
+MATCH: ".js"
+JSCTX ...:"PollVote"}[a]+"."+{19:"73eb72d4331c3747b8ec",279:"4c0335ca89e76364fd4c",408:"381d8c7b4092269572e2",592:"a63bc88fd99f851f58a1",980:"a7ae2f70f14af46e1f92"}[a]+".js",r.miniCssF=a=>"
+=== try static path ===
+static/js/408.381d8c7b4092269572e2.js HTTP:200 SIZE:615
+static/js/980.a7ae2f70f14af46e1f92.js HTTP:200 SIZE:615
+[0m
+[0m$ [0mcd /tmp/opencode
+for c in PollDialog.381d8c7b4092269572e2 PollList.a63bc88fd99f851f58a1 PollVote.a7ae2f70f14af46e1f92 Unauthenticated.73eb72d4331c3747b8ec; do
+  curl -s -m 15 "https://tools.alfaview.com/js/$c.js" -o "$c.js" -w "$c HTTP:%{http_code} SIZE:%{size_download}\n"
+done
+echo "=== scanning Poll chunks for API ==="
+python3 - <<'EOF'
+import re,glob
+for f in glob.glob('Poll*.js'):
+    d=open(f,encoding='utf-8',errors='ignore').read()
+    print('====',f,len(d))
+    for kw in ['http','graphql','query','mutation','apollo','fetch(','axios','token','/v2','/v1','/api','poll','vote','endpoint','baseURL','url:']:
+        for m in list(re.finditer(re.escape(kw),d,re.I))[:3]:
+            i=m.start(); print(f' [{kw}] ...'+d[max(0,i-90):i+150].replace('\n',' '))
+EOF
+PollDialog.381d8c7b4092269572e2 HTTP:200 SIZE:38726
+PollList.a63bc88fd99f851f58a1 HTTP:200 SIZE:20849
+PollVote.a7ae2f70f14af46e1f92 HTTP:200 SIZE:14155
+Unauthenticated.73eb72d4331c3747b8ec HTTP:200 SIZE:488
+=== scanning Poll chunks for API ===
+==== PollDialog.381d8c7b4092269572e2.js 38726
+ [http] ....chdir is not supported")},n.umask=function(){return 0}},94797:t=>{t.exports='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g clip-path="url(#a)"><path d="m12 17.27 4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-
+ [http] ...rty(e,"__esModule",{value:!0}),e.default=void 0;var n=(0,r(83057).regex)("url",/^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,
+ [poll] ...IC,question:"",addOptionField:"",options:[],maxVotes:1,state:p.e1.PREPARING.value};return{poll:void 0,initialFormValues:t,formValues:{...t},showConfirmation:!1,showOpenNowConfirmation:!1,pollType:p.wr.BASIC,storagePerType:{[p.wr.BASIC]:{},[
+ [poll] ...id 0,initialFormValues:t,formValues:{...t},showConfirmation:!1,showOpenNowConfirmation:!1,pollType:p.wr.BASIC,storagePerType:{[p.wr.BASIC]:{},[p.wr.QUICK_VOTE]:{},[p.wr.STAR]:{}},openNow:!1,showDialog:!1}},validations:{formValues:{template:
+ [poll] ...quired:i.mw,maxLength:(0,i.Ru)(p.sh)}}},computed:{...(0,n.aH)({isCreating:t=>t.isCreating,polls:t=>t.polls}),...(0,n.L8)({getPollById:"getPollById"}),MAX_NUMBER_OF_OPTIONS:()=>p.sh,TEMPLATE_TYPE:()=>p.wr,editingPollId(){return u()(this.$rou
+ [vote] ....A},data(){const t={id:"",template:p.wr.BASIC,question:"",addOptionField:"",options:[],maxVotes:1,state:p.e1.PREPARING.value};return{poll:void 0,initialFormValues:t,formValues:{...t},showConfirmation:!1,showOpenNowConfirmation:!1,pollType:p
+ [vote] ...howOpenNowConfirmation:!1,pollType:p.wr.BASIC,storagePerType:{[p.wr.BASIC]:{},[p.wr.QUICK_VOTE]:{},[p.wr.STAR]:{}},openNow:!1,showDialog:!1}},validations:{formValues:{template:{required:i.mw},question:{required:i.mw,maxLength:(0,i.Ru)(p.jD)
+ [vote] ...MPLATE_TYPE:()=>p.wr,editingPollId(){return u()(this.$route,"params.id",void 0)},availableVotes(){return this.formValues.options.length>1?this.formValues.options.map(((t,e)=>e+1)):[1]},dialogWidth:()=>parseInt(c.Ej.VL.r3.pD,10),dialogTitle(
+==== PollList.a63bc88fd99f851f58a1.js 20849
+ [http] ...turn l||r.test(t)?c(t.slice(2),l?2:8):a.test(t)?NaN:+t}},94797:t=>{t.exports='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g clip-path="url(#a)"><path d="m12 17.27 4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-
+ [poll] ...emForContextMenu,t,"")}}};var p=l(51343),u=l(74135),d=l(26312);const v={mixins:[c],props:{poll:{type:Object,default:()=>({})},isActive:{type:Boolean,default:!1}},data:()=>({deletingId:"",isUpdating:!1,showPublishConfirmation:!1}),computed:{
+ [poll] ...efault:!1}},data:()=>({deletingId:"",isUpdating:!1,showPublishConfirmation:!1}),computed:{POLL_STATE:()=>p.e1,createdAtFormatted(){return(0,d.MP)(this.poll.createdAt,this.$i18n.locale,!1)},nextStateValue(){const t=p.e1[this.poll.state];retu
+ [poll] ...hConfirmation:!1}),computed:{POLL_STATE:()=>p.e1,createdAtFormatted(){return(0,d.MP)(this.poll.createdAt,this.$i18n.locale,!1)},nextStateValue(){const t=p.e1[this.poll.state];return a()(t,"nextState[0]")},actionButtonText(){const t=a()(this
+ [vote] ...REPARING.value},isDevEnv:()=>!1,pollTemplate(){switch(this.poll.template){case p.wr.QUICK_VOTE:return this.$t("poll.template_type.QUICK_VOTE");case p.wr.STAR:return this.$t("poll.template_type.STAR");default:return this.$t("poll.template_ty
+ [vote] ...{switch(this.poll.template){case p.wr.QUICK_VOTE:return this.$t("poll.template_type.QUICK_VOTE");case p.wr.STAR:return this.$t("poll.template_type.STAR");default:return this.$t("poll.template_type.BASIC")}}},methods:{...(0,n.i0)({deletePoll
+ [vote] ...},externalViewPoll(){window.open(`/#/poll/view?pollId=${this.poll.id}`,"_blank")},externalVotePoll(){window.open(`/#/poll/vote?pollId=${this.poll.id}`,"_blank")},onDeletePoll(){const{id:t}=this.poll;this.deletingId=t,this.deletePoll({id:t})
+==== PollVote.a7ae2f70f14af46e1f92.js 14155
+ [http] ...hunktools_ui=self.webpackChunktools_ui||[]).push([[980],{94797:t=>{t.exports='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g clip-path="url(#a)"><path d="m12 17.27 4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-
+ [query] ...{return o()(this.poll,"state","")},POLL_STATE:()=>n.e1},mounted(){this.pollId=this.$route.query.pollId,this.pollId&&this.getPollData().finally((()=>{this.initialFetchCompleted=!0}))},methods:{...(0,a.i0)({getPoll:i.f3}),...(0,a.PY)({showToa
+ [query] ...$t("toast.voting_opened",{type:this.pollTemplate})}))}},mounted(){this.pollId=this.$route.query.pollId,this.previewMode="true"===this.$route.query.preview,this.pollId&&this.getPollData().then((()=>{this.state===n.e1.PREVIEW.value&&this.star
+ [query] ...))}},mounted(){this.pollId=this.$route.query.pollId,this.previewMode="true"===this.$route.query.preview,this.pollId&&this.getPollData().then((()=>{this.state===n.e1.PREVIEW.value&&this.startPolling(),this.state===n.e1.OPENED.value&&(this.vo
+ [poll] ...ts:{StarBar:(0,n.A)(r,(function(){var t=this,e=t._self._c;return e("div",{staticClass:"av-poll__bar__wrapper"},[e("div",{staticClass:"av-flex av-poll__bar"},t._l(5,(function(s){return e("div",{key:s,staticClass:"av-poll__bar__star av-poll__
+ [poll] ..._c;return e("div",{staticClass:"av-poll__bar__wrapper"},[e("div",{staticClass:"av-flex av-poll__bar"},t._l(5,(function(s){return e("div",{key:s,staticClass:"av-poll__bar__star av-poll__bar__star--gray",domProps:{innerHTML:t._s(t.starIcon)}}
+ [poll] ...icClass:"av-flex av-poll__bar"},t._l(5,(function(s){return e("div",{key:s,staticClass:"av-poll__bar__star av-poll__bar__star--gray",domProps:{innerHTML:t._s(t.starIcon)}})})),0),t._v(" "),e("div",{ref:"partialStarBar",staticClass:"av-flex a
+ [vote] ...{type:Boolean,default:!1}},computed:{TEMPLATE_TYPE:()=>l.wr,brandColor:()=>o.yW.wk.E3,zeroVoteColor:()=>o.yW.E3.wm.Sh,optionResults(){if(this.poll.template===l.wr.STAR){const t=p(this.poll.pollResults.optionResults);return t.sort(((t,e)=>t.
+ [vote] ...s},starsPercentage(){return this.poll.template===l.wr.STAR?0===this.poll.pollResults.totalVotes?0:this.poll.pollResults.optionResults.reduce(((t,e)=>{let s=0;try{s=parseInt(e.text,10)}catch(t){s=0}return t+s*e.votes}),0)/this.poll.pollResul
+ [vote] ...optionResults.reduce(((t,e)=>{let s=0;try{s=parseInt(e.text,10)}catch(t){s=0}return t+s*e.votes}),0)/this.poll.pollResults.totalVotes/5:0},averageStars(){const t=5*this.starsPercentage;return Number.isInteger(t)?t:t.toFixed(2)},maxVotes(){r
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+d=open('tools-app.js',encoding='utf-8',errors='ignore').read()
+for kw in ['fetchPolls','FETCH_POLLS','PollService','pollService','VUE_APP','process.env','/graphql','graphql','baseURL','Authorization','Bearer']:
+    for m in list(re.finditer(re.escape(kw),d,re.I))[:3]:
+        i=m.start(); print(f'[{kw}] ...'+d[max(0,i-120):i+200].replace('\n',' '))
+# find axios-like service base
+for m in list(re.finditer(r'create\(\{[^}]{0,200}\}',d))[:10]:
+    print('AXIOS?',m.group(0)[:220])
+EOF
+echo "=== whiteboard route probe ==="
+for p in "" "test" "board" "abc123" "poll/view?pollId=1" "api" "health"; do
+  r=$(curl -s -m 8 -o /dev/null -w "%{http_code}:%{size_download}" "https://whiteboard.alfaview.com/$p")
+  echo "/$p -> $r"; sleep 1
+done
+[FETCH_POLLS] ...,42444:(a,e,i)=>{"use strict";i.d(e,{EL:()=>c,L3:()=>l,Mm:()=>d,VF:()=>s,al:()=>o,f3:()=>r,iZ:()=>n,zY:()=>t});const n="FETCH_POLLS",t="CREATE_POLL",o="DELETE_POLL",s="EDIT_POLL",r="GET_POLL",d="UPDATE_POLL_STATE",l="VOTE",c="HAS_VOTED"},74135:(a,e,i)=>{"use strict";i.d(e,{$X:()=>d,D8:()=>D,GG:()=>E,Jm:()=>N,LR:()=>T,M
+[FETCH_POLLS] ...:()=>t,mr:()=>b,os:()=>o,qF:()=>A,sh:()=>u,tP:()=>r,uT:()=>U,vI:()=>p,wH:()=>_,wg:()=>S});const n="SET_INITIAL_DATA",t="FETCH_POLLS_REQUEST",o="FETCH_POLLS_SUCCESS",s="FETCH_POLLS_FAILURE",r="GET_POLL_REQUEST",d="GET_POLL_SUCCESS",l="GET_POLL_FAILURE",c="CREATE_POLL_REQUEST",C="CREATE_POLL_SUCCESS",m="CREATE_POLL_FAILU
+[FETCH_POLLS] ...,qF:()=>A,sh:()=>u,tP:()=>r,uT:()=>U,vI:()=>p,wH:()=>_,wg:()=>S});const n="SET_INITIAL_DATA",t="FETCH_POLLS_REQUEST",o="FETCH_POLLS_SUCCESS",s="FETCH_POLLS_FAILURE",r="GET_POLL_REQUEST",d="GET_POLL_SUCCESS",l="GET_POLL_FAILURE",c="CREATE_POLL_REQUEST",C="CREATE_POLL_SUCCESS",m="CREATE_POLL_FAILURE",u="DELETE_POLL_REQUE
+[PollService] ...,1):a._e()],1)],1)}),[],!1,null,null,null).exports;var Ra=i(40173),Ha=i(74659);const Ga=`${window.location.origin}/poll/pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-
+[pollService] ...,1):a._e()],1)],1)}),[],!1,null,null,null).exports;var Ra=i(40173),Ha=i(74659);const Ga=`${window.location.origin}/poll/pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-
+=== whiteboard route probe ===
+/ -> 200:386
+/test -> 302:23
+/board -> 302:23
+/abc123 -> 302:23
+/poll/view?pollId=1 -> 302:23
+/api -> 302:23
+/health -> 302:23
+[0m
+Found the poll service API. Extracting the full call contract.
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+d=open('tools-app.js',encoding='utf-8',errors='ignore').read()
+i=d.find('pollservice')
+print(d[i-300:i+1800])
+EOF
+echo "=== whiteboard redirect ==="
+curl -s -m 8 -D - "https://whiteboard.alfaview.com/abc123" -o /dev/null | grep -iE "location|http/"
+t.message)+"\n    ")]),a._v(" "),a.toast.dismissible?e("VBtn",{attrs:{icon:""},nativeOn:{click:function(e){return a.clearToast.apply(null,arguments)}}},[e("VIcon",[a._v("close")])],1):a._e()],1)],1)}),[],!1,null,null,null).exports;var Ra=i(40173),Ha=i(74659);const Ga=`${window.location.origin}/poll/pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.token":(t=n,t.replace(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.json();if(e)return i;throw{message:i.message,code:i.code}}));var t}const $a={listPolls:a=>{let{accessToken:e,roomId:i}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("You need a roomId to list the polls for")),Fa({verb:"list",payload:{roomId:i},accessToken:e})},createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r=!1}=a;const d={roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r};return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll question is required")),0!==t.length&&void 0!==t||Promise.reject(new Error("Poll options are required ")),o||Promise.reject(new Error("Max votes must be a positive integer from 1 to 10")),Fa({verb:"create",payload:{poll:d},accessToken:e})},deletePoll:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll ID is required")),Fa({verb:"delete",payload:{roomId:i,id:n},accessToken:e})},editPoll:a=>{let{accessToken:e,roomId:i,id:n,question:t,options:o,maxVotes:s,template:r}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll id is required ")),t||Pro
+=== whiteboard redirect ===
+HTTP/2 302 
+location: /
+[0m
+New API surface confirmed. Let me finish sweeping the remaining new CT hosts.
+[0m$ [0mfor h in staging-stun-ionoscloud-txl-1.alfaview.com staging-webrtc.alfaview.com beta-webrtc.alfaview.com sap-events.alfaview.com staging-sap.alfaview.com staging-fusionauth.alfaview.com fusionauth.dev.alfaview.com staging-alfasm.alfaview.com staging-whiteboard.alfaview.com staging-tools.alfaview.com grafana.alfaview.com staging-elitr-recordings.alfaview.com elitr-recordings.alfaview.com linkerd.alfaview.com staging-webclient.alfaview.com staging-consul-cache-hcloud-1.alfaview.com; do
+  r=$(curl -s -m 7 -o /dev/null -w "%{http_code}:%{size_download}" "https://$h/" 2>/dev/null)
+  echo "$h -> $r"; sleep 1
+done
+staging-stun-ionoscloud-txl-1.alfaview.com -> 000:0
+staging-webrtc.alfaview.com -> 000:0
+beta-webrtc.alfaview.com -> 000:0
+sap-events.alfaview.com -> 000:0
+staging-sap.alfaview.com -> 000:0
+staging-fusionauth.alfaview.com -> 000:0
+fusionauth.dev.alfaview.com -> 000:0
+staging-alfasm.alfaview.com -> 000:0
+staging-whiteboard.alfaview.com -> 200:386
+staging-tools.alfaview.com -> 200:612
+grafana.alfaview.com -> 000:0
+staging-elitr-recordings.alfaview.com -> 000:0
+elitr-recordings.alfaview.com -> 000:0
+linkerd.alfaview.com -> 000:0
+staging-webclient.alfaview.com -> 401:172
+staging-consul-cache-hcloud-1.alfaview.com -> 000:0
+[0m
+=== DELTA ===
+[NEW] `tools.alfaview.com` — live Vue "Tools UI" (in-room toolbox: polls/Q&A); exposes verb API `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with auth header `Grpc-Metadata-alfaview.token` (base64url→base64) and `Grpc-Metadata-alfaview.request_id`; routes `/poll/view?pollId=` and `/poll/vote?pollId=` openable via `window.open`. Not in inventory/knowledge — **new attack surface**.
+[NEW] `staging-tools.alfaview.com` — live (612B), same Tools UI, separate (staging) backend.
+[NEW] `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`.
+[NEW] `status.alfaview.com` — public status page 200/53714B (title "alfaview Status").
+[NEW] `qa.alfaview.com`, `uni-stuttgart.alfaview.com` — 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg).
+[NEW] CT (crt.sh) yields ~110 subdomains absent from inventory: `grafana`, `loki`, `logs`, `ops`/`ops-*`, `prometheus-*`, `linkerd-*`/`linkerd-prometheus-*`, `envoy-health`, `sap`/`sap-events`, `beta/staging-webrtc`, `staging-stun-ionoscloud-txl-*`, `gitlab.dev`, `fusionauth.dev`, `staging-fusionauth`, `elitr-recordings`, `tools`, `whiteboard`, `production-app`, `production-webclient`, `production-equipment`, `staging-*` fleet.
+[CHANGED] Most new infra hosts are firewalled externally (000): grafana, loki, logs, prometheus-*, linkerd*, ops-*, envoy-health, sap, webrtc, stun, gitlab.dev, fusionauth.dev, elitr-recordings — same edge-only pattern as exhausted alfacheck fleet.
+[CHANGED] `staging-webclient.alfaview.com` = 401 Basic realm=Protected (as before). `ops.alfaview.com` = 404 plaintext (19B).
+[NO_DELTA] `apis` OpenAPI MD5 `357b94d367909a40b9299b543d23712b` (37 paths); OIDC 200/2169; JWKS 200/16257 — unchanged.
+
+=== PRIORITIZE ===
+[PRIO] tools.alfaview.com/poll/pollservice — 6.6 (attack_surface 8, business 7, tech 7, gate 2, cloud 6, freshness 9)
+[PRIO] whiteboard.alfaview.com — 5.5 (attack_surface 6, business 5, tech 5, gate 4, cloud 5, freshness 9)
+[PRIO] status.alfaview.com — 4.5 (attack_surface 3, business 3, tech 3, gate 9, cloud 4, freshness 8)
+
+=== HYPOTHESES ===
+[HYP] Poll service roomId not bound to token subject (cross-room BOLA)
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list|create|delete|edit (POST JSON)
+confidence: 58
+reasoning: Client passes only `{roomId}` (+`id` for delete/edit) with the bearer in header `Grpc-Metadata-alfaview.token`; no tenant/user id in payload; server-side scoping unknown. Token format mirrors REST opaque/base64 tokens. `list` returns full polls (question/statement text, results) for a room. `vote`/`hasVoted` keyed only by pollId.
+evidence_needed: owned-room token → POST list with foreign roomId returns foreign polls (200 data) instead of 403/empty; control with own roomId.
+verify_steps: (AUTH_HELPED, owned account) capture token+roomId from `/finish-signup` login → POST `https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <b64 token>` body `{"roomId":"<OWNED>"}`; then replace with a second owned/tenant-B roomId; diff. (HUMAN only — POST not run here.)
+impact: Cross-room read of live poll/Q&A content, vote manipulation, poll deletion/edit; MEDIUM-HIGH conditional on token.
+testability: HUMAN_ONLY
+[HYP] Poll service accepts requests without server-side token validation
+class: AUTH
+asset: tools.alfaview.com/poll/pollservice/{list,create} (POST JSON)
+confidence: 45
+reasoning: Authorization exists only client-side (`e||Promise.reject("Invalid access token")`), and token travels in a custom `Grpc-Metadata-*` header (non-standard, easily omitted); endpoint is edge-proxied and unenumerated. No 401 observed yet because all probes were GET/HEAD-only.
+evidence_needed: header-less POST `list` for a zero/nonexistent roomId returns 200/`{}` (not 401/403).
+verify_steps: (HUMAN, one safe read) POST `https://tools.alfaview.com/poll/pollservice/list`, no auth header, body `{"roomId":"00000000-0000-0000-0000-000000000000"}` → expect 401; if 200 empty/grpc error ≠ auth, token gate absent. Then OPTIONS/HEAD to confirm verb routing.
+impact: Anonymous access to in-room poll create/vote/delete → integrity + content leak; HIGH if confirmed.
+testability: HUMAN_ONLY
+[HYP] staging-tools trusts prod tokens / weaker auth (cross-env reuse)
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice
+confidence: 42
+reasoning: staging-tools live on same Edge (`edge-proxy`) with separate backend; staging environments commonly share FusionAuth realm or skip validation. Prod token/roomId pair may be replayable to staging and vice versa.
+evidence_needed: owned prod token → staging `list` with owned roomId returns 200 vs 401.
+verify_steps: (AUTH_HELPED) replay same `Grpc-Metadata-alfaview.token` against `https://staging-tools.alfaview.com/poll/pollservice/list` body `{"roomId":"<OWNED>"}`; compare status/body to prod.
+impact: Environment trust-boundary crossing, potential staging→prod data access; MEDIUM.
+testability: HUMAN_ONLY
+
+=== SELF-CRITIQUE ===
+[PARKED] whiteboard.alfaview.com board access: no concrete board-id parameter/route observed (all non-root → 302 `/`), no verifiable request primitive — no-verify-steps.
+[PARKED] status.alfaview.com topology disclosure: public status page is informational; no sensitive internal data confirmed in body — likely REJECTED-class descriptive.
+[FINAL] 1) Poll IDOR/roomId scoping (58) 2) Poll missing token enforcement (45) 3) staging-tools cross-env trust (42).
+
+=== NEXT ACTION ===
+[NEXT] HUMAN: With an owned alfaview room token (from the signup→finishSignup chain), issue exactly `POST https://tools.alfaview.com/poll/pollservice/list` with headers `Content-Type: application/json` + `Grpc-Metadata-alfaview.token: <base64(owned token)>` and body `{"roomId":"<OWNED_ROOM>"}`; capture 200 baseline, then repeat once with a second owned room and once with no auth header — diff status/body to adjudicate hypotheses 1 and 2. Do NOT target non-owned roomIds.
+
+=== LEARNING ===
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: previously-unmapped in-room poll toolbox exposes a verb-based JSON RPC (`/poll/pollservice/<verb>`) using custom header `Grpc-Metadata-alfaview.token` rather than Authorization/Bearer — new auth-surface divergence from REST/GraphQL.
+[LEARN] ACCEPTED MISCONFIG @ CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most are edge-firewalled (000) but tools/whiteboard/staging-tools/status/qa/uni-stuttgart are live.
+[LEARN] REJECTED MISCONFIG @ grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted.
+[LEARN] NO_DELTA @ apis/sso: OpenAPI MD5 `357b94d3` (37 paths), OIDC 200/2169, JWKS 200/16257 byte-stable.
+
+=== RISK ===
+[RISK] alfaview gmbh: 58 — New non-inventory attack surface (tools/poll gRPC service, staging-tools, whiteboard) breaks the 18-cycle NO_DELTA plateau; poll service has a plausible BOLA/missing-auth endpoint and sits in the same tenant-token model as the known IDOR chain. Raised from 56 → 58 pending the token-gated `list` adjudication; all three new hypotheses remain HUMAN/token-gated, so no autonomous exploitation yet.

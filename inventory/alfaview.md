@@ -703,3 +703,13 @@ www.alfaview.com
 
 ## 2026-09-17 22:11:09 UTC
 - NEW NO_DELTA: Surface fully stable since last cycle (2026-09-17 15:18). Probes identical: app.alfaview.com (SPA 200), sso.alfaview.com/oauth2/introspect (OPTIONS 405), app.alfaview.com/graphql (GET 400), 
+
+## 2026-09-18 00:24:18 UTC
+- NEW `tools.alfaview.com` — live Vue "Tools UI" (in-room toolbox: polls/Q&A); exposes verb API `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with auth header `Grpc-Metadata-alfaview.toke
+- NEW `staging-tools.alfaview.com` — live (612B), same Tools UI, separate (staging) backend.
+- NEW `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`.
+- NEW `status.alfaview.com` — public status page 200/53714B (title "alfaview Status").
+- NEW `qa.alfaview.com`, `uni-stuttgart.alfaview.com` — 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg).
+- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: `grafana`, `loki`, `logs`, `ops`/`ops-*`, `prometheus-*`, `linkerd-*`/`linkerd-prometheus-*`, `envoy-health`, `sap`/`sap-events`, `beta/stagin
+- CHANGED Most new infra hosts are firewalled externally (000): grafana, loki, logs, prometheus-*, linkerd*, ops-*, envoy-health, sap, webrtc, stun, gitlab.dev, fusionauth.dev, elitr-recordings — same edge-only
+- CHANGED `staging-webclient.alfaview.com` = 401 Basic realm=Protected (as before). `ops.alfaview.com` = 404 plaintext (19B).
