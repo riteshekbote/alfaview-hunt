@@ -765,3 +765,17 @@ www.alfaview.com
 - CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
 
 ## 2026-09-18 22:07:50 UTC
+
+## 2026-09-18 23:56:23 UTC
+- NEW tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted|updateState|get}` with custom auth header `Grpc-Metadata-alfaview.to
+- NEW staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+- NEW status.alfaview.com: public status page 200/53714B (title "alfaview Status")
+- NEW qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+- CHANGED sso.alfaview.com/.well-known/jwks.json: returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+- CHANGED sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); HTTP Basic auth also accepts any client_i
+- CHANGED test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
+- CHANGED apis.alfaview.com/v2/docs/openapi.json: still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
+- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted

@@ -24637,3 +24637,78 @@ testability: HUMAN_ONLY
 
 ## STEP 7 — RISK
 [RISK] alfaview: 55 — standing chains (introspect 70-gated, poll BOLA 60-gated) and the new tools RPC surface remain token-gated; no fresh unauthenticated exploit surface; all 55 inventory hosts probed; surface fully stable apart from tools routing nuance.
+===== ANALYST bigpickle 2026-09-18 23:56:23 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/tools_bundle.js -w "HTTP %{http_code} %{size_download}B\n" "https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js" --max-time 20
+HTTP 200 137343B
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/openapi.json -w "HTTP %{http_code} %{size_download}B\n" "https://apis.alfaview.com/v2/docs/openapi.json" --max-time 20
+HTTP 200 127532B
+[0m
+[0m$ [0mgrep -o 'pollservice[^"]*' /tmp/opencode/tools_bundle.js | sort -u | head -20
+pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:
+[0m
+[0m$ [0mgrep -o 'createPolls\|listPolls\|deletePoll\|editPoll\|votePoll\|hasVoted\|createPoll\|deletePolls\|editPolls\|Grpc-Metadata-alfaview.token\|Invalid access token' /tmp/opencode/tools_bundle.js | sort | uniq -c
+1 Grpc-Metadata-alfaview.token
+      8 Invalid access token
+      2 createPoll
+      2 deletePoll
+      2 editPoll
+      4 hasVoted
+      2 listPolls
+[0m
+[0m$ [0mecho "--OPENAPI MD5--"; md5sum /tmp/opencode/openapi.json; echo "--BUNDLE MD5--"; md5sum /tmp/opencode/tools_bundle.js
+--OPENAPI MD5--
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+--BUNDLE MD5--
+b7f17c85ccd8d91e9b831a6bc2aa863c  /tmp/opencode/tools_bundle.js
+[0m
+[0m$ [0mgrep -o 'pollservice`[^;]\{0,900\}' /tmp/opencode/tools_bundle.js | head -c 1200; echo
+pollservice`,za=a=>`${a}-poll-${Date.now()}`
+[0m
+[0m$ [0mgrep -o 'listPolls[^}]\{0,300\}' /tmp/opencode/tools_bundle.js | head -c 1200; echo; echo "==create=="; grep -o 'createPoll[^}]\{0,300\}' /tmp/opencode/tools_bundle.js | head -c 1200; echo; echo "==vote=="; grep -o 'votePoll[^}]\{0,300\}' /tmp/opencode/tools_bundle.js | head -c 800
+listPolls:a=>{let{accessToken:e,roomId:i
+listPolls({accessToken:i,roomId:n
+
+==create==
+createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r=!1
+createPoll({accessToken:n,roomId:t,question:s,options:r,maxVotes:d,template:l,openNow:c
+
+==vote==
+[0m
+[0m$ [0mgrep -o 'createPoll:a=>{[^}]\{0,500\}' /tmp/opencode/tools_bundle.js | head -c 900; echo; echo "==vote=="; grep -o 'vote:a=>{[^}]\{0,500\}' /tmp/opencode/tools_bundle.js | head -c 900
+createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r=!1
+
+==vote==
+vote:a=>{let{accessToken:e,roomId:i,id:n,optionIds:t=[]
+[0m
+[0m$ [0mgrep -o 'deletePoll:a=>{[^}]\{0,400\}' /tmp/opencode/tools_bundle.js | head -c 800; echo; echo "==hasVoted=="; grep -o 'hasVoted:a=>{[^}]\{0,400\}' /tmp/opencode/tools_bundle.js | head -c 800; echo; echo "==list fn full=="; grep -o 'listPolls:a=>{[^}]\{0,400\}' /tmp/opencode/tools_bundle.js | head -c 800
+deletePoll:a=>{let{accessToken:e,roomId:i,id:n
+
+==hasVoted==
+hasVoted:a=>{let{accessToken:e,roomId:i,id:n
+
+==list fn full==
+listPolls:a=>{let{accessToken:e,roomId:i
+[0m
+[0m$ [0mgrep -o 'function Fa(a){[^}]\{0,700\}' /tmp/opencode/tools_bundle.js | head -c 1200; echo; echo "==calls=to=Fa=="; grep -o 'Fa({[^}]\{0,700\}' /tmp/opencode/tools_bundle.js | head -c 1800
+function Fa(a){let{verb:e,payload:i,accessToken:n
+
+==calls=to=Fa==
+Fa({verb:"list",payload:{roomId:i
+Fa({verb:"create",payload:{poll:d
+Fa({verb:"delete",payload:{roomId:i,id:n
+Fa({verb:"update",payload:{id:n,roomId:i,question:t,options:o,maxVotes:s,template:r
+Fa({verb:"updateState",payload:{id:i,roomId:n,state:t
+Fa({verb:"vote",payload:{id:n,roomId:i,optionIds:t
+Fa({verb:"get",payload:{id:n,roomId:i
+Fa({verb:"hasVoted",payload:{id:n,roomId:i
+[0m
+[0m$ [0mgrep -o 'function Fa(a){[^;]\{0,1200\}' /tmp/opencode/tools_bundle.js | head -c 1500
+function Fa(a){let{verb:e,payload:i,accessToken:n}=a
+[0m
+[0m$ [0mgrep -o 'function Fa(a){.\{0,1600\}' /tmp/opencode/tools_bundle.js | head -c 1800
+function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.token":(t=n,t.replace(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.json();if(e)return i;throw{message:i.message,code:i.code}}));var t}const $a={listPolls:a=>{let{accessToken:e,roomId:i}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("You need a roomId to list the polls for")),Fa({verb:"list",payload:{roomId:i},accessToken:e})},createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r=!1}=a;const d={roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r};return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll question is required")),0!==t.length&&void 0!==t||Promise.reject(new Error("Poll options are required ")),o||Promise.reject(new Error("Max votes must be a positive integer from 1 to 10")),Fa({verb:"create",payload:{poll:d},accessToken:e})},deletePoll:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll ID is required")),Fa({verb:"delete",payload:{roomId:i,id:n},accessToken:e})},editPoll:a=>{let{accessToken:e,roomId:i,id:n,question:t,options:o,maxVotes:s,template:r}=a;return e||Promise.reject(new Error("Inv
+[0m
