@@ -24352,3 +24352,162 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] alfaview gmbh: 58 — Poll RPC is now fully bounded (5 live verbs, identical prod+staging build), strengthening the cross-env branch and keeping BOLA/missing-auth on the table, but `edit`-404 narrows the mutation surface and all three chains remain HUMAN/token-gated; no autonomous exploitation reached. Status quo preserved.
+===== ANALYST bigpickle 2026-09-18 19:58:19 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{size_download}\n" -X OPTIONS https://tools.alfaview.com/poll/pollservice/list
+501 55
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/openapi.json -w "%{http_code} %{size_download}\n" https://apis.alfaview.com/v2/docs/openapi.json && md5sum /tmp/opencode/openapi.json
+200 127532
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/oidc.json -w "%{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/openid-configuration && tr ',' '\n' < /tmp/opencode/oidc.json | grep -E 'introspection_endpoint|token_endpoint_auth_methods_supported|"issuer"'
+200 2169
+  "issuer" : "acme.com"
+  "token_endpoint_auth_methods_supported" : [
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/jwks.json -w "%{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json && md5sum /tmp/opencode/jwks.json
+200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/opencode/jwks.json
+[0m
+[0m$ [0mgrep -c "introspection_endpoint" /tmp/opencode/oidc.json; grep -c "ES256" /tmp/opencode/oidc.json
+0
+3
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "tools root: %{http_code} %{size_download}\n" https://tools.alfaview.com/ ; curl -s -o /dev/null -w "poll list GET: %{http_code} %{size_download}\n" https://tools.alfaview.com/poll/pollservice/list ; curl -s -o /dev/null -w "staging-tools root: %{http_code} %{size_download}\n" https://staging-tools.alfaview.com/
+tools root: 200 615
+poll list GET: 501 55
+staging-tools root: 200 612
+[0m
+[0m$ [0mcurl -s https://tools.alfaview.com/ -o /tmp/opencode/tools.html -w "%{http_code} %{size_download}\n"; grep -oE 'src="[^"]+\.js[^"]*"' /tmp/opencode/tools.html | head -20
+200 615
+src="/js/vendor.8caab24e6bd77ed8c779.js"
+src="/js/app-bundle.0a250e1f96a7aaf5661c.js"
+[0m
+[0m$ [0mcurl -s https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js -o /tmp/opencode/tools-app.js -w "%{http_code} %{size_download}\n"; grep -oiE '(client[_]?id|clientId)[^,;]{0,60}' /tmp/opencode/tools-app.js | head -10; echo ---; grep -oiE '(oauth|authorize|access.token|alfaview.token|Grpc-Metadata)[^,;]{0,50}' /tmp/opencode/tools-app.js | head -10
+200 137343
+---
+Grpc-Metadata-alfaview.token":(t=n
+Grpc-Metadata-alfaview.request_id":za(e)}
+access token"))
+access token"))
+access token"))
+access token"))
+access token"))
+access token"))
+access token"))
+access token"))
+[0m
+[0m$ [0mgrep -oiE '"/[a-z][a-z0-9/_-]{2,40}"' /tmp/opencode/tools-app.js | sort -u | head -25; echo ---LOGIN---; grep -oiE '(login|signup|token|auth)[A-Za-z0-9_./:-]{0,40}' /tmp/opencode/tools-app.js | sort -u | head -20
+"/poll/view"
+"/poll/vote"
+"/polls"
+"/unauthenticated"
+"/unknown-error"
+---LOGIN---
+AUTHENTICATED
+Token
+Token:
+Token:e
+Token:i
+Token:n
+Token:o
+auth
+authRedirect
+authRoute:
+authRoute:e
+authenticated
+authenticated:
+token
+[0m
+[0m$ [0mcurl -s -D - -o /dev/null -w "status=%{http_code} size=%{size_download}\n" "https://whiteboard.alfaview.com/board" | grep -iE "^(HTTP|location|set-cookie|server|content-type)"; echo ---; curl -s -D - -o /dev/null -w "status=%{http_code} size=%{size_download}\n" "https://staging-whiteboard.alfaview.com/board" | grep -iE "^(HTTP|location|set-cookie|server|content-type)"
+HTTP/2 302 
+location: /
+content-type: text/plain; charset=utf-8
+server: edge-proxy
+---
+HTTP/2 302 
+location: /
+content-type: text/plain; charset=utf-8
+server: edge-proxy
+[0m
+[0m$ [0mfor p in "00000000-0000-0000-0000-000000000000" "boards/00000000-0000-0000-0000-000000000000" "board" "b" "whiteboard"; do printf "%s -> " "$p"; curl -s -o /dev/null -L -w "final=%{http_code} size=%{size_download}\n" --max-time 10 "https://whiteboard.alfaview.com/$p"; done
+00000000-0000-0000-0000-000000000000 -> final=200 size=386
+boards/00000000-0000-0000-0000-000000000000 -> final=200 size=386
+board -> final=200 size=386
+b -> final=200 size=386
+whiteboard -> final=200 size=386
+[0m
+[0m$ [0mcurl -s https://whiteboard.alfaview.com/ ; echo; echo ---; curl -s https://whiteboard.alfaview.com/ | grep -oE '(src|href)="[^"]*"' | head
+<html>
+  <head>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link href="/images/favicon.png" rel="icon" type="image/x-icon" />
+  </head>
+<body>
+  <div class="avw-board-error">
+    <div class="avw-board-error__info">
+      This board has been deleted or your access has expired. <br />
+      Please try relaunching from the alfaview client.
+    </div>
+  </div>
+</body>
+
+---
+href="/stylesheets/style.css"
+href="/images/favicon.png"
+[0m
+STEP 1 — DELTA
+- NO_DELTA: all standing probes byte-identical to prior cycle — OpenAPI `357b94d3` (37 paths), OIDC 200/2169B issuer=acme.com (introspection_endpoint absent, grep 0), JWKS `3f8d456c` (7 RSA), poll OPTIONS 501/55B, tools root 200/615B, staging-tools 200/612B.
+- CHANGED: tools.alfaview.com `app-bundle.0a250e1f96a7aaf5661c.js` (137KB) dissected — zero `client_id`/`oauth`/`authorize` refs; only `Grpc-Metadata-alfaview.token` + routes `poll/view`, `/polls`, `unauthenticated`. Tools UI authenticates off the existing app session → **client_id-in-tools refuted**.
+- CHANGED: `whiteboard.alfaview.com` any non-root path (incl. UUID-shaped) → `302 /` (edge-proxy, text/plain, **no Set-Cookie**) → `/` = static 386B "board deleted/access expired" page with no script refs → no unauth board surface.
+
+STEP 2 — PRIORITIZE
+- `[PRIO] tools.alfaview.com/poll/pollservice, 5.1, gRPC-JSON custom-auth-header / BOLA keyed only by roomId`
+- `[PRIO] staging-tools.alfaview.com/poll/pollservice, 4.35, cross-env token trust boundary`
+- `[PRIO] whiteboard.alfaview.com, 3.3, redirect-only static catch (low)` 
+
+STEP 3 — HYPOTHESES
+[HYP] Poll list BOLA — cross-room read keyed only by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 60
+reasoning: Payload carries only `{roomId}` (+`id` for delete/edit); bearer rides custom `Grpc-Metadata-alfaview.token`, typed opaque/base64 matching REST tokens; no tenant/user id in payload; OPTIONS 501 confirms backend reachable on all 5 verbs; `list` returns full poll text + results per KB.
+evidence_needed: owned token → POST `list` with foreign roomId returns foreign poll data (200) instead of 403/empty; control with own roomId; second control with no header.
+verify_steps: (HUMAN only) obtain token+roomId via signup→finishSignup (sole standing token path); POST `https://tools.alfaview.com/poll/pollservice/list`, headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <b64>`, body `{"roomId":"<OWNED>"}`; then same with a second tenant's roomId and with header omitted; diff status/body.
+impact: Cross-room read of live poll/Q&A content + vote/delete integrity; MEDIUM-HIGH conditional on token.
+testability: HUMAN_ONLY
+[HYP] Poll service lacks server-side token validation (auth client-side only)
+class: AUTH
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 48
+reasoning: Vue bundle rejects missing token in client only (`Invalid access token`); token rides non-standard `Grpc-Metadata-*` (trivially omitted); all probes so far GET/HEAD/OPTIONS-only, so no 401/403 ever observed from backend.
+evidence_needed: header-less POST `list` with zero-UUID roomId → 200/`{}` or gRPC data-error (not 401/403/permission-denied).
+verify_steps: (HUMAN, single safe read) POST `https://tools.alfaview.com/poll/pollservice/list`, no auth header, body `{"roomId":"00000000-0000-0000-0000-000000000000"}`; 401⇒gate present; 200-empty/grpc-error⇒gate absent.
+impact: Anonymous poll create/vote/delete + content leak; HIGH if confirmed.
+testability: HUMAN_ONLY
+[HYP] staging-tools trusts production tokens (env trust-boundary leak)
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice/list
+confidence: 45
+reasoning: Prod/staging return identical 501/55B verb routing and identical 404s — same backend build behind same edge-proxy; staging envs commonly share or relax token validation.
+evidence_needed: owned prod token replayed at staging `list` with owned roomId → 200 vs prod 401.
+verify_steps: (HUMAN) replay prod `Grpc-Metadata-alfaview.token` against `https://staging-tools.alfaview.com/poll/pollservice/list` body `{"roomId":"<OWNED>"}`; compare status/body to prod.
+impact: Environment trust-boundary crossing, staging↔prod data reach; MEDIUM.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- `[PARKED] whiteboard.alfaview.com boardId/URL-keyed access`: catch-all 302→386B static page with no script refs; no cookie, no unauth surface, and any token-gated test duplicates the poll evidence path → confidence<40, no standalone verify route.
+- `[FINAL]` 1) Poll BOLA (60, HUMAN) 2) Poll server-auth-gate absent (48, HUMAN) 3) staging cross-env token reuse (45, HUMAN) 4) introspect fabricated-client auth bypass (95, standing, needs real victim token to be impactful).
+
+STEP 5 — NEXT ACTION
+`[NEXT] HUMAN: signup→finishSignup to mint a legit token + owned roomId, then POST https://tools.alfaview.com/poll/pollservice/list three ways (owned roomId / foreign roomId / no header) and diff — 200-with-foreign-data ⇒ BOLA, 200-without-header ⇒ auth gate absent; exactly <=1 rps, no mutations.`
+
+STEP 6 — LEARNING
+- `[LEARN] REJECTED AUTH @ tools.alfaview.com/js/app-bundle: zero client_id/oauth/authorize refs — Tools UI authenticates via app session, carries only Grpc-Metadata-alfaview.token; no OAuth client_id to unlock the sso redirect_uri matrix.`
+- `[LEARN] REJECTED MISCONFIG @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: catch-all 302 → static 386B error page, edge-proxy, no Set-Cookie, no scripts — zero unauth surface; board access fully app-token gated.`
+
+STEP 7 — RISK
+`[RISK] alfaview gmbh: 57 — surface unchanged this cycle (all probes byte-identical, OpenAPI 37-path plateu); poll BOLA chain (60) remains the live fresh lead but is token/email(HUMAN)-gated, and the client_id-from-tools dead-end closes the cheapest route to elevate the standing OATH chain; slight reduction from 58 pending human-token adjudication.`

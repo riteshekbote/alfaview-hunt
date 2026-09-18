@@ -5896,3 +5896,77 @@ testability: AUTH_HELPED
 [LEARN] ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.  
 [LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.  
 [RISK] alfaview: 85/100. Broad scope (55 dedicated hosts + 6 main domains + ~110 CT subdomains, 100% probed on dedicated). Production APIs auth-gated (401 opaque tokens). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: `sso.alfaview.com` (FusionAuth 1.63.0) exposes OIDC metadata with `issuer=acme.com` misconfiguration, implicit flow, HS256/384/512/ES256/384/512 support vs JWKS with only RSA keys, `/oauth2/introspect` client authentication fully unenforced on both Basic and POST-body channels (17+ stable cycles), JWKS endpoint oscillates (404↔200), introspection_endpoint advertisement oscillates. `app.alfaview.com` is primary client but `client_id` not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no `accessKey`). `test.alfaview.com` distributes unsigned binaries v483102 (supply chain risk). NEW: `tools.alfaview.com` exposes verb-based JSON RPC with custom gRPC-metadata auth header — new auth-surface divergence. 31 hosts exhausted. Realistic path: discover `client_id` via `app.alfaview.com` network traffic → probe OAuth `redirect_uri`/`state` on `sso.alfaview.com` (AUTH_HELPED, CRITICAL); verify binary integrity on `test.alfaview.com` (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits + poll service BOLA.
+## 2026-09-18 19:58:07 UTC [target] (model nemotron3)
+[NEW] tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token` (diverges from REST/GraphQL auth)
+[NEW] staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+[NEW] whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+[NEW] status.alfaview.com: public status page 200/53714B (title "alfaview Status")
+[NEW] qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+[NEW] CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalled (000)
+[CHANGED] sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+[CHANGED] sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+[CHANGED] sso.alfaview.com/oauth2/introspect: POST-body client_id validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); HTTP Basic auth also accepts any client_id; only residual check is Basic-vs-body client_id_mismatch (401) — 17+ stable cycles
+[CHANGED] test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
+[CHANGED] apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
+[CHANGED] grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+[PRIO] sso.alfaview.com/oauth2/introspect,9.5,a=10,b=10,t=10,g=10,c=8,f=8
+[PRIO] app.alfaview.com/graphql,9.0,a=9,b=10,t=9,g=3,c=10,f=8
+[PRIO] apis.alfaview.com,8.5,a=8,b=10,t=7,g=3,c=8,f=7
+[PRIO] tools.alfaview.com/poll/pollservice,7.8,a=8,b=8,t=8,g=9,c=4,f=6
+[PRIO] test.alfaview.com,6.8,a=6,b=7,t=5,g=10,c=3,f=5
+[PRIO] whiteboard.alfaview.com,6.5,a=7,b=7,t=6,g=8,c=3,f=5
+[HYP] RFC7662 introspection client authentication bypass on both channels
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 95
+reasoning: POST-body and HTTP Basic auth both accept fabricated client_id + any secret → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic; JWKS restored with 7 RSA keys; FusionAuth Community permits this for public clients; requires valid token parameter (400 missing_token without it); 17+ consecutive stable cycles
+evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); valid access token from authenticated session
+verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; POST https://sso.alfaview.com/oauth2/introspect with token=<valid_token_from_signup_chain>&client_id=fabricated-123 → observe 200 with token metadata; repeat with fabricated client_id via Basic auth
+impact: OAuth token metadata disclosure → token reconnaissance, potential token validation bypass (CRITICAL, OWASP A07:2021)
+testability: AUTH_HELPED
+[HYP] Guest token issuance bypassing accessKey requirement via GraphQL
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 85
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
+evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
+verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
+impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
+testability: AUTH_HELPED
+[HYP] Poll service BOLA via custom gRPC-metadata auth header
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice
+confidence: 75
+reasoning: tools.alfaview.com exposes verb-based JSON RPC (list|create|delete|edit|vote|hasVoted) using `Grpc-Metadata-alfaview.token` header instead of standard Authorization/Bearer; auth mechanism diverges from REST (opaque tokens) and GraphQL (custom token header); poll operations scoped to roomId but token binding untested; staging-tools.alfaview.com mirrors production
+evidence_needed: Valid room token from owned alfaview room (via signup→finishSignup chain) to test cross-room poll access
+verify_steps: POST https://tools.alfaview.com/poll/pollservice/list with header `Grpc-Metadata-alfaview.token: <own-room-token>` → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically
+impact: Cross-room poll data access/manipulation (vote rigging, poll deletion, result disclosure) → BOLA in real-time collaboration feature (HIGH)
+testability: AUTH_HELPED
+[PARKED] Whiteboard tenant isolation bypass: whiteboard.alfaview.com root returns "board deleted/access expired" but no IDOR surface visible without valid board ID; all non-root paths redirect to / — no verify steps without board creation flow
+[PARKED] CT subdomain takeover: 110 CT subdomains mostly firewalled (000); no dangling CNAMEs or takeover evidence in live set — requires DNS-level probe which is out of passive scope
+[PARKED] Status page info leak: status.alfaview.com is public status page — no sensitive data exposure confirmed, only operational metrics
+[FINAL] Ranked survivors:
+[NEXT] PROBE: GET https://app.alfaview.com/ (with browser DevTools/HAR capture) → search network requests for OAuth/OIDC config calls returning client_id for app.alfaview.com; then POST https://sso.alfaview.com/oauth2/introspect with token=<valid_token_from_signup_chain>&client_id=fabricated-123 → observe 200 with token metadata (requires valid token from HUMAN signup first)
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: previously-unmapped in-room poll toolbox exposes a verb-based JSON RPC (`/poll/pollservice/<verb>`) using custom header `Grpc-Metadata-alfaview.token` rather than Authorization/Bearer — new auth-surface divergence from REST/GraphQL
+[LEARN] ACCEPTED MISCONFIG @ staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+[LEARN] ACCEPTED MISCONFIG @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`
+[LEARN] ACCEPTED MISCONFIG @ status.alfaview.com: public status page 200/53714B (title "alfaview Status")
+[LEARN] ACCEPTED MISCONFIG @ qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg)
+[LEARN] ACCEPTED MISCONFIG @ CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most are edge-firewalled (000) but tools/whiteboard/staging-tools/status/qa/uni-stuttgart are live
+[LEARN] REJECTED MISCONFIG @ grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+[LEARN] NO_DELTA @ apis/sso: OpenAPI MD5 `357b94d3` (37 paths), OIDC 200/2169, JWKS 200/16257 byte-stable
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body client_id validation fully removed — fabricated client_id → 200 {"active":false} (was 400 invalid_client); HTTP Basic auth also accepts any client_id; only residual check is Basic-vs-body client_id_mismatch (401)
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_uri matrix still client_id-gated but behavior unstable
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 3-field accessKey combo
+[LEARN] REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+[LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingUserAccount(userId)) — broader schema-surface mapping.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-priority authenticated test target. Needs account.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
+[LEARN] ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
+[LEARN] ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
+[RISK] alfaview: 85/100. Broad scope (55 dedicated hosts + 6 main domains + ~110 CT subdomains, 100% probed on dedicated). Production APIs auth-gated (401 opaque tokens). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: `sso.alfaview.com` (FusionAuth 1.63.0) exposes OIDC metadata with `issuer=acme.com` misconfiguration, implicit flow, HS256/384/512/ES256/384/512 support vs JWKS with only RSA keys, `/oauth2/introspect` client authentication fully unenforced on both Basic and POST-body channels (17+ stable cycles), JWKS endpoint oscillates (404↔200), introspection_endpoint advertisement oscillates. `app.alfaview.com` is primary client but `client_id` not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth and divergent guest path (no `accessKey`). `test.alfaview.com` distributes unsigned binaries v483102 (supply chain risk). NEW: `tools.alfaview.com` exposes verb-based JSON RPC with custom gRPC-metadata auth header — new auth-surface divergence. 31 hosts exhausted. Realistic path: discover `client_id` via `app.alfaview.com` network traffic → probe OAuth `redirect_uri`/`state` on `sso.alfaview.com` (AUTH_HELPED, CRITICAL); verify binary integrity on `test.alfaview.com` (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits + poll service BOLA.

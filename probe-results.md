@@ -777,3 +777,11 @@ https://app.alfaview.com/graphql -> HTTP 400
 https://tools.alfaview.com/poll/pollservice/list -> HTTP 501
 https://tools.alfaview.com/poll/pollservice/list` -> HTTP 404
 https://staging-tools.alfaview.com/poll/pollservice/list` -> HTTP 404
+
+## 2026-09-18 19:58:28 UTC
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400
+https://tools.alfaview.com/poll/pollservice/list -> HTTP 501
+https://tools.alfaview.com/poll/pollservice/list` -> HTTP 404
+https://staging-tools.alfaview.com/poll/pollservice/list` -> HTTP 404

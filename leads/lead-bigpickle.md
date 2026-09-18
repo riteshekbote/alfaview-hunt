@@ -4714,3 +4714,31 @@ evidence_needed: owned prod token replayed against staging `list` with owned roo
 verify_steps: (HUMAN) replay prod `Grpc-Metadata-alfaview.token` at `https://staging-tools.alfaview.com/poll/pollservice/list` body `{"roomId":"<OWNED>"}`; compare to prod.
 impact: Environment trust-boundary crossing, staging→prod data access; MEDIUM.
 testability: HUMAN_ONLY
+## 2026-09-18 19:57:37 UTC [target] (model bigpickle)
+[HYP] Poll list BOLA — cross-room read keyed only by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 60
+reasoning: Payload carries only `{roomId}` (+`id` for delete/edit); bearer rides custom `Grpc-Metadata-alfaview.token`, typed opaque/base64 matching REST tokens; no tenant/user id in payload; OPTIONS 501 confirms backend reachable on all 5 verbs; `list` returns full poll text + results per KB.
+evidence_needed: owned token → POST `list` with foreign roomId returns foreign poll data (200) instead of 403/empty; control with own roomId; second control with no header.
+verify_steps: (HUMAN only) obtain token+roomId via signup→finishSignup (sole standing token path); POST `https://tools.alfaview.com/poll/pollservice/list`, headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <b64>`, body `{"roomId":"<OWNED>"}`; then same with a second tenant's roomId and with header omitted; diff status/body.
+impact: Cross-room read of live poll/Q&A content + vote/delete integrity; MEDIUM-HIGH conditional on token.
+testability: HUMAN_ONLY
+[HYP] Poll service lacks server-side token validation (auth client-side only)
+class: AUTH
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 48
+reasoning: Vue bundle rejects missing token in client only (`Invalid access token`); token rides non-standard `Grpc-Metadata-*` (trivially omitted); all probes so far GET/HEAD/OPTIONS-only, so no 401/403 ever observed from backend.
+evidence_needed: header-less POST `list` with zero-UUID roomId → 200/`{}` or gRPC data-error (not 401/403/permission-denied).
+verify_steps: (HUMAN, single safe read) POST `https://tools.alfaview.com/poll/pollservice/list`, no auth header, body `{"roomId":"00000000-0000-0000-0000-000000000000"}`; 401⇒gate present; 200-empty/grpc-error⇒gate absent.
+impact: Anonymous poll create/vote/delete + content leak; HIGH if confirmed.
+testability: HUMAN_ONLY
+[HYP] staging-tools trusts production tokens (env trust-boundary leak)
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice/list
+confidence: 45
+reasoning: Prod/staging return identical 501/55B verb routing and identical 404s — same backend build behind same edge-proxy; staging envs commonly share or relax token validation.
+evidence_needed: owned prod token replayed at staging `list` with owned roomId → 200 vs prod 401.
+verify_steps: (HUMAN) replay prod `Grpc-Metadata-alfaview.token` against `https://staging-tools.alfaview.com/poll/pollservice/list` body `{"roomId":"<OWNED>"}`; compare status/body to prod.
+impact: Environment trust-boundary crossing, staging↔prod data reach; MEDIUM.
+testability: HUMAN_ONLY
