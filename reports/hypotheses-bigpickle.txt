@@ -1,30 +1,32 @@
-## 2026-09-19 11:44:12 UTC [target] (model bigpickle)
+## 2026-09-19 14:57:18 UTC [target] (model bigpickle)
 [HYP] Poll RPC cross-room BOLA keyed solely by roomId
 class: IDOR
 asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
 confidence: 68
-reasoning: Route table confirmed live today (8 verbs POST-only, code:12 on GET/OPTIONS = not stub). Bundle: every verb sends `{roomId}`(+`id`) only, zero tenant field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64 char-swap, unpadded); error-mapper expects server gRPC codes 7/16 ⇒ server enforces auth but roomId↔subject binding never evidenced; staging routes byte-identically.
-evidence_needed: owned token POST `list` with foreign tenant's roomId returns foreign `{polls[]}` (200) vs `{code:7}`/403; controls own roomId (200) and header-omitted (`{code:16}`).
-verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; POST `https://tools.alfaview.com/poll/pollservice/list`, headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <token -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<epoch_ms>`, body `{"roomId":"<OWNED>"}`; then foreign roomId; then header omitted; diff status+`{code}`.
-impact: Cross-room read of live polls/Q&A + vote/delete/updateState integrity on other tenants' boards; MEDIUM-HIGH.
+reasoning: Bundle now fully pinned: all 8 verbs send only `{roomId}`(+`{id}`); `create` poll object likewise lacks any company/tenant field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64, unpadded) with `Grpc-Metadata-alfaview.request_id: {verb}-poll-{ms}`; client pre-flight gates only on token presence; server error body is `{code,message}` (12→501 on method verbs), so authz must be server-side but roomId↔subject binding is never evidenced; staging serves the same bundled build.
+evidence_needed: owned token POST `list` with foreign tenant roomId returns 200 `{polls[]}` vs `{code:7}`; controls: owned roomId=200, header omitted=`{code:16}`.
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<epoch_ms>`, body `{"roomId":"<OWNED>"}`; then token header omitted; then foreign roomId; diff status+`{code}`.
+impact: Cross-tenant read of live polls/Q&A and write integrity (create/updateState/delete/vote) on other tenants' boards; MEDIUM-HIGH.
 testability: HUMAN_ONLY
 [HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
 confidence: 70
-reasoning: 17+ stable cycles — arbitrary client_id accepted on POST-body and Basic channels (200 `{"active":false}` without token); only residual check is body-vs-Basic `client_id_mismatch` (401); discovery advertises client_secret_basic/post/none with no runtime verification.
+reasoning: 17+ stable cycles — arbitrary client_id accepted on POST-body and Basic channels (200 `{"active":false}` without token); only residual check is body-vs-Basic `client_id_mismatch` 401; discovery advertises `client_secret_basic/post/none` with no runtime verification.
 evidence_needed: any valid bearer → POST `client_id=<fake>&token=<b64>` returns 200 `{"active":true}`+claims; invalid → `active:false` — oracle without client secret.
 verify_steps: (HUMAN_ONLY) POST `https://sso.alfaview.com/oauth2/introspect` `application/x-www-form-urlencoded` body `client_id=does-not-exist-12345&token=<b64>`; also Basic `Authorization: Basic base64(fake:any)`; observe active+claims vs invalid_token.
-impact: Unauthenticated token liveness/subject/expiry fingerprint → ATO-chain support; MEDIUM-HIGH.
+impact: Unauthenticated token liveness/subject/expiry fingerprinting → ATO-chain support; MEDIUM-HIGH.
 testability: HUMAN_ONLY
 [HYP] staging-tools accepts production tokens (env trust-boundary leak)
 class: MISCONFIG
 asset: staging-tools.alfaview.com/poll/pollservice/list
 confidence: 50
-reasoning: vendor bundle hash `8caab24e…` identical to prod (same build family), origin-relative routing; stage envs commonly share/relax token validation; poll backend expected to return gRPC 16/7 rather than HTTP 401 distinction.
-evidence_needed: owned prod token replayed at staging `list` with owned roomId → 200 `{polls[]}` vs prod baseline (same token, same roomId).
+reasoning: vendor bundle byte-identical to prod (same build family), origin-relative routing; stage envs commonly share/relax token validation; poll backend expected to differ at gRPC level rather than HTTP.
+evidence_needed: owned prod token replayed at staging `list` with owned roomId → 200 `{polls[]}` vs prod baseline.
 verify_steps: (HUMAN_ONLY) replay prod token at `https://staging-tools.alfaview.com/poll/pollservice/list`, body `{"roomId":"<OWNED>"}`; compare status+`{code}` to prod.
 impact: Environment trust-boundary crossing, staging↔prod data reach; MEDIUM.
 testability: HUMAN_ONLY
-[NEXT] HUMAN: Execute finalized poll-service replay, single safe read + controls, OWNED roomIds only: (a) obtain token via app.alfaview.com signup→finishSignup; (b) `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned-token -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<ms>`, body `{"roomId":"<OWNED>"}` → expect 200 `{polls[]}`; (c) same, header omitted → expect gRPC `{code:16}` (proves server gate, validates control); (d) repeat (b) at staging-tools.alfaview.com for trust-boundary adjudication. Do NOT send foreign-tenant roomIds.
-[RISK] alfaview: 57 — active surface stable and fully inventoried; poll RPC backend confirmed live POST-only (not stub) and precisely instrumented (exact verbs/headers/payloads/error codes) with same-build staging twin; all three standing chains (introspect 70, poll BOLA 68, staging trust 50) remain token-gated (HUMAN) until a legit token/room exists, so exposure bounded; no new unauthenticated exploit surface.
+[NEXT] HUMAN: Execute the finalized poll-service replay — single safe read + controls, OWNED roomIds only: (a) token via app.alfaview.com signup→finishSignup; (b) `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned-token -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<ms>`, body `{"roomId":"<OWNED>"}` → expect 200 `{polls[]}`; (c) same request, token header omitted → expect `{code:16}` (proves server gate, validates control); (d) if (b) 200, replay (b) verbatim at `staging-tools.alfaview.com` for trust-boundary adjudication. Do NOT send foreign-tenant roomIds.
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: app bundle pins complete RPC contract — 8 verbs, `{roomId}`+`{id}`-only payloads, custom `Grpc-Metadata-alfaview.token` (b64url→b64) + `request_id` `{verb}-poll-{ms}`, error body `{code,message}` (12→501), response success `{polls[]}` — BOLA request shape fully instrumented, staging twin byte-identical build.
+[LEARN] REJECTED MISCONFIG @ whiteboard.alfaview.com: `/poll/pollservice/*` not exposed — 302→`/` shell, poll RPC is tools-only surface.
+[RISK] alfaview: 57 — surface fully stable (OpenAPI/JWKS/introspect/authorize/tools/status byte-identical); only fresh exploitable asset is the poll RPC, now completely instrumented, with same-build staging twin; all three standing chains (introspect 70, poll BOLA 68, staging-trust 50) remain token-gated (HUMAN) and bounded until a legit owned token+roomId exists; no new unauthenticated exploit surface.

@@ -25859,3 +25859,158 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 57 — active surface stable and fully inventoried; poll RPC backend confirmed live POST-only (not stub) and precisely instrumented (exact verbs/headers/payloads/error codes) with same-build staging twin; all three standing chains (introspect 70, poll BOLA 68, staging trust 50) remain token-gated (HUMAN) until a legit token/room exists, so exposure bounded; no new unauthenticated exploit surface.
+===== ANALYST bigpickle 2026-09-19 14:59:50 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor i in 1 2 3; do :; done; curl -s -m 15 https://apis.alfaview.com/v2/docs/openapi.json | md5sum; sleep 1; curl -s -o /dev/null -m 15 -w "tools_root %{http_code} %{size_download}\n" https://tools.alfaview.com/; sleep 1; curl -s -m 15 -X OPTIONS https://tools.alfaview.com/poll/pollservice/list -D - -o /dev/null
+357b94d367909a40b9299b543d23712b  -
+tools_root 200 615
+HTTP/2 501 
+content-type: application/json
+date: Sat, 19 Sep 2026 14:55:32 GMT
+content-length: 55
+server: edge-proxy
+vary: Accept-Encoding
+[0m
+[0m$ [0msleep 1; curl -s -m 15 -X OPTIONS https://sso.alfaview.com/oauth2/introspect -o /dev/null -w "introspect_opt %{http_code}\n"; sleep 1; curl -s -m 15 -o /dev/null -w "jwks %{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json; sleep 1; curl -s -m 15 -o /dev/null -w "authorize %{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/authorize?client_id=x"
+introspect_opt 405
+jwks 200 16257
+authorize 200 6176
+[0m
+[0m$ [0msleep 1; curl -s -m 15 https://tools.alfaview.com/ | grep -oE '(src|href)="[^"]*\.js[^"]*"|/[A-Za-z0-9._/-]+\.js' | sort -u
+src="/js/app-bundle.0a250e1f96a7aaf5661c.js"
+src="/js/vendor.8caab24e6bd77ed8c779.js"
+[0m
+[0m$ [0msleep 1; curl -s -m 20 https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js -o /tmp/opencode/tools-app.js; wc -c /tmp/opencode/tools-app.js; grep -oE '"((/[a-zA-Z-]+)+/pollservice/[a-zA-Z]+)|(/qa/[a-zA-Z/]*)|(/whiteboard/[a-zA-Z/]*)|pollservice/[a-zA-Z]+' /tmp/opencode/tools-app.js | sort -u | head -50
+137343 /tmp/opencode/tools-app.js
+[0m
+[0m$ [0mgrep -oE '[a-zA-Z0-9/._-]*pollservice[a-zA-Z0-9/._-]*' /tmp/opencode/tools-app.js | sort -u | head; echo "---grpcmeta---"; grep -oE 'Grpc-Metadata-[a-zA-Z0-9._-]+' /tmp/opencode/tools-app.js | sort -u; echo "---services---"; grep -oE '"/[a-z]+/[A-Za-z]+"|/[a-z]+service' /tmp/opencode/tools-app.js | sort -u | head -40
+/poll/pollservice
+---grpcmeta---
+Grpc-Metadata-alfaview.request_id
+Grpc-Metadata-alfaview.token
+---services---
+"/poll/view"
+"/poll/vote"
+/pollservice
+[0m
+[0m$ [0mgrep -oE '(list|create|delete|edit|update|updateState|vote|hasVoted|get)\("?"?[^,;]{0,40}' /tmp/opencode/tools-app.js | sort -u | head -30; echo "---verbs near service---"; grep -oE 'pollservice/[a-zA-Z]+' /tmp/opencode/tools-app.js | sort -u
+delete("token")
+get(e)
+hasVoted({accessToken:n
+vote({accessToken:n
+---verbs near service---
+[0m
+[0m$ [0mgrep -oE '.{80}pollservice.{120}' /tmp/opencode/tools-app.js | head -5
+l).exports;var Ra=i(40173),Ha=i(74659);const Ga=`${window.location.origin}/poll/pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method
+[0m
+[0m$ [0mgrep -oE 'Fa\(\{[^;]{0,120}' /tmp/opencode/tools-app.js | head -20; echo "---verb: ---"; grep -oE 'verb:[a-zA-Z]+' /tmp/opencode/tools-app.js | sort -u
+Fa({verb:"list",payload:{roomId:i},accessToken:e})},createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:
+Fa({verb:"create",payload:{poll:d},accessToken:e})},deletePoll:a=>{let{accessToken:e,roomId:i,id:n}=a
+Fa({verb:"delete",payload:{roomId:i,id:n},accessToken:e})},editPoll:a=>{let{accessToken:e,roomId:i,id:n,question:t,options:o
+Fa({verb:"update",payload:{id:n,roomId:i,question:t,options:o,maxVotes:s,template:r},accessToken:e})},updatePollState:a=>{le
+Fa({verb:"updateState",payload:{id:i,roomId:n,state:t},accessToken:e})},vote:a=>{let{accessToken:e,roomId:i,id:n,optionIds:t
+Fa({verb:"vote",payload:{id:n,roomId:i,optionIds:t},accessToken:e})},getPoll:a=>{let{accessToken:e,roomId:i,id:n}=a
+Fa({verb:"get",payload:{id:n,roomId:i},accessToken:e})},hasVoted:a=>{let{accessToken:e,roomId:i,id:n}=a
+Fa({verb:"hasVoted",payload:{id:n,roomId:i},accessToken:e})}},Ja=a=>{if(a)return new Date(a).getTime()},qa=a=>{const e=Ja(a.
+---verb: ---
+verb:e
+[0m
+[0m$ [0msleep 1; curl -s -m 20 https://tools.alfaview.com/js/vendor.8caab24e6bd77ed8c779.js -o /tmp/opencode/tools-vendor.js; wc -c /tmp/opencode/tools-vendor.js; grep -oE 'https?://[a-zA-Z0-9.-]*alfaview\.com[a-zA-Z0-9/._-]*' /tmp/opencode/tools-app.js /tmp/opencode/tools-vendor.js | sort -u | head; echo "---status check---"; sleep 1; curl -s -m 15 -o /dev/null -w "status_page %{http_code} %{size_download}\n" https://status.alfaview.com/; sleep 1; curl -s -m 15 -o /dev/null -w "whiteboard_poll %{http_code}\n" -L https://whiteboard.alfaview.com/poll/pollservice/list
+684113 /tmp/opencode/tools-vendor.js
+---status check---
+status_page 200 53714
+whiteboard_poll 200
+[0m
+[0m$ [0mgrep -oE 'createPoll:[^}]{0,250}' /tmp/opencode/tools-app.js | head -3; echo "---"; grep -oE 'Fa\(\{verb:"create"[^}]{0,250}' /tmp/opencode/tools-app.js | head -3
+createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r=!1
+---
+Fa({verb:"create",payload:{poll:d
+[0m
+[0m$ [0mgrep -oE 'createPoll:a=>\{.{400}' /tmp/opencode/tools-app.js | head -1
+createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r=!1}=a;const d={roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r};return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll question is required")),0!==t.length&&void 0!==t||Promise.reject(new Error("Poll options
+[0m
+[0m$ [0mgrep -oE 'status===7[^;]{0,120}|code===7[^;]{0,120}|code:[0-9]+[^;]{0,80}|\.code===[0-9]+[^;]{0,80}' /tmp/opencode/tools-app.js | sort -u | head -20
+(no output)
+[0m
+[0m$ [0mgrep -oE '.{60}(PERMISSION_DENIED|code 7|code: 7|ok:|error:|Unavailable|reject\(new Error\("Invalid access token)[^;]{0,60}' /tmp/opencode/tools-app.js | sort -u | head -15
+erstellt",update_success:"{type} erfolgreich aktualisiert",error:"Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+ successfully",update_success:"{type} updated successfully",error:"An error occurred, please try again.",state_update_success:
+"},J={primary:"primary",default:"default",warning:"warning",error:"error"},q={functional:!0,props:{disabled:{type:Boolean,defa
+Created",state:"Status",actions:"Actions"},unauthenticated:{error:"Your session expired.",suggestion:"Please reopen this page 
+ed:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),n||Promise.reject(new Error("HasVoted requires and id (a
+eite erneut über die alfaview-Toolbox auf."},unknown_error:{error:"Etwas ist schiefgelaufen. Bitte laden Sie die Seite neu ode
+et{accessToken:e,id:i,roomId:n,state:t}=a;return e||Promise.reject(new Error("Invalid access token")),n||Promise.reject(new Error("Polls should bind to a room
+ll:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room
+ll:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),n||Promise.reject(new Error("Voting requires a poll id (
+o:ta.yW.mp.pq.E3,dark:ta.yW.E3.wm.Mr,warning:ta.yW.mp.$e.E3,error:ta.yW.mp.OR.E3}}
+ptions:t,maxVotes:o,template:s,openNow:r};return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room
+ssToken:e,roomId:i,id:n,optionIds:t=[]}=a;return e||Promise.reject(new Error("Invalid access token")),n||Promise.reject(new Error("Voting requires a poll id (
+stPolls:a=>{let{accessToken:e,roomId:i}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("You need a roomId to list t
+stellt",state:"Status",actions:"Aktionen"},unauthenticated:{error:"Ihre Sitzung ist abgelaufen.",suggestion:"Bitte rufen Sie d
+t_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.json()
+[0m
+[0m$ [0mgrep -oE 'Fa=\w=>\{[^}]{0,600}' /tmp/opencode/tools-app.js | head -1
+(no output)
+[0m
+[0m$ [0mgrep -oE 'fetch\(`\$\{Ga\}/\$\{e\}`,[^;]{0,300}' /tmp/opencode/tools-app.js | head -1
+fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.token":(t=n,t.replace(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.json()
+[0m
+[0m$ [0mgrep -oE '\.then\(\(async a=>\{[^}]{0,500}' /tmp/opencode/tools-app.js | head -1
+.then((async a=>{const{ok:e
+[0m
+[0m$ [0mgrep -oE 'const\{ok:e\}=a,i=await a\.json\(\).{0,300}' /tmp/opencode/tools-app.js | head -1
+const{ok:e}=a,i=await a.json();if(e)return i;throw{message:i.message,code:i.code}}));var t}const $a={listPolls:a=>{let{accessToken:e,roomId:i}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("You need a roomId to list the polls for")),Fa({verb:"list",payload:{roomId:i},accessToken:e})},c
+[0m
+STEP 1 — DELTA
+- NEW tools.alfaview.com: extracted full live poll RPC map from app bundle — 8 verbs (`list|create|delete|update|updateState|vote|get|hasVoted`); payloads all keyed on `{roomId}` (+`{id}`), zero tenant/company field even in `create`'s nested `poll{roomId,question,options,maxVotes,template,openNow}`; token header b64url→b64 char-swap confirmed live; server error body shape pinned as `{code,message}` with code 12→501 on unknown/method (GET/OPTIONS 501/55B).
+- NO_DELTA standing probes: OpenAPI MD5 `357b94d3` (37 paths), introspect OPTIONS 405, jwks 200/16257B, authorize 200/6176B, tools root 200/615B, status.alfaview.com 200/53714B, whiteboard `/poll/pollservice/list` →302 `/` — all byte-identical to prior cycle.
+
+STEP 2 — PRIORITIZE
+- [PRIO] tools.alfaview.com/poll/pollservice 5.9 (a6,b6,t9=uncommon gRPC-metadata custom auth,g2,c3,f9)
+- [PRIO] sso.alfaview.com/oauth2/introspect 5.6 (a7,b7,t8,g8,c3,f1 — stable 17+ cycles, oracle value retained)
+- [PRIO] app.alfaview.com/graphql signup→bearer 5.2 (a5,b7,t9,g2,c2,f1 — sole gate to all token-chains)
+
+STEP 3 — HYPOTHESES
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 68
+reasoning: Bundle now fully pinned: all 8 verbs send only `{roomId}`(+`{id}`); `create` poll object likewise lacks any company/tenant field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64, unpadded) with `Grpc-Metadata-alfaview.request_id: {verb}-poll-{ms}`; client pre-flight gates only on token presence; server error body is `{code,message}` (12→501 on method verbs), so authz must be server-side but roomId↔subject binding is never evidenced; staging serves the same bundled build.
+evidence_needed: owned token POST `list` with foreign tenant roomId returns 200 `{polls[]}` vs `{code:7}`; controls: owned roomId=200, header omitted=`{code:16}`.
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<epoch_ms>`, body `{"roomId":"<OWNED>"}`; then token header omitted; then foreign roomId; diff status+`{code}`.
+impact: Cross-tenant read of live polls/Q&A and write integrity (create/updateState/delete/vote) on other tenants' boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: 17+ stable cycles — arbitrary client_id accepted on POST-body and Basic channels (200 `{"active":false}` without token); only residual check is body-vs-Basic `client_id_mismatch` 401; discovery advertises `client_secret_basic/post/none` with no runtime verification.
+evidence_needed: any valid bearer → POST `client_id=<fake>&token=<b64>` returns 200 `{"active":true}`+claims; invalid → `active:false` — oracle without client secret.
+verify_steps: (HUMAN_ONLY) POST `https://sso.alfaview.com/oauth2/introspect` `application/x-www-form-urlencoded` body `client_id=does-not-exist-12345&token=<b64>`; also Basic `Authorization: Basic base64(fake:any)`; observe active+claims vs invalid_token.
+impact: Unauthenticated token liveness/subject/expiry fingerprinting → ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] staging-tools accepts production tokens (env trust-boundary leak)
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice/list
+confidence: 50
+reasoning: vendor bundle byte-identical to prod (same build family), origin-relative routing; stage envs commonly share/relax token validation; poll backend expected to differ at gRPC level rather than HTTP.
+evidence_needed: owned prod token replayed at staging `list` with owned roomId → 200 `{polls[]}` vs prod baseline.
+verify_steps: (HUMAN_ONLY) replay prod token at `https://staging-tools.alfaview.com/poll/pollservice/list`, body `{"roomId":"<OWNED>"}`; compare status+`{code}` to prod.
+impact: Environment trust-boundary crossing, staging↔prod data reach; MEDIUM.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- PARKED __ template-IDOR: `create/update` accept `template` field; if it references a shared/shared-store template id, a second cross-tenant oracle could exist — no evidence of template store endpoint in bundle; speculative without token.
+- [FINAL] Poll BOLA 68, Introspect oracle 70 (stable, unparkable), staging-trust 50.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Execute the finalized poll-service replay — single safe read + controls, OWNED roomIds only: (a) token via app.alfaview.com signup→finishSignup; (b) `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned-token -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<ms>`, body `{"roomId":"<OWNED>"}` → expect 200 `{polls[]}`; (c) same request, token header omitted → expect `{code:16}` (proves server gate, validates control); (d) if (b) 200, replay (b) verbatim at `staging-tools.alfaview.com` for trust-boundary adjudication. Do NOT send foreign-tenant roomIds.
+
+STEP 6 — LEARNING
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: app bundle pins complete RPC contract — 8 verbs, `{roomId}`+`{id}`-only payloads, custom `Grpc-Metadata-alfaview.token` (b64url→b64) + `request_id` `{verb}-poll-{ms}`, error body `{code,message}` (12→501), response success `{polls[]}` — BOLA request shape fully instrumented, staging twin byte-identical build.
+[LEARN] REJECTED MISCONFIG @ whiteboard.alfaview.com: `/poll/pollservice/*` not exposed — 302→`/` shell, poll RPC is tools-only surface.
+
+STEP 7 — RISK
+[RISK] alfaview: 57 — surface fully stable (OpenAPI/JWKS/introspect/authorize/tools/status byte-identical); only fresh exploitable asset is the poll RPC, now completely instrumented, with same-build staging twin; all three standing chains (introspect 70, poll BOLA 68, staging-trust 50) remain token-gated (HUMAN) and bounded until a legit owned token+roomId exists; no new unauthenticated exploit surface.

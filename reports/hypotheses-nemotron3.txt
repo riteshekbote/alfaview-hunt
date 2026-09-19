@@ -1,5 +1,5 @@
-## 2026-09-19 11:45:10 UTC [target] (model nemotron3)
-[PRIO] tools.alfaview.com/poll/pollservice, 8.8, attack_surface=9, business_value=8, tech_exposure=9,
+## 2026-09-19 14:59:40 UTC [target] (model nemotron3)
+[PRIO] tools.alfaview.com/poll/pollservice, 8.8, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=3, cloud_surface=7, freshness=9
 [PRIO] sso.alfaview.com/oauth2/introspect, 8.5, attack_surface=8, business_value=9, tech_exposure=9, gate_ease=10, cloud_surface=7, freshness=8
 [PRIO] app.alfaview.com/graphql, 8.2, attack_surface=9, business_value=9, tech_exposure=8, gate_ease=10, cloud_surface=7, freshness=6
 [PRIO] apis.alfaview.com/v2/users, 7.8, attack_surface=7, business_value=10, tech_exposure=7, gate_ease=3, cloud_surface=8, freshness=8
