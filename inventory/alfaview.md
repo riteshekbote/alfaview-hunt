@@ -781,3 +781,15 @@ www.alfaview.com
 - CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
 
 ## 2026-09-19 01:57:11 UTC
+
+## 2026-09-19 06:50:19 UTC
+- NEW `tools.alfaview.com` — live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|update|updateState|vote|get|hasVoted}` with custom auth header `Grpc-Metadata-alfavi
+- NEW `staging-tools.alfaview.com` — live (612B), same Tools UI, separate staging backend; vendor bundle hash identical to prod
+- NEW `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; `/` returns "board deleted/access expired" error, all non-root paths → `302 Location: /`
+- NEW `status.alfaview.com` — public status page 200/53714B (title "alfaview Status")
+- NEW `qa.alfaview.com` / `uni-stuttgart.alfaview.com` — 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg)
+- NEW CT/crt.sh yields ~110 subdomains absent from inventory: `grafana`, `loki`, `prometheus-*`, `linkerd-*`, `ops`, `sap`, `webrtc`, `stun`, `gitlab.dev`, `fusionauth.dev`, `whiteboard`, `tools`, `staging-
+- CHANGED `sso.alfaview.com/.well-known/jwks.json` — oscillates 200↔404, currently 200 with 7 RSA keys (MD5 3f8d456c)
+- CHANGED `sso.alfaview.com/.well-known/openid-configuration` — `introspection_endpoint` advertisement oscillates (absent this cycle) while `/oauth2/introspect` stays live (OPTIONS 405)
+- CHANGED `test.alfaview.com` — alfacheck binary version bumped v470079→v483102 (4 platforms), index page still carries no sha256/signatures
+- CHANGED `apis.alfaview.com/v2/docs/openapi.json` — still public, prod=beta byte-identical (37 paths, MD5 357b94d3), 10+ stable cycles

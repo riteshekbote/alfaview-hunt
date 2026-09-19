@@ -25220,3 +25220,486 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] alfaview: 55 — poll RPC surface now fully pinned (8 verbs, GRPC-gateway, roomId-only scope, token-in-URL delivery) but every exploit chain (poll BOLA 65, introspect oracle 70, IDOR 80) remains token-gated given signup/account execution; no fresh anonymously-exploitable surface; all standing probes byte-stable.
+===== ANALYST bigpickle 2026-09-19 06:50:19 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && ls -la art/ 2>/dev/null | head -30
+total 564
+drwxr-xr-x 12 runner runner   4096 Sep 19 06:46 .
+drwxr-xr-x  3 runner runner   4096 Sep 19 06:46 ..
+drwxr-xr-x  7 runner runner   4096 Sep 19 06:46 .git
+drwxr-xr-x  3 runner runner   4096 Sep 19 06:46 .github
+-rw-r--r--  1 runner runner   1883 Sep 19 06:46 README.md
+-rw-r--r--  1 runner runner     32 Sep 19 06:46 analyst-out.txt
+-rw-r--r--  1 runner runner 221283 Sep 19 06:46 analyst-prompt.txt
+-rw-r--r--  1 runner runner 217373 Sep 19 06:46 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 leads
+-rw-r--r--  1 runner runner  42125 Sep 19 06:46 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 reports
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 19 06:46 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 scripts
+-rw-r--r--  1 runner runner     33 Sep 19 06:46 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 19 06:46 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 19 06:46 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 19 06:46 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 19 06:46 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 19 06:46 state_nemotron3.json
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 triage
+[0m
+[0m$ [0mls -la leads/ knowledge/ triage/ reports/ 2>/dev/null
+knowledge/:
+total 124
+drwxr-xr-x  2 runner runner   4096 Sep 19 06:46 .
+drwxr-xr-x 12 runner runner   4096 Sep 19 06:46 ..
+-rw-r--r--  1 runner runner 116396 Sep 19 06:46 index.md
+
+leads/:
+total 1780
+drwxr-xr-x  2 runner runner    4096 Sep 19 06:46 .
+drwxr-xr-x 12 runner runner    4096 Sep 19 06:46 ..
+-rw-r--r--  1 runner runner  671264 Sep 19 06:46 lead-bigpickle.md
+-rw-r--r--  1 runner runner    5763 Sep 19 06:46 lead-laguna.md
+-rw-r--r--  1 runner runner    5650 Sep 19 06:46 lead-ling3.md
+-rw-r--r--  1 runner runner    5876 Sep 19 06:46 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Sep 19 06:46 lead-mimo.md
+-rw-r--r--  1 runner runner 1089178 Sep 19 06:46 lead-nemotron3.md
+-rw-r--r--  1 runner runner   21504 Sep 19 06:46 reposcan-alfaview.md
+
+reports/:
+total 5228
+drwxr-xr-x  2 runner runner    4096 Sep 19 06:46 .
+drwxr-xr-x 12 runner runner    4096 Sep 19 06:46 ..
+-rw-r--r--  1 runner runner 2147168 Sep 19 06:46 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   24521 Sep 19 06:46 analyst-laguna.log
+-rw-r--r--  1 runner runner   24408 Sep 19 06:46 analyst-ling3.log
+-rw-r--r--  1 runner runner   24634 Sep 19 06:46 analyst-longcat.log
+-rw-r--r--  1 runner runner 2703354 Sep 19 06:46 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    8780 Sep 19 06:46 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Sep 19 06:46 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Sep 19 06:46 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Sep 19 06:46 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   11410 Sep 19 06:46 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  362523 Sep 19 06:46 hypotheses.md
+-rw-r--r--  1 runner runner    8308 Sep 19 06:46 valid-bugs.md
+
+triage/:
+total 540
+drwxr-xr-x  2 runner runner  4096 Sep 19 06:46 .
+drwxr-xr-x 12 runner runner  4096 Sep 19 06:46 ..
+-rw-r--r--  1 runner runner     0 Sep 19 06:46 .gitkeep
+-rw-r--r--  1 runner runner   186 Sep 19 06:46 run-2026-09-03-11-41.md
+-rw-r--r--  1 runner runner   194 Sep 19 06:46 run-2026-09-03-15-37.md
+-rw-r--r--  1 runner runner   346 Sep 19 06:46 run-2026-09-03-18-51.md
+-rw-r--r--  1 runner runner   283 Sep 19 06:46 run-2026-09-03-21-32.md
+-rw-r--r--  1 runner runner   159 Sep 19 06:46 run-2026-09-03-23-30.md
+-rw-r--r--  1 runner runner   143 Sep 19 06:46 run-2026-09-04-01-20.md
+-rw-r--r--  1 runner runner   127 Sep 19 06:46 run-2026-09-04-06-01.md
+-rw-r--r--  1 runner runner   173 Sep 19 06:46 run-2026-09-04-11-23.md
+-rw-r--r--  1 runner runner   269 Sep 19 06:46 run-2026-09-04-15-05.md
+-rw-r--r--  1 runner runner   198 Sep 19 06:46 run-2026-09-04-18-27.md
+-rw-r--r--  1 runner runner   243 Sep 19 06:46 run-2026-09-04-21-00.md
+-rw-r--r--  1 runner runner   224 Sep 19 06:46 run-2026-09-04-23-04.md
+-rw-r--r--  1 runner runner   167 Sep 19 06:46 run-2026-09-05-01-01.md
+-rw-r--r--  1 runner runner   130 Sep 19 06:46 run-2026-09-05-05-48.md
+-rw-r--r--  1 runner runner  1393 Sep 19 06:46 run-2026-09-05-09-49.md
+-rw-r--r--  1 runner runner   291 Sep 19 06:46 run-2026-09-05-13-11.md
+-rw-r--r--  1 runner runner 19796 Sep 19 06:46 run-2026-09-05-16-10.md
+-rw-r--r--  1 runner runner  1793 Sep 19 06:46 run-2026-09-05-18-21.md
+-rw-r--r--  1 runner runner   164 Sep 19 06:46 run-2026-09-05-20-41.md
+-rw-r--r--  1 runner runner  1089 Sep 19 06:46 run-2026-09-05-22-34.md
+-rw-r--r--  1 runner runner   204 Sep 19 06:46 run-2026-09-06-00-11.md
+-rw-r--r--  1 runner runner   207 Sep 19 06:46 run-2026-09-06-04-44.md
+-rw-r--r--  1 runner runner   167 Sep 19 06:46 run-2026-09-06-09-06.md
+-rw-r--r--  1 runner runner   178 Sep 19 06:46 run-2026-09-06-12-54.md
+-rw-r--r--  1 runner runner   194 Sep 19 06:46 run-2026-09-06-15-56.md
+-rw-r--r--  1 runner runner   177 Sep 19 06:46 run-2026-09-06-18-00.md
+-rw-r--r--  1 runner runner   171 Sep 19 06:46 run-2026-09-06-20-17.md
+-rw-r--r--  1 runner runner   210 Sep 19 06:46 run-2026-09-06-22-09.md
+-rw-r--r--  1 runner runner   146 Sep 19 06:46 run-2026-09-06-23-58.md
+-rw-r--r--  1 runner runner   163 Sep 19 06:46 run-2026-09-07-03-29.md
+-rw-r--r--  1 runner runner   192 Sep 19 06:46 run-2026-09-07-08-37.md
+-rw-r--r--  1 runner runner 15823 Sep 19 06:46 run-2026-09-07-14-28.md
+-rw-r--r--  1 runner runner   168 Sep 19 06:46 run-2026-09-07-18-50.md
+-rw-r--r--  1 runner runner   250 Sep 19 06:46 run-2026-09-07-21-51.md
+-rw-r--r--  1 runner runner   153 Sep 19 06:46 run-2026-09-07-23-53.md
+-rw-r--r--  1 runner runner   149 Sep 19 06:46 run-2026-09-08-02-33.md
+-rw-r--r--  1 runner runner  1332 Sep 19 06:46 run-2026-09-08-07-26.md
+-rw-r--r--  1 runner runner   184 Sep 19 06:46 run-2026-09-08-12-16.md
+-rw-r--r--  1 runner runner   252 Sep 19 06:46 run-2026-09-08-16-42.md
+-rw-r--r--  1 runner runner   199 Sep 19 06:46 run-2026-09-08-19-41.md
+-rw-r--r--  1 runner runner   161 Sep 19 06:46 run-2026-09-08-22-16.md
+-rw-r--r--  1 runner runner 11408 Sep 19 06:46 run-2026-09-09-00-20.md
+-rw-r--r--  1 runner runner   127 Sep 19 06:46 run-2026-09-09-04-53.md
+-rw-r--r--  1 runner runner   143 Sep 19 06:46 run-2026-09-09-09-21.md
+-rw-r--r--  1 runner runner   176 Sep 19 06:46 run-2026-09-09-13-52.md
+-rw-r--r--  1 runner runner   180 Sep 19 06:46 run-2026-09-09-17-28.md
+-rw-r--r--  1 runner runner   211 Sep 19 06:46 run-2026-09-09-19-59.md
+-rw-r--r--  1 runner runner   186 Sep 19 06:46 run-2026-09-09-22-24.md
+-rw-r--r--  1 runner runner   251 Sep 19 06:46 run-2026-09-10-00-33.md
+-rw-r--r--  1 runner runner   203 Sep 19 06:46 run-2026-09-10-05-12.md
+-rw-r--r--  1 runner runner 10019 Sep 19 06:46 run-2026-09-10-09-49.md
+-rw-r--r--  1 runner runner   184 Sep 19 06:46 run-2026-09-10-14-00.md
+-rw-r--r--  1 runner runner   195 Sep 19 06:46 run-2026-09-10-17-37.md
+-rw-r--r--  1 runner runner   196 Sep 19 06:46 run-2026-09-10-20-00.md
+-rw-r--r--  1 runner runner   282 Sep 19 06:46 run-2026-09-10-22-37.md
+-rw-r--r--  1 runner runner  7946 Sep 19 06:46 run-2026-09-11-00-32.md
+-rw-r--r--  1 runner runner   221 Sep 19 06:46 run-2026-09-11-05-11.md
+-rw-r--r--  1 runner runner   292 Sep 19 06:46 run-2026-09-11-09-46.md
+-rw-r--r--  1 runner runner   166 Sep 19 06:46 run-2026-09-11-13-59.md
+-rw-r--r--  1 runner runner 13260 Sep 19 06:46 run-2026-09-11-17-42.md
+-rw-r--r--  1 runner runner   229 Sep 19 06:46 run-2026-09-11-20-01.md
+-rw-r--r--  1 runner runner   205 Sep 19 06:46 run-2026-09-11-22-38.md
+-rw-r--r--  1 runner runner   143 Sep 19 06:46 run-2026-09-12-00-36.md
+-rw-r--r--  1 runner runner   186 Sep 19 06:46 run-2026-09-12-04-58.md
+-rw-r--r--  1 runner runner   155 Sep 19 06:46 run-2026-09-12-09-06.md
+-rw-r--r--  1 runner runner   182 Sep 19 06:46 run-2026-09-12-12-59.md
+-rw-r--r--  1 runner runner   252 Sep 19 06:46 run-2026-09-12-15-57.md
+-rw-r--r--  1 runner runner   547 Sep 19 06:46 run-2026-09-12-18-08.md
+-rw-r--r--  1 runner runner   299 Sep 19 06:46 run-2026-09-12-20-36.md
+-rw-r--r--  1 runner runner   164 Sep 19 06:46 run-2026-09-12-22-36.md
+-rw-r--r--  1 runner runner   179 Sep 19 06:46 run-2026-09-13-00-15.md
+-rw-r--r--  1 runner runner 11990 Sep 19 06:46 run-2026-09-13-04-55.md
+-rw-r--r--  1 runner runner   144 Sep 19 06:46 run-2026-09-13-09-55.md
+-rw-r--r--  1 runner runner  2278 Sep 19 06:46 run-2026-09-13-14-02.md
+-rw-r--r--  1 runner runner   186 Sep 19 06:46 run-2026-09-13-17-25.md
+-rw-r--r--  1 runner runner   223 Sep 19 06:46 run-2026-09-13-19-43.md
+-rw-r--r--  1 runner runner   714 Sep 19 06:46 run-2026-09-13-22-00.md
+-rw-r--r--  1 runner runner   142 Sep 19 06:46 run-2026-09-14-00-14.md
+-rw-r--r--  1 runner runner   198 Sep 19 06:46 run-2026-09-14-05-02.md
+-rw-r--r--  1 runner runner   171 Sep 19 06:46 run-2026-09-14-10-44.md
+-rw-r--r--  1 runner runner   143 Sep 19 06:46 run-2026-09-14-16-44.md
+-rw-r--r--  1 runner runner   176 Sep 19 06:46 run-2026-09-14-20-42.md
+-rw-r--r--  1 runner runner   247 Sep 19 06:46 run-2026-09-14-23-39.md
+-rw-r--r--  1 runner runner   191 Sep 19 06:46 run-2026-09-15-01-53.md
+-rw-r--r--  1 runner runner   189 Sep 19 06:46 run-2026-09-15-07-03.md
+-rw-r--r--  1 runner runner   201 Sep 19 06:46 run-2026-09-15-12-42.md
+-rw-r--r--  1 runner runner   202 Sep 19 06:46 run-2026-09-15-17-26.md
+-rw-r--r--  1 runner runner   189 Sep 19 06:46 run-2026-09-15-20-25.md
+-rw-r--r--  1 runner runner   152 Sep 19 06:46 run-2026-09-15-23-09.md
+-rw-r--r--  1 runner runner   225 Sep 19 06:46 run-2026-09-16-01-28.md
+-rw-r--r--  1 runner runner   132 Sep 19 06:46 run-2026-09-16-06-41.md
+-rw-r--r--  1 runner runner   188 Sep 19 06:46 run-2026-09-16-12-22.md
+-rw-r--r--  1 runner runner   225 Sep 19 06:46 run-2026-09-16-17-15.md
+-rw-r--r--  1 runner runner  1338 Sep 19 06:46 run-2026-09-16-20-12.md
+-rw-r--r--  1 runner runner  8876 Sep 19 06:46 run-2026-09-16-23-00.md
+-rw-r--r--  1 runner runner   233 Sep 19 06:46 run-2026-09-17-01-12.md
+-rw-r--r--  1 runner runner   222 Sep 19 06:46 run-2026-09-17-06-10.md
+-rw-r--r--  1 runner runner   197 Sep 19 06:46 run-2026-09-17-11-47.md
+-rw-r--r--  1 runner runner 20294 Sep 19 06:46 run-2026-09-17-16-07.md
+-rw-r--r--  1 runner runner   186 Sep 19 06:46 run-2026-09-17-19-44.md
+-rw-r--r--  1 runner runner   146 Sep 19 06:46 run-2026-09-17-22-35.md
+-rw-r--r--  1 runner runner   156 Sep 19 06:46 run-2026-09-18-00-45.md
+-rw-r--r--  1 runner runner   214 Sep 19 06:46 run-2026-09-18-05-28.md
+-rw-r--r--  1 runner runner   223 Sep 19 06:46 run-2026-09-18-10-01.md
+-rw-r--r--  1 runner runner   132 Sep 19 06:46 run-2026-09-18-14-32.md
+-rw-r--r--  1 runner runner   164 Sep 19 06:46 run-2026-09-18-17-50.md
+-rw-r--r--  1 runner runner   200 Sep 19 06:46 run-2026-09-18-20-16.md
+-rw-r--r--  1 runner runner   161 Sep 19 06:46 run-2026-09-18-22-38.md
+-rw-r--r--  1 runner runner   263 Sep 19 06:46 run-2026-09-19-00-36.md
+-rw-r--r--  1 runner runner   164 Sep 19 06:46 run-2026-09-19-05-00.md
+[0m
+[0m✱ [0mGrep "app-bundle|Grpc-Metadata-alfaview|pollservice"[90m in . · 100 matches[0m
+[0m→ [0mRead triage/run-2026-09-19-05-00.md
+[0m
+[0m$ [0mls -la /tmp/opencode 2>/dev/null; ls -la scripts/ | head; find / -name "app-bundle*" 2>/dev/null | head; find / -path /proc -prune -o -name "*.js" -size +100k -print 2>/dev/null | grep -i -E "tools|bundle" | head
+total 8
+drwxr-xr-x  2 runner runner 4096 Sep 19 06:46 .
+drwxrwxrwt 15 root   root   4096 Sep 19 06:46 ..
+total 28
+drwxr-xr-x  2 runner runner  4096 Sep 19 06:46 .
+drwxr-xr-x 12 runner runner  4096 Sep 19 06:46 ..
+-rw-r--r--  1 runner runner 16987 Sep 19 06:46 sync-issues.py
+
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 120000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+Pending NEXT probe is the tools bundle fetch. I'll run it now (single read-only GET).
+[0m$ [0mcurl -sS -m 30 -o /tmp/opencode/tools-app-bundle.js -D /tmp/opencode/tools-app-bundle.hdr -w "HTTP %{http_code} size=%{size_download} type=%{content_type}\n" "https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js" && cat /tmp/opencode/tools-app-bundle.hdr | head -20
+HTTP 200 size=137343 type=text/javascript; charset=utf-8
+HTTP/2 200 
+accept-ranges: bytes
+content-length: 137343
+content-type: text/javascript; charset=utf-8
+etag: "dihdwophlekg2xz3"
+last-modified: Wed, 13 May 2026 07:52:37 GMT
+vary: Accept-Encoding
+date: Sat, 19 Sep 2026 06:48:59 GMT
+server: edge-proxy
+[0m
+[0m$ [0mcd /tmp/opencode && wc -c tools-app-bundle.js && rg -o -i "pollservice[a-zA-Z/]*" tools-app-bundle.js | sort -u | head; echo ---; rg -o -i "Grpc-Metadata-[a-zA-Z.-]*" tools-app-bundle.js | sort -u; echo ---; rg -o -i "pollservice|<verb>|/poll/pollservice" tools-app-bundle.js | sort | uniq -c | head
+137343 tools-app-bundle.js
+/bin/bash: line 1: rg: command not found
+/bin/bash: line 1: rg: command not found
+/bin/bash: line 1: rg: command not found
+---
+---
+[0m
+[0m$ [0mcd /tmp/opencode && grep -o -i "pollservice[a-zA-Z/]*" tools-app-bundle.js | sort -u | head -20; echo "---META---"; grep -o -i "Grpc-Metadata-[a-zA-Z0-9.-]*" tools-app-bundle.js | sort -u; echo "---COUNT---"; grep -o -i "pollservice" tools-app-bundle.js | wc -l
+pollservice
+---META---
+Grpc-Metadata-alfaview.request
+Grpc-Metadata-alfaview.token
+---COUNT---
+1
+[0m
+[0m$ [0mcd /tmp/opencode && wc -l tools-app-bundle.js; python3 - <<'EOF'
+import re
+data = open('tools-app-bundle.js','r',encoding='utf-8',errors='replace').read()
+for kw in ['pollservice','Grpc-Metadata-alfaview.token','listPoll','hasVoted','createPoll','deletePoll','editPoll','updateState','request_id']:
+    idxs=[m.start() for m in re.finditer(re.escape(kw), data)]
+    print(f"### {kw}: {len(idxs)} hits")
+    for i in idxs[:3]:
+        s=max(0,i-220); e=min(len(data),i+220)
+        print("  ...",data[s:e].replace('\n',' '),"...")
+EOF
+0 tools-app-bundle.js
+### pollservice: 1 hits
+  ... ativeOn:{click:function(e){return a.clearToast.apply(null,arguments)}}},[e("VIcon",[a._v("close")])],1):a._e()],1)],1)}),[],!1,null,null,null).exports;var Ra=i(40173),Ha=i(74659);const Ga=`${window.location.origin}/poll/pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.to ...
+### Grpc-Metadata-alfaview.token: 1 hits
+  ... ow.location.origin}/poll/pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.token":(t=n,t.replace(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.json();if(e)return i;throw{message:i.m ...
+### listPoll: 2 hits
+  ... place(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.json();if(e)return i;throw{message:i.message,code:i.code}}));var t}const $a={listPolls:a=>{let{accessToken:e,roomId:i}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("You need a roomId to list the polls for")),Fa({verb:"list",payload:{roomId:i},accessTok ...
+  ... Fj,Ma.Kh],ae=a=>{const e={};return Xa.includes(ra()(a,"code"))&&(e.cause={expired:!0}),new Error("auth error",e)},ee={[Qa.iZ](a){let{commit:e,state:{accessToken:i,room:{roomId:n}},getters:{getApi:t}}=a;return e(wa.mC),t.listPolls({accessToken:i,roomId:n}).then((a=>{let{polls:i}=a;const n=i.map((a=>qa(a)));e(wa.os,n)})).catch((a=>{throw e(wa.hJ),ae(a)}))},[Qa.f3](a,e){let{commit:i,state:{accessToken:n,room:{roomId:t}},getters:{getApi:o}} ...
+### hasVoted: 4 hits
+  ... valid access token")),n||Promise.reject(new Error("Voting requires a poll id (as `id` ind the payload)")),i||Promise.reject(new Error("Voting requires a room id")),Fa({verb:"get",payload:{id:n,roomId:i},accessToken:e})},hasVoted:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),n||Promise.reject(new Error("HasVoted requires and id (as `id` ind the payload)")),i||Promise.reject(new Error(" ...
+  ... d:n}=a;return e||Promise.reject(new Error("Invalid access token")),n||Promise.reject(new Error("HasVoted requires and id (as `id` ind the payload)")),i||Promise.reject(new Error("HasVoted requires a room id")),Fa({verb:"hasVoted",payload:{id:n,roomId:i},accessToken:e})}},Ja=a=>{if(a)return new Date(a).getTime()},qa=a=>{const e=Ja(a.start),i=Ja(a.end),n=Ja(a.createdAt);return a.start=e,a.end=i,a.createdAt=n,a};function Wa(a,e){(null==e|| ...
+  ... vote({accessToken:n,roomId:t,id:s,optionIds:r}).then((()=>{i(wa.Jm)})).catch((a=>{throw i(wa.Qd),ae(a)}))},[Qa.EL](a,e){let{commit:i,state:{accessToken:n,room:{roomId:t}},getters:{getApi:o}}=a,{id:s}=e;return i(wa.mr),o.hasVoted({accessToken:n,roomId:t,id:s}).then((a=>{let{hasVoted:e}=a;return i(wa.wH),e})).catch((a=>{throw i(wa.ds),ae(a)}))}};t().use(oa.Ay);const ie=new oa.Ay.Store({state:{isInitializing:!0,accessToken:"",room:{roomId: ...
+### createPoll: 2 hits
+  ... s:a=>{let{accessToken:e,roomId:i}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("You need a roomId to list the polls for")),Fa({verb:"list",payload:{roomId:i},accessToken:e})},createPoll:a=>{let{accessToken:e,roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r=!1}=a;const d={roomId:i,question:n,options:t,maxVotes:o,template:s,openNow:r};return e||Promise.reject(new Error("Invalid acc ...
+  ... a(e)})).catch((a=>{throw i(wa.M5),ae(a)}))},[Qa.zY](a,e){let{commit:i,state:{accessToken:n,room:{roomId:t}},getters:{getApi:o}}=a,{question:s,options:r,maxVotes:d,template:l=Ma.wr.BASIC,openNow:c=!1}=e;return i(wa.No),o.createPoll({accessToken:n,roomId:t,question:s,options:r,maxVotes:d,template:l,openNow:c}).then((a=>{let{poll:e}=a;return i(wa.Xy,{poll:qa(e)}),e})).catch((a=>{throw i(wa.ck),ae(a)}))},[Qa.al](a,e){let{commit:i,state:{acc ...
+### deletePoll: 2 hits
+  ... ")),0!==t.length&&void 0!==t||Promise.reject(new Error("Poll options are required ")),o||Promise.reject(new Error("Max votes must be a positive integer from 1 to 10")),Fa({verb:"create",payload:{poll:d},accessToken:e})},deletePoll:a=>{let{accessToken:e,roomId:i,id:n}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll ID is required") ...
+  ... ,openNow:c}).then((a=>{let{poll:e}=a;return i(wa.Xy,{poll:qa(e)}),e})).catch((a=>{throw i(wa.ck),ae(a)}))},[Qa.al](a,e){let{commit:i,state:{accessToken:n,room:{roomId:t}},getters:{getApi:o}}=a,{id:s}=e;return i(wa.sh),o.deletePoll({accessToken:n,roomId:t,id:s}).then((()=>{i(wa.uT,{id:s})})).catch((a=>{throw i(wa.vI),ae(a)}))},[Qa.VF](a,e){let{commit:i,state:{accessToken:n,room:{roomId:t}},getters:{getApi:o}}=a,{question:s,options:r,id:d ...
+### editPoll: 2 hits
+  ... romise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promise.reject(new Error("Poll ID is required")),Fa({verb:"delete",payload:{roomId:i,id:n},accessToken:e})},editPoll:a=>{let{accessToken:e,roomId:i,id:n,question:t,options:o,maxVotes:s,template:r}=a;return e||Promise.reject(new Error("Invalid access token")),i||Promise.reject(new Error("Polls should bind to a room")),n||Promis ...
+  ... en((()=>{i(wa.uT,{id:s})})).catch((a=>{throw i(wa.vI),ae(a)}))},[Qa.VF](a,e){let{commit:i,state:{accessToken:n,room:{roomId:t}},getters:{getApi:o}}=a,{question:s,options:r,id:d,maxVotes:l,template:c}=e;return i(wa.LR),o.editPoll({accessToken:n,roomId:t,id:d,question:s,options:r,maxVotes:l,template:c}).then((a=>{let{poll:e}=a;i(wa.RZ,{poll:qa(e)})})).catch((a=>{throw i(wa.wg),ae(a)}))},[Qa.Mm](a,e){let{commit:i,state:{accessToken:n,room: ...
+### updateState: 1 hits
+  ... eject(new Error("Invalid access token")),n||Promise.reject(new Error("Polls should bind to a room")),i||Promise.reject(new Error("Poll id is required ")),t||Promise.reject(new Error("Poll state is required ")),Fa({verb:"updateState",payload:{id:i,roomId:n,state:t},accessToken:e})},vote:a=>{let{accessToken:e,roomId:i,id:n,optionIds:t=[]}=a;return e||Promise.reject(new Error("Invalid access token")),n||Promise.reject(new Error("Voting req ...
+### request_id: 1 hits
+  ... yload:i,accessToken:n}=a;return fetch(`${Ga}/${e}`,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Grpc-Metadata-alfaview.token":(t=n,t.replace(/-/g,"+").replace(/_/g,"/")),"Grpc-Metadata-alfaview.request_id":za(e)},body:JSON.stringify(i)}).then((async a=>{const{ok:e}=a,i=await a.json();if(e)return i;throw{message:i.message,code:i.code}}));var t}const $a={listPolls:a=>{let{accessToken:e,roomId:i}=a;return e||Promi ...
+[0m
+Bundle fully extracted. Let me pin the remaining details (error-code mapping, templates, response shapes).
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+data = open('tools-app-bundle.js','r',encoding='utf-8',errors='replace').read()
+# Xa expired-code list
+for kw in ['Xa=', 'Xa =', 'const Xa']:
+    for m in re.finditer(re.escape(kw), data):
+        s=max(0,m.start()-60); e=min(len(data),m.start()+400)
+        print(f"[{kw}]", data[s:e].replace('\n',' '), "\n---")
+for m in re.finditer(r'expired', data):
+    s=max(0,m.start()-260); e=min(len(data),m.start()+80)
+    print("[expired]", data[s:e].replace('\n',' '), "\n---")
+# templates enum
+for m in re.finditer(r'Ma\.wr', data):
+    s=max(0,m.start()-40); e=min(len(data),m.start()+40)
+    print("[Ma.wr]", data[s:e].replace('\n',' '))
+# look for BASIC enum definition
+for m in re.finditer(r'BASIC', data):
+    s=max(0,m.start()-200); e=min(len(data),m.start()+80)
+    print("[BASIC]", data[s:e].replace('\n',' '), "\n---")
+EOF
+[Xa=] iting=!1},[wa.D8](a){a.isEditing=!1}};var Qa=i(42444);const Xa=[Ma.af,Ma.g9,Ma.Fj,Ma.Kh],ae=a=>{const e={};return Xa.includes(ra()(a,"code"))&&(e.cause={expired:!0}),new Error("auth error",e)},ee={[Qa.iZ](a){let{commit:e,state:{accessToken:i,room:{roomId:n}},getters:{getApi:t}}=a;return e(wa.mC),t.listPolls({accessToken:i,roomId:n}).then((a=>{let{polls:i}=a;const n=i.map((a=>qa(a)));e(wa.os,n)})).catch((a=>{throw e(wa.hJ),ae(a)}))},[Qa.f3](a,e){let{commit: 
+---
+[const Xa] a.isEditing=!1},[wa.D8](a){a.isEditing=!1}};var Qa=i(42444);const Xa=[Ma.af,Ma.g9,Ma.Fj,Ma.Kh],ae=a=>{const e={};return Xa.includes(ra()(a,"code"))&&(e.cause={expired:!0}),new Error("auth error",e)},ee={[Qa.iZ](a){let{commit:e,state:{accessToken:i,room:{roomId:n}},getters:{getApi:t}}=a;return e(wa.mC),t.listPolls({accessToken:i,roomId:n}).then((a=>{let{polls:i}=a;const n=i.map((a=>qa(a)));e(wa.os,n)})).catch((a=>{throw e(wa.hJ),ae(a)}))},[Qa.f3](a,e){let{c 
+---
+[expired] !0}},[wa.GG](a){a.isEditing=!0},[wa.cg](a,e){let{poll:i}=e;a.polls=a.polls.map((a=>a.id===i.id?i:a)),a.isEditing=!1},[wa.D8](a){a.isEditing=!1}};var Qa=i(42444);const Xa=[Ma.af,Ma.g9,Ma.Fj,Ma.Kh],ae=a=>{const e={};return Xa.includes(ra()(a,"code"))&&(e.cause={expired:!0}),new Error("auth error",e)},ee={[Qa.iZ](a){let{commit:e,state:{acces 
+---
+[expired] ,create_star_description:"Template for obtaining a star rating<br>Respondents can give 1 to 5 stars",no_polls:"No entries found",headers:{question:"Question/Statement",created_at:"Created",state:"Status",actions:"Actions"},unauthenticated:{error:"Your session expired.",suggestion:"Please reopen this page via the alfaview toolbox."},unknow 
+---
+[Ma.wr] stion:s,options:r,maxVotes:d,template:l=Ma.wr.BASIC,openNow:c=!1}=e;return i(wa.
+[BASIC] LOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{value:"CLOSED_HIDDEN",nextState:["CLOSED_VISIBLE"],sortingIndex:3},CLOSED_VISIBLE:{value:"CLOSED_VISIBLE",nextState:["CLOSED_HIDDEN"],sortingIndex:4}},t={BASIC:"UNDEFINED",QUICK_VOTE:"QUICK_VOTE",STAR:"STAR"},o=256,s=256,r=10,d=4e3,l= 
+---
+[BASIC] =a;return i(wa.$X),qa(e)})).catch((a=>{throw i(wa.M5),ae(a)}))},[Qa.zY](a,e){let{commit:i,state:{accessToken:n,room:{roomId:t}},getters:{getApi:o}}=a,{question:s,options:r,maxVotes:d,template:l=Ma.wr.BASIC,openNow:c=!1}=e;return i(wa.No),o.createPoll({accessToken:n,roomId:t,quest 
+---
+[BASIC] Remove option"},open_now:"Publish and start",open_now_description:"Publish directly and open for voting.",button_actions:{cancel:"Cancel",create:"Create",delete:"Delete",update:"Save"},template_type:{BASIC:"Poll",QUICK_VOTE:"Quick vote",STAR:"Star rating"},list_item:{poll_results 
+---
+[BASIC] chen und starten",open_now_description:"Direkt veröffentlichen und zur Stimmabgabe freigeben",button_actions:{cancel:"Abbrechen",create:"Erstellen",delete:"Löschen",update:"Speichern"},template_type:{BASIC:"Umfrage",QUICK_VOTE:"Abstimmung",STAR:"Sternebewertung"},list_item:{poll_ 
+---
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+data = open('tools-app-bundle.js','r',encoding='utf-8',errors='replace').read()
+# poll state map
+for kw in ['CLOSED_VISIBLE:{value', 'OPEN:{value', 'UNDEFINED:{value', 'OPEN_HIDDEN', 'nextState']:
+    for m in re.finditer(re.escape(kw), data):
+        s=max(0,m.start()-180); e=min(len(data),m.start()+120)
+        print(f"[{kw[:20]}]", data[s:e].replace('\n',' '), "\n-")
+# error-code enum entries af/g9/Fj/Kh
+for kw in [r'af:', r'g9:', r'Fj:', r'Kh:']:
+    for m in re.finditer(kw, data):
+        s=max(0,m.start()-120); e=min(len(data),m.start()+90)
+        print(f"[{kw}]", data[s:e].replace('\n',' '), "\n-")
+EOF
+[CLOSED_VISIBLE:{valu] ate:["OPENED"],sortingIndex:1},OPENED:{value:"OPENED",nextState:["CLOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{value:"CLOSED_HIDDEN",nextState:["CLOSED_VISIBLE"],sortingIndex:3},CLOSED_VISIBLE:{value:"CLOSED_VISIBLE",nextState:["CLOSED_HIDDEN"],sortingIndex:4}},t={BASIC:"UNDEFINED",QUICK_VOTE:"QUI 
+-
+[CLOSED_VISIBLE:{valu] ting."},CLOSED_HIDDEN:{value:"Voting ended",button:"Publish results",description:"This {type} is closed, voting is no longer possible. The results are not published in the room."},CLOSED_VISIBLE:{value:"Results visible",button:"Hide results",description:"This {type} is closed, the results are publis 
+-
+[CLOSED_VISIBLE:{valu] :"Beendet",button:"Ergebnis veröffentlichen",description:"Diese {type} ist beendet. Es können keine Stimmen mehr abgegeben werden. Das Ergebnis ist nicht im Raum veröffentlicht."},CLOSED_VISIBLE:{value:"Ergebnis veröffentlicht",button:"Ergebnis ausblenden",description:"Diese {type} ist beendet. Das  
+-
+[nextState]  a}},51343:(a,e,i)=>{"use strict";i.d(e,{Fj:()=>C,I1:()=>l,Kh:()=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r,wr:()=>t});const n={PREPARING:{value:"PREPARING",nextState:["PREVIEW"],sortingIndex:0},PREVIEW:{value:"PREVIEW",nextState:["OPENED"],sortingIndex:1},OPENED:{value:"OPENE 
+-
+[nextState] )=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r,wr:()=>t});const n={PREPARING:{value:"PREPARING",nextState:["PREVIEW"],sortingIndex:0},PREVIEW:{value:"PREVIEW",nextState:["OPENED"],sortingIndex:1},OPENED:{value:"OPENED",nextState:["CLOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{v 
+-
+[nextState] h:()=>r,wr:()=>t});const n={PREPARING:{value:"PREPARING",nextState:["PREVIEW"],sortingIndex:0},PREVIEW:{value:"PREVIEW",nextState:["OPENED"],sortingIndex:1},OPENED:{value:"OPENED",nextState:["CLOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{value:"CLOSED_HIDDEN",nextState:["CLOSED_VISIBLE"],sortingInd 
+-
+[nextState] rtingIndex:0},PREVIEW:{value:"PREVIEW",nextState:["OPENED"],sortingIndex:1},OPENED:{value:"OPENED",nextState:["CLOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{value:"CLOSED_HIDDEN",nextState:["CLOSED_VISIBLE"],sortingIndex:3},CLOSED_VISIBLE:{value:"CLOSED_VISIBLE",nextState:["CLOSED_HIDDEN"],sortingI 
+-
+[nextState] value:"OPENED",nextState:["CLOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{value:"CLOSED_HIDDEN",nextState:["CLOSED_VISIBLE"],sortingIndex:3},CLOSED_VISIBLE:{value:"CLOSED_VISIBLE",nextState:["CLOSED_HIDDEN"],sortingIndex:4}},t={BASIC:"UNDEFINED",QUICK_VOTE:"QUICK_VOTE",STAR:"STAR"},o=256,s=256,r=10, 
+-
+[af:] Zone||"Europe/Berlin"}catch{a="Europe/Berlin"}return a}},51343:(a,e,i)=>{"use strict";i.d(e,{Fj:()=>C,I1:()=>l,Kh:()=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r,wr:()=>t});const n={PREPARI 
+-
+[g9:] {a="Europe/Berlin"}return a}},51343:(a,e,i)=>{"use strict";i.d(e,{Fj:()=>C,I1:()=>l,Kh:()=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r,wr:()=>t});const n={PREPARING:{value:"PREPARING",nextS 
+-
+[Fj:] at().resolvedOptions().timeZone||"Europe/Berlin"}catch{a="Europe/Berlin"}return a}},51343:(a,e,i)=>{"use strict";i.d(e,{Fj:()=>C,I1:()=>l,Kh:()=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r, 
+-
+[Kh:] ns().timeZone||"Europe/Berlin"}catch{a="Europe/Berlin"}return a}},51343:(a,e,i)=>{"use strict";i.d(e,{Fj:()=>C,I1:()=>l,Kh:()=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r,wr:()=>t});const n 
+-
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+data = open('tools-app-bundle.js','r',encoding='utf-8',errors='replace').read()
+# extract module 51343 body
+start = data.find('51343:(a,e,i)=>{"use strict";')
+chunk = data[start:start+520]
+print(chunk)
+EOF
+51343:(a,e,i)=>{"use strict";i.d(e,{Fj:()=>C,I1:()=>l,Kh:()=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r,wr:()=>t});const n={PREPARING:{value:"PREPARING",nextState:["PREVIEW"],sortingIndex:0},PREVIEW:{value:"PREVIEW",nextState:["OPENED"],sortingIndex:1},OPENED:{value:"OPENED",nextState:["CLOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{value:"CLOSED_HIDDEN",nextState:["CLOSED_VISIBLE"],sortingIndex:3},CLOSED_VISIBLE:{value:"CLOSED_VISIBLE",nextState:["CLOSED_HIDDEN"],sortingIndex:4}},t={BASIC:"UN
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+data = open('tools-app-bundle.js','r',encoding='utf-8',errors='replace').read()
+start = data.find('51343:(a,e,i)=>{"use strict";')
+# find end of chunk (next "},<digits>:(" module)
+m = re.search(r'\},\d+:\(', data[start+80:])
+end = start+80+(m.start() if m else 4000)
+chunk = data[start:end]
+print("LEN", len(chunk))
+print(chunk)
+EOF
+LEN 612
+51343:(a,e,i)=>{"use strict";i.d(e,{Fj:()=>C,I1:()=>l,Kh:()=>m,af:()=>u,cs:()=>s,e1:()=>n,g9:()=>c,gp:()=>d,jD:()=>o,sh:()=>r,wr:()=>t});const n={PREPARING:{value:"PREPARING",nextState:["PREVIEW"],sortingIndex:0},PREVIEW:{value:"PREVIEW",nextState:["OPENED"],sortingIndex:1},OPENED:{value:"OPENED",nextState:["CLOSED_HIDDEN"],sortingIndex:2},CLOSED_HIDDEN:{value:"CLOSED_HIDDEN",nextState:["CLOSED_VISIBLE"],sortingIndex:3},CLOSED_VISIBLE:{value:"CLOSED_VISIBLE",nextState:["CLOSED_HIDDEN"],sortingIndex:4}},t={BASIC:"UNDEFINED",QUICK_VOTE:"QUICK_VOTE",STAR:"STAR"},o=256,s=256,r=10,d=4e3,l=9e4,c=16,C=7,m=13,u=3
+[0m
+[0m$ [0mcd /tmp/opencode && curl -sS -m 30 -o staging-app-bundle.js -w "staging HTTP %{http_code} size=%{size_download}\n" "https://staging-tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js" && md5sum tools-app-bundle.js staging-app-bundle.js && sleep 1 && curl -sS -m 20 -o /dev/null -w "tools / HTTP %{http_code} size=%{size_download}\n" "https://tools.alfaview.com/"
+staging HTTP 200 size=137343
+b7f17c85ccd8d91e9b831a6bc2aa863c  tools-app-bundle.js
+b7f17c85ccd8d91e9b831a6bc2aa863c  staging-app-bundle.js
+tools / HTTP 200 size=615
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+data=open('tools-app-bundle.js','r',encoding='utf-8',errors='replace').read()
+# other URLs / fetch calls
+for m in re.finditer(r'fetch\(|https?://[a-zA-Z0-9._-]+', data):
+    s=max(0,m.start()-60); e=min(len(data),m.start()+120)
+    t=data[s:e].replace('\n',' ')
+    if 'poll/pollservice' in t or 'alfaview' in t.lower() or '/poll' in t:
+        pass
+urls=sorted(set(re.findall(r'https?://[a-zA-Z0-9._\-/]+', data)))
+print("URLS:", urls[:40])
+# look for client_id / api_key / secret
+for kw in ['client_id','clientId','apiKey','api_key','secret','authorization','Bearer ','accessToken=','token:'],
+EOF
+File "<stdin>", line 12
+    for kw in ['client_id','clientId','apiKey','api_key','secret','authorization','Bearer ','accessToken=','token:'],
+                                                                                                                     ^
+SyntaxError: expected ':'
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+data=open('tools-app-bundle.js','r',encoding='utf-8',errors='replace').read()
+urls=sorted(set(re.findall(r'https?://[a-zA-Z0-9._\-/]+', data)))
+print("URLS:", urls[:40])
+for kw in ['client_id','clientId','apiKey','api_key','secret','Bearer','alfaview.token','oauth','wss://']:
+    c=data.count(kw)
+    print(kw, c)
+for m in re.finditer(r'wss?://', data):
+    s=max(0,m.start()-60); e=min(len(data),m.start()+100)
+    print("[ws]", data[s:e].replace('\n',' '))
+EOF
+URLS: ['http://www.w3.org/2000/svg']
+client_id 0
+clientId 0
+apiKey 0
+api_key 0
+secret 0
+Bearer 0
+alfaview.token 1
+oauth 0
+wss:// 0
+[0m
+Probe complete. Full poll RPC surface pinned; staging bundle byte-identical; error-code mapping discovered. Writing the 8-step output.
+
+## STEP 1 — DELTA
+
+- [CHANGED] tools.alfaview.com bundle `app-bundle.0a250e1f96a7aaf5661c.js` (137343B, MD5 `b7f17c85ccd8d91e9b831a6bc2aa863c`): full poll RPC surface now pinned — transport, exact payloads for all 8 verbs, response/error shapes. Prior KB claim "token gate is client-side only" is **refined**: the pre-flight `reject("Invalid access token")` is client-side, but the bundle's error mapper maps gRPC codes `{3,7,13,16}` (INVALID_ARGUMENT/PERMISSION_DENIED/INTERNAL/UNAUTHENTICATED) to "auth error/expired" — server-side validation is implied; the open question is roomId↔token binding, not absence of auth.
+- [NEW] `Grpc-Metadata-alfaview.token` is base64url→base64 char-swap only (`-`→`+`, `_`→`/`), **no padding restored**; `Grpc-Metadata-alfaview.request_id` format = `<verb>-poll-<epoch_ms>`; transport = `POST <origin>/poll/pollservice/<verb>`, `mode:cors`, `Content-Type: application/json`.
+- [NEW] Payloads pinned: list=`{roomId}`; create=`{poll:{roomId,question,options,maxVotes,template,openNow}}`; delete/edit/updateState/hasVoted/get=`{roomId,id[,state,...]}`; vote=`{id,roomId,optionIds[]}`. Responses: list→`{polls[]}`, create→`{poll}`, hasVoted→`{hasVoted}`; error body `{message, code}`. Poll model: `question/options/maxVotes/template(BASIC|QUICK_VOTE|STAR)/state(PREPARING|PREVIEW|OPENED|CLOSED_HIDDEN|CLOSED_VISIBLE)/start/end/createdAt`.
+- [NEW] staging-tools app-bundle byte-identical to prod (same MD5 `b7f17c85…`; KB previously only compared vendor bundle `8caab24e…`). Bundle contains zero hardcoded backend URLs, zero client_id/secrets — routing is origin-relative only.
+- [NO_DELTA] apis/sso/app: OpenAPI MD5 `357b94d3` (37 paths), users/me 401, OIDC 200/2169B, JWKS 200/16257B (7 RSA), introspect OPTIONS 405, graphql GET 400/406B — stable per KB through 2026-09-19.
+
+## STEP 2 — PRIORITIZE
+
+- [PRIO] tools.alfaview.com/poll/pollservice,7.55,a=9,b=8,t=9,g=5,c=3,f=9 — 8-verb gRPC-gateway RPC, no tenant/company scoping field, custom (non-standard) token header, origin-relative same-build staging twin; the only developing surface this cycle.
+- [PRIO] sso.alfaview.com/oauth2/introspect,6.10,a=7,b=7,t=8,g=6,c=3,f=2 — fabricated-client_id oracle, 17+ stable cycles, unchanged.
+- [PRIO] staging-tools.alfaview.com/poll/pollservice,5.60,a=6,b=6,t=9,g=5,c=2,f=8 — same-build env twin for token trust-boundary replay.
+
+## STEP 3 — HYPOTHESES
+
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 68
+reasoning: Bundle pinned: every verb sends `{roomId}` (+`id`) only, zero tenant/company field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64 char-swap, unpadded); client pre-flight rejects only on missing token; error mapper honestly expects server gRPC codes 7/16, so the server enforces auth but roomId↔subject binding is never evidenced; staging routes byte-identically (same gRPC-gateway).
+evidence_needed: owned token POST `list` with foreign tenant's roomId returns foreign poll text+results (200 `{polls[]}`) vs 403/`{code:7}`; controls: own roomId, then token header omitted (expect `{code:16}`).
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup (sole standing path); POST `https://tools.alfaview.com/poll/pollservice/list`, headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <token chars -→+, _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<epoch_ms>`, body `{"roomId":"<OWNED>"}`; then foreign roomId, then header omitted; diff status+`{code}`.
+impact: Cross-room read of live polls/Q&A plus vote/delete/updateState integrity on other tenants' boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: 17+ stable cycles — arbitrary client_id accepted on POST-body and Basic channels (200 `{"active":false}` without token); only residual check is body-vs-Basic `client_id_mismatch` 401; discovery advertises `client_secret_basic/post/none` with no runtime verification.
+evidence_needed: any valid bearer token → POST `client_id=<fake>&token=<b64>` returns 200 `{"active":true}` + claims; invalid token → `active:false` — oracle without client secret.
+verify_steps: (HUMAN_ONLY) POST `https://sso.alfaview.com/oauth2/introspect`, `application/x-www-form-urlencoded`, body `client_id=does-not-exist-12345&token=<b64>`; also Basic `Authorization: Basic base64(fake:any)`; observe active+claims vs invalid_token.
+impact: Unauthenticated token liveness/subject/expiry fingerprinting → ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] staging-tools accepts production tokens (env trust-boundary leak)
+class: MISCONFIG
+asset: staging-tools.alfaview.com/poll/pollservice/list
+confidence: 50
+reasoning: Full app-bundle byte-identical to prod (MD5 `b7f17c85…`), origin-relative routing; stagenvs commonly share/relax token validation; poll backend expected to return gRPC 16/7 rather than an HTTP 401 distinction.
+evidence_needed: owned prod token replayed at staging `list` with owned roomId → 200 `{polls[]}` vs prod baseline (same token, same roomId).
+verify_steps: (HUMAN_ONLY) replay prod `Grpc-Metadata-alfaview.token` at `https://staging-tools.alfaview.com/poll/pollservice/list`, body `{"roomId":"<OWNED>"}`; compare status+`{code}` to prod.
+impact: Environment trust-boundary crossing, staging↔prod data reach; MEDIUM.
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+
+- [PARKED] Poll service lacks server-side token validation (auth client-side only): confidence 48→35 — bundle error-mapper maps gRPC codes 7/16 (PERMISSION_DENIED/UNAUTHENTICATED), evidence server auth exists; pre-flight reject is client-side but not the only gate. Demoted to residual control in BOLA test.
+- [FINAL] survivors ranked: 1) admin-introspect oracle (70), 2) poll BOLA (68), 3) staging trust-boundary (50).
+- No REJECTED-class reasoning this cycle; all three survivors have concrete HUMAN verify steps.
+
+## STEP 5 — NEXT ACTION
+
+[NEXT] HUMAN: Execute finalized poll-service replay (single safe read + controls, all against OWNED roomIds only): (a) obtain token via app.alfaview.com signup→finishSignup; (b) `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned-token with -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<ms>`, body `{"roomId":"<OWNED>"}` → expect 200 `{polls[]}`; (c) same request, token header omitted → expect gRPC `{code:16}` (proves server gate present, validates control); (d) repeat (b) at staging-tools.alfaview.com to adjudicate trust-boundary. Do NOT send foreign-tenant roomIds.
+
+## STEP 6 — LEARNING
+
+- [LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: bundle pins poll RPC transport — POST `<origin>/poll/pollservice/<verb>`, token header `Grpc-Metadata-alfaview.token` = base64url→base64 char-swap (unpadded), `request_id`=`<verb>-poll-<epoch_ms>`; error body `{message,code}` gRPC; poll model fields+states+templates enumerated.
+- [LEARN] ACCEPTED AUTH @ tools.alfaview.com: client maps gRPC codes {3,7,13,16} to auth/expired — server-side token+permission enforcement is expected (code 16/7), refuting the "no server-side validation" hypothesis; roomId↔token binding remains the untested residual.
+- [LEARN] ACCEPTED MISCONFIG @ staging-tools.alfaview.com: full app-bundle byte-identical to prod (MD5 `b7f17c85…`); bundle contains no hardcoded backends — origin-relative routing confirms separate proxy per env, token validation parity unknown.
+- [LEARN] REJECTED MISCONFIG @ tools.alfaview.com: bundle contains no client_id/api key/secrets/websocket endpoints — no credential leak in Tools assets.
+
+## STEP 7 — RISK
+
+[RISK] alfaview: 57 — active surface stable (apis/sso/app byte-stable; all 55 hosts probed), but the Tools poll RPC is now precisely instrumented (exact headers, payloads, error codes) with a same-build staging twin; all three standing chains (introspect-oracle 70, poll BOLA 68, staging trust 50) remain token-gated (HUMAN only), so exposure is bounded until a legit token/room exists. Freshness of the RPC surface offsets its read-only liveness.
