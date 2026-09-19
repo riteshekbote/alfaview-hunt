@@ -1,11 +1,10 @@
-## 2026-09-19 17:34:30 UTC [target] (model nemotron3)
-[PRIO] tools.alfaview.com/poll/pollservice, 8.8, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=3, cloud_surface=7, freshness=9
-[PRIO] sso.alfaview.com/oauth2/introspect, 8.5, attack_surface=8, business_value=9, tech_exposure=9, gate_ease=10, cloud_surface=7, freshness=8
-[PRIO] app.alfaview.com/graphql, 8.2, attack_surface=9, business_value=9, tech_exposure=8, gate_ease=10, cloud_surface=7, freshness=6
-[PRIO] apis.alfaview.com/v2/users, 7.8, attack_surface=7, business_value=10, tech_exposure=7, gate_ease=3, cloud_surface=8, freshness=8
-[PRIO] test.alfaview.com, 6.5, attack_surface=6, business_value=7, tech_exposure=6, gate_ease=10, cloud_surface=5, freshness=8
-[PRIO] sso.alfaview.com/.well-known/jwks.json, 6.2, attack_surface=6, business_value=8, tech_exposure=7, gate_ease=10, cloud_surface=5, freshness=7
-[PRIO] client-diagnostics-ingest.alfaview.com, 4.1, attack_surface=3, business_value=4, tech_exposure=5, gate_ease=10, cloud_surface=4, freshness=7
+## 2026-09-19 19:37:09 UTC [target] (model nemotron3)
+[PRIO] tools.alfaview.com/poll/pollservice, 8.5, attack_surface=9, business_value=8,
+[PRIO] tools.alfaview.com/poll/pollservice, 8.7, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=10, cloud_surface=6, freshness=10
+[PRIO] sso.alfaview.com/oauth2/introspect, 8.2, attack_surface=8, business_value=9, tech_exposure=8, gate_ease=10, cloud_surface=5, freshness=7
+[PRIO] app.alfaview.com/graphql, 7.7, attack_surface=8, business_value=8, tech_exposure=7, gate_ease=10, cloud_surface=5, freshness=6
+[PRIO] test.alfaview.com, 7.0, attack_surface=6, business_value=7, tech_exposure=6, gate_ease=10, cloud_surface=5, freshness=8
+[PRIO] apis.alfaview.com, 6.2, attack_surface=7, business_value=9, tech_exposure=6, gate_ease=2, cloud_surface=5, freshness=5
 [HYP] Poll service BOLA via custom gRPC-metadata auth header
 class: IDOR
 asset: tools.alfaview.com/poll/pollservice

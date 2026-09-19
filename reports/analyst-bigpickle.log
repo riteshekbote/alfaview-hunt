@@ -26123,3 +26123,76 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 57 — surface fully stable and 100% inventoried; the only fresh exploitable asset (poll RPC) is fully instrumented with byte-identical staging twin, but probe cycle confirms zero drift; all standing chains (introspect 70, poll BOLA 70, apis IDOR 80, staging-trust 55) remain token-gated (HUMAN) and bounded; no new unauthenticated exploit surface.
+===== ANALYST bigpickle 2026-09-19 19:37:21 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/oa.json -w "%{http_code} %{size_download}\n" https://apis.alfaview.com/v2/docs/openapi.json --max-time 15; md5sum /tmp/oa.json 2>/dev/null
+200 127532
+357b94d367909a40b9299b543d23712b  /tmp/oa.json
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "jwks %{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json --max-time 15; curl -s -o /dev/null -w "oidc %{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/openid-configuration --max-time 15
+jwks 200 16257
+oidc 200 2169
+[0m
+[0m$ [0msleep 1; curl -s -o /dev/null -w "introspect OPTIONS %{http_code} %{size_download}\n" -X OPTIONS https://sso.alfaview.com/oauth2/introspect --max-time 15; sleep 1; curl -s -o /dev/null -w "authorize GET %{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/authorize" --max-time 15
+introspect OPTIONS 405 0
+authorize GET 200 6176
+[0m
+[0m$ [0msleep 1; curl -s -o /dev/null -w "users/me GET %{http_code} %{size_download}\n" https://apis.alfaview.com/v2/users/me --max-time 15; sleep 1; curl -s -o /dev/null -w "tools list GET %{http_code} %{size_download}\n" https://tools.alfaview.com/poll/pollservice/list --max-time 15; sleep 1; curl -s -o /dev/null -w "graphql GET %{http_code} %{size_download}\n" https://app.alfaview.com/graphql --max-time 15
+users/me GET 401 107
+tools list GET 501 55
+graphql GET 400 406
+[0m
+STEP 1 — DELTA:
+NO_DELTA — live probes byte-identical to prior cycle: OpenAPI 200/127532B (MD5 `357b94d3`, 37 paths), JWKS 200/16257B, OIDC 200/2169B, introspect OPTIONS 405 (alive), authorize 200/6176B, users/me 401/107B, tools.list GET 501/55B, graphql GET 400/406B. No new unauthenticated surface.
+
+STEP 2 — PRIORITIZE:
+[PRIO] tools.alfaview.com/poll/pollservice,5.85,a=6,b=7,t=7,g=3,c=2,f=9
+[PRIO] apis.alfaview.com/v2 UUID IDOR,5.45,a=7,b=9,t=5,g=2,c=2,f=2
+[PRIO] sso.alfaview.com/oauth2/introspect,5.05,a=5,b=7,t=6,g=5,c=2,f=2
+[PRIO] staging-tools.alfaview.com,5.00,a=5,b=5,t=6,g=4,c=2,f=8
+
+STEP 3 — HYPOTHESES:
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 70
+reasoning: Route live again (GET 501/55B, POST-only); all 8 verbs send only `{roomId}`(+`{id}`), zero tenant field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64) + `request_id {verb}-poll-{ms}`; client pre-flight gates only on token presence; server error body `{code,message}` ⇒ authz server-side, roomId↔subject binding never evidenced.
+evidence_needed: owned token POST list with foreign tenant roomId → 200 `{polls[]}` vs `{code:7}`; controls owned=200, header omitted=`{code:16}`.
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; POST https://tools.alfaview.com/poll/pollservice/list, headers Content-Type: application/json + Grpc-Metadata-alfaview.token + Grpc-Metadata-alfaview.request_id: list-poll-<ms>, body {"roomId":"<OWNED>"}; then header omitted; then foreign roomId.
+impact: Cross-tenant read of live polls/Q&A + write integrity on other tenants' boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: OPTIONS 405 confirms live; 18+ stable cycles — arbitrary client_id accepted on POST-body and Basic (200 {"active":false} without token); residual check only body-vs-Basic client_id_mismatch (401); discovery advertises client_secret_basic/post/none with no runtime verification.
+evidence_needed: valid bearer → POST client_id=<fake>&token=<b64> returns 200 {"active":true}+claims; invalid → active:false.
+verify_steps: (HUMAN_ONLY) POST x-www-form-urlencoded client_id=does-not-exist-12345&token=<b64>; also Basic base64(fake:any); observe active+claims.
+impact: Token liveness/subject/expiry fingerprint → ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Cross-tenant IDOR on user delete / room permission UUID path params
+class: IDOR
+asset: apis.alfaview.com/v2 (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId})
+confidence: 80
+reasoning: OpenAPI public + prod/beta byte-identical (MD5 357b94d3), UUID path params on destructive ops; auth gate stable (users/me 401) — subject↔tenant binding after auth never evidenced.
+evidence_needed: tenant-A token vs tenant-B UUID → non-403/404 confirms missing tenant-scoping.
+verify_steps: (HUMAN_ONLY) two accounts; PATCH /v2/rooms/{B-roomId}/permissions/{B-userId}, DELETE /v2/users/{B-userId}; expect 403/404 if scoped.
+impact: Cross-tenant user deletion / permission tampering — ATO/DoS on foreign companies; HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE:
+[PARKED] staging-tools prod-token trust-boundary leak (50): same single POST (owned token+owned roomId) adjudicates both prod BOLA and staging trust in one pass — no independent evidence value until step (d) runs.
+[FINAL] Poll BOLA (70), Introspect oracle (70), apis IDOR (80) — all unchanged, all token-gated, all HUMAN.
+
+STEP 5 — NEXT ACTION:
+[NEXT] HUMAN: Execute finalized poll-service replay, single safe read + controls, OWNED roomIds only: (a) token via app.alfaview.com signup→finishSignup; (b) POST https://tools.alfaview.com/poll/pollservice/list, headers Content-Type: application/json, Grpc-Metadata-alfaview.token: <owned b64url→b64>, Grpc-Metadata-alfaview.request_id: list-poll-<ms>, body {"roomId":"<OWNED>"} → expect 200 {polls[]}; (c) repeat with token header omitted → expect {code:16}; (d) if (b) 200, replay verbatim at https://staging-tools.alfaview.com/poll/pollservice/list for trust-boundary adjudication. Do NOT send foreign-tenant roomIds.
+
+STEP 6 — LEARNING:
+[LEARN] NO_DELTA @ full standing probes: OpenAPI MD5 357b94d3, JWKS 200/16257B, OIDC 200/2169B, introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, tools.list GET 501/55B, graphql GET 400/406B — all byte-identical; no new unauthenticated exploit surface.
+
+STEP 7 — RISK:
+[RISK] alfaview: 57 — surface fully stable and 100% inventoried; only fresh exploitable asset (poll RPC) fully instrumented with byte-identical staging twin, probe cycle confirms zero drift; all standing chains (introspect 70, poll BOLA 70, apis IDOR 80) remain token-gated (HUMAN); no new unauthenticated exploit surface.
