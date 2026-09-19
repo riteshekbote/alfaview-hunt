@@ -26014,3 +26014,112 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 57 — surface fully stable (OpenAPI/JWKS/introspect/authorize/tools/status byte-identical); only fresh exploitable asset is the poll RPC, now completely instrumented, with same-build staging twin; all three standing chains (introspect 70, poll BOLA 68, staging-trust 50) remain token-gated (HUMAN) and bounded until a legit owned token+roomId exists; no new unauthenticated exploit surface.
+===== ANALYST bigpickle 2026-09-19 17:34:38 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mecho "== openapi =="; curl -s -m 20 https://apis.alfaview.com/v2/docs/openapi.json | md5sum; sleep 1
+echo "== jwks =="; curl -s -m 20 https://sso.alfaview.com/.well-known/jwks.json -o /tmp/jwks.json -w "%{http_code} %{size_download}\n"; md5sum /tmp/jwks.json; sleep 1
+echo "== introspect OPTIONS =="; curl -s -m 20 -o /dev/null -w "%{http_code} %{size_download}\n" -X OPTIONS https://sso.alfaview.com/oauth2/introspect; sleep 1
+echo "== authorize =="; curl -s -m 20 -o /tmp/authorize.html -w "%{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/authorize"; sleep 1
+echo "== users/me =="; curl -s -m 20 -o /dev/null -w "%{http_code} %{size_download}\n" https://apis.alfaview.com/v2/users/me; sleep 1
+echo "== graphql GET =="; curl -s -m 20 -o /dev/null -w "%{http_code} %{size_download}\n" https://app.alfaview.com/graphql; sleep 1
+echo "== tools poll list GET =="; curl -s -m 20 -o /dev/null -w "%{http_code} %{size_download}\n" https://tools.alfaview.com/poll/pollservice/list; sleep 1
+echo "== tools bundle =="; curl -s -m 20 https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js -o /tmp/toolsbundle.js -w "%{http_code} %{size_download}\n"; md5sum /tmp/toolsbundle.js
+== openapi ==
+357b94d367909a40b9299b543d23712b  -
+== jwks ==
+200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/jwks.json
+== introspect OPTIONS ==
+405 0
+== authorize ==
+200 6176
+== users/me ==
+401 107
+== graphql GET ==
+400 406
+== tools poll list GET ==
+501 55
+== tools bundle ==
+200 137343
+b7f17c85ccd8d91e9b831a6bc2aa863c  /tmp/toolsbundle.js
+[0m
+[0m$ [0mfor h in tools staging-tools; do
+  echo "== $h index =="
+  curl -s -m 20 "https://$h.alfaview.com/" -o /tmp/$h.index -w "%{http_code} %{size_download}\n"
+  grep -oE '/js/[A-Za-z0-9._-]+\.js' /tmp/$h.index | sort -u
+  sleep 1
+done
+== tools index ==
+200 615
+/js/app-bundle.0a250e1f96a7aaf5661c.js
+/js/vendor.8caab24e6bd77ed8c779.js
+== staging-tools index ==
+200 612
+/js/app-bundle.0a250e1f96a7aaf5661c.js
+/js/vendor.8caab24e6bd77ed8c779.js
+[0m
+[0m$ [0mcurl -s -m 30 https://tools.alfaview.com/js/vendor.8caab24e6bd77ed8c779.js -o /tmp/prod.vendor -w "prod vendor: %{http_code} %{size_download}\n"; md5sum /tmp/prod.vendor; sleep 1
+curl -s -m 30 https://staging-tools.alfaview.com/js/vendor.8caab24e6bd77ed8c779.js -o /tmp/stage.vendor -w "stage vendor: %{http_code} %{size_download}\n"; md5sum /tmp/stage.vendor; sleep 1
+cmp -s /tmp/prod.vendor /tmp/stage.vendor && echo "IDENTICAL" || echo "DIFFER"
+prod vendor: 200 684113
+89eb0bafd8669427b21090d3b99e13bc  /tmp/prod.vendor
+stage vendor: 200 684113
+89eb0bafd8669427b21090d3b99e13bc  /tmp/stage.vendor
+IDENTICAL
+[0m
+STEP 1 — DELTA
+- NO_DELTA @ afces-core: OpenAPI MD5 `357b94d3`, JWKS 200/16257 (`3f8d456c`), introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, graphql GET 400/406B, tools poll/list GET 501/55B — all byte-identical to prior cycle.
+- NEW @ staging-tools.alfaview.com: index references identical hashed bundles (`app-bundle.0a250e1f…`, `vendor.8caab24e…`) and vendor bytes are byte-identical to prod (684113B, MD5 `89eb0baf`) — trust-boundary hypothesis reinforced at build level, not just filename level.
+- NO_DELTA @ tools.alfaview.com: app-bundle MD5 `b7f17c85` unchanged (137343B) — RPC contract pin holds, no client-side drift.
+
+STEP 2 — PRIORITIZE
+- [PRIO] introspect,sso.alfaview.com/oauth2/introspect,5.0 (a7 b5 t9 g3 c0 f2)
+- [PRIO] poll-bola,tools.alfaview.com/poll/pollservice,4.6 (a5 b4 t8 g1 c0 f10)
+- [PRIO] apis-idor,apis.alfaview.com/v2,4.35 (a6 b8 t5 g0 c0 f1)
+- [PRIO] staging-trust,staging-tools.alfaview.com/poll/pollservice,3.65 (a4 b3 t5 g1 c0 f10)
+
+STEP 3 — HYPOTHESES
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 70
+reasoning: Route table confirmed live again this cycle (GET 501/55B, POST-only); bundle MD5 `b7f17c85` unchanged — all 8 verbs send only `{roomId}`(+`{id}`), zero tenant/company field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64, unpadded) + `request_id {verb}-poll-{ms}`; client pre-flight gates only on token presence; server error body `{code,message}` ⇒ authz server-side, but roomId↔subject binding never evidenced.
+evidence_needed: owned token POST `list` with foreign tenant roomId → 200 `{polls[]}` vs `{code:7}`; controls: owned roomId=200, header omitted=`{code:16}`.
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<epoch_ms>`, body `{"roomId":"<OWNED>"}`; then header omitted; then foreign roomId; diff status+`{code}`.
+impact: Cross-tenant read of live polls/Q&A + write integrity (create/updateState/delete/vote) on other tenants' boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: Probe re-confirms OPTIONS 405 / endpoint live; 18+ stable cycles — arbitrary client_id accepted on POST-body and Basic channels (200 `{"active":false}` without token); only residual check is body-vs-Basic `client_id_mismatch` 401; discovery advertises `client_secret_basic/post/none` with no runtime verification.
+evidence_needed: any valid bearer → POST `client_id=<fake>&token=<b64>` returns 200 `{"active":true}`+claims; invalid → `active:false` — oracle without client secret.
+verify_steps: (HUMAN_ONLY) POST `https://sso.alfaview.com/oauth2/introspect` `application/x-www-form-urlencoded` body `client_id=does-not-exist-12345&token=<b64>`; also `Authorization: Basic base64(fake:any)`; observe active+claims vs invalid_token.
+impact: Unauthenticated token liveness/subject/expiry fingerprint → ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR on user delete / room permission UUID path params
+class: IDOR
+asset: apis.alfaview.com/v2 (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId})
+confidence: 80
+reasoning: OpenAPI still public + byte-identical prod/beta (MD5 `357b94d3`, 37 paths, unchanged this cycle); UUID path params on destructive permission/user ops; auth gate stable (users/me 401, users/{uuid} 405 Allow:DELETE) — but subject↔tenant binding after auth never evidenced.
+evidence_needed: tenant-A token issuing DELETE/PATCH against tenant-B UUID → non-403/404 result confirming missing tenant-scoping.
+verify_steps: (HUMAN_ONLY) two tenant accounts; token from tenant-A; `PATCH /v2/rooms/{B-roomId}/permissions/{B-userId}` then `DELETE /v2/users/{B-userId}`; expect 403/404 if scoped, 2xx/422 if not.
+impact: Cross-tenant user deletion / permission tampering — account take-over / DoS on foreign companies; HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] `/oauth2/authorize` 200↔400 client_id oscillation: FusionAuth validation-timing noise, redirect_uri matrix still client_id-gated; no exploitation path without registered client_id — not actionable, parked.
+- [PARKED] JWKS 200↔404 + introspection_endpoint advertisement oscillation: metadata churn, endpoint liveness independent (OPTIONS 405 stable); informational only.
+- [FINAL] introspect oracle 70 (caveat: value realized only once a legit token exists to test active:true); poll BOLA 70 (controls pinned, staging twin confirmed); apis IDOR 80 (highest impact, oldest standing); staging-trust 55 (bumped on byte-identical vendor MD5 `89eb0baf` this cycle).
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Execute finalized poll-service replay, single safe read + controls, OWNED roomIds only: (a) token via app.alfaview.com signup→finishSignup; (b) `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned-token -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<ms>`, body `{"roomId":"<OWNED>"}` → expect 200 `{polls[]}`; (c) same, token header omitted → expect `{code:16}`; (d) if (b) 200, replay verbatim at `https://staging-tools.alfaview.com/poll/pollservice/list` for trust-boundary adjudication — do NOT send foreign-tenant roomIds.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED MISCONFIG @ staging-tools.alfaview.com: index references identical hashed bundles and vendor bytes byte-identical to prod (684113B, MD5 `89eb0baf`) — same-build family confirmed at byte level; staging trust-boundary hypothesis supported by build evidence.
+- [LEARN] REJECTED MISCONFIG @ tools.alfaview.com: app-bundle MD5 `b7f17c85` (137343B) unchanged and poll `list` GET 501/55B unchanged — no client-side drift; prior RPC contract pin (8 verbs, `Grpc-Metadata` header, `{roomId}`-only payloads) remains valid.
+
+STEP 7 — RISK
+[RISK] alfaview: 57 — surface fully stable and 100% inventoried; the only fresh exploitable asset (poll RPC) is fully instrumented with byte-identical staging twin, but probe cycle confirms zero drift; all standing chains (introspect 70, poll BOLA 70, apis IDOR 80, staging-trust 55) remain token-gated (HUMAN) and bounded; no new unauthenticated exploit surface.

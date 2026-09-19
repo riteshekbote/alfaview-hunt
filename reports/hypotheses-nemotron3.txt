@@ -1,9 +1,11 @@
-## 2026-09-19 14:59:40 UTC [target] (model nemotron3)
+## 2026-09-19 17:34:30 UTC [target] (model nemotron3)
 [PRIO] tools.alfaview.com/poll/pollservice, 8.8, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=3, cloud_surface=7, freshness=9
 [PRIO] sso.alfaview.com/oauth2/introspect, 8.5, attack_surface=8, business_value=9, tech_exposure=9, gate_ease=10, cloud_surface=7, freshness=8
 [PRIO] app.alfaview.com/graphql, 8.2, attack_surface=9, business_value=9, tech_exposure=8, gate_ease=10, cloud_surface=7, freshness=6
 [PRIO] apis.alfaview.com/v2/users, 7.8, attack_surface=7, business_value=10, tech_exposure=7, gate_ease=3, cloud_surface=8, freshness=8
 [PRIO] test.alfaview.com, 6.5, attack_surface=6, business_value=7, tech_exposure=6, gate_ease=10, cloud_surface=5, freshness=8
+[PRIO] sso.alfaview.com/.well-known/jwks.json, 6.2, attack_surface=6, business_value=8, tech_exposure=7, gate_ease=10, cloud_surface=5, freshness=7
+[PRIO] client-diagnostics-ingest.alfaview.com, 4.1, attack_surface=3, business_value=4, tech_exposure=5, gate_ease=10, cloud_surface=4, freshness=7
 [HYP] Poll service BOLA via custom gRPC-metadata auth header
 class: IDOR
 asset: tools.alfaview.com/poll/pollservice
@@ -12,15 +14,6 @@ reasoning: tools.alfaview.com exposes verb-based JSON RPC (list|create|delete|up
 evidence_needed: Valid room token from owned alfaview room (via signup→finishSignup chain) to test cross-room poll access
 verify_steps: GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js → extract exact Poll/create/vote/delete request payloads and response JSON; POST https://tools.alfaview.com/poll/pollservice/list with header `Grpc-Metadata-alfaview.token: <own-room-token>` → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically
 impact: Cross-room poll data access/manipulation (vote rigging, poll deletion, result disclosure) → BOLA in real-time collaboration feature (HIGH)
-testability: AUTH_HELPED
-[HYP] Guest token issuance bypassing accessKey requirement via GraphQL
-class: AUTH
-asset: app.alfaview.com/graphql
-confidence: 80
-reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
-evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
-verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
-impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
 testability: AUTH_HELPED
 [HYP] RFC7662 introspection client authentication bypass on both channels
 class: AUTH
@@ -31,9 +24,20 @@ evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser 
 verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; POST https://sso.alfaview.com/oauth2/introspect with token=<valid-token>&client_id=<valid-client_id> → observe active:true + token metadata; repeat with fabricated client_id to confirm bypass
 impact: OAuth token metadata disclosure → token reconnaissance, potential token validation bypass (CRITICAL, OWASP A07:2021)
 testability: AUTH_HELPED
+[HYP] Guest token issuance bypassing accessKey requirement via GraphQL
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 80
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
+evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
+verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
+impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
+testability: AUTH_HELPED
 [PARKED] Whiteboard tenant isolation bypass: whiteboard.alfaview.com root returns "board deleted/access expired" but no IDOR surface visible without valid board ID; all non-root paths redirect to / — no verify steps without board creation flow
 [PARKED] CT subdomain takeover: 110 CT subdomains mostly firewalled (000); no dangling CNAMEs or takeover evidence in live set — requires DNS-level probe which is out of passive scope
 [PARKED] Status page info leak: status.alfaview.com is public status page — no sensitive data exposure confirmed, only operational metrics
+[PARKED] IDOR apis.alfaview.com/v2/users: Requires authenticated account (cross-tenant untestable without two tenants) — HUMAN_ONLY
+[PARKED] test.alfaview.com supply chain: Unsigned alfacheck binaries — verification requires binary analysis, not HTTP probe
 [FINAL] Ranked survivors:
 [NEXT] PROBE: GET `https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js` → extract exact `Poll`/`create`/`vote`/`delete` request payloads and response JSON; then POST `https://tools.alfaview.com/poll/pollservice/list` with header `Grpc-Metadata-alfaview.token: <own-room-token>` (from authenticated session) → observe response structure; repeat with foreign `roomId` in body to test BOLA
 [LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: previously-unmapped in-room poll toolbox exposes a verb-based JSON RPC (`/poll/pollservice/<verb>`) using custom header `Grpc-Metadata-alfaview.token` rather than Authorization/Bearer — new auth-surface divergence from REST/GraphQL

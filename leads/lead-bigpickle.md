@@ -4948,3 +4948,33 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: app bundle pins complete RPC contract — 8 verbs, `{roomId}`+`{id}`-only payloads, custom `Grpc-Metadata-alfaview.token` (b64url→b64) + `request_id` `{verb}-poll-{ms}`, error body `{code,message}` (12→501), response success `{polls[]}` — BOLA request shape fully instrumented, staging twin byte-identical build.
 [LEARN] REJECTED MISCONFIG @ whiteboard.alfaview.com: `/poll/pollservice/*` not exposed — 302→`/` shell, poll RPC is tools-only surface.
 [RISK] alfaview: 57 — surface fully stable (OpenAPI/JWKS/introspect/authorize/tools/status byte-identical); only fresh exploitable asset is the poll RPC, now completely instrumented, with same-build staging twin; all three standing chains (introspect 70, poll BOLA 68, staging-trust 50) remain token-gated (HUMAN) and bounded until a legit owned token+roomId exists; no new unauthenticated exploit surface.
+## 2026-09-19 17:33:41 UTC [target] (model bigpickle)
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 70
+reasoning: Route table confirmed live again this cycle (GET 501/55B, POST-only); bundle MD5 `b7f17c85` unchanged — all 8 verbs send only `{roomId}`(+`{id}`), zero tenant/company field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64, unpadded) + `request_id {verb}-poll-{ms}`; client pre-flight gates only on token presence; server error body `{code,message}` ⇒ authz server-side, but roomId↔subject binding never evidenced.
+evidence_needed: owned token POST `list` with foreign tenant roomId → 200 `{polls[]}` vs `{code:7}`; controls: owned roomId=200, header omitted=`{code:16}`.
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<epoch_ms>`, body `{"roomId":"<OWNED>"}`; then header omitted; then foreign roomId; diff status+`{code}`.
+impact: Cross-tenant read of live polls/Q&A + write integrity (create/updateState/delete/vote) on other tenants' boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: Probe re-confirms OPTIONS 405 / endpoint live; 18+ stable cycles — arbitrary client_id accepted on POST-body and Basic channels (200 `{"active":false}` without token); only residual check is body-vs-Basic `client_id_mismatch` 401; discovery advertises `client_secret_basic/post/none` with no runtime verification.
+evidence_needed: any valid bearer → POST `client_id=<fake>&token=<b64>` returns 200 `{"active":true}`+claims; invalid → `active:false` — oracle without client secret.
+verify_steps: (HUMAN_ONLY) POST `https://sso.alfaview.com/oauth2/introspect` `application/x-www-form-urlencoded` body `client_id=does-not-exist-12345&token=<b64>`; also `Authorization: Basic base64(fake:any)`; observe active+claims vs invalid_token.
+impact: Unauthenticated token liveness/subject/expiry fingerprint → ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR on user delete / room permission UUID path params
+class: IDOR
+asset: apis.alfaview.com/v2 (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId})
+confidence: 80
+reasoning: OpenAPI still public + byte-identical prod/beta (MD5 `357b94d3`, 37 paths, unchanged this cycle); UUID path params on destructive permission/user ops; auth gate stable (users/me 401, users/{uuid} 405 Allow:DELETE) — but subject↔tenant binding after auth never evidenced.
+evidence_needed: tenant-A token issuing DELETE/PATCH against tenant-B UUID → non-403/404 result confirming missing tenant-scoping.
+verify_steps: (HUMAN_ONLY) two tenant accounts; token from tenant-A; `PATCH /v2/rooms/{B-roomId}/permissions/{B-userId}` then `DELETE /v2/users/{B-userId}`; expect 403/404 if scoped, 2xx/422 if not.
+impact: Cross-tenant user deletion / permission tampering — account take-over / DoS on foreign companies; HIGH.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: Execute finalized poll-service replay, single safe read + controls, OWNED roomIds only: (a) token via app.alfaview.com signup→finishSignup; (b) `POST https://tools.alfaview.com/poll/pollservice/list` headers `Content-Type: application/json`, `Grpc-Metadata-alfaview.token: <owned-token -→+ _→/>`, `Grpc-Metadata-alfaview.request_id: list-poll-<ms>`, body `{"roomId":"<OWNED>"}` → expect 200 `{polls[]}`; (c) same, token header omitted → expect `{code:16}`; (d) if (b) 200, replay verbatim at `https://staging-tools.alfaview.com/poll/pollservice/list` for trust-boundary adjudication — do NOT send foreign-tenant roomIds.
+[RISK] alfaview: 57 — surface fully stable and 100% inventoried; the only fresh exploitable asset (poll RPC) is fully instrumented with byte-identical staging twin, but probe cycle confirms zero drift; all standing chains (introspect 70, poll BOLA 70, apis IDOR 80, staging-trust 55) remain token-gated (HUMAN) and bounded; no new unauthenticated exploit surface.
