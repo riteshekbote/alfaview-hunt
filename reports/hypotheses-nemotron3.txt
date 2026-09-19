@@ -1,7 +1,6 @@
-## 2026-09-19 19:37:09 UTC [target] (model nemotron3)
-[PRIO] tools.alfaview.com/poll/pollservice, 8.5, attack_surface=9, business_value=8,
-[PRIO] tools.alfaview.com/poll/pollservice, 8.7, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=10, cloud_surface=6, freshness=10
-[PRIO] sso.alfaview.com/oauth2/introspect, 8.2, attack_surface=8, business_value=9, tech_exposure=8, gate_ease=10, cloud_surface=5, freshness=7
+## 2026-09-19 21:45:01 UTC [target] (model nemotron3)
+[PRIO] tools.alfaview.com/poll/pollservice, 8.2, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=2, cloud_surface=5, freshness=9
+[PRIO] sso.alfaview.com/oauth2/introspect, 7.8, attack_surface=8, business_value=9, tech_exposure=8, gate_ease=3, cloud_surface=5, freshness=6
 [PRIO] app.alfaview.com/graphql, 7.7, attack_surface=8, business_value=8, tech_exposure=7, gate_ease=10, cloud_surface=5, freshness=6
 [PRIO] test.alfaview.com, 7.0, attack_surface=6, business_value=7, tech_exposure=6, gate_ease=10, cloud_surface=5, freshness=8
 [PRIO] apis.alfaview.com, 6.2, attack_surface=7, business_value=9, tech_exposure=6, gate_ease=2, cloud_surface=5, freshness=5
@@ -9,7 +8,7 @@
 class: IDOR
 asset: tools.alfaview.com/poll/pollservice
 confidence: 85
-reasoning: tools.alfaview.com exposes verb-based JSON RPC (list|create|delete|update|updateState|vote|get|hasVoted) using `Grpc-Metadata-alfaview.token` header instead of standard Authorization/Bearer; auth mechanism diverges from REST (opaque tokens) and GraphQL (custom token header); poll operations scoped to roomId but token binding untested; staging-tools.alfaview.com mirrors production; bundle confirms token gate is client-side only (`reject("Invalid access token")`); token in `Grpc-Metadata-alfaview.token` b64url→b64, opaque/base64 family; body `{roomId}` only
+reasoning: tools.alfaview.com exposes verb-based JSON RPC (list|create|delete|update|updateState|vote|get|hasVoted) using `Grpc-Metadata-alfaview.token` header instead of standard Authorization/Bearer; auth mechanism diverges from REST (opaque tokens) and GraphQL (custom token header); poll operations scoped to roomId but token binding untested; staging-tools.alfaview.com mirrors production (identical vendor bundle hash); bundle confirms token gate is client-side only (`reject("Invalid access token")`); token in `Grpc-Metadata-alfaview.token` b64url→b64, opaque/base64 family; body `{roomId}` only
 evidence_needed: Valid room token from owned alfaview room (via signup→finishSignup chain) to test cross-room poll access
 verify_steps: GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js → extract exact Poll/create/vote/delete request payloads and response JSON; POST https://tools.alfaview.com/poll/pollservice/list with header `Grpc-Metadata-alfaview.token: <own-room-token>` → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically
 impact: Cross-room poll data access/manipulation (vote rigging, poll deletion, result disclosure) → BOLA in real-time collaboration feature (HIGH)
@@ -38,7 +37,7 @@ testability: AUTH_HELPED
 [PARKED] IDOR apis.alfaview.com/v2/users: Requires authenticated account (cross-tenant untestable without two tenants) — HUMAN_ONLY
 [PARKED] test.alfaview.com supply chain: Unsigned alfacheck binaries — verification requires binary analysis, not HTTP probe
 [FINAL] Ranked survivors:
-[NEXT] PROBE: GET `https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js` → extract exact `Poll`/`create`/`vote`/`delete` request payloads and response JSON; then POST `https://tools.alfaview.com/poll/pollservice/list` with header `Grpc-Metadata-alfaview.token: <own-room-token>` (from authenticated session) → observe response structure; repeat with foreign `roomId` in body to test BOLA
+[NEXT] PROBE: GET `https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js` → extract exact `Poll`/`create`/`vote`/`delete` request payloads and response JSON; then POST `https://tools.alfaview.com/poll/pollservice/list` with header `Grpc-Metadata-alfaview.token: <own-room-token>` (from authenticated session via app.alfaview.com signup→finishSignup) → observe response structure; repeat with foreign `roomId` in body to test BOLA
 [LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: previously-unmapped in-room poll toolbox exposes a verb-based JSON RPC (`/poll/pollservice/<verb>`) using custom header `Grpc-Metadata-alfaview.token` rather than Authorization/Bearer — new auth-surface divergence from REST/GraphQL
 [LEARN] ACCEPTED MISCONFIG @ staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
 [LEARN] ACCEPTED MISCONFIG @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`
