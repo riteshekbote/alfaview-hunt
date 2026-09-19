@@ -1,15 +1,5 @@
-## 2026-09-19 06:49:25 UTC [target] (model nemotron3)
-[NEW] `tools.alfaview.com` — live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|update|updateState|vote|get|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token` (b64url→b64 conversion) — new auth-surface divergence from REST (Authorization/Bearer) and GraphQL (custom token header)
-[NEW] `staging-tools.alfaview.com` — live (612B), same Tools UI, separate staging backend; vendor bundle hash identical to prod
-[NEW] `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; `/` returns "board deleted/access expired" error, all non-root paths → `302 Location: /`
-[NEW] `status.alfaview.com` — public status page 200/53714B (title "alfaview Status")
-[NEW] `qa.alfaview.com` / `uni-stuttgart.alfaview.com` — 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg)
-[NEW] CT/crt.sh yields ~110 subdomains absent from inventory: `grafana`, `loki`, `prometheus-*`, `linkerd-*`, `ops`, `sap`, `webrtc`, `stun`, `gitlab.dev`, `fusionauth.dev`, `whiteboard`, `tools`, `staging-*`, `production-*`; most edge-firewalled (000)
-[CHANGED] `sso.alfaview.com/.well-known/jwks.json` — oscillates 200↔404, currently 200 with 7 RSA keys (MD5 3f8d456c)
-[CHANGED] `sso.alfaview.com/.well-known/openid-configuration` — `introspection_endpoint` advertisement oscillates (absent this cycle) while `/oauth2/introspect` stays live (OPTIONS 405)
-[CHANGED] `test.alfaview.com` — alfacheck binary version bumped v470079→v483102 (4 platforms), index page still carries no sha256/signatures
-[CHANGED] `apis.alfaview.com/v2/docs/openapi.json` — still public, prod=beta byte-identical (37 paths, MD5 357b94d3), 10+ stable cycles
-[PRIO] tools.alfaview.com/poll/pollservice, 8.8, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=8, cloud_surface=8, freshness=10
+## 2026-09-19 11:45:10 UTC [target] (model nemotron3)
+[PRIO] tools.alfaview.com/poll/pollservice, 8.8, attack_surface=9, business_value=8, tech_exposure=9,
 [PRIO] sso.alfaview.com/oauth2/introspect, 8.5, attack_surface=8, business_value=9, tech_exposure=9, gate_ease=10, cloud_surface=7, freshness=8
 [PRIO] app.alfaview.com/graphql, 8.2, attack_surface=9, business_value=9, tech_exposure=8, gate_ease=10, cloud_surface=7, freshness=6
 [PRIO] apis.alfaview.com/v2/users, 7.8, attack_surface=7, business_value=10, tech_exposure=7, gate_ease=3, cloud_surface=8, freshness=8
@@ -17,7 +7,7 @@
 [HYP] Poll service BOLA via custom gRPC-metadata auth header
 class: IDOR
 asset: tools.alfaview.com/poll/pollservice
-confidence: 80
+confidence: 85
 reasoning: tools.alfaview.com exposes verb-based JSON RPC (list|create|delete|update|updateState|vote|get|hasVoted) using `Grpc-Metadata-alfaview.token` header instead of standard Authorization/Bearer; auth mechanism diverges from REST (opaque tokens) and GraphQL (custom token header); poll operations scoped to roomId but token binding untested; staging-tools.alfaview.com mirrors production; bundle confirms token gate is client-side only (`reject("Invalid access token")`); token in `Grpc-Metadata-alfaview.token` b64url→b64, opaque/base64 family; body `{roomId}` only
 evidence_needed: Valid room token from owned alfaview room (via signup→finishSignup chain) to test cross-room poll access
 verify_steps: GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js → extract exact Poll/create/vote/delete request payloads and response JSON; POST https://tools.alfaview.com/poll/pollservice/list with header `Grpc-Metadata-alfaview.token: <own-room-token>` → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically
@@ -26,7 +16,7 @@ testability: AUTH_HELPED
 [HYP] Guest token issuance bypassing accessKey requirement via GraphQL
 class: AUTH
 asset: app.alfaview.com/graphql
-confidence: 85
+confidence: 80
 reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
 evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
 verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
