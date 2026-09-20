@@ -836,3 +836,5 @@ www.alfaview.com
 - CHANGED sso.alfaview.com/oauth2/authorize: Returns HTTP 200 FusionAuth login page (~6189B) for unregistered client_id — validation timing shifted (was 400 invalid_client)
 - CHANGED apis.alfaview.com/v2/auth/guest-link: Confirmed 3-field only (accessKey+companyId+roomId); displayName NOT required
 - CHANGED test.alfaview.com: alfacheck v483102 (4 platforms), no sha256/signatures — supply-chain hardening absent across releases
+
+## 2026-09-20 16:40:07 UTC
