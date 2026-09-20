@@ -2831,3 +2831,34 @@
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
 - LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JS
 - LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har
+
+## RANKED HYPOTHESES 2026-09-20 21:35:34 UTC
+- [85] tools.alfaview.com/poll/pollservice: Poll service BOLA via custom gRPC-metadata auth header (from art/lead_nemotron3.txt)
+- [80] apis.alfaview.com/v2: Cross-tenant IDOR on user delete / room permission UUID path params (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: execute the sole standing token path — app.alfaview.com/graphql signup → finishSignup{companyId,username,activationToken,password} → obtain bearer; then 
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET `https://app.alfaview.com/` → extract `client_id` from network traffic (OAuth config API call in browser DevTools); then POST `https://sso.alfaview.c
+- LEARN: NO_DELTA @ full standing probes: OpenAPI MD5 357b94d3, JWKS 200/16257B (3f8d456c), OIDC 200/2169B, introspect OPTIONS 405, authorize 200/6160B, tools.list GET 5
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"a
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles confirmed); 
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"a
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored; MD5 3f8d456c stable
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while /oauth2/intros
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with custom auth header Grpc-Metadata-alfaview.token (b6
+- LEARN: ACCEPTED MISCONFIG @ staging-tools.alfaview.com: Live (612B), same Tools UI, separate staging backend
+- LEARN: ACCEPTED MISCONFIG @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: Live board renderer; root returns "board deleted/access expired", non-root → 302
+- LEARN: ACCEPTED MISCONFIG @ status.alfaview.com: Public status page 200/53714B (title "alfaview Status")
+- LEARN: ACCEPTED MISCONFIG @ qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+- LEARN: ACCEPTED MISCONFIG @ CT/alfaview.com: crt.sh returns ~
+- LEARN: ACCEPTED MISCONFIG @ CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev
+- LEARN: REJECTED MISCONFIG @ grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: All external probes timeout (000) — internal-only, target exhau
+- LEARN: NO_DELTA @ apis/sso: OpenAPI MD5 357b94d3 (37 paths), OIDC 200/2169, JWKS 200/16257 byte-stable
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: REST /v2/auth/guest-link requires only 3 fields (accessKey, companyId, roomId) — displayName NOT required
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL g
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/ge
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingU
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — highest-p
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stab
+- LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: /health=200 {"status":"ok"} with strict headers (CSP default-src 'none', frame-ancestors 'none', JS
+- LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har

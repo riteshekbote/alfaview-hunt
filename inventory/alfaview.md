@@ -840,3 +840,14 @@ www.alfaview.com
 ## 2026-09-20 16:40:07 UTC
 
 ## 2026-09-20 19:03:46 UTC
+
+## 2026-09-20 21:35:34 UTC
+- NEW tools.alfaview.com/poll/pollservice: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with custom auth header Grpc-Metadata-alfaview.token (b64url→b64, opaque family); staging-tools.alfa
+- NEW sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored; MD5 3f8d456c stable
+- NEW sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable livene
+- NEW sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_
+- NEW CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*)
+- CHANGED whiteboard.alfaview.com / staging-whiteboard.alfaview.com: Live board renderer; root returns "board deleted/access expired", non-root → 302 /
+- CHANGED status.alfaview.com: Public status page 200/53714B (title "alfaview Status")
+- CHANGED qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: All external probes timeout (000) — internal-only, target exhausted
