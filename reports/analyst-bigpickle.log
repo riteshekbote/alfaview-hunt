@@ -26667,3 +26667,19 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] alfaview: 55 — no fresh passive surface this cycle; all 8 standing probes byte-stable. Real backend (REST IDOR 80, tools poll BOLA 75) and SSO client-auth (introspect 70) gaps persist but every verification is HUMAN-gated on a token, keeping program-exposure low.
+===== ANALYST bigpickle 2026-09-20 19:03:46 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor url in "https://apis.alfaview.com/v2/docs/openapi.json" "https://sso.alfaview.com/.well-known/openid-configuration" "https://sso.alfaview.com/.well-known/jwks.json"; do code=$(curl -s -o /tmp/probe.$$.tmp -w "%{http_code} %{size_download}" --max-time 15 -A "Mozilla/5.0" "$url"); echo "$url -> $code"; done; md5sum /tmp/probe.$$.tmp 2>/dev/null; rm -f /tmp/probe.$$.tmp
+https://apis.alfaview.com/v2/docs/openapi.json -> 200 127532
+https://sso.alfaview.com/.well-known/openid-configuration -> 200 2169
+https://sso.alfaview.com/.well-known/jwks.json -> 200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/probe.2404.tmp
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mmkdir -p /tmp/afc && curl -s --max-time 15 -A "Mozilla/5.0" "https://apis.alfaview.com/v2/docs/openapi.json" -o /tmp/afc/openapi.json && md5sum /tmp/afc/openapi.json failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[93m[1m! [0mpermission requested: external_directory (/tmp/afc/*); auto-rejecting
+[0m✗ [0mfor t in "OPTIONS https://sso.alfaview.com/oauth2/introspect" "GET https://tools.alfaview.com/poll/pollservice/list" "HEAD https://apis.alfaview.com/v2/users/me" "GET https://app.alfaview.com/graphql"; do m=${t%% *}; u=${t#* }; code=$(curl -s -o /tmp/afc/p.tmp -w "%{http_code} %{size_download}" -X "$m" --max-time 15 -A "Mozilla/5.0" "$u"); echo "$m $u -> $code"; done; rm -f /tmp/afc/p.tmp failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
