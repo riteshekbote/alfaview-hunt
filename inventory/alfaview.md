@@ -851,3 +851,17 @@ www.alfaview.com
 - CHANGED status.alfaview.com: Public status page 200/53714B (title "alfaview Status")
 - CHANGED qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
 - CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: All external probes timeout (000) — internal-only, target exhausted
+
+## 2026-09-20 23:29:08 UTC
+- NEW tools.alfaview.com/poll/pollservice: Verb-based JSON RPC (8 verbs: list|create|delete|update|updateState|vote|get|hasVoted) at POST /poll/pollservice/<verb> with custom auth header `Grpc-Metadata-alfa
+- NEW staging-tools.alfaview.com: Live (612B), same Tools UI, separate staging backend
+- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: Live board renderer; root returns "board deleted/access expired", non-root → 302 /
+- NEW status.alfaview.com: Public status page 200/53714B (title "alfaview Status")
+- NEW qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+- NEW CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*)
+- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored; MD5 3f8d456c stable
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable livene
+- CHANGED sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_
+- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
+- CHANGED test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
+- CHANGED app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed); guestAuthenticate/guestJoin anonymous-reachable (BAD_USER_INPUT, not UN

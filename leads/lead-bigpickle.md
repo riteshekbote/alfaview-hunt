@@ -5247,3 +5247,42 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405).
 [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles confirmed); all HIGH-value chains (REST IDOR 80, tools BOLA 75, introspect 70) gate on executing it — email-gated, HUMAN_ONLY.
 [RISK] alfaview: 55 — zero fresh passive surface this cycle; all 8 standing probes byte-stable. Real backend (REST IDOR 80, tools poll BOLA 75) and SSO client-auth (introspect 70) gaps persist but every verification is HUMAN-gated on a token, keeping program-exposure low.
+## 2026-09-20 23:27:51 UTC [target] (model bigpickle)
+[PRIO] tools.alfaview.com/poll/pollservice,score=6.3,axis: fresh_surface/custom_auth_header/freshness
+[PRIO] sso.alfaview.com/oauth2/introspect,score=6.25,axis: unvalidated_client_id/gate_ease/stable_18+
+[PRIO] apis.alfaview.com/v2,score=6.05,axis: business_high/uuid_idor/two-tenant_gate
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/{list,create,delete,update,updateState,vote,get,hasVoted} (POST JSON)
+confidence: 85
+reasoning: Route live POST-only (GET 501/55B), 8 verbs; payloads carry only {roomId}(+{id}), zero tenant field; auth rides custom Grpc-Metadata-alfaview.token (b64url→b64); bundle pins client-side-only token gate reject("Invalid access token"); staging-tools bundle hash 8caab24e identical — cross-env same build family. Aggregator ranks this top lead this cycle.
+evidence_needed: owned token POST list foreign-tenant roomId → 200 {polls[]} vs {code:7}; owned=200, header-omitted={code:16}.
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; POST /poll/pollservice/list Content-Type application/json + Grpc-Metadata-alfaview.token + Grpc-Metadata-alfaview.request_id list-poll-<ms>, body {"roomId":"<OWNED>"}; omit token header; then foreign roomId; repeat on staging-tools.alfaview.com.
+impact: Cross-tenant read of live polls/Q&A + write integrity (create/updateState/delete/vote) on foreign boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: POST-body client_id validation fully removed — fabricated client_id → 200 {"active":false}; Basic channel also accepts any client_id; only residual check body-vs-Basic mismatch (401); discovery advertises client_secret_basic/post/none with no runtime verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405), 18th+ stable cycle.
+evidence_needed: valid bearer → POST client_id=<fake>&token=<b64> returns 200 {"active":true}+claims; invalid → active:false.
+verify_steps: (HUMAN_ONLY) POST form client_id=does-not-exist-12345&token=<b64>; then Basic base64(fake:any); diff active+claims.
+impact: Token liveness/subject/expiry fingerprint → ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR on user delete / room permission UUID path params
+class: IDOR
+asset: apis.alfaview.com/v2 (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId})
+confidence: 80
+reasoning: OpenAPI public + prod/beta byte-identical (MD5 357b94d3, stable cycles); UUID path params on destructive ops; auth gate stable (users/me 401) — subject↔tenant binding after auth never evidenced.
+evidence_needed: tenant-A token vs tenant-B UUID → non-403/404 confirms missing tenant-scoping.
+verify_steps: (HUMAN_ONLY) two owned accounts; PATCH /v2/rooms/{B-roomId}/permissions/{B-userId}, DELETE /v2/users/{B-userId}; expect 403/404 if scoped, 2xx/422 if not.
+impact: Cross-tenant user deletion / permission tampering — ATO/DoS on foreign companies; HIGH.
+testability: HUMAN_ONLY
+[PARKED] JWKS/alg-confusion: RS256 keys public, HS/ES advertised, but zero symmetric/ECDSA keys published — metadata-only, no key material.
+[PARKED] authorize redirect_uri matrix: client_id validation gates before redirect_uri handling; no registration_endpoint → no client_id obtainable; OATH chain dead without HUMAN-held credentials.
+[FINAL] 1. tools BOLA (85) 2. REST IDOR (80) 3. introspect oracle (70) — all HUMAN_ONLY; verification entirely gated on executing signup→bearer path.
+[NEXT] HUMAN: execute the sole standing token path — app.alfaview.com/graphql signup → finishSignup{companyId,username,activationToken,password} → obtain bearer; then tools.alfaview.com BOLA differential: POST /poll/pollservice/list, headers Content-Type application/json + Grpc-Metadata-alfaview.token (b64url→b64) + Grpc-Metadata-alfaview.request_id list-poll-<ms>, body {"roomId":"<OWNED>"} → expect {polls:[]}; then omit token header (expect {code:16}); then foreign-tenant roomId (expect {polls:[]}=BOLA / {code:7}=scoped); repeat on staging-tools.alfaview.com.
+[LEARN] NO_DELTA @ full standing probes: OpenAPI MD5 357b94d3, JWKS 200/16257B (3f8d456c), OIDC 200/2169B (introspection_endpoint absent), introspect OPTIONS 405, authorize 200/6176B, tools.list GET 501/55B, users/me 401/107B, graphql GET 400/406B — all byte-identical; surface fully stable, no new unauthenticated exploit surface.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_secret_basic/post/none with no runtime secret verification.
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles confirmed); all HIGH-value chains (tools BOLA 85, REST IDOR 80, introspect 70) gate on executing it — email-gated, HUMAN_ONLY.
+[RISK] alfaview: 55 — zero fresh passive surface this cycle; all 8 standing probes byte-stable. Tools poll RPC (BOLA 85), REST IDOR (80), and SSO introspect client-auth (70) gaps persist, but every verification is HUMAN-gated on a token, keeping program-exposure low.
