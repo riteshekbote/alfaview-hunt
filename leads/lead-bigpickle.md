@@ -5071,3 +5071,31 @@ evidence_needed: owned token POST list foreign-tenant roomId → 200 `{polls[]}`
 verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; POST /poll/pollservice/list, headers Content-Type application/json + Grpc-Metadata-alfaview.token + Grpc-Metadata-alfaview.request_id list-poll-<ms>, body {"roomId":"<OWNED>"}; then header omitted; then foreign roomId.
 impact: Cross-tenant read of live polls/Q&A + write integrity on other tenants' boards; MEDIUM-HIGH.
 testability: HUMAN_ONLY
+## 2026-09-20 01:56:02 UTC [target] (model bigpickle)
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/list (POST JSON)
+confidence: 70
+reasoning: Route live (GET 501/55B edge-forward, POST-only); all 8 verbs send only `{roomId}`(+`{id}`), zero tenant field; token rides `Grpc-Metadata-alfaview.token` (b64url→b64) + `request_id {verb}-poll-{ms}`; client pre-flight gates only on token presence; server `{code,message}` ⇒ authz server-side, roomId↔subject binding never evidenced.
+evidence_needed: owned token POST list foreign-tenant roomId → 200 `{polls[]}` vs `{code:7}`; owned=200, header omitted=`{code:16}`.
+verify_steps: (HUMAN_ONLY) token via app signup→finishSignup; POST https://tools.alfaview.com/poll/pollservice/list, headers Content-Type application/json + Grpc-Metadata-alfaview.token + Grpc-Metadata-alfaview.request_id list-poll-<ms>, body {"roomId":"<OWNED>"}; then header omitted; then foreign roomId (owned-ref override only).
+impact: Cross-tenant read of live polls/Q&A + write integrity (create/updateState/delete/vote) on other tenants' boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Cross-tenant IDOR on user delete / room permission UUID path params
+class: IDOR
+asset: apis.alfaview.com/v2 (DELETE /v2/users/{id}, PATCH /v2/rooms/{roomId}/permissions/{userId})
+confidence: 80
+reasoning: OpenAPI public + prod/beta byte-identical (MD5 357b94d3, stable 10+ cycles), UUID path params on destructive ops; auth gate stable (users/me 401, users/{uuid} 405 Allow:DELETE) — subject↔tenant binding after auth never evidenced.
+evidence_needed: tenant-A token vs tenant-B UUID → non-403/404 confirms missing tenant-scoping.
+verify_steps: (HUMAN_ONLY) two owned accounts; PATCH /v2/rooms/{B-roomId}/permissions/{B-userId}, DELETE /v2/users/{B-userId}; expect 403/404 if scoped, 2xx/422 if not.
+impact: Cross-tenant user deletion / permission tampering — ATO/DoS on foreign companies; HIGH.
+testability: HUMAN_ONLY
+[HYP] Introspect with fabricated client_id acts as unauthenticated token oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: OPTIONS 405 live; 18+ stable cycles — arbitrary client_id accepted on POST-body and Basic (200 `{"active":false}`); only residual check body-vs-Basic `client_id_mismatch` (401); discovery advertises `client_secret_basic/post/none` (this cycle) with no runtime secret verification; OIDC introspection_endpoint still absent while endpoint live.
+evidence_needed: valid bearer → POST client_id=<fake>&token=<b64> returns 200 `{"active":true}`+claims; invalid → active:false.
+verify_steps: (HUMAN_ONLY) POST x-www-form-urlencoded client_id=does-not-exist-12345&token=<b64>; also Basic base64(fake:any); diff active+claims.
+impact: Token liveness/subject/expiry fingerprint → ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY

@@ -1,4 +1,4 @@
-## 2026-09-19 23:43:24 UTC [target] (model nemotron3)
+## 2026-09-20 01:57:15 UTC [target] (model nemotron3)
 [PRIO] tools.alfaview.com/poll/pollservice, 8.1, attack_surface=9, business_value=8, tech_exposure=8, gate_ease=10, cloud_surface=5, freshness=9
 [PRIO] sso.alfaview.com/oauth2/introspect, 7.9, attack_surface=7, business_value=9, tech_exposure=9, gate_ease=10, cloud_surface=5, freshness=6
 [PRIO] app.alfaview.com/graphql, 7.7, attack_surface=8, business_value=8, tech_exposure=7, gate_ease=10, cloud_surface=5, freshness=6
@@ -50,6 +50,7 @@ testability: AUTH_HELPED
 [LEARN] ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_uri matrix still client_id-gated but behavior unstable
 [LEARN] ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) — `displayName` NOT required
 [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no `accessKey` in GraphQL guest signature — diverges from REST 3-field `accessKey` combo
+[LEARN] REJECTED MIS
 [LEARN] REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
 [LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
 [LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously.

@@ -567,3 +567,26 @@
 - 2026-09-19 ACCEPTED MISCONFIG @ tools.alfaview.com: app bundle pins complete RPC contract — 8 verbs, `{roomId}`+`{id}`-only payloads, custom `Grpc-Metadata-alfaview.token` (b64url→b64) + `request_id` `{verb}-poll-{ms}`, error body `{code,message}` (12→501), response success `{polls[]}` — BOLA request shape fully instrumented, staging twin byte-identical build.
 - 2026-09-19 REJECTED MISCONFIG @ whiteboard.alfaview.com: `/poll/pollservice/*` not exposed — 302→`/` shell, poll RPC is tools-only surface.
 - 2026-09-19 NO_DELTA @ full standing probes: OpenAPI MD5 357b94d3, JWKS 200/16257B, OIDC 200/2169B, introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, tools.list GET 501/55B, graphql GET 400/406B — all byte-identical; no new unauthenticated exploit surface.
+- 2026-09-20 ACCEPTED MISCONFIG @ tools.alfaview.com: previously-unmapped in-room poll toolbox exposes a verb-based JSON RPC (`/poll/pollservice/<verb>`) using custom header `Grpc-Metadata-alfaview.token` rather than Authorization/Bearer — new auth-surface divergence from REST/GraphQL
+- 2026-09-20 ACCEPTED MISCONFIG @ staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+- 2026-09-20 ACCEPTED MISCONFIG @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`
+- 2026-09-20 ACCEPTED MISCONFIG @ status.alfaview.com: public status page 200/53714B (title "alfaview Status")
+- 2026-09-20 ACCEPTED MISCONFIG @ qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (same family as alfatraining/bhc/kh-freiburg)
+- 2026-09-20 ACCEPTED MISCONFIG @ CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most are edge-firewalled (000) but tools/whiteboard/staging-tools/status/qa/uni-stuttgart are live
+- 2026-09-20 REJECTED MISCONFIG @ grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+- 2026-09-20 NO_DELTA @ apis/sso: OpenAPI MD5 `357b94d3` (37 paths), OIDC 200/2169, JWKS 200/16257 byte-stable
+- 2026-09-20 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored
+- 2026-09-20 ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+- 2026-09-20 ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: POST-body `client_id` validation fully removed — fabricated client_id → 200 `{"active":false}` (was 400 `invalid_client`); HTTP Basic auth also accepts any client_id; only residual check is Basic-vs-body `client_id_mismatch` (401)
+- 2026-09-20 ACCEPTED OATH @ sso.alfaview.com: `/oauth2/authorize` returns HTTP 200 FusionAuth login page for unregistered client_id — validation timing shifted; redirect_uri matrix still client_id-gated but behavior unstable
+- 2026-09-20 ACCEPTED AUTH @ apis.alfaview.com: REST `/v2/auth/guest-link` requires only 3 fields (`accessKey`, `companyId`, `roomId`) — `displayName` NOT required
+- 2026-09-20 ACCEPTED AUTH @ app.alfaview.com/graphql: guestAuthenticate/guestJoin unauthenticated-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no `accessKey` in GraphQL guest signature — diverges from REST 3-field `accessKey` combo
+- 2026-09-20 REJECTED MIS
+- 2026-09-20 REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no `client_id`, no credentials; internal topology only. Client_id-in-binary refuted.
+- 2026-09-20 REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- 2026-09-20 REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously.
+- 2026-09-20 ACCEPTED MISCONFIG @ app.alfaview.com/graphql: Field-oracle enumeration discloses reply-type field names (`providers` `[JSONObject]`, `http_download_url`, `GetPendingUserAccount(userId)`) — broader schema-surface mapping.
+- 2026-09-20 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms UUID path params on DELETE `/v2/users/{id}` and PATCH `/v2/rooms/{roomId}/permissions/{userId}` — highest-priority authenticated test target. Needs account.
+- 2026-09-20 ACCEPTED MISCONFIG @ apis.alfaview.com: `/v2/docs/openapi.json` still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully stable this cycle.
+- 2026-09-20 ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` with strict headers (CSP default-src 'none', frame-ancestors 'none', JSON-only, edge-proxy) while all other GET paths return 39B JSON 404 — confirmed minimal POST-only ingest, no unauthenticated read surface.
+- 2026-09-20 ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases.
