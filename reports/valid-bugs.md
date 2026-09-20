@@ -91,3 +91,17 @@
   - | Q4 Non-invasive proof | HOLD | Needs valid companyId+roomId seed |
   - | 4 | FusionAuth issuer=acme.com drift | **VALID** | LOW (3.7) | None — fully passive, ready to report |
   - | 5 | test.alfaview.com binary no-integrity | **VALID** | LOW (3.1) | None — fully passive, ready to report |
+
+- 12 lead(s) marked VALID at 2026-09-20 22:55:44 UTC
+  - | Q2 | Attacker reachable? | **YES** — requires valid company-scoped token (free-tenant signup path exists) |
+  - **Verdict: VALID** — Ready to test with free account. Report via bugs.olivermaicher.eu.
+  - | Q2 | Attacker reachable? | **YES** — mutations return BAD_USER_INPUT (not UNAUTHENTICATED) when called without valid UUIDs |
+  - | Q4 | Provable non-invasively? | **PARTIAL** — BAD_USER_INPUT confirms mutation processes input; FORBIDDEN with valid UUIDs confirms authorization check exists. But cannot confirm it returns accessTo
+  - **Verdict: VALID** — Report the authorization model divergence. Concrete evidence: BAD_USER_INPUT (not UNAUTHENTICATED) proves the mutation processes input without accessKey. GuestAuthenticateReply ex
+  - | Q3 | Real impact? | **LOW** — issuer=acme.com is clearly a default/dev artifact; implicit flow enabled; HS256/384/512 listed in supported algs but JWKS contains ONLY RSA keys (alg confusion vector).
+  - **Verdict: VALID (LOW severity)** — Fully passive proof, genuine misconfiguration.
+  - | Q3 | Real impact? | **MEDIUM** — broken client authentication on token introspection; allows any client to introspect tokens without valid credentials |
+  - **Verdict: VALID** — Reportable as-is.
+  - **Verdict: VALID (LOW severity)** — Fully passive, genuine gap.
+  - | Q4 | Provable non-invasively? | **NO** — needs valid companyId+roomId seed + 10+ rapid requests |
+  - **Verdict: HOLD** — Blocked on obtaining valid companyId+roomId pair. Once obtained, re-triage after rate-limit probe.
