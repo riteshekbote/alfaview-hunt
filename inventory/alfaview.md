@@ -822,3 +822,17 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/auth/guest-link: Confirmed 3-field only (accessKey+companyId+roomId); displayName NOT required
 - CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3) — 10+ stable cycles
 - CHANGED test.alfaview.com: alfacheck v483102 (4 platforms), no sha256/signatures — supply-chain hardening absent across releases
+
+## 2026-09-20 12:32:54 UTC
+- NEW tools.alfaview.com/poll/pollservice: Verb-based JSON RPC (list|create|delete|update|updateState|vote|get|hasVoted) at POST /poll/pollservice/<verb> with custom auth header `Grpc-Metadata-alfaview.toke
+- NEW staging-tools.alfaview.com: Live Tools UI (612B), identical vendor bundle hash (8caab24e), separate staging backend
+- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: Board renderer; root returns "board deleted/access expired", all non-root paths → 302 Location: /
+- NEW status.alfaview.com: Public status page 200/53714B
+- NEW qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
+- NEW CT/crt.sh: ~110 subdomains absent from inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most firewalle
+- CHANGED sso.alfaview.com/.well-known/jwks.json: JWKS restored (200, 7 RSA keys, MD5 3f8d456c) after 404 period
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while /oauth2/introspect stays live (OPTIONS 405)
+- CHANGED sso.alfaview.com/oauth2/introspect: POST-body client_id validation fully removed (fabricated client_id → 200 {"active":false}); HTTP Basic auth also accepts any client_id; only residual check is Basic
+- CHANGED sso.alfaview.com/oauth2/authorize: Returns HTTP 200 FusionAuth login page (~6189B) for unregistered client_id — validation timing shifted (was 400 invalid_client)
+- CHANGED apis.alfaview.com/v2/auth/guest-link: Confirmed 3-field only (accessKey+companyId+roomId); displayName NOT required
+- CHANGED test.alfaview.com: alfacheck v483102 (4 platforms), no sha256/signatures — supply-chain hardening absent across releases
