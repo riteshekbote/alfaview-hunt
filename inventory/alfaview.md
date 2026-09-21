@@ -876,3 +876,5 @@ www.alfaview.com
 - NEW NO_DELTA @ full standing probes: OpenAPI MD5 357b94d3 (127532B), JWKS 200/16257B (3f8d456c), OIDC 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, authorize 200/6142
 - NEW NO_DELTA @ sso.alfaview.com/oauth2/introspect: 19th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods adverti
 - NEW NO_DELTA @ app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed); all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70
+
+## 2026-09-21 22:49:20 UTC
