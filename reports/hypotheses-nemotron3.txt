@@ -1,18 +1,9 @@
-## 2026-09-21 01:35:39 UTC [target] (model nemotron3)
-[PRIO] app.alfaview.com/graphql, 7.20, attack_surface=7, business_value=8, tech_exposure=8, gate_ease=7, cloud_surface=5, freshness=7
-[PRIO] sso.alfaview.com/oauth2/introspect, 7.00, attack_surface=7, business_value=9, tech_exposure=9, gate_ease=3, cloud_surface=5, freshness=7
+## 2026-09-21 07:04:42 UTC [target] (model nemotron3)
+[PRIO] sso.alfaview.com/oauth2/introspect, 7.85, attack_surface=8, business_value=9, tech_exposure=10, gate_ease=3, cloud_surface=5, freshness=9
+[PRIO] app.alfaview.com/graphql, 7.50, attack_surface=8, business_value=8, tech_exposure=9, gate_ease=7, cloud_surface=5, freshness=8
+[PRIO] tools.alfaview.com/poll/pollservice, 7.20, attack_surface=8, business_value=7, tech_exposure=9, gate_ease=3, cloud_surface=4, freshness=9
 [PRIO] apis.alfaview.com/v2, 7.05, attack_surface=8, business_value=9, tech_exposure=7, gate_ease=3, cloud_surface=6, freshness=7
-[PRIO] tools.alfaview.com/poll/pollservice, 6.70, attack_surface=8, business_value=7, tech_exposure=8, gate_ease=3, cloud_surface=4, freshness=9
 [PRIO] test.alfaview.com, 6.35, attack_surface=5, business_value=6, tech_exposure=6, gate_ease=10, cloud_surface=4, freshness=8
-[HYP] Guest token issuance bypassing accessKey requirement via GraphQL
-class: AUTH
-asset: app.alfaview.com/graphql
-confidence: 80
-reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role, accessToken fields; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
-evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
-verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
-impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
-testability: AUTH_HELPED
 [HYP] RFC7662 introspection client authentication bypass on both channels
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
@@ -21,6 +12,15 @@ reasoning: POST-body and HTTP Basic auth both accept fabricated client_id + any 
 evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); valid access token from authenticated session
 verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; POST https://sso.alfaview.com/oauth2/introspect with token=<valid-token>&client_id=<valid-client_id> → observe active:true + token metadata; repeat with fabricated client_id to confirm bypass
 impact: OAuth token metadata disclosure → token reconnaissance, potential token validation bypass (CRITICAL, OWASP A07:2021)
+testability: AUTH_HELPED
+[HYP] Guest token issuance bypassing accessKey requirement via GraphQL
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 80
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role, accessToken fields; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
+evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
+verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
+impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
 testability: AUTH_HELPED
 [HYP] Poll service BOLA via custom gRPC-metadata auth header
 class: IDOR
