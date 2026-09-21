@@ -1,22 +1,27 @@
-## 2026-09-20 23:28:59 UTC [target] (model nemotron3)
-[NEW] tools.alfaview.com/poll/pollservice: Verb-based JSON RPC (8 verbs: list|create|delete|update|updateState|vote|get|hasVoted) at POST /poll/pollservice/<verb> with custom auth header `Grpc-Metadata-alfaview.token` (b64url→b64, opaque family); staging-tools.alfaview.com byte-identical build (vendor hash 8caab24e)
-[NEW] staging-tools.alfaview.com: Live (612B), same Tools UI, separate staging backend
-[NEW] whiteboard.alfaview.com / staging-whiteboard.alfaview.com: Live board renderer; root returns "board deleted/access expired", non-root → 302 /
-[NEW] status.alfaview.com: Public status page 200/53714B (title "alfaview Status")
-[NEW] qa.alfaview.com / uni-stuttgart.alfaview.com: 200/1381B, identical tenant SPA shell (alfatraining/bhc/kh-freiburg family)
-[NEW] CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalled (000)
-[CHANGED] sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored; MD5 3f8d456c stable
-[CHANGED] sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable liveness signal
-[CHANGED] sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405)
-[CHANGED] apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
-[CHANGED] test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain hardening absent across successive releases
-[CHANGED] app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed); guestAuthenticate/guestJoin anonymous-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); no accessKey in GraphQL guest signature — diverges from REST 3-field accessKey combo
-[PRIO] tools.alfaview.com/poll/pollservice, 7.50, attack_surface=8, business_value=7, tech_exposure=9, gate_ease=6, cloud_surface=5, freshness=10
-[PRIO] sso.alfaview.com/oauth2/introspect, 7.25, attack_surface=6, business_value=8, tech_exposure=9, gate_ease=8, cloud_surface=5, freshness=9
-[PRIO] app.alfaview.com/graphql, 6.95, attack_surface=7, business_value=8, tech_exposure=8, gate_ease=7, cloud_surface=5, freshness=7
-[PRIO] apis.alfaview.com/v2, 6.65, attack_surface=8, business_value=9, tech_exposure=7, gate_ease=3, cloud_surface=6, freshness=7
-[PRIO] test.alfaview.com, 5.80, attack_surface=5, business_value=6, tech_exposure=6, gate_ease=10, cloud_surface=4, freshness=8
-[PRIO] whiteboard.alfaview.com, 4.40, attack_surface=5, business_value=5, tech_exposure=4, gate_ease=8, cloud_surface=4, freshness=9
+## 2026-09-21 01:35:39 UTC [target] (model nemotron3)
+[PRIO] app.alfaview.com/graphql, 7.20, attack_surface=7, business_value=8, tech_exposure=8, gate_ease=7, cloud_surface=5, freshness=7
+[PRIO] sso.alfaview.com/oauth2/introspect, 7.00, attack_surface=7, business_value=9, tech_exposure=9, gate_ease=3, cloud_surface=5, freshness=7
+[PRIO] apis.alfaview.com/v2, 7.05, attack_surface=8, business_value=9, tech_exposure=7, gate_ease=3, cloud_surface=6, freshness=7
+[PRIO] tools.alfaview.com/poll/pollservice, 6.70, attack_surface=8, business_value=7, tech_exposure=8, gate_ease=3, cloud_surface=4, freshness=9
+[PRIO] test.alfaview.com, 6.35, attack_surface=5, business_value=6, tech_exposure=6, gate_ease=10, cloud_surface=4, freshness=8
+[HYP] Guest token issuance bypassing accessKey requirement via GraphQL
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 80
+reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role, accessToken fields; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
+evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
+verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
+impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
+testability: AUTH_HELPED
+[HYP] RFC7662 introspection client authentication bypass on both channels
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 95
+reasoning: POST-body and HTTP Basic auth both accept fabricated client_id + any secret → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic; JWKS has 7 RSA keys; FusionAuth Community permits this for public clients; requires valid token parameter (400 missing_token without it); 18+ consecutive stable cycles; introspection_endpoint advertisement oscillates in discovery while endpoint stays live
+evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); valid access token from authenticated session
+verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; POST https://sso.alfaview.com/oauth2/introspect with token=<valid-token>&client_id=<valid-client_id> → observe active:true + token metadata; repeat with fabricated client_id to confirm bypass
+impact: OAuth token metadata disclosure → token reconnaissance, potential token validation bypass (CRITICAL, OWASP A07:2021)
+testability: AUTH_HELPED
 [HYP] Poll service BOLA via custom gRPC-metadata auth header
 class: IDOR
 asset: tools.alfaview.com/poll/pollservice
@@ -26,31 +31,12 @@ evidence_needed: Valid room token from owned alfaview room (via signup→finishS
 verify_steps: GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js → extract exact Poll/create/vote/delete request payloads and response JSON; POST https://tools.alfaview.com/poll/pollservice/list with header Grpc-Metadata-alfaview.token: <own-room-token> → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically
 impact: Cross-room poll data access/manipulation (vote rigging, poll deletion, result disclosure) → BOLA in real-time collaboration feature (HIGH)
 testability: AUTH_HELPED
-[HYP] RFC7662 introspection client authentication bypass on both channels
-class: AUTH
-asset: sso.alfaview.com/oauth2/introspect
-confidence: 95
-reasoning: POST-body and HTTP Basic auth both accept fabricated client_id + any secret → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic; JWKS has 7 RSA keys; FusionAuth Community permits this for public clients; requires valid token parameter (400 missing_token without it); 18+ consecutive stable cycles
-evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); valid access token from authenticated session
-verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; POST https://sso.alfaview.com/oauth2/introspect with token=<valid-token>&client_id=<valid-client_id> → observe active:true + token metadata; repeat with fabricated client_id to confirm bypass
-impact: OAuth token metadata disclosure → token reconnaissance, potential token validation bypass (CRITICAL, OWASP A07:2021)
-testability: AUTH_HELPED
-[HYP] Guest token issuance bypassing accessKey requirement via GraphQL
-class: AUTH
-asset: app.alfaview.com/graphql
-confidence: 80
-reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) reachable unauthenticated (return BAD_USER_INPUT extension code, not UNAUTHENTICATED); REST guest-link flow at apis.alfaview.com/v2/auth/guest-link requires 3-field combo (companyId+roomId+accessKey); GraphQL path omits accessKey entirely — divergent auth logic; full admin schema leaked in JS bundle confirms mutation signatures; GuestAuthenticateReply has role field; field-oracle discloses providers [JSONObject], http_download_url, GetPendingUserAccount(userId)
-evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey
-verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs
-impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)
-testability: AUTH_HELPED
-[PARKED] Whiteboard tenant isolation bypass: whiteboard.alfaview.com root returns "board deleted/access expired" but no IDOR surface visible without valid board ID; all non-root paths redirect to / — no verify steps without board creation flow (HUMAN_ONLY)
-[PARKED] CT subdomain takeover: 110 CT subdomains mostly firewalled (000); no dangling CNAMEs or takeover evidence in live set — requires DNS-level probe which is out of passive scope
-[PARKED] Status page info leak: status.alfaview.com is public status page — no sensitive data exposure confirmed, only operational metrics
 [PARKED] IDOR apis.alfaview.com/v2/users: Requires authenticated account (cross-tenant untestable without two tenants) — HUMAN_ONLY
 [PARKED] test.alfaview.com supply chain: Unsigned alfacheck binaries — verification requires binary analysis, not HTTP probe
+[PARKED] Whiteboard tenant isolation bypass: whiteboard.alfaview.com root returns "board deleted/access expired" but no IDOR surface visible without valid board ID; all non-root paths redirect to / — no verify steps without board creation flow (HUMAN_ONLY)
+[PARKED] CT subdomain takeover: 110 CT subdomains mostly firewalled (000); no dangling CNAMEs or takeover evidence in live set — requires DNS-level probe which is out of passive scope
 [FINAL] Ranked survivors:
-[NEXT] PROBE: GET `https://app.alfaview.com/` → extract `client_id` from network traffic (OAuth config API call in browser DevTools); then POST `https://sso.alfaview.com/oauth2/introspect` with `token=<valid-access-token>&client_id=<discovered-client_id>` → confirm `active:true` + metadata; repeat with `client_id=fake-123` → confirm bypass (200 `{"active":false}`)
+[NEXT] PROBE: GET `https://app.alfaview.com/` → extract `client_id` from network traffic (OAuth config API call in browser DevTools/HAR); then POST `https://sso.alfaview.com/oauth2/introspect` with `token=<valid-access-token>&client_id=<discovered-client_id>` → confirm `active:true` + metadata; repeat with `client_id=fake-123` → confirm bypass (200 `{"active":false}`)
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/oauth2/introspect: 18th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405)
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored; MD5 3f8d456c stable
 [LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable liveness signal
