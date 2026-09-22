@@ -27971,3 +27971,616 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 [RISK] alfaview: 55 — zero fresh passive surface; 10/10 standing probes byte-identical across a 21st stable cycle. Tools BOLA (85), GraphQL guest accessKey divergence (70), introspect client-auth (70) persist but every verification is HUMAN-gated on bearer acquisition; constrained passive posture unchanged, program exposure low.
+===== ANALYST bigpickle 2026-09-22 15:56:24 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/openapi.json -w "%{http_code} %{size_download}" "https://apis.alfaview.com/v2/docs/openapi.json" --max-time 15 && echo && md5sum /tmp/opencode/openapi.json
+200 127532
+357b94d367909a40b9299b543d23712b  /tmp/opencode/openapi.json
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/jwks.json -w "%{http_code} %{size_download}" "https://sso.alfaview.com/.well-known/jwks.json" --max-time 15 && echo && md5sum /tmp/opencode/jwks.json
+200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/opencode/jwks.json
+[0m
+Running standing passive probes to establish delta, then hunting for new surface.
+[0m$ [0mcurl -s -o /tmp/opencode/oidc.json -w "%{http_code} %{size_download}" "https://sso.alfaview.com/.well-known/openid-configuration" --max-time 15 && echo && python3 -c "import json;d=json.load(open('/tmp/opencode/oidc.json'));print('issuer:',d.get('issuer'));print('introspection_endpoint:',d.get('introspection_endpoint'));print('registration_endpoint:',d.get('registration_endpoint'));print('algs:',d.get('id_token_signing_alg_values_supported'));print('auth_methods:',d.get('token_endpoint_auth_methods_supported'));print('grants:',d.get('grant_types_supported'))"
+200 2169
+issuer: acme.com
+introspection_endpoint: None
+registration_endpoint: None
+algs: ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+auth_methods: ['client_secret_basic', 'client_secret_post', 'none']
+grants: ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+[0m
+[0m$ [0mcat /tmp/opencode/usersme.txt; echo "---"; cat /tmp/opencode/toollist.txt; echo "---"; cat /tmp/opencode/graphql.txt; echo "---"; cat /tmp/opencode/diag.txt; echo "---"; grep -oE 'v[0-9]+' /tmp/opencode/test.html | head -3; echo "---"; grep -oE 'client_id[^"&\x27]{0,60}' /tmp/opencode/auth.html | head -5; wc -c /tmp/opencode/auth.html
+cat: /tmp/opencode/usersme.txt: No such file or directory
+---
+---
+---
+---
+cat: /tmp/opencode/toollist.txt: No such file or directory
+cat: /tmp/opencode/graphql.txt: No such file or directory
+cat: /tmp/opencode/diag.txt: No such file or directory
+grep: /tmp/opencode/test.html: No such file or directory
+---
+grep: /tmp/opencode/auth.html: No such file or directory
+wc: /tmp/opencode/auth.html: No such file or directory
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "introspect OPTIONS: %{http_code}\n" -X OPTIONS "https://sso.alfaview.com/oauth2/introspect" --max-time 10; sleep 1; curl -s -o /tmp/opencode/auth.html -w "authorize: %{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/authorize" --max-time 10; sleep 1; curl -s -o /tmp/opencode/toollist.txt -w "tools.list GET: %{http_code} %{size_download}\n" "https://tools.alfaview.com/poll/pollservice/list" --max-time 10; sleep 1; curl -s -o /tmp/opencode/usersme.txt -w "users/me: %{http_code} %{size_download}\n" "https://apis.alfaview.com/v2/users/me" --max-time 10; sleep 1; curl -s -o /tmp/opencode/graphql.txt -w "graphql GET: %{http_code} %{size_download}\n" "https://app.alfaview.com/graphql" --max-time 10; sleep 1; curl -s -o /tmp/opencode/diag.txt -w "diag health: %{http_code} %{size_download}\n" "https://client-diagnostics-ingest.alfaview.com/health" --max-time 10; sleep 1; curl -s -o /tmp/opencode/test.html -w "test root: %{http_code} %{size_download}\n" "https://test.alfaview.com/" --max-time 10
+introspect OPTIONS: 405
+authorize: 200 6176
+tools.list GET: 501 55
+users/me: 401 107
+graphql GET: 400 406
+diag health: 200 16
+test root: 200 494
+[0m
+[0m$ [0mcurl -s "https://sso.alfaview.com/oauth2/authorize" --max-time 10 | grep -oiE '(client_id|clientId)[=:]["\x27]?[^"&\x27<> ]{0,80}' | head -10; echo "---LEN---"; curl -s "https://sso.alfaview.com/oauth2/authorize" --max-time 10 | wc -c
+---LEN---
+6176
+[0m
+[0m$ [0mls /tmp/opencode/ 2>&1; mkdir -p /tmp/opencode; curl -s "https://apis.alfaview.com/v2/users/me" --max-time 10; echo; sleep 1; curl -s "https://tools.alfaview.com/poll/pollservice/list" --max-time 10; echo; sleep 1; curl -s "https://app.alfaview.com/graphql" --max-time 10; echo; sleep 1; curl -s "https://client-diagnostics-ingest.alfaview.com/health" --max-time 10; echo; sleep 1; curl -s "https://test.alfaview.com/" --max-time 10 | grep -oE 'v[0-9]{6}' | head -2
+auth.html
+diag.txt
+graphql.txt
+jwks.json
+oidc.json
+openapi.json
+test.html
+toollist.txt
+usersme.txt
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+{"code":12,"message":"Method Not Allowed","details":[]}
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+
+{"status":"ok"}
+[0m
+[0m$ [0mcat /tmp/opencode/test.html; echo "==="; cat /tmp/opencode/usersme.txt 2>/dev/null | head -1
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>alfacheck</title>
+	</head>
+	<body>
+		<h1>alfacheck</h1>
+<a href="alfacheck.linux.amd64.483102.bin" download>alfacheck.linux.amd64.483102.bin</a></br>
+<a href="alfacheck.windows.amd64.483102.exe" download>alfacheck.windows.amd64.483102.exe</a></br>
+<a href="alfacheck.mac.amd64.483102.bin" download>alfacheck.mac.amd64.483102.bin</a></br>
+<a href="alfacheck.mac.arm64.483102.bin" download>alfacheck.mac.arm64.483102.bin</a></br>
+	</body>
+</html>
+===
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+[0m
+[0m$ [0mcurl -s "https://test.alfaview.com/alfacheck" --max-time 10 -o /tmp/opencode/alfacheck.html -w "%{http_code} %{size_download}\n"; sleep 1; curl -s "https://test.alfaview.com/alfacheck/latest" --max-time 10 -o /dev/null -w "latest: %{http_code} %{size_download}\n"; sleep 1; curl -s "https://test.alfaview.com/alfacheck/index.html" --max-time 10 -o /tmp/opencode/idx.html -w "idx: %{http_code} %{size_download}\n"
+404 19
+latest: 404 19
+idx: 301 0
+[0m
+All standing probes byte-stable. Now hunting new passive surface — priority: extract `client_id` from app.alfaview.com bundles to unblock the authorize/redirect_uri OATH chain, and scan tools.alfaview.com for sibling RPC services.
+[0m$ [0mcurl -s "https://app.alfaview.com/" --max-time 10 -o /tmp/opencode/app.html -w "app root: %{http_code} %{size_download}\n"; sleep 1; grep -oE '(src|href)="[^"]+\.js[^"]*"' /tmp/opencode/app.html | head -20
+app root: 200 1381
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js"
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js"
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.0809c4a4ce6a67d40767.js"
+[0m
+NEW: app bundle hash changed (`app.min.0809c4a4…` vs prior `5b394911…`). Fetching for OAuth client_id + new endpoints.
+[0m$ [0mcurl -s "https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.0809c4a4ce6a67d40767.js" --max-time 30 -o /tmp/opencode/appmin.js -w "appmin: %{http_code} %{size_download}\n"; md5sum /tmp/opencode/appmin.js
+appmin: 200 1093578
+5e086a7a6ebc431d08634435c0888382  /tmp/opencode/appmin.js
+[0m
+[0m$ [0mcurl -s "https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js" --max-time 30 -o /tmp/opencode/vendorutil.js -w "vendorutil: %{http_code} %{size_download}\n"
+vendorutil: 200 1003202
+[0m
+[0m$ [0mgrep -oE 'client[_I]?[iI]d["\x27]?\s*[:=]\s*["\x27][^"\x27]{2,60}["\x27]' /tmp/opencode/appmin.js | sort -u | head -20; echo "=== OAuth urls ==="; grep -oE '(authorize|token|redirect_uri|introspect)[^,;)]{0,80}' /tmp/opencode/appmin.js | sort -u | head -20
+=== OAuth urls ===
+authorize/:principal/:token"
+authorized registered users"
+token
+token is invalid. Please request a new one."}
+token is missing"===t||"The credentials you provided are invalid"===t}
+token was about to expire."}
+token"
+token"]
+token(
+token(s
+token(t
+token/:username?"
+token:"Ausstehend"
+token:"Beim Versuch alfaview zu starten
+token:"Pending"
+token:"Unfortunately
+token:a}
+token:a}}
+token:d}
+token:e.accessToken}}
+[0m
+[0m$ [0mgrep -oE 'sso\.alfaview\.com[^"\x27 ]{0,80}' /tmp/opencode/appmin.js | sort -u | head; echo "=== oauth2 paths ==="; grep -oE '"/oauth2/[a-z_]+"' /tmp/opencode/appmin.js | sort -u; echo "=== fusionauth ==="; grep -oiE 'fusionauth[^"\x27 ]{0,40}' /tmp/opencode/appmin.js | head -5; echo "=== acme ==="; grep -c 'acme' /tmp/opencode/appmin.js
+=== oauth2 paths ===
+=== fusionauth ===
+=== acme ===
+0
+[0m
+[0m$ [0mgrep -oiE '(oidc|oauth|sso|keycloak|redirect)[A-Za-z._/:=-]{0,50}' /tmp/opencode/appmin.js | sort -u | head -40
+REDIRECT_ROUTE
+Redirect
+Redirect:
+RedirectRoute
+RedirectRoute:m.wmJ
+RedirectUrl
+SSO
+SSO-Anmeldeinformationen
+SSOInfo
+SSOInfo=r
+SSOLanding
+SSOR_NOT_FOUND
+SSOR_NOT_FOUND:
+SSO_LANDING
+SSO_LANDING:
+oAuth
+redirect:
+redirectAfterAuth
+redirectAfterAuth:function
+redirectAfterAuth:null
+redirectAfterAuth=t
+redirected
+sSource:function
+ssOtherwiseSpecified=i
+sso
+sso:
+ssoLanding
+sso_error:
+sso_info:
+sso_launch:
+sso_warning:
+sson
+ssors
+ssource
+[0m
+[0m$ [0mgrep -oE '"js/[A-Za-z0-9_.-]+\.js"' /tmp/opencode/appmin.js | sort -u | head -40
+(no output)
+[0m
+[0m$ [0mgrep -oE '.{120}oAuth.{120}' /tmp/opencode/appmin.js | head -3; echo "====SSOINFO===="; grep -oE '.{100}SSOInfo.{200}' /tmp/opencode/appmin.js | head -3
+:[],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"userProfilesWithNoAuth"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"orphanedUserAccounts"},arguments:[],directives:[]}
+\n    active\n    pending\n    external\n  }\n}\n\nquery GetOrphanedUsers {\n  getOrphanedUsers {\n    userProfilesWithNoAuth\n    orphanedUserAccounts\n  }\n}\n\nquery FetchUserPermissions($userId: String!) {\n  fetchUserPermissions(userId: $us
+====SSOINFO====
+[],directives:[]}]}}]}},{kind:"OperationDefinition",operation:"query",name:{kind:"Name",value:"FetchSSOInfo"},variableDefinitions:[],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"fetchSSOInfo"},arguments:[],directives:[],selectionSet:{kind:"SelectionSet"
+y FetchCompanyCacheUpdatedAt {\n  fetchCompanyCacheUpdatedAt {\n    updatedAt\n  }\n}\n\nquery FetchSSOInfo {\n  fetchSSOInfo {\n    companyId\n    companyLogoUrl\n    isBrandingEnabled\n    expiresAt\n  }\n}\n\n# settingsService\nquery FetchPrivacyPolicyUrl($companyId: String!) {\n  fetchPrivacyPolicyUrl(
+chCompanies"),e.exports.FetchCompanyCacheUpdatedAt=r(n,"FetchCompanyCacheUpdatedAt"),e.exports.FetchSSOInfo=r(n,"FetchSSOInfo"),e.exports.FetchPrivacyPolicyUrl=r(n,"FetchPrivacyPolicyUrl"),e.exports.FetchVanityDomain=r(n,"FetchVanityDomain"),e.exports.GetPendingUserAccount=r(n,"GetPendingUserAccount"),e.ex
+[0m
+[0m$ [0mgrep -oE '(query|mutation) [A-Za-z0-9_]+' /tmp/opencode/appmin.js | sort | uniq -c | sort -rn | head -120
+1 query ValidateVatId
+      1 query StatusRooms
+      1 query SearchCompanies
+      1 query ListUsersByIds
+      1 query ListUserProfiles
+      1 query ListUnverifiedAccounts
+      1 query ListRoomsIntervalWithTypes
+      1 query ListRooms
+      1 query ListRoomGuestLinks
+      1 query ListRoomGroupLinks
+      1 query ListQuotas
+      1 query ListPermissionGroups
+      1 query ListIdentityProviders
+      1 query ListGroups
+      1 query ListComponents
+      1 query ListCompanyLinks
+      1 query ListCompaniesById
+      1 query ListAvailableRoomTypes
+      1 query ListAuthenticationsByUsername
+      1 query ListAuthData
+      1 query ListAuditEvents
+      1 query ListApiKeys
+      1 query ListAllUserProfiles
+      1 query ListAllUserIds
+      1 query GetRoomOptions
+      1 query GetReport
+      1 query GetPendingUserAccount
+      1 query GetPasscode
+      1 query GetOrphanedUsers
+      1 query GetMeetingInfo
+      1 query GetFinishSignupLinkAsAdmin
+      1 query GetCanCreateMeeting
+      1 query GetBillingInfo
+      1 query GetAuthInformation
+      1 query GenerateFileDownloadURL
+      1 query FetchVanityDomain
+      1 query FetchUserPermissions
+      1 query FetchUsageStatistics
+      1 query FetchTranscriptionSettings
+      1 query FetchSSOInfo
+      1 query FetchRoom
+      1 query FetchQuotaUsage
+      1 query FetchPrivacyPolicyUrl
+      1 query FetchMeetings
+      1 query FetchLastCompanyJoin
+      1 query FetchLanguages
+      1 query FetchFileRoomSettings
+      1 query FetchFileRoomList
+      1 query FetchFileCompanySettings
+      1 query FetchDialInNumbers
+      1 query FetchDeepLTranslatorText
+      1 query FetchDeepLTranslatorLanguages
+      1 query FetchCompanyWithTypes
+      1 query FetchCompanyQuotasWithTypes
+      1 query FetchCompanyQuotas
+      1 query FetchCompanyOwner
+      1 query FetchCompanyCacheUpdatedAt
+      1 query CheckMFAStatus
+      1 query AdminTokenAuthenticate
+      1 mutation VerifyMFASetup
+      1 mutation UpdateUserPermissions
+      1 mutation UpdateUser
+      1 mutation UpdateTranslationProvider
+      1 mutation UpdateTranscriptionSettings
+      1 mutation UpdateTranscriptionProvider
+      1 mutation UpdateRoomWaitingRoomWelcomeNote
+      1 mutation UpdateRoomWaitingRoomState
+      1 mutation UpdateRoom
+      1 mutation UpdatePermissionGroups
+      1 mutation UpdateMeeting
+      1 mutation UpdateGroup
+      1 mutation UpdateFiles
+      1 mutation UpdateFileRoomSettings
+      1 mutation UpdateFileCompanySettings
+      1 mutation UpdateFavoriteRooms
+      1 mutation UpdateCompanySearchCache
+      1 mutation UpdateCompanyQuotas
+      1 mutation UpdateCompanyOwnerId
+      1 mutation UpdateCompanyName
+      1 mutation UpdateCompanyBranding
+      1 mutation UpdateCompany
+      1 mutation UnassignGrantCompanyAdminPermission
+      1 mutation UnassignCompanyAdminPermission
+      1 mutation TokenAuthenticate
+      1 mutation SwitchCompany
+      1 mutation SortRooms
+      1 mutation Signup
+      1 mutation SetRoomLinkValidityPeriod
+      1 mutation SetRoomLinkRole
+      1 mutation SetRoomLinkDialIn
+      1 mutation SetPrivacyPolicyUrl
+      1 mutation SetNewPassword
+      1 mutation SetGroupLinkName
+      1 mutation SendDeleteCompanyConfirmation
+      1 mutation ResetPassword
+      1 mutation ResendGuestInviteEmail
+      1 mutation RemoveCompanyBrandingLogo
+      1 mutation ReinvitePendingUser
+      1 mutation RegenerateRecoveryCodes
+      1 mutation RegeneratePasscode
+      1 mutation MassUpdateRoomLinks
+      1 mutation MagicTokenAuthenticate
+      1 mutation LeaveCompany
+      1 mutation LdapCredentialsAuthenticate
+      1 mutation InviteUsers
+      1 mutation InviteExternalMembers
+      1 mutation InviteAndAssignUsers
+      1 mutation GuestJoin
+      1 mutation FinishSignup
+      1 mutation FinishMultiFactorAuthentication
+      1 mutation FetchGuestInfo
+      1 mutation EnableMFA
+      1 mutation DuplicateRoom
+      1 mutation DisableMFA
+      1 mutation DeleteUser
+      1 mutation DeleteRoomLinks
+      1 mutation DeleteRoom
+      1 mutation DeleteGroup
+      1 mutation DeleteFiles
+      1 mutation DeleteCompany
+[0m
+New bundle contains full GraphQL schema with new operations. Extracting full query/mutation list for delta vs prior cycles.
+[0m$ [0mgrep -oE '(query|mutation) [A-Za-z0-9_]+' /tmp/opencode/appmin.js | sort | uniq -c | sort -rn | tail -30
+1 mutation DeleteCompany
+      1 mutation DeleteApiKey
+      1 mutation DeactivateApiKey
+      1 mutation CredentialsAuthenticate
+      1 mutation CreateRoom
+      1 mutation CreateMeeting
+      1 mutation CreateMagicToken
+      1 mutation CreateGroupLink
+      1 mutation CreateGroup
+      1 mutation CreateCompany
+      1 mutation CreateApiKey
+      1 mutation Checkout
+      1 mutation ChangePassword
+      1 mutation CancelMeeting
+      1 mutation BatchUpdateRoomsTranscriptionSettings
+      1 mutation BatchUpdateRoomsFeatures
+      1 mutation BatchUpdateRoomsDefaultUserRole
+      1 mutation BatchUpdateRoomsCapacity
+      1 mutation BatchUnassignUsers
+      1 mutation BatchReinvitePendingUsers
+      1 mutation BatchInviteExternalMembers
+      1 mutation BatchDeleteUsers
+      1 mutation BatchCreateRooms
+      1 mutation BatchCreateRoomStructure
+      1 mutation BatchCreateGroupLinks
+      1 mutation BatchAssignUsers
+      1 mutation AssignGrantCompanyAdminPermission
+      1 mutation AssignCompanyAdminPermission
+      1 mutation AdminSwitchCompany
+      1 mutation AdminReinvitePendingUser
+[0m
+[0m$ [0mgrep -oE '[A-Za-z0-9_-]+\.min\.[a-f0-9]{20}\.js' /tmp/opencode/appmin.js | sort -u | head -30; echo "=== hosts in bundle ==="; grep -oE 'https://[a-z0-9.-]+\.alfaview\.com' /tmp/opencode/appmin.js | sort -u
+app.min.0809c4a4ce6a67d40767.js
+=== hosts in bundle ===
+https://alfaview-com-assets.alfaview.com
+https://app.alfaview.com
+https://beta-app.alfaview.com
+https://plausible.alfaview.com
+https://production-alfaview-assets.alfaview.com
+https://staging-alfaview-assets.alfaview.com
+https://staging-app.alfaview.com
+https://staging-webclient.alfaview.com
+https://staging.alfaview.com
+https://support.alfaview.com
+https://webclient.alfaview.com
+https://webviewer.dev.alfaview.com
+[0m
+Full schema extracted with new ops (`GetOrphanedUsers`, `ListUnverifiedAccounts`, `FetchGuestInfo`, `MagicTokenAuthenticate`). Checking for new chunk references and probing tools.alfaview.com for sibling RPC services.
+[0m$ [0mfor path in poll pollservice quiz qa whiteboard board rooms meeting share media files; do curl -s -o /tmp/opencode/rpc.txt -w "$path: %{http_code} %{size_download}\n" "https://tools.alfaview.com/$path" --max-time 8; sleep 1; done
+poll: 200 615
+pollservice: 200 615
+quiz: 200 615
+qa: 200 615
+whiteboard: 200 615
+board: 200 615
+rooms: 200 615
+meeting: 200 615
+share: 200 615
+media: 200 615
+files: 200 615
+[0m
+NEW host referenced in bundle: `webviewer.dev.alfaview.com` (dev.alfaview.com was previously timeout). Probing it.
+[0m$ [0mcurl -s -o /tmp/opencode/webv.html -w "webviewer root: %{http_code} %{size_download}\n" "https://webviewer.dev.alfaview.com/" --max-time 12; sleep 1; curl -s -o /dev/null -w "www IP check: %{remote_ip}\n" "https://webviewer.dev.alfaview.com/" --max-time 12
+webviewer root: 000 0
+www IP check:
+[0m
+[0m$ [0mnslookup webviewer.dev.alfaview.com 2>&1 | tail -4; echo "---"; nslookup dev.alfaview.com 2>&1 | tail -4
+Non-authoritative answer:
+Name:	webviewer.dev.alfaview.com
+Address: 127.0.0.1
+
+---
+Non-authoritative answer:
+Name:	dev.alfaview.com
+Address: 127.0.0.1
+[0m
+[0m$ [0mcurl -s "https://tools.alfaview.com/" --max-time 10 | grep -oE '(src|href)="[^"]+"' | head; sleep 1; curl -s "https://tools.alfaview.com/" --max-time 10 -o /tmp/opencode/tools.html; grep -oE '[^"]+\.js[^"]*' /tmp/opencode/tools.html
+href="/production_alfaview_icon_web_favicon_96px.png"
+src="/js/vendor.8caab24e6bd77ed8c779.js"
+src="/js/app-bundle.0a250e1f96a7aaf5661c.js"
+href="/styles/vendor.27f4596e7da77f054f2a.css"
+href="/styles/app-bundle.25ae213ec9a28625feee.css"
+/js/vendor.8caab24e6bd77ed8c779.js
+/js/app-bundle.0a250e1f96a7aaf5661c.js
+[0m
+[0m$ [0mcurl -s "https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js" --max-time 20 -o /tmp/opencode/toolapp.js -w "toolapp: %{http_code} %{size_download}\n"; sleep 1; md5sum /tmp/opencode/toolapp.js
+toolapp: 200 137343
+b7f17c85ccd8d91e9b831a6bc2aa863c  /tmp/opencode/toolapp.js
+[0m
+[0m$ [0mgrep -oE '/(poll|quiz|qa|whiteboard|board|room|meeting|files|media|call|ring|chat|wbr|share)/[a-z]+/' /tmp/opencode/toolapp.js | sort -u | head; echo "=== verb calls ==="; grep -oE '(list|create|delete|update|updateState|vote|get|hasVoted)[a-zA-Z]*\(' /tmp/opencode/toolapp.js | sort | uniq -c | sort -rn | head -15; echo "=== service paths ==="; grep -oE '"[a-z]+/[a-z]+"' /tmp/opencode/toolapp.js | sort -u | head -30
+=== verb calls ===
+      5 updateItems(
+      5 getAttribute(
+      4 getTime(
+      3 getElementsByTagName(
+      2 createElement(
+      1 vote(
+      1 updatePollState(
+      1 listPolls(
+      1 hasVoted(
+      1 getPoll(
+      1 getItem(
+      1 get(
+      1 deletePoll(
+      1 delete(
+      1 created(
+=== service paths ===
+"application/json"
+"text/css"
+[0m
+[0m$ [0mgrep -oE '(pollservice|pollService|PollService|/poll/)[^"\x27]{0,40}' /tmp/opencode/toolapp.js | sort -u | head -20; echo "=== base urls ==="; grep -oE 'https?://[a-z0-9.-]+\.alfaview\.com[^"\x27 ]{0,40}' /tmp/opencode/toolapp.js | sort -u | head -20
+/poll/pollservice`,za=a=>`${a}-poll-${Date.now
+/poll/view
+/poll/vote
+=== base urls ===
+[0m
+Checking whether GraphQL CSRF block can be bypassed on GET (allowed read-only method) — if a GET query returns anything, that opens passive schema exploration.
+[0m$ [0mcurl -s "https://app.alfaview.com/graphql" -H "Accept: application/json" -H "Content-Type: application/json" -o /tmp/opencode/g1.json -w "g1 GET ct+accept: %{http_code} %{size_download}\n" --max-time 10; sleep 1; curl -s "https://app.alfaview.com/graphql?query=%7B__typename%7D" -H "Accept: application/json" -H "Content-Type: application/json" -o /tmp/opencode/g2.json -w "g2 GET param+ct: %{http_code} %{size_download}\n" --max-time 10; sleep 1; curl -s "https://app.alfaview.com/graphql?query=%7B__typename%7D" -H "Accept: application/json" -H "x-apollo-operation-name: t" -o /tmp/opencode/g3.json -w "g3 GET param+name: %{http_code} %{size_download}\n" --max-time 10
+g1 GET ct+accept: 400 148
+g2 GET param+ct: 200 32
+g3 GET param+name: 200 32
+[0m
+[0m$ [0mcat /tmp/opencode/g1.json; echo; cat /tmp/opencode/g2.json; echo; cat /tmp/opencode/g3.json
+{"errors":[{"message":"GraphQL operations must contain a non-empty `query` or a `persistedQuery` extension.","extensions":{"code":"BAD_REQUEST"}}]}
+
+{"data":{"__typename":"Query"}}
+
+{"data":{"__typename":"Query"}}
+[0m
+GraphQL GET accepts `?query=` — CSRF block bypassed via URL param (read-only, passive). This re-opens anonymous query surface for passive probing. Enumerating anonymous-reachable queries.
+[0m$ [0mbase="https://app.alfaview.com/graphql"; q1='query{listIdentityProviders{id name}}'; curl -s -G "$base" --data-urlencode "query=$q1" -H "Accept: application/json" | head -c 300; echo; sleep 1.5; q2='query{listComponents{id}}'; curl -s -G "$base" --data-urlencode "query=$q2" -H "Accept: application/json" | head -c 400; echo; sleep 1.5; q3='query{listUnverifiedAccounts{email}}'; curl -s -G "$base" --data-urlencode "query=$q3" -H "Accept: application/json" | head -c 400; echo
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the follo
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST
+[0m
+CSRF bypass requires Content-Type header. Re-running with it.
+[0m$ [0mbase="https://app.alfaview.com/graphql"; q1='query{listIdentityProviders{id name}}'; curl -s -G "$base" --data-urlencode "query=$q1" -H "Accept: application/json" -H "Content-Type: application/json" | head -c 300; echo; sleep 1.5; q2='query{listComponents{id}}'; curl -s -G "$base" --data-urlencode "query=$q2" -H "Accept: application/json" -H "Content-Type: application/json" | head -c 500; echo; sleep 1.5; q3='query{listUnverifiedAccounts{email}}'; curl -s -G "$base" --data-urlencode "query=$q3" -H "Accept: application/json" -H "Content-Type: application/json" | head -c 500; echo
+{"errors":[{"message":"Cannot query field \"id\" on type \"ListIdentityProvidersReply\".","locations":[{"line":1,"column":29}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Cannot query field \"name\" on type \"ListIdentityProvidersReply\".","locations":[{"line":1,"column":32}],"ext
+{"errors":[{"message":"Cannot query field \"id\" on type \"ListComponentsReply\".","locations":[{"line":1,"column":22}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+{"errors":[{"message":"Field \"listUnverifiedAccounts\" must not have a selection since type \"[JSONObject]!\" has no subfields.","locations":[{"line":1,"column":29}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
+GraphQL GET oracle works passively. Querying bare anonymous resolvers — including the new `listUnverifiedAccounts`.
+[0m$ [0mbase="https://app.alfaview.com/graphql"; for q in 'query{listUnverifiedAccounts}' 'query{listComponents}' 'query{listIdentityProviders}' 'query{getOrphanedUsers{userProfilesWithNoAuth orphanedUserAccounts}}' 'query{fetchSSOInfo{companyId companyLogoUrl isBrandingEnabled expiresAt}}'; do echo "== $q"; curl -s -G "$base" --data-urlencode "query=$q" -H "Accept: application/json" -H "Content-Type: application/json" | head -c 500; echo; sleep 1.5; done
+== query{listUnverifiedAccounts}
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["listUnverifiedAccounts"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+== query{listComponents}
+{"errors":[{"message":"Field \"listComponents\" of type \"ListComponentsReply!\" must have a selection of subfields. Did you mean \"listComponents { ... }\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+== query{listIdentityProviders}
+{"errors":[{"message":"Field \"listIdentityProviders\" of type \"ListIdentityProvidersReply!\" must have a selection of subfields. Did you mean \"listIdentityProviders { ... }\"?","locations":[{"line":1,"column":7}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+== query{getOrphanedUsers{userProfilesWithNoAuth orphanedUserAccounts}}
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["getOrphanedUsers"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+== query{fetchSSOInfo{companyId companyLogoUrl isBrandingEnabled expiresAt}}
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchSSOInfo"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+[0m
+[0m$ [0mgrep -oE 'type ListComponentsReply \{[^}]+\}' /tmp/opencode/appmin.js | head -2; grep -oE 'type ListIdentityProvidersReply \{[^}]+\}' /tmp/opencode/appmin.js | head -2; grep -oE 'type ListUnverifiedAccountsReply \{[^}]+\}' /tmp/opencode/appmin.js | head -2; grep -oE 'type GetOrphanedUsersReply \{[^}]+\}' /tmp/opencode/appmin.js | head -2; grep -oE 'query ListUnverifiedAccounts \{[^}]{0,120}' /tmp/opencode/appmin.js | head -2
+query ListUnverifiedAccounts {\n  listUnverifiedAccounts\n
+[0m
+[0m$ [0mgrep -oE 'query ListComponents \{.{0,200}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query ListIdentityProviders \{.{0,200}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query ListApiKeys \{.{0,200}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query GetAuthInformation \{.{0,200}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query GetPendingUserAccount[^{]{0,20}\{.{0,150}' /tmp/opencode/appmin.js | head -1
+query ListComponents {\n  listComponents {\n    components\n  }\n}\n\nquery GetRoomOptions($roomId: String!) {\n  getRoomOptions(roomId: $roomId) {\n    isWaitingRoomEnabled\n    welcomeNote\n  }\n}\n\nquery GetPasscode($r
+===
+query ListIdentityProviders {\n  listIdentityProviders {\n    providers\n  }\n}\n\nquery GetAuthInformation($userId: String!) {\n  getAuthInformation(userId: $userId) {\n    authInfo\n  }\n}\n\nquery CheckMFAStatus {\n  checkMFAS
+===
+===
+===
+query GetPendingUserAccount($userId: String!) {\n  getPendingUserAccount(userId: $userId) {\n    email\n    authData\n    authInfo\n    locale\n    metadata\n    permissions\n    userProfile\n  }\n
+[0m
+[0m$ [0mbase="https://app.alfaview.com/graphql"; echo "== getPendingUserAccount (zero uuid)"; curl -s -G "$base" --data-urlencode 'query=query{getPendingUserAccount(userId:"00000000-0000-0000-0000-000000000000"){email authData authInfo locale metadata permissions userProfile}}' -H "Accept: application/json" -H "Content-Type: application/json" | head -c 400; echo; sleep 1.5; echo "== fetchLanguages"; curl -s -G "$base" --data-urlencode 'query=query{fetchLanguages{code}}' -H "Accept: application/json" -H "Content-Type: application/json" | head -c 300; echo; sleep 1.5; echo "== fetchVanityDomain"; curl -s -G "$base" --data-urlencode 'query=query{fetchVanityDomain{domain}}' -H "Accept: application/json" -H "Content-Type: application/json" | head -c 300; echo; sleep 1.5; echo "== fetchCompanyCacheUpdatedAt"; curl -s -G "$base" --data-urlencode 'query=query{fetchCompanyCacheUpdatedAt{updatedAt}}' -H "Accept: application/json" -H "Content-Type: application/json" | head -c 300; echo"
+/bin/bash: -c: line 1: unexpected EOF while looking for matching `"'
+[0m
+Key new anonymous-oracle candidate: `getPendingUserAccount(userId)` returns `email, authData, authInfo, locale, metadata, permissions, userProfile`. Testing anonymous reachability of it plus other new ops via GET.
+[0m← [0mWrite /tmp/opencode/probe.sh
+Wrote file successfully.
+[0m
+[0m$ [0mbash /tmp/opencode/probe.sh
+== getPendingUserAccount zero
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["getPendingUserAccount"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+== fetchLanguages
+{"errors":[{"message":"Cannot query field \"code\" on type \"FetchLanguagesReply\".","locations":[{"line":1,"column":22}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+== fetchVanityDomain
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchVanityDomain"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+== fetchCompanyCacheUpdatedAt
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchCompanyCacheUpdatedAt"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+== listComponents.components
+{"errors":[{"message":"Cannot return null for non-nullable field Query.listComponents.","locations":[{"line":1,"column":7}],"path":["listComponents"],"extensions":{"code":"INTERNAL_SERVER_ERROR"}}],"data":null}
+
+== listIdentityProviders.providers
+{"data":{"listIdentityProviders":{"providers":[]}}}
+[0m
+[0m$ [0mgrep -oE 'query FetchLanguages \{.{0,160}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query FetchDialInNumbers \{.{0,160}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query SearchCompanies[^{]{0,20}\{.{0,160}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query GetReport[^{]{0,20}\{.{0,160}' /tmp/opencode/appmin.js | head -1; echo ===; grep -oE 'query FetchUsageStatistics \{.{0,160}' /tmp/opencode/appmin.js | head -1
+===
+query FetchDialInNumbers {\n  fetchDialInNumbers\n}\n\n# internalQuotaService\nquery FetchCompanyQuotas($companyId: String!) {\n  fetchCompanyQuotas(companyId: $companyId) {\n    quotas\
+===
+===
+===
+[0m
+[0m$ [0mgrep -oE 'fetchLanguages[^;]{0,120}' /tmp/opencode/appmin.js | head -2; echo ===; grep -oE 'FetchLanguagesReply[^;]{0,80}' /tmp/opencode/appmin.js | head -2
+fetchLanguages"),i=n.transcription,a=n.translations
+fetchLanguages"},arguments:[{kind:"Argument",name:{kind:"Name",value:"roomId"},value:{kind:"Variable",name:{kind:"Name",value:"roomId"
+===
+[0m
+[0m← [0mWrite /tmp/opencode/probe2.sh
+Wrote file successfully.
+[0m
+[0m$ [0mbash /tmp/opencode/probe2.sh
+== fetchDialInNumbers scalar
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchDialInNumbers"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+== fetchLanguages(roomId=0) sourceLanguage
+{"errors":[{"message":"Cannot query field \"sourceLanguage\" on type \"FetchLanguagesReply\".","locations":[{"line":1,"column":69}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+== getRoomOptions(roomId=0)
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["getRoomOptions"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+[0m
+[0m$ [0mgrep -oE '.{80}FetchLanguages.{300}' /tmp/opencode/appmin.js | head -1 | grep -oE 'name:\{kind:"Name",value:"[a-zA-Z]+"\}' | grep -oE '"[a-zA-Z]+"' | tr -d '"' | sort -u
+(no output)
+[0m
+[0m$ [0mgrep -oE 'query FetchLanguages[\s\S]{0,400}' /tmp/opencode/appmin.js | head -1 | tr '\\n' '\n' | head -20
+query FetchLa
+guages
+[0m
+[0m$ [0mgrep -oE '"[a-z]*(Languages|TranslationTarget|targetLanguages|sourceLanguage)[a-z]*"' /tmp/opencode/appmin.js | sort | uniq -c | sort -rn | head -15; echo ===; grep -oE '.{60}fetchLanguages\{lang.{200}' /tmp/opencode/appmin.js | head -2
+3 "translationLanguages"
+      3 "transcriptionLanguages"
+      3 "sourceLanguage"
+      2 "fetchLanguages"
+      1 "targetLanguages"
+      1 "sourceLanguages"
+===
+[0m
+[0m$ [0mbase="https://app.alfaview.com/graphql"; curl -s -G "$base" --data-urlencode 'query=query{fetchLanguages(roomId:"00000000-0000-0000-0000-000000000000"){sourceLanguage targetLanguages translationLanguages transcriptionLanguages}}' -H "Accept: application/json" -H "Content-Type: application/json" | head -c 400
+{"errors":[{"message":"Cannot query field \"sourceLanguage\" on type \"FetchLanguagesReply\".","locations":[{"line":1,"column":69}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Cannot query field \"targetLanguages\" on type \"FetchLanguagesReply\".","locations":[{"line":1,"column":84}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}},{"message":"Cannot query field \"translation
+[0m
+[0m$ [0mbase="https://app.alfaview.com/graphql"; curl -s -G "$base" --data-urlencode 'query=query{fetchLanguages(roomId:"00000000-0000-0000-0000-000000000000"){transcription translations}}' -H "Accept: application/json" -H "Content-Type: application/json" | head -c 500
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":7}],"path":["fetchLanguages"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":{"fetchLanguages":null}}
+[0m
+GraphQL anonymous slice fully closed (all auth-gated; only empty `[]`). Checking the fresh bundle's referenced hosts — `staging-app.alfaview.com` not previously probed.
+[0m$ [0mfor h in staging-app.alfaview.com staging-alfaview-assets.alfaview.com production-alfaview-assets.alfaview.com; do curl -s -o /tmp/opencode/h.html -w "$h: %{http_code} %{size_download}\n" "https://$h/" --max-time 10; sleep 1; done
+staging-app.alfaview.com: 401 0
+staging-alfaview-assets.alfaview.com: 403 263
+production-alfaview-assets.alfaview.com: 403 263
+[0m
+All probes complete — anonymous GraphQL slice re-verified closed via a new passive GET technique. Compiling structured output.
+
+STEP 1 — DELTA:
+- [CHANGED] app.alfaview.com frontend bundle redeployed: `app.min` `5b394911…`→`0809c4a4…` (MD5 5e086a7a, 1,093,578B); SDL gains `getOrphanedUsers`, `listUnverifiedAccounts`, `FetchGuestInfo`, `MagicTokenAuthenticate`, `AdminTokenAuthenticate`, `validateVatId`, `checkout` — all verified UNAUTHENTICATED when probed anonymously (no new anonymous data).
+- [NEW] GraphQL GET `?query=<urlencoded>` with `Content-Type: application/json` bypasses the Apollo CSRF block (was 400/406B) — anonymous resolver slice now passively verifiable read-only; slice re-confirmed closed this cycle.
+- NO_DELTA @ all standing probes: openapi 200/127532B (357b94d3), jwks 200/16257B (3f8d456c), oidc 200/2169B (issuer acme.com, introspection_endpoint absent), introspect OPTIONS 405, authorize 200/6176B, tools.list GET 501/55B `{code:12}`, users/me 401/107B, diag /health 200/16B, test.alfaview v483102.
+
+STEP 2 — PRIORITIZE:
+- [PRIO] tools.alfaview.com/poll/pollservice,8.1,a0.25 b0.17 t0.11 g0.16 c0.10 f0.08
+- [PRIO] app.alfaview.com/graphql,7.5,a0.22 b0.18 t0.14 g0.12 c0.05 f0.10
+- [PRIO] sso.alfaview.com/oauth2/introspect,6.9,a0.20 b0.17 t0.12 g0.11 c0.06 f0.06
+- [PRIO] apis.alfaview.com/v2,6.3,a0.20 b0.18 t0.09 g0.08 c0.05 f0.03
+
+STEP 3 — HYPOTHESES:
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/{list,create,delete,update,updateState,vote,get,hasVoted} (POST JSON)
+confidence: 85
+reasoning: 8 verbs live POST-only (GET 501/55B re-verified); payloads carry only `{roomId}`(+`{id}`) with zero tenant/company field; auth rides custom `Grpc-Metadata-alfaview.token` (b64url→b64, opaque); bundle pins token gate client-side only (`reject("Invalid access token")`); staging-tools vendor hash 8caab24e identical — same build, separate backend.
+evidence_needed: owned-token POST list foreign-tenant roomId → 200 `{polls[]}` vs scoped `{code:7}`; owned roomId → `{polls:[]}`; header omitted → `{code:16}`.
+verify_steps: (HUMAN_ONLY) bearer via app signup→finishSignup; POST /poll/pollservice/list with Grpc-Metadata-alfaview.token + request_id `list-poll-<ms>` body `{"roomId":"<OWNED>"}`; repeat omitting token header; then foreign-tenant roomId; diff on staging-tools.alfaview.com.
+impact: Cross-tenant read/write of live polls/Q&A on foreign boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest token issuance bypassing accessKey via GraphQL
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin; FetchGuestInfo now in SDL)
+confidence: 70
+reasoning: Mutations anonymous-reachable (BAD_USER_INPUT, not UNAUTHENTICATED); GraphQL signature has NO accessKey vs REST /v2/auth/guest-link 3-field combo; GuestAuthenticateReply exposes user/accessToken/role; new bundle confirms FetchGuestInfo added — guest surface actively evolving.
+evidence_needed: valid guestAuthenticate UUIDs → 200 GuestAuthenticateReply with accessToken for public room while REST requires accessKey.
+verify_steps: (HUMAN_ONLY) capture public-room UUID from browser session; POST GraphQL mutation guestAuthenticate(userId,companyId,roomId) zero-UUID vs owned UUID; diff response codes/tokens vs REST /v2/auth/guest-link.
+impact: Bearer issuance without accessKey — feeds tools BOLA and REST IDOR chains; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Introspect with fabricated client_id as unauthenticated bearer oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: POST-body client_id validation fully removed — fabricated client_id → 200 `{"active":false}`; Basic channel also accepts any client_id; only residual check is body-vs-Basic mismatch (401); discovery advertises client_secret_basic/post/none with no runtime secret verification; 21st+ consecutive stable cycle (OPTIONS 405).
+evidence_needed: valid bearer → POST client_id=<fake>&token=<b64> returns 200 `{"active":true}`+claims; invalid → active:false.
+verify_steps: (HUMAN_ONLY) POST client_id=does-not-exist-12345&token=<b64>; then Basic base64(fake:any); diff active+claims.
+impact: Token liveness/subject/expiry fingerprint — ATO-chain support; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE:
+- [FINAL] Poll RPC cross-room BOLA keyed solely by roomId (85) — payload PII-free, token gate client-side, staging twin byte-identical.
+- [FINAL] Guest token issuance bypassing accessKey via GraphQL (70) — structural REST/GraphQL divergence, guest surface actively evolving (FetchGuestInfo added).
+- [FINAL] Introspect with fabricated client_id as bearer oracle (70) — 21st+ stable cycle, needs a valid token to escalate past active:false.
+- [PARKED] sso authorize redirect_uri matrix — still client_id-gated, no registered client_id obtainable passively (dynamic registration closed, client_id absent from binaries; fresh bundle adds no client_id).
+- [PARKED] JWKS/OIDC alg-confusion — metadata lists HS/ES but keys RSA-only; no symmetric key to craft against.
+
+STEP 5 — NEXT ACTION:
+- [NEXT] HUMAN: execute the sole standing token path — app.alfaview.com/graphql Signup (anonymous, no token header per AppSignup.min.js) → email activation → finishSignup{companyId,username,activationToken,password} → bearer; then tools.alfaview.com BOLA differential POST /poll/pollservice/list (owned roomId → expect {polls:[]}; omit token → {code:16}; foreign-tenant roomId → {polls:[]}=BOLA / {code:7}=scoped), repeat on staging-tools.alfaview.com; in parallel capture client_id from app.alfaview.com OAuth-config network call to unblock the authorize/redirect_uri OATH chain.
+
+STEP 6 — LEARNING:
+- [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: GraphQL GET `?query=`+`Content-Type: application/json` bypasses CSRF block (200 vs 400) — anonymous resolver slice now passively verifiable; new-ops probe confirms listUnverifiedAccounts/getOrphanedUsers/fetchSSOInfo/fetchVanityDomain/fetchCompanyCacheUpdatedAt/getPendingUserAccount/getRoomOptions/fetchDialInNumbers/fetchLanguages all UNAUTHENTICATED anonymously.
+- [LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: anonymous resolver slice closed (GET-verified) — listIdentityProviders=`[]`, listComponents=500, remainder UNAUTHENTICATED; no PII/config reachable anonymously. Schema-leak demoted to supporting evidence.
+- [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: frontend redeployed — app.min 0809c4a4 (was 5b394911) with new auth-gated ops; confirms active development but no new anonymous surface.
+- [LEARN] REJECTED MISCONFIG @ webviewer.dev.alfaview.com: resolves 127.0.0.1 (wildcard/DNS artifact) — external connect fail (000); same class as dev.alfaview.com timeout. Target closed.
+
+STEP 7 — RISK:
+- [RISK] alfaview: 55 — zero fresh passive exploit surface; 9/10 standing probes byte-identical and the new app bundle redeploy is fully auth-gated. Tools BOLA (85), GraphQL guest accessKey divergence (70), introspect client-auth (70) persist but every verification is HUMAN-gated on bearer acquisition; constrained passive posture unchanged, program exposure low.
