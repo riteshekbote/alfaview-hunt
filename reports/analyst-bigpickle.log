@@ -28584,3 +28584,236 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 - [RISK] alfaview: 55 — zero fresh passive exploit surface; 9/10 standing probes byte-identical and the new app bundle redeploy is fully auth-gated. Tools BOLA (85), GraphQL guest accessKey divergence (70), introspect client-auth (70) persist but every verification is HUMAN-gated on bearer acquisition; constrained passive posture unchanged, program exposure low.
+===== ANALYST bigpickle 2026-09-22 19:24:31 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; ls inventory 2>/dev/null; ls probes 2>/dev/null
+total 644
+drwxr-xr-x 12 runner runner   4096 Sep 22 19:19 .
+drwxr-xr-x  3 runner runner   4096 Sep 22 19:19 ..
+drwxr-xr-x  7 runner runner   4096 Sep 22 19:19 .git
+drwxr-xr-x  3 runner runner   4096 Sep 22 19:19 .github
+-rw-r--r--  1 runner runner   1883 Sep 22 19:19 README.md
+-rw-r--r--  1 runner runner     32 Sep 22 19:19 analyst-out.txt
+-rw-r--r--  1 runner runner 257721 Sep 22 19:19 analyst-prompt.txt
+-rw-r--r--  1 runner runner 253811 Sep 22 19:19 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 leads
+-rw-r--r--  1 runner runner  52637 Sep 22 19:19 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 reports
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 22 19:19 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 scripts
+-rw-r--r--  1 runner runner     33 Sep 22 19:19 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 22 19:19 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 22 19:19 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 22 19:19 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 22 19:19 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 22 19:19 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 22 19:19 triage
+alfaview.md
+[0m
+[0m$ [0mls scripts triage knowledge leads 2>/dev/null
+knowledge:
+index.md
+
+leads:
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-alfaview.md
+
+scripts:
+sync-issues.py
+
+triage:
+run-2026-09-03-11-41.md
+run-2026-09-03-15-37.md
+run-2026-09-03-18-51.md
+run-2026-09-03-21-32.md
+run-2026-09-03-23-30.md
+run-2026-09-04-01-20.md
+run-2026-09-04-06-01.md
+run-2026-09-04-11-23.md
+run-2026-09-04-15-05.md
+run-2026-09-04-18-27.md
+run-2026-09-04-21-00.md
+run-2026-09-04-23-04.md
+run-2026-09-05-01-01.md
+run-2026-09-05-05-48.md
+run-2026-09-05-09-49.md
+run-2026-09-05-13-11.md
+run-2026-09-05-16-10.md
+run-2026-09-05-18-21.md
+run-2026-09-05-20-41.md
+run-2026-09-05-22-34.md
+run-2026-09-06-00-11.md
+run-2026-09-06-04-44.md
+run-2026-09-06-09-06.md
+run-2026-09-06-12-54.md
+run-2026-09-06-15-56.md
+run-2026-09-06-18-00.md
+run-2026-09-06-20-17.md
+run-2026-09-06-22-09.md
+run-2026-09-06-23-58.md
+run-2026-09-07-03-29.md
+run-2026-09-07-08-37.md
+run-2026-09-07-14-28.md
+run-2026-09-07-18-50.md
+run-2026-09-07-21-51.md
+run-2026-09-07-23-53.md
+run-2026-09-08-02-33.md
+run-2026-09-08-07-26.md
+run-2026-09-08-12-16.md
+run-2026-09-08-16-42.md
+run-2026-09-08-19-41.md
+run-2026-09-08-22-16.md
+run-2026-09-09-00-20.md
+run-2026-09-09-04-53.md
+run-2026-09-09-09-21.md
+run-2026-09-09-13-52.md
+run-2026-09-09-17-28.md
+run-2026-09-09-19-59.md
+run-2026-09-09-22-24.md
+run-2026-09-10-00-33.md
+run-2026-09-10-05-12.md
+run-2026-09-10-09-49.md
+run-2026-09-10-14-00.md
+run-2026-09-10-17-37.md
+run-2026-09-10-20-00.md
+run-2026-09-10-22-37.md
+run-2026-09-11-00-32.md
+run-2026-09-11-05-11.md
+run-2026-09-11-09-46.md
+run-2026-09-11-13-59.md
+run-2026-09-11-17-42.md
+run-2026-09-11-20-01.md
+run-2026-09-11-22-38.md
+run-2026-09-12-00-36.md
+run-2026-09-12-04-58.md
+run-2026-09-12-09-06.md
+run-2026-09-12-12-59.md
+run-2026-09-12-15-57.md
+run-2026-09-12-18-08.md
+run-2026-09-12-20-36.md
+run-2026-09-12-22-36.md
+run-2026-09-13-00-15.md
+run-2026-09-13-04-55.md
+run-2026-09-13-09-55.md
+run-2026-09-13-14-02.md
+run-2026-09-13-17-25.md
+run-2026-09-13-19-43.md
+run-2026-09-13-22-00.md
+run-2026-09-14-00-14.md
+run-2026-09-14-05-02.md
+run-2026-09-14-10-44.md
+run-2026-09-14-16-44.md
+run-2026-09-14-20-42.md
+run-2026-09-14-23-39.md
+run-2026-09-15-01-53.md
+run-2026-09-15-07-03.md
+run-2026-09-15-12-42.md
+run-2026-09-15-17-26.md
+run-2026-09-15-20-25.md
+run-2026-09-15-23-09.md
+run-2026-09-16-01-28.md
+run-2026-09-16-06-41.md
+run-2026-09-16-12-22.md
+run-2026-09-16-17-15.md
+run-2026-09-16-20-12.md
+run-2026-09-16-23-00.md
+run-2026-09-17-01-12.md
+run-2026-09-17-06-10.md
+run-2026-09-17-11-47.md
+run-2026-09-17-16-07.md
+run-2026-09-17-19-44.md
+run-2026-09-17-22-35.md
+run-2026-09-18-00-45.md
+run-2026-09-18-05-28.md
+run-2026-09-18-10-01.md
+run-2026-09-18-14-32.md
+run-2026-09-18-17-50.md
+run-2026-09-18-20-16.md
+run-2026-09-18-22-38.md
+run-2026-09-19-00-36.md
+run-2026-09-19-05-00.md
+run-2026-09-19-09-19.md
+run-2026-09-19-13-13.md
+run-2026-09-19-16-32.md
+run-2026-09-19-18-50.md
+run-2026-09-19-21-13.md
+run-2026-09-19-23-10.md
+run-2026-09-20-01-13.md
+run-2026-09-20-06-21.md
+run-2026-09-20-11-46.md
+run-2026-09-20-15-15.md
+run-2026-09-20-18-13.md
+run-2026-09-20-20-52.md
+run-2026-09-20-22-55.md
+run-2026-09-21-00-45.md
+run-2026-09-21-05-46.md
+run-2026-09-21-11-43.md
+run-2026-09-21-17-39.md
+run-2026-09-21-21-14.md
+run-2026-09-22-00-09.md
+run-2026-09-22-05-03.md
+run-2026-09-22-10-01.md
+run-2026-09-22-14-58.md
+run-2026-09-22-18-35.md
+[0m
+[0m→ [0mRead triage/run-2026-09-22-18-35.md
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m
+[0m$ [0mls -la recon-notes knowledge; wc -l recon-notes/* 2>/dev/null
+knowledge:
+total 148
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 .
+drwxr-xr-x 12 runner runner   4096 Sep 22 19:19 ..
+-rw-r--r--  1 runner runner 141698 Sep 22 19:19 index.md
+
+recon-notes:
+total 192
+drwxr-xr-x  2 runner runner   4096 Sep 22 19:19 .
+drwxr-xr-x 12 runner runner   4096 Sep 22 19:19 ..
+-rw-r--r--  1 runner runner   4789 Sep 22 19:19 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Sep 22 19:19 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Sep 22 19:19 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Sep 22 19:19 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Sep 22 19:19 alfaview-openapi.yaml
+    65 recon-notes/CORPUS-ALFAVIEW.md
+    58 recon-notes/DEDICATED-DEEP.md
+   161 recon-notes/DEEPER-FINDINGS.md
+    99 recon-notes/SCOPE-CONFIRMATION.md
+  4538 recon-notes/alfaview-openapi.yaml
+  4921 total
+[0m
+[0m✱ [0mGrep "staging-|production-|crt\.sh"[90m in recon-notes · 4 matches[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mrun() { echo "== $1"; shift; "$@"; }
+curl -s --max-time 15 https://apis.alfaview.com/v2/docs/openapi.json -o /tmp/oa && echo "openapi: $(wc -c < /tmp/oa)B md5=$(md5sum /tmp/oa | cut -d' ' -f1)"
+sleep 1
+curl -s --max-time 15 https://sso.alfaview.com/.well-known/jwks.json -o /tmp/jwks -w "jwks: %{http_code} %{size_download}B\n" && echo "  md5=$(md5sum /tmp/jwks | cut -d' ' -f1)"
+sleep 1
+curl -s --max-time 15 https://sso.alfaview.com/.well-known/openid-configuration -o /tmp/oidc -w "oidc: %{http_code} %{size_download}B\n"; grep -o '"issuer":"[^"]*"' /tmp/oidc; grep -c 'introspection_endpoint' /tmp/oidc | xargs echo "  introspection_endpoint count:"
+sleep 1
+curl -s --max-time 15 -o /dev/null -X OPTIONS -w "introspect OPTIONS: %{http_code}\n" https://sso.alfaview.com/oauth2/introspect
+sleep 1
+curl -s --max-time 15 -o /dev/null -w "authorize GET: %{http_code} %{size_download}B\n" https://sso.alfaview.com/oauth2/authorize
+sleep 1
+curl -s --max-time 15 -o /dev/null -w "tools.list GET: %{http_code} %{size_download}B\n" https://tools.alfaview.com/poll/pollservice/list
+sleep 1
+curl -s --max-time 15 -o /dev/null -w "users/me GET: %{http_code} %{size_download}B\n" https://apis.alfaview.com/v2/users/me
+sleep 1
+curl -s --max-time 15 -o /dev/null -w "graphql GET: %{http_code} %{size_download}B\n" https://app.alfaview.com/graphql
+sleep 1
+curl -s --max-time 15 https://client-diagnostics-ingest.alfaview.com/health -o /tmp/diag -w "diag /health: %{http_code} %{size_download}B " && echo "body=$(cat /tmp/diag)"
+sleep 1
+curl -s --max-time 15 https://test.alfaview.com/ | grep -oE 'v[0-9]{6}' | sort -u | head -5 failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+Running read-only standing verification with 1s spacing (≤1 rps).

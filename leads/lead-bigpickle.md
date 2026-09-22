@@ -5630,3 +5630,4 @@ evidence_needed: valid bearer → POST client_id=<fake>&token=<b64> returns 200 
 verify_steps: (HUMAN_ONLY) POST client_id=does-not-exist-12345&token=<b64>; then Basic base64(fake:any); diff active+claims.
 impact: Token liveness/subject/expiry fingerprint — ATO-chain support; MEDIUM-HIGH.
 testability: HUMAN_ONLY
+## 2026-09-22 19:20:28 UTC [target] (model bigpickle)
