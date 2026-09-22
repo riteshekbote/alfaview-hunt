@@ -1,9 +1,8 @@
-## 2026-09-22 19:24:20 UTC [target] (model nemotron3)
-[PRIO] sso.alfaview.com/oauth2/introspect, 9.15, attack_surface=10, business_value=9, tech_exposure=10, gate_ease=10, cloud_surface=6, freshness=9
+## 2026-09-22 22:17:32 UTC [target] (model nemotron3)
+[PRIO] sso.alfaview.com/oauth2/introspect, 9.15, attack_surface=10, business_value=9, tech_exposure=10, gate_ease=8, cloud_surface=7, freshness=10
 [PRIO] tools.alfaview.com/poll/pollservice, 8.15, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=3, cloud_surface=6, freshness=9
 [PRIO] app.alfaview.com/graphql, 7.75, attack_surface=9, business_value=9, tech_exposure=9, gate_ease=2, cloud_surface=5, freshness=8
 [PRIO] apis.alfaview.com/v2, 7.30, attack_surface=8, business_value=10, tech_exposure=7, gate_ease=2, cloud_surface=6, freshness=7
-[PRIO] test.alfaview.com, 6.35, attack_surface=5, business_value=6, tech_exposure=6, gate_ease=10, cloud_surface=4, freshness=8
 [HYP] RFC7662 introspection client authentication bypass on both channels
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
