@@ -878,3 +878,6 @@ www.alfaview.com
 - NEW NO_DELTA @ app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed); all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70
 
 ## 2026-09-21 22:49:20 UTC
+
+## 2026-09-22 01:21:14 UTC
+- NEW NO_DELTA @ full standing probes since 2026-09-21 22:49: OpenAPI MD5 357b94d3, JWKS 200/16257B (3f8d456c), OIDC 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, autho

@@ -1,8 +1,9 @@
-## 2026-09-21 22:49:09 UTC [target] (model nemotron3)
-[PRIO] sso.alfaview.com/oauth2/introspect, 7.15, attack_surface=7, business_value=8, tech_exposure=9, gate_ease=5, cloud_surface=5, freshness=9  
-[PRIO] tools.alfaview.com/poll/pollservice, 7.05, attack_surface=8, business_value=7, tech_exposure=9, gate_ease=3, cloud_surface=4, freshness=9  
-[PRIO] apis.alfaview.com/v2, 6.95, attack_surface=8, business_value=9, tech_exposure=7, gate_ease=3, cloud_surface=6, freshness=7  
-[PRIO] app.alfaview.com/graphql, 6.80, attack_surface=9, business_value=8, tech_exposure=8, gate_ease=2, cloud_surface=5, freshness=8  
+## 2026-09-22 01:21:04 UTC [target] (model nemotron3)
+[NEW] NO_DELTA @ full standing probes since 2026-09-21 22:49: OpenAPI MD5 357b94d3, JWKS 200/16257B (3f8d456c), OIDC 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, authorize 200/6142B, tools.list GET 501/55B, users/me 401/107B, graphql GET 400/406B — all byte-identical; surface fully stable, no new unauthenticated exploit surface.
+[PRIO] sso.alfaview.com/oauth2/introspect, 9.05, attack_surface=10, business_value=9, tech_exposure=10, gate_ease=10, cloud_surface=8, freshness=8  
+[PRIO] tools.alfaview.com/poll/pollservice, 8.15, attack_surface=9, business_value=8, tech_exposure=9, gate_ease=3, cloud_surface=6, freshness=9  
+[PRIO] app.alfaview.com/graphql, 7.75, attack_surface=9, business_value=9, tech_exposure=9, gate_ease=2, cloud_surface=5, freshness=8  
+[PRIO] apis.alfaview.com/v2, 7.30, attack_surface=8, business_value=10, tech_exposure=7, gate_ease=2, cloud_surface=6, freshness=7  
 [PRIO] test.alfaview.com, 6.35, attack_surface=5, business_value=6, tech_exposure=6, gate_ease=10, cloud_surface=4, freshness=8  
 [HYP] RFC7662 introspection client authentication bypass on both channels  
 class: AUTH  
@@ -12,7 +13,7 @@ reasoning: POST-body and HTTP Basic auth both accept fabricated client_id + any 
 evidence_needed: Valid client_id for app.alfaview.com (discoverable via browser DevTools on login flow); valid access token from authenticated session  
 verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; POST https://sso.alfaview.com/oauth2/introspect with token=<valid-token>&client_id=<valid-client_id> → observe active:true + token metadata; repeat with fabricated client_id to confirm bypass  
 impact: OAuth token metadata disclosure → token reconnaissance, potential token validation bypass (CRITICAL, OWASP A07:2021)  
-testability: AUTH_HELPED
+testability: AUTH_HELPED  
 [HYP] Poll service BOLA via custom gRPC-metadata auth header  
 class: IDOR  
 asset: tools.alfaview.com/poll/pollservice  
@@ -21,7 +22,7 @@ reasoning: tools.alfaview.com exposes verb-based JSON RPC (list|create|delete|up
 evidence_needed: Valid room token from owned alfaview room (via signup→finishSignup chain) to test cross-room poll access  
 verify_steps: GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js → extract exact Poll/create/vote/delete request payloads and response JSON; POST https://tools.alfaview.com/poll/pollservice/list with header Grpc-Metadata-alfaview.token: <own-room-token> → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically  
 impact: Cross-room poll data access/manipulation (vote rigging, poll deletion, result disclosure) → BOLA in real-time collaboration feature (HIGH)  
-testability: AUTH_HELPED
+testability: AUTH_HELPED  
 [HYP] Guest token issuance bypassing accessKey requirement via GraphQL  
 class: AUTH  
 asset: app.alfaview.com/graphql  
@@ -30,7 +31,7 @@ reasoning: GraphQL mutations guestAuthenticate(userId,companyId,roomId) and gues
 evidence_needed: Valid companyId/roomId/userId tuple from own tenant to test guestAuthenticate mutation; observe if token/session returned without accessKey  
 verify_steps: POST https://app.alfaview.com/graphql with {"query":"mutation{guestAuthenticate(userId:\"<own-guest-id>\",companyId:\"<own-company-id>\",roomId:\"<own-room-id>\"){role,accessToken,__typename}}"} → observe response; repeat with guestJoin including displayName; capture any returned token and test against APIs; probe cross-tenant with foreign IDs  
 impact: Guest token issuance bypassing accessKey requirement → unauthorized room access, potential cross-tenant room joining (HIGH)  
-testability: AUTH_HELPED
+testability: AUTH_HELPED  
 [PARKED] IDOR apis.alfaview.com/v2/users: Requires authenticated account (cross-tenant untestable without two tenants) — HUMAN_ONLY  
 [PARKED] test.alfaview.com supply chain: Unsigned alfacheck binaries — verification requires binary analysis, not HTTP probe  
 [PARKED] Whiteboard tenant isolation bypass: whiteboard.alfaview.com root returns "board deleted/access expired" but no IDOR surface visible without valid board ID; all non-root paths redirect to / — no verify steps without board creation flow (HUMAN_ONLY)  
