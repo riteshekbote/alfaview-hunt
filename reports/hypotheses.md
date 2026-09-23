@@ -3264,3 +3264,10 @@
 - LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: `/v2/docs/openapi.json` still public and byte-identical prod/beta (37 paths, no new endpoints) — schema surface fully st
 - LEARN: ACCEPTED MISCONFIG @ client-diagnostics-ingest.alfaview.com: `/health`=200 `{"status":"ok"}` with strict headers (CSP default-src 'none', frame-ancestors 'none'
 - LEARN: ACCEPTED MISCONFIG @ test.alfaview.com: alfacheck release bumped v470079→v483102 (4 platforms); index page still carries no sha256/signatures — supply-chain har
+
+## RANKED HYPOTHESES 2026-09-23 10:11:31 UTC
+- [85] tools.alfaview.com: Poll RPC cross-room BOLA keyed solely by roomId (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: execute the sole standing token path — app.alfaview.com/graphql Signup (anonymous, no token header per AppSignup.min.js) → email activation → finishSignu
+- LEARN: NO_DELTA @ full standing probes: OpenAPI MD5 357b94d3 (37 paths), JWKS 200/16257B (3f8d456c), OIDC 200/2169B (introspection_endpoint absent, issuer=acme.com), i
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: 22nd consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active"
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles); all HIGH-v
