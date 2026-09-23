@@ -897,3 +897,6 @@ www.alfaview.com
 ## 2026-09-23 05:07:09 UTC
 
 ## 2026-09-23 10:11:31 UTC
+
+## 2026-09-23 14:46:43 UTC
+- NEW NO_DELTA @ full standing probes: OpenAPI MD5 357b94d3 (37 paths), JWKS 200/16257B (3f8d456c), OIDC 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, authorize 200/617
