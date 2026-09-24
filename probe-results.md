@@ -1096,3 +1096,12 @@ https://tools.alfaview.com/poll/pollservice/list -> HTTP 501
 https://app.alfaview.com/graphql -> HTTP 400
 https://app.alfaview.com/` -> 200 len=1381
 https://sso.alfaview.com/oauth2/introspect` -> HTTP 404
+
+## 2026-09-24 00:06:56 UTC
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js -> 200 len=137343
+https://tools.alfaview.com/poll/pollservice/list -> HTTP 501
+https://app.alfaview.com/graphql -> HTTP 400
+https://app.alfaview.com/` -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect` -> HTTP 404
