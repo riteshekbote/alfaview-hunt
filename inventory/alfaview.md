@@ -909,3 +909,10 @@ www.alfaview.com
 ## 2026-09-24 00:06:46 UTC
 
 ## 2026-09-24 04:54:59 UTC
+
+## 2026-09-24 09:40:02 UTC
+- NEW sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404 in prior cycles) — JWKS endpoint restored; MD5 3f8d456c stable
+- NEW sso.alfaview.com/.well-known/openid-configuration: `introspection_endpoint` absent this cycle (was advertised last cycle) — advertisement oscillates while `/oauth2/introspect` stays live (OPTIONS 405)
+- NEW sso.alfaview.com/oauth2/introspect: 27th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_s
+- NEW tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST `/poll/pollservice/<verb>` with custom auth header `Grpc-Metadata-alfaview.token` (b64url→b64, opaque family); staging-tools.alfaview.com byte
+- NEW app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles); all HIGH-value chains (tools BOLA 85, guest AUTH 70, introspect 70

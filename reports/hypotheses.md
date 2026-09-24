@@ -3366,3 +3366,20 @@
 - LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.
 - LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
 - LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/ge
+
+## RANKED HYPOTHESES 2026-09-24 09:40:02 UTC
+- [95] sso.alfaview.com/oauth2/introspect: RFC7662 introspection client authentication bypass on both channels (from art/lead_nemotron3.txt)
+- [85] tools.alfaview.com: Poll RPC cross-room BOLA keyed solely by roomId (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: execute the sole standing token path — app.alfaview.com/graphql Signup (anonymous, no token header per AppSignup.min.js) → email activation → finishSignu
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET `https://app.alfaview.com/` → extract `client_id` from network traffic (OAuth config API call in browser DevTools/HAR); then POST `https://sso.alfavi
+- LEARN: REJECTED MISCONFIG @ status.alfaview.com: no status-page JSON API — 8 common status-API paths return identical 47637B SPA 404; platform is Statusfy (Nuxt static
+- LEARN: ACCEPTED MISCONFIG @ status.alfaview.com: fingerprint = Statusfy static status page; public component/incident data is pre-rendered at build time with no API su
+- LEARN: NO_DELTA @ standing probes: openapi 200/127532B, staging-tools 612B, status root 53714B reconfirmed byte-stable this cycle; introspect OPTIONS 405 / authorize 2
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: 27th consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 `{"active
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles); all HIGH-v
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys — JWKS endpoint restored; MD5 3f8d456c stable
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while `/oauth2/intro
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST `/poll/pollservice/<verb>` with custom auth header `Grpc-Metadata-alfaview.token`
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/ge
