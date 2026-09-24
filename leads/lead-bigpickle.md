@@ -5953,3 +5953,31 @@ testability: HUMAN_ONLY
 [LEARN] NO_DELTA @ standing probes: openapi 200/127532B, staging-tools 612B, status root 53714B reconfirmed byte-stable this cycle; introspect OPTIONS 405 / authorize 200 / users/me 401 / graphql GET 400 all unchanged — 28th consecutive cycle.
 [RISK] alfaview: 56 — 28 consecutive byte-stable cycles across all standing probes plus freshly closed status-API lead; zero fresh passive surface. Tools BOLA (85), GraphQL guest accessKey divergence (70), introspect client-auth bypass (70) persist, but every escalation is gated on HUMAN bearer acquisition via email-verified signup; constrained passive posture unchanged, program exposure low.
 ## 2026-09-24 14:24:32 UTC [target] (model bigpickle)
+## 2026-09-24 18:39:37 UTC [target] (model bigpickle)
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com / staging-tools.alfaview.com POST /poll/pollservice/{list,create,delete,update,updateState,vote,get,hasVoted}
+confidence: 85
+reasoning: 8 verbs POST-only, GET 501/55B {"code":12} reconfirmed this cycle; payloads carry only {roomId}(+{id}), zero tenant-scope field; auth via custom Grpc-Metadata-alfaview.token (b64url→b64, opaque family); bundle pins token gate client-side; staging-tools vendor hash 8caab24e = prod build on independent backend.
+evidence_needed: owned bearer + foreign-tenant roomId → 200 {polls[]} (BOLA) vs {code:7} (scoped); owned roomId → {polls:[]}; token omitted → {code:16}.
+verify_steps: HUMAN_ONLY — bearer via app.alfaview.com signup→email→finishSignup; POST /poll/pollservice/list {"roomId":"<OWNED>"}, headers Grpc-Metadata-alfaview.token + request_id list-poll-<ms>; repeat token-omitted / foreign roomId; diff prod vs staging-tools.
+impact: Cross-tenant read/write of live polls/Q&A on foreign boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Guest bearer issuance bypassing accessKey via GraphQL
+class: AUTH
+asset: app.alfaview.com/graphql (guestAuthenticate/guestJoin; FetchGuestInfo)
+confidence: 70
+reasoning: Guest mutations anonymous-reachable (BAD_USER_INPUT, never UNAUTHENTICATED) across 20+ cycles; GraphQL guest signature has NO accessKey vs REST /v2/auth/guest-link 3-field combo; GuestAuthenticateReply exposes user/accessToken/role; GuestJoinReply has expiry only; surface byte-stable 29 cycles.
+evidence_needed: valid guestAuthenticate UUIDs → 200 reply with accessToken for a public room REST requires accessKey to join.
+verify_steps: HUMAN_ONLY — capture public-room UUIDs from a browser session; POST mutation guestAuthenticate(userId,companyId,roomId); diff status/token vs REST /v2/auth/guest-link {accessKey,companyId,roomId}.
+impact: Bearer without accessKey — seeds tools BOLA + REST IDOR chains; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Introspect fabricated-client_id as unauthenticated bearer oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: POST-body and HTTP Basic both accept ANY client_id (200 {"active":false}); only residual check Basic-vs-body mismatch (401); discovery advertises client_secret_basic/post/none with zero runtime secret verification; OPTIONS 405 alive; introspection_endpoint absent from discovery; 29 byte-stable cycles.
+evidence_needed: valid bearer → 200 {"active":true}+claims; invalid → active:false (liveness/subject/expiry oracle).
+verify_steps: HUMAN_ONLY — POST client_id=fabricated-12345&token=<b64>; then Basic with same creds; diff active+claims; requires a real token from the signup chain.
+impact: Token liveness/subject/expiry fingerprinting for ATO chaining; MEDIUM.
+testability: HUMAN_ONLY
