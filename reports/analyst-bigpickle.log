@@ -30001,3 +30001,69 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 [RISK] alfaview: 56 — 28 consecutive byte-stable cycles across all standing probes plus freshly closed status-API lead; zero fresh passive surface. Tools BOLA (85), GraphQL guest accessKey divergence (70), introspect client-auth bypass (70) persist, but every escalation is gated on HUMAN bearer acquisition via email-verified signup; constrained passive posture unchanged, program exposure low.
+===== ANALYST bigpickle 2026-09-24 14:28:45 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor p in "/poll/pollservice/list" "/poll/pollservice/create" "/poll/pollservice/get" "/poll/pollservice/updateState" "/poll/pollservice/hasVoted" "/poll/pollservice/nonexistentVerbXYZ"; do
+  echo "== $p ==";
+  curl -s -o /tmp/r.bin -w '%{http_code} %{size_download} %{content_type}\n' --max-time 10 "https://tools.alfaview.com$p";
+  head -c 60 /tmp/r.bin | tr -d '\n'; echo; sleep 1;
+done
+== /poll/pollservice/list ==
+501 55 application/json
+{"code":12,"message":"Method Not Allowed","details":[]}
+== /poll/pollservice/create ==
+501 55 application/json
+{"code":12,"message":"Method Not Allowed","details":[]}
+== /poll/pollservice/get ==
+501 55 application/json
+{"code":12,"message":"Method Not Allowed","details":[]}
+== /poll/pollservice/updateState ==
+501 55 application/json
+{"code":12,"message":"Method Not Allowed","details":[]}
+== /poll/pollservice/hasVoted ==
+501 55 application/json
+{"code":12,"message":"Method Not Allowed","details":[]}
+== /poll/pollservice/nonexistentVerbXYZ ==
+404 45 application/json
+{"code":5,"message":"Not Found","details":[]}
+[0m
+[0m$ [0mfor p in "/" "/qa/qaservice/list" "/qa/qaservice/get" "/qa/qa-service/list" "/brainstorm/brainstormservice/list" "/share/shareservice/list" "/feedback/feedbackservice/list"; do
+  echo "== $p ==";
+  curl -s -o /tmp/r.bin -w '%{http_code} %{size_download} %{content_type}\n' --max-time 10 "https://tools.alfaview.com$p";
+  head -c 60 /tmp/r.bin | tr -d '\n'; echo; sleep 1;
+done
+echo "== staging-tools /poll/pollservice/list =="
+curl -s -o /tmp/r2.bin -w '%{http_code} %{size_download}\n' --max-time 10 "https://staging-tools.alfaview.com/poll/pollservice/list";
+head -c 60 /tmp/r2.bin | tr -d '\n'; echo
+== / ==
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+== /qa/qaservice/list ==
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+== /qa/qaservice/get ==
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+== /qa/qa-service/list ==
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+== /brainstorm/brainstormservice/list ==
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+== /share/shareservice/list ==
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+== /feedback/feedbackservice/list ==
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+== staging-tools /poll/pollservice/list ==
+501 55
+{"code":12,"message":"Method Not Allowed","details":[]}
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcurl -s --max-time 10 "https://tools.alfaview.com/" -o /tmp/tools.html; echo "bytes: $(wc -c < /tmp/tools.html)"; cat /tmp/tools.html; echo; sleep 1
+curl -s -o /dev/null -w 'prod status: %{http_code}\n' --max-time 10 "https://apis.alfaview.com/v2/docs/openapi.json"
+curl -s -o /dev/null -w 'sso oidc: %{http_code}\n' --max-time 10 "https://sso.alfaview.com/.well-known/openid-configuration" failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
