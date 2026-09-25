@@ -6132,3 +6132,51 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED MISCONFIG @ sso.alfaview.com: the OIDC metadata/JWKS algorithm divergence persists, but no standalone key-confusion exploit is established.
 [RISK] alfaview: 57 — no new surface was observed; the highest-value IDOR and introspection chains remain token- or tenant-gated, while the current public bundle retains a plausible passwordless authentication lead. No customer data or mutating request was used.
 ## 2026-09-25 19:06:15 UTC [target] (model bigpickle)
+## 2026-09-25 22:28:47 UTC [target] (model bigpickle)
+[NEW] whiteboard.alfaview.com: FIRST structural map — Express/Node board renderer behind `edge-proxy`, strict single-route app (every unknown path 302 → `/`; `/` = 386B "board deleted or access expired" page). A valid board ID renders 200, so a **board-existence oracle exists** (200=hit / 302=miss) — but no format oracle (`abc`, `1`, nil-UUID all return identical 302).
+[NEW] whiteboard.alfaview.com: zero security headers (no CSP/XFO/nosniff/Referrer-Policy), no `Set-Cookie` on any response; error page byte-identical prod vs staging (md5 `fdd0e69b`) — same build-family pattern as the tools twin.
+[NEW] whiteboard.alfaview.com: no LFI — `/../package.json`, `/..%2f..%2fpackage.json`, `/....//package.json`, `/static/../package.json` all normalize to 302/23B. Referenced static mount only (`/images/favicon.png` 200/790B); the rendered-board SPA asset names are **not passively discoverable** (recorded blind spot).
+[CHANGED] tools.alfaview.com: bundle re-verified unchanged — `js/app-bundle.0a250e1f96a7aaf5661c.js` 200/137343B md5 `b7f17c85ccd8d91e9b831a6bc2aa863c`; 8-verb `/poll/pollservice/<verb>` + `Grpc-Metadata-alfaview.token` contract stable, no rotation.
+[CHANGED] app.alfaview.com/graphql: CreateMagicToken passwordless-bearer lead **CLOSED** (UNAUTHENTICATED, no `optionalAccessToken` argument exists); signup remains the sole unauthenticated path to a bearer and is email-gated.
+[CHANGED] design-assets.alfaview.com / design-tokens.alfaview.com (404/548B) and ops.alfaview.com (404/19B): confirmed exhausted, no surface.
+[PRIO] whiteboard.alfaview.com,6.95,attack_surface=5;business_value=8;tech_exposure=6;gate_ease=10;cloud_surface=3;freshness=10
+[PRIO] app.alfaview.com/graphql,8.15,attack_surface=9;business_value=9;tech_exposure=9;gate_ease=6;cloud_surface=5;freshness=9
+[PRIO] sso.alfaview.com/oauth2/introspect,6.15,attack_surface=6;business_value=6;tech_exposure=8;gate_ease=9;cloud_surface=3;freshness=3
+[PRIO] tools.alfaview.com/poll/pollservice/*,6.10,attack_surface=7;business_value=7;tech_exposure=7;gate_ease=5;cloud_surface=4;freshness=4
+[HYP] Poll RPC roomId-only authorization may permit cross-room BOLA
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/*
+confidence: 85
+reasoning: Bundle re-hashed this cycle as byte-identical (137343B, md5 `b7f17c85ccd8d91e9b831a6bc2aa863c`), so the standing mapping holds: 8 POST verbs, payloads are `{roomId}` plus optional `{id}` only, no tenant/company scope field, auth via `Grpc-Metadata-alfaview.token` (b64url→b64, opaque family), `request_id` `{verb}-poll-{ms}`. `OPTIONS /poll/pollservice/list` returns 501/55B `{"code":12,"message":"Method Not Allowed"}` — edge-proxy forwards all methods, route alive. Server-side token enforcement unverified.
+evidence_needed: With a self-owned bearer, an owned room and a foreign room produce distinguishable authorization outcomes; token-omitted requests compared against the same two room IDs.
+verify_steps: `GET https://tools.alfaview.com/`; `OPTIONS https://tools.alfaview.com/poll/pollservice/list`; `GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js` and diff md5 against `b7f17c85ccd8d91e9b831a6bc2aa863c`. No poll mutation is authorized.
+impact: Cross-tenant read/write of live polls and Q&A on foreign boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+[HYP] Whiteboard board-ID is the sole access control, enabling cross-tenant board read
+class: IDOR
+asset: whiteboard.alfaview.com/:boardId
+confidence: 60
+reasoning: Proven this cycle: the app is a strict single-route Express renderer behind `edge-proxy` — every unknown path 302→`/`, root serves a 386B "This board has been deleted or your access has expired" page, and a recognized ID returns 200 with board content. That makes a clean board-existence oracle (200 vs 302) with no secondary auth observable: no `Set-Cookie` is ever issued and no auth header is presented in the request, so access is purely possession-of-URL. Error page is byte-identical prod/staging (md5 `fdd0e69b`), confirming one shared build. ID entropy is unknown; no format oracle exists (`abc`, `1`, nil-UUID behave identically), so enumeration feasibility is undetermined.
+evidence_needed: A self-created board's rendered response contrasted with a foreign board ID, proving content is returned for an ID not owned by the requester; or a demonstrated non-guessable-ID assumption failure (short, sequential, or timestamp-derivable).
+verify_steps: `GET https://whiteboard.alfaview.com/`; `GET https://whiteboard.alfaview.com/<self-owned-board-id>`; `HEAD https://whiteboard.alfaview.com/<foreign-id>`; compare `200`-vs-`302` and body length only. Do not render or copy third-party board content.
+impact: If IDs are low-entropy or leaked via logs/links, an attacker reads live customer whiteboard content (meeting notes, diagrams) cross-tenant; MEDIUM-HIGH. If IDs are 128-bit random, this is link-based access control by design and not a finding.
+testability: HUMAN_ONLY
+[HYP] AdminTokenAuthenticate may accept a non-admin bearer and mint a full admin session
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 48
+reasoning: Facts only: the current public bundle (`app.min.67e8a68d4318b34ca241.js`, md5 `2cb9128353b1f7444e222b4f61e4ffa5`) contains query `AdminTokenAuthenticate` feeding Vuex `adminSession.accessToken`/`adminSession.permissions`, and mutation `AdminSwitchCompany(nextCompanyId)`, plus hardcoded tenant identifiers (`alfatraining-internal`, ULID `01FDY0986YK1BJF2K0F9DXR8EB`). No POST was made, so no resolver behavior is observed. Token-type confusion (a low-privilege signup/guest bearer accepted where an admin token is required) is untested and unproven.
+evidence_needed: A non-admin self-owned bearer submitted to `AdminTokenAuthenticate` returns `adminSession.permissions` with admin scope, or returns `UNAUTHENTICATED`/`FORBIDDEN` — either outcome closes or confirms the escalation.
+verify_steps: `GET https://app.alfaview.com/`; `GET https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js`; confirm operation names and any argument shape. GraphQL execution is POST-only and deferred under passive rules.
+impact: If a low-privilege token is accepted, full tenant takeover via `AdminSwitchCompany`; HIGH. Confidence held at 48 because no resolver call has been made and the guest/signup tokens' actual scope is unknown.
+testability: HUMAN_ONLY
+[PARKED] sso.alfaview.com/oauth2/introspect client-auth bypass/oracle: re-probed this cycle (OPTIONS 405, route alive), 28th consecutive byte-stable cycle with fabricated `client_id` accepted on POST-body and Basic channels; no new evidence, and the chain is already documented at 95 in art/lead_nemotron3.txt. Re-probing adds nothing; the only missing step is a self-owned valid bearer, which is HUMAN_ONLY.
+[PARKED] app.alfaview.com CreateMagicToken passwordless issuance: closed by the 2026-09-25 19:10 probe (UNAUTHENTICATED, no `optionalAccessToken` argument — GRAPHQL_VALIDATION_FAILED). Lead retired.
+[PARKED] whiteboard.alfaview.com missing security headers / absent `Set-Cookie`: REJECTED class (descriptive headers, cookie flags on non-sensitive data) — the only response is a non-sensitive error page. Not filed.
+[PARKED] whiteboard.alfaview.com path traversal: REJECTED — all four traversal encodings normalize to 302 at the client/edge, no server-side file read.
+[FINAL] 1) tools.alfaview.com poll BOLA — 85; 2) whiteboard.alfaview.com board-ID IDOR — 60 (new); 3) sso.alfaview.com introspection client-auth bypass/oracle — 78 carried, no new evidence this cycle; 4) app.alfaview.com AdminTokenAuthenticate token-type confusion — 48 (new, low).
+[LEARN] ACCEPTED MISCONFIG @ whiteboard.alfaview.com: first structural map — strict single-route Express board renderer behind edge-proxy; unknown board ID → 302 `/` (uniform across short/numeric/UUID, so no format oracle), recognized ID → 200 board render; zero security headers, no Set-Cookie; error page byte-identical prod vs staging (md5 `fdd0e69b`); traversal probes all normalize, no LFI. Inventory facts, no finding.
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: bundle re-verified unchanged at 137343B / md5 `b7f17c85ccd8d91e9b831a6bc2aa863c` — 8-verb RPC contract and `Grpc-Metadata-alfaview.token` auth transport stable across cycles, no asset rotation.
+[LEARN] REJECTED MISCONFIG @ design-assets.alfaview.com, design-tokens.alfaview.com, ops.alfaview.com: 404/548B and 404/19B plaintext — no independent surface, targets confirmed exhausted.
+[LEARN] NO_DELTA @ apis/sso/app/tools: all standing probes byte-identical for the 32nd consecutive cycle; the only structural change this cycle is the addition of a mapped host, not a change to known surface.
+[RISK] alfaview: 56 — no new exploitable surface and the highest-value IDOR chain is unchanged at 85. Risk moved down from 57 because the CreateMagicToken passwordless lead is now proven closed (removing the cheapest theoretical path to a bearer), and up-bounded by the newly mapped whiteboard renderer, which introduces the program's only unauthenticated content-rendering endpoint with a clean existence oracle. Program exposure remains low-to-moderate: everything of value stays token- or tenant-gated, no customer data was read or modified, and all probing was read-only at ≤1 rps.

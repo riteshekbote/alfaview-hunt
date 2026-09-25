@@ -952,3 +952,21 @@ www.alfaview.com
 - NEW staging-app.alfaview.com + webviewer.dev.alfaview.com: Two bundle-referenced hosts absent from inventory; both exhausted immediately (401 Basic incl. /graphql; 000). Inventory extended, zero attack su
 - CHANGED sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_
 - CHANGED app.alfaview.com/graphql: Signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles); all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70) gate
+
+## 2026-09-25 22:29:00 UTC
+- NEW whiteboard.alfaview.com: FIRST structural map — Express/Node board renderer behind `edge-proxy`, strict single-route app (every unknown path 302 → `/`; `/` = 386B "board deleted or access expired" pag
+- NEW whiteboard.alfaview.com: zero security headers (no CSP/XFO/nosniff/Referrer-Policy), no `Set-Cookie` on any response; error page byte-identical prod vs staging (md5 `fdd0e69b`) — same build-family pat
+- NEW whiteboard.alfaview.com: no LFI — `/../package.json`, `/..%2f..%2fpackage.json`, `/....//package.json`, `/static/../package.json` all normalize to 302/23B. Referenced static mount only (`/images/favic
+- CHANGED tools.alfaview.com: bundle re-verified unchanged — `js/app-bundle.0a250e1f96a7aaf5661c.js` 200/137343B md5 `b7f17c85ccd8d91e9b831a6bc2aa863c`; 8-verb `/poll/pollservice/<verb>` + `Grpc-Metadata-alfavi
+- CHANGED app.alfaview.com/graphql: CreateMagicToken passwordless-bearer lead **CLOSED** (UNAUTHENTICATED, no `optionalAccessToken` argument exists); signup remains the sole unauthenticated path to a bearer and
+- CHANGED design-assets.alfaview.com / design-tokens.alfaview.com (404/548B) and ops.alfaview.com (404/19B): confirmed exhausted, no surface.
+- NEW support.alfaview.com: First full map — WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; sensitive routes 401, only public KB artic
+- NEW app.alfaview.com (public bundle): Asset rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle now carries admin session flow (AdminTokenAuthenticate → adminSession.
+- NEW app.alfaview.com/graphql: CreateMagicToken mutation confirmed auth-gated (UNAUTHENTICATED) — not anonymous-reachable; no optionalAccessToken argument (GRAPHQL_VALIDATION_FAILED). Passwordless bearer i
+- NEW staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301→/en on 2026-09-02. No surface.
+- NEW staging-app.alfaview.com + webviewer.dev.alfaview.com: Bundle-referenced hosts absent from inventory; both exhausted (401 Basic incl. /graphql; 000). Zero attack surface.
+- CHANGED sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_
+- CHANGED app.alfaview.com/graphql: Signup mutation remains sole unauthenticated path to legit bearer token; all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70) gate on it — email-gated, HUMAN_ONLY.
+- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored.
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable liveness signal.
+- CHANGED tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with custom auth header Grpc-Metadata-alfaview.token (b64url→b64, opaque family); staging-tools.alfaview.com byte-ide
