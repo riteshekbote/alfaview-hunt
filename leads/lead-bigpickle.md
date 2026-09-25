@@ -6040,3 +6040,4 @@ verify_steps: HUMAN_ONLY — POST client_id=fabricated-12345&token=<b64>; then B
 impact: Token liveness/subject/expiry fingerprinting for ATO chaining; MEDIUM.
 testability: HUMAN_ONLY
 [NEXT] HUMAN: execute the sole standing token path — POST app.alfaview.com/graphql mutation Signup (anonymous, no token header per AppSignup.min.js) → email activation → finishSignup{companyId,username,activationToken,password} → bearer; in parallel capture the OAuth `client_id` from the app.alfaview.com network call (DevTools/HAR) to unblock the authorize/redirect_uri OATH chain; then tools.alfaview.com BOLA differential POST /poll/pollservice/list (owned roomId → {polls:[]}; token omitted → {code:16}; foreign roomId → {polls:[]}=BOLA / {code:7}=scoped), repeated on staging-tools.alfaview.com.
+## 2026-09-25 04:58:57 UTC [target] (model bigpickle)
