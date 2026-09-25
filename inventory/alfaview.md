@@ -938,3 +938,8 @@ www.alfaview.com
 - CHANGED @ staging.alfaview.com — 2026-09-02 recon recorded 301 → /en; today /, /en/, /xmlrpc.php, /wp-json/ all return 401 (574B nginx Basic page). Whole staging twin now edge-gated.
 - CHANGED @ app.alfaview.com bundle — GraphQL auth transport pinned: authenticated ops send headers:{token:<accessToken>} (custom `token` header, not Authorization/Bearer); Signup/FinishSignup/CreateMagicToken 
 - NEW NO_DELTA — all standing probes byte-identical to prior cycle (OpenAPI MD5 357b94d3, JWKS 200/16257B, OIDC 200/2169B introspection_endpoint absent, introspect OPTIONS 405, authorize 200/6176B, tools.li
+
+## 2026-09-25 15:01:31 UTC
+- NEW support.alfaview.com: First full map — WordPress "alfaview Support Center" (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; every sensitive 
+- NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle now carries admin session flow (AdminTokenAuthenticate → ad
+- NEW app.alfaview.com/graphql: Passwordless bearer issuance path — CreateMagicToken invoked with optional token (fetchMagicTokenLaunchURL({optionalAccessToken}), separate Apollo client An.A without token h

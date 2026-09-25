@@ -31783,3 +31783,150 @@ testability: HUMAN_ONLY
 
 ```
 [RISK] alfaview: 57 — 31st cycle breaks the 30-cycle NO_DELTA streak: the app bundle rotated and the new generation exposed a never-mapped passwordless token-minting/exchange pair plus an admin-session switch flow, and the support WordPress got its first full map. Standing chains unchanged (tools BOLA 85, introspect 70) and all still need a bearer, but the bar for obtaining one just dropped from "email-verified signup" to "one anonymous POST" if CreateMagicToken is reachable pre-auth. Passive posture unchanged, no customer data touched, program exposure low-to-moderate and rising.
+===== ANALYST bigpickle 2026-09-25 15:01:31 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m# [0mTodos
+[•] Run rate-limited read-only checks against standing in-scope surfaces
+[ ] Compare current responses with supplied knowledge and identify deltas
+[ ] Rank assets, formulate and self-critique three hypotheses
+[ ] Produce the required seven structured blocks with one next action
+[0m
+Running a rate-limited, read-only check of the standing in-scope endpoints; only GET/OPTIONS requests will be sent.
+[0m$ [0mfor u in 'https://app.alfaview.com/' 'https://app.alfaview.com/graphql' 'https://sso.alfaview.com/.well-known/openid-configuration' 'https://sso.alfaview.com/.well-known/jwks.json' 'https://sso.alfaview.com/oauth2/authorize?client_id=probe-invalid-20260925&redirect_uri=https%3A%2F%2Fexample.invalid%2Fcb&response_type=code' 'https://sso.alfaview.com/oauth2/introspect' 'https://apis.alfaview.com/v2/docs/openapi.json' 'https://apis.alfaview.com/v2/users/me' 'https://tools.alfaview.com/' 'https://tools.alfaview.com/poll/pollservice/list' 'https://support.alfaview.com/' 'https://support.alfaview.com/wp-json/' 'https://staging-app.alfaview.com/'; do if [[ "$u" == *'/oauth2/introspect' || "$u" == *'/poll/pollservice/list' ]]; then m='OPTIONS'; else m='GET'; fi; curl -k -sS --max-time 15 --connect-timeout 8 -X "$m" -o /dev/null -w "$m %{http_code} %{size_download} %{content_type} %{redirect_url} $u\n" "$u" || printf '%s %s\n' "$m" "$u"; sleep 1.1; done
+GET 200 1381 text/html; charset=UTF-8  https://app.alfaview.com/
+GET 400 406 application/json; charset=utf-8  https://app.alfaview.com/graphql
+GET 200 2169 application/json; charset=UTF-8  https://sso.alfaview.com/.well-known/openid-configuration
+GET 200 16257 application/json; charset=UTF-8  https://sso.alfaview.com/.well-known/jwks.json
+GET 200 6162 text/html; charset=UTF-8  https://sso.alfaview.com/oauth2/authorize?client_id=probe-invalid-20260925&redirect_uri=https%3A%2F%2Fexample.invalid%2Fcb&response_type=code
+OPTIONS 405 0   https://sso.alfaview.com/oauth2/introspect
+GET 200 127532 application/openapi+json  https://apis.alfaview.com/v2/docs/openapi.json
+GET 401 107 application/problem+json  https://apis.alfaview.com/v2/users/me
+GET 200 615 text/html; charset=utf-8  https://tools.alfaview.com/
+OPTIONS 501 55 application/json  https://tools.alfaview.com/poll/pollservice/list
+GET 301 162 text/html https://support.alfaview.com/en/ https://support.alfaview.com/
+GET 200 280078 application/json; charset=UTF-8  https://support.alfaview.com/wp-json/
+GET 401 0 text/html; charset=utf-8  https://staging-app.alfaview.com/
+[0m
+The status pass is stable; I’m now checking response bodies only for non-sensitive fields (OIDC metadata, public key count, schema/path counts, and error classes).
+[0m$ [0mpython3 -c 'import json,hashlib,re,time,urllib.request,urllib.error
+urls=[("oidc","https://sso.alfaview.com/.well-known/openid-configuration","GET"),("jwks","https://sso.alfaview.com/.well-known/jwks.json","GET"),("graphql","https://app.alfaview.com/graphql","GET"),("authorize","https://sso.alfaview.com/oauth2/authorize?client_id=probe-invalid-20260925&redirect_uri=https%3A%2F%2Fexample.invalid%2Fcb&response_type=code","GET"),("tools","https://tools.alfaview.com/poll/pollservice/list","OPTIONS"),("openapi","https://apis.alfaview.com/v2/docs/openapi.json","GET"),("app","https://app.alfaview.com/","GET")]
+for name,url,method in urls:
+    req=urllib.request.Request(url,method=method,headers={"User-Agent":"alfaview-surface-check/1.0"})
+    try:
+        with urllib.request.urlopen(req,timeout=15) as r:
+            b=r.read(); status=r.status; ct=r.headers.get("content-type","")
+        if name=="oidc":
+            d=json.loads(b); print("OIDC",status,len(b),"issuer",d.get("issuer"),"introspection",d.get("introspection_endpoint"),"algs",",".join(d.get("id_token_signing_alg_values_supported",[])),"auth",",".join(d.get("token_endpoint_auth_methods_supported",[])))
+        elif name=="jwks":
+            d=json.loads(b); ks=d.get("keys",[]); print("JWKS",status,len(b),"keys",len(ks),"algs",sorted(set(k.get("alg") for k in ks)),"md5",hashlib.md5(b).hexdigest())
+        elif name=="graphql":
+            print("GRAPHQL",status,len(b),b[:300].decode("utf-8","replace").replace("\\n"," "))
+        elif name=="authorize":
+            print("AUTHORIZE",status,len(b),hashlib.md5(b).hexdigest(),"FusionAuth" in b.decode("utf-8","replace"),"invalid_client" in b.decode("utf-8","replace"))
+        elif name=="tools":
+            print("TOOLS",status,len(b),b.decode("utf-8","replace"))
+        elif name=="openapi":
+            d=json.loads(b); paths=d.get("paths",{}); print("OPENAPI",status,len(b),"paths",len(paths),"md5",hashlib.md5(b).hexdigest(),"usersDelete", "/v2/users/{id}" in paths,"permissionsPatch", "/v2/rooms/{roomId}/permissions/{userId}" in paths)
+        elif name=="app":
+            s=b.decode("utf-8","replace"); scripts=re.findall(r"<script[^>]+src=\\?\"([^\\\"]+)",s); print("APP",status,len(b),hashlib.md5(b).hexdigest(),"scripts",scripts)
+    except urllib.error.HTTPError as e:
+        b=e.read(); print(name.upper(),e.code,len(b),b[:300].decode("utf-8","replace").replace("\\n"," "))
+    except Exception as e: print(name.upper(),type(e).__name__,str(e)[:120])
+    time.sleep(1.1)'
+OIDC 200 2169 issuer acme.com introspection None algs ES256,ES384,ES512,HS256,HS384,HS512,RS256,RS384,RS512 auth client_secret_basic,client_secret_post,none
+JWKS 200 16257 keys 7 algs ['RS256'] md5 3f8d456c7fd92c6107f3fd77732bd0f4
+GRAPHQL 400 406 {"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the follo
+AUTHORIZE 200 6162 49851df1bbe2efa80fc4b0c4ff5aba34 True True
+TOOLS 501 55 {"code":12,"message":"Method Not Allowed","details":[]}
+OPENAPI 200 127532 paths 37 md5 357b94d367909a40b9299b543d23712b usersDelete True permissionsPatch True
+APP 200 1381 7727e1383b81554c45cb05c149c17e4d scripts ['https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js', 'https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js', 'https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js']
+[0m
+[0m# [0mTodos
+[✓] Run rate-limited read-only checks against standing in-scope surfaces
+[•] Compare current responses with supplied knowledge and identify deltas
+[ ] Rank assets, formulate and self-critique three hypotheses
+[ ] Produce the required seven structured blocks with one next action
+[0m
+The standing responses are unchanged; I’m making one final passive check of the currently referenced public bundle to verify whether the untested magic-token operations are still present.
+[0m$ [0mpython3 -c 'import hashlib,re,urllib.request
+u="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js"
+r=urllib.request.urlopen(urllib.request.Request(u,headers={"User-Agent":"alfaview-surface-check/1.0"}),timeout=30); b=r.read(); s=b.decode("utf-8","replace")
+for term in ("CreateMagicToken","MagicTokenAuthenticate","AdminTokenAuthenticate","AdminSwitchCompany","fetchMagicTokenLaunchURL","optionalAccessToken"):
+    p=s.find(term); print(term,"present" if p>=0 else "absent",s[max(0,p-80):p+len(term)+120] if p>=0 else "")
+print("BUNDLE",r.status,len(b),hashlib.md5(b).hexdigest())'
+CreateMagicToken present essToken,s=n.optionalAccessToken;t(o.HRS);var l=s||r;return(s?An.A:a)({query:Ce.CreateMagicToken,headers:{token:l}}).then((function(e){var n=u()(e,"createMagicToken.magicToken",""),i=u()(e,"createMagicToken.launchURL
+MagicTokenAuthenticate present }}]}},{kind:"OperationDefinition",operation:"mutation",name:{kind:"Name",value:"MagicTokenAuthenticate"},variableDefinitions:[{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"magicToken"}},type
+AdminTokenAuthenticate present ,a=e.rootGetters.gql,r=u()(i,"adminSession.accessToken","");return r?a({query:J.AdminTokenAuthenticate,headers:{token:r}}).then(function(){var e=On(Un().mark((function e(a){var r,s,l,d;return Un().wrap((function(e){for(;;)
+AdminSwitchCompany present COMPANY_ID,permissions:c}),t.next=14;break;case 12:return t.next=14,s({query:Ce.AdminSwitchCompany,headers:{token:d},variables:{nextCompanyId:n}}).then((function(e){var n=e.adminSwitchCompany,t=u()(n,"accessToken",""),
+fetchMagicTokenLaunchURL present ion(e){return e.authentication.magicTokenLaunchURL}})),methods:u(u({},(0,i.i0)({fetchMagicTokenLaunchURL:a.Zh})),{},{handleLaunchClient:function(e){var n,t=this;return(n=o().mark((function n(){var i,a,r,s;return o().wrap((fu
+optionalAccessToken present r,s;return o().wrap((function(n){for(;;)switch(n.prev=n.next){case 0:return i=e.optionalAccessToken,a=e.optionalUsername,r=e.useLegacyFallback,s=void 0!==r&&r,n.abrupt("return",t.fetchMagicTokenLaunchURL({optionalAccess
+BUNDLE 200 1092529 2cb9128353b1f7444e222b4b61e4ffa5
+[0m
+[0m# [0mTodos
+[✓] Run rate-limited read-only checks against standing in-scope surfaces
+[✓] Compare current responses with supplied knowledge and identify deltas
+[•] Rank assets, formulate and self-critique three hypotheses
+[ ] Produce the required seven structured blocks with one next action
+[0m
+[0m# [0mTodos
+[✓] Run rate-limited read-only checks against standing in-scope surfaces
+[✓] Compare current responses with supplied knowledge and identify deltas
+[✓] Rank assets, formulate and self-critique three hypotheses
+[✓] Produce the required seven structured blocks with one next action
+[0m
+[STEP 1 — DELTA]
+[NO_DELTA] Current checks match the baseline: app shell 200/1381B with bundle MD5 `2cb9128353b1f7444e222b4f61e4ffa5`, GraphQL GET 400/406B, OpenAPI 200/127532B/37 paths MD5 `357b94d367909a40b9299b543d23712b`, OIDC 200/2169B, JWKS 200/16257B/7 RS256 keys, users/me 401/107B, authorize 200/6162B, introspect OPTIONS 405, tools list OPTIONS 501/55B, support /wp-json 200/280078B, staging-app 401.
+
+[STEP 2 — PRIORITIZE]
+[PRIO] app.alfaview.com/graphql,8.55,attack_surface=9;business_value=9;tech_exposure=9;gate_ease=8;cloud_surface=5;freshness=10
+[PRIO] sso.alfaview.com/oauth2/introspect,6.15,attack_surface=6;business_value=6;tech_exposure=8;gate_ease=9;cloud_surface=3;freshness=3
+[PRIO] tools.alfaview.com/poll/pollservice/*,6.10,attack_surface=7;business_value=7;tech_exposure=7;gate_ease=5;cloud_surface=4;freshness=4
+
+[STEP 3 — HYPOTHESES]
+[HYP] Passwordless bearer issuance through the magic-token GraphQL pair
+class: AUTH
+asset: app.alfaview.com/graphql
+confidence: 68
+reasoning: The current public bundle contains `CreateMagicToken` with an `optionalAccessToken` branch and a call site selecting a separate Apollo client when that token is present; it also contains `MagicTokenAuthenticate` with an access-token-bearing reply schema. No resolver call was made.
+evidence_needed: Anonymous `CreateMagicToken` returns a token or launch URL, followed by `MagicTokenAuthenticate` returning an access token; otherwise the resolver is gated or the input is invalid.
+verify_steps: `GET https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js`; `GET https://app.alfaview.com/`; confirm the current operation names, optional-token branch, and bundle hash. State-changing GraphQL execution is deferred under passive-only rules.
+impact: If anonymously reachable, this could provide a bearer without password or email verification and enable downstream IDOR, poll BOLA, and token-introspection chains; HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Unauthenticated RFC7662 introspection oracle using fabricated client credentials
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: Current `OPTIONS` returns 405, confirming the live POST-only route; supplied probes record fabricated `client_id` values accepted on POST-body and Basic channels with `{"active":false}`; discovery advertises `client_secret_basic`, `client_secret_post`, and `none`, while `introspection_endpoint` is absent. No valid-token `active:true` result has been established.
+evidence_needed: A self-owned valid bearer returns `active:true` with claims while an invalid or expired bearer returns `active:false`; this requires an authorized test token.
+verify_steps: `GET https://sso.alfaview.com/.well-known/openid-configuration`; `GET https://sso.alfaview.com/.well-known/jwks.json`; `OPTIONS https://sso.alfaview.com/oauth2/introspect`; `GET https://sso.alfaview.com/oauth2/authorize?client_id=probe-invalid-20260925&redirect_uri=https%3A%2F%2Fexample.invalid%2Fcb&response_type=code`; do not submit a token.
+impact: If a valid token is accepted without client authentication, an attacker could fingerprint token liveness, subject, and expiry; MEDIUM.
+testability: HUMAN_ONLY
+
+[HYP] Poll RPC roomId-only authorization may permit cross-room BOLA
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/*
+confidence: 85
+reasoning: The standing bundle mapping pins eight POST verbs with `{roomId}` and optional `{id}` payloads and the custom `Grpc-Metadata-alfaview.token` header; no tenant or company scope field is present. Current `OPTIONS /poll/pollservice/list` returns 501/55B with `{"code":12,"message":"Method Not Allowed"}`; server-side token enforcement and cross-tenant behavior remain unverified.
+evidence_needed: With an owned bearer, an owned room and a foreign room return distinguishable authorization outcomes; token omission must be compared against the same two room identifiers.
+verify_steps: `GET https://tools.alfaview.com/`; `OPTIONS https://tools.alfaview.com/poll/pollservice/list`; `GET https://tools.alfaview.com/` and inspect the current public asset for the verb and payload contract. No poll mutation is authorized.
+impact: If server authorization relies only on the room identifier, an attacker could read or modify polls across tenants; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[STEP 4 — SELF-CRITIQUE]
+[PARKED] support.alfaview.com/wp-json exposure: public data is limited to knowledge-base articles and sensitive routes are authenticated; no logic flaw demonstrated.
+[PARKED] OIDC algorithm/JWKS mismatch: metadata lists ES/HS/RS algorithms while only RS256 keys are published, but no key-confusion or signing exploit is proven.
+[PARKED] Hardcoded tenant identifiers in the app bundle: useful as a pivot, but no direct unauthorized data access is demonstrated.
+[FINAL] 1) tools.alfaview.com poll BOLA — confidence 85; 2) sso.alfaview.com introspection client-auth bypass/oracle — confidence 70; 3) app.alfaview.com magic-token passwordless issuance — confidence 68.
+
+[STEP 5 — NEXT ACTION]
+[PROBE]: `GET https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js` and verify whether `CreateMagicToken`, `MagicTokenAuthenticate`, or a newly exposed anonymous auth operation is present; do not send mutations.
+
+[STEP 6 — LEARNING]
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: the current bundle still exposes the magic-token and admin-session operation surface, while GET remains 400/406B with CSRF guidance; resolver authorization is still unconfirmed.
+[LEARN] REJECTED MISCONFIG @ sso.alfaview.com: the OIDC metadata/JWKS algorithm divergence persists, but no standalone key-confusion exploit is established.
+
+[STEP 7 — RISK]
+[RISK] alfaview: 57 — no new surface was observed; the highest-value IDOR and introspection chains remain token- or tenant-gated, while the current public bundle retains a plausible passwordless authentication lead. No customer data or mutating request was used.
