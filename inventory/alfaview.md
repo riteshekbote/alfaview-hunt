@@ -926,3 +926,15 @@ www.alfaview.com
 ## 2026-09-25 00:08:19 UTC
 
 ## 2026-09-25 04:59:08 UTC
+
+## 2026-09-25 10:03:13 UTC
+- NEW @ support.alfaview.com — first-ever full mapping (31 cycles only ever recorded a 301). WordPress "alfaview Support Center" (server: myracloud, etag "myra-*", host: support/staging → *.ax4z.com), custo
+- NEW @ app.alfaview.com — bundle generation rotated. Old https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js → 302 Location: / (asset retired). Live 1381B shell now references https://alfaview-com-
+- NEW @ app.alfaview.com/graphql — never-mapped passwordless path: CreateMagicToken is invoked with an *optional* token (`fetchMagicTokenLaunchURL({optionalAccessToken})`, a separate Apollo client `An.A` wh
+- NEW @ app.alfaview.com bundle — admin session surface in the SPA: query AdminTokenAuthenticate → Vuex adminSession.accessToken/permissions; mutation AdminSwitchCompany(nextCompanyId); queries GetFinishSig
+- NEW @ app.alfaview.com bundle — hardcoded internal config in public asset: AV_COMPANY_ID="alfatraining-internal", AV_SCHULUNG_COMPANY_ID="alfatraining-schulung", AUDIT_LOG_ENABLED_COMPANIES={both:true}, P
+- NEW @ staging-app.alfaview.com — host referenced by new bundle, absent from inventory: 401 WWW-Authenticate: Basic on / and /graphql (edge-proxy, CSP references jsdelivr graphql-playground assets). Exhaus
+- NEW @ webviewer.dev.alfaview.com — host referenced by new bundle, absent from inventory: 000, no HTTP response. Exhausted.
+- CHANGED @ staging.alfaview.com — 2026-09-02 recon recorded 301 → /en; today /, /en/, /xmlrpc.php, /wp-json/ all return 401 (574B nginx Basic page). Whole staging twin now edge-gated.
+- CHANGED @ app.alfaview.com bundle — GraphQL auth transport pinned: authenticated ops send headers:{token:<accessToken>} (custom `token` header, not Authorization/Bearer); Signup/FinishSignup/CreateMagicToken 
+- NEW NO_DELTA — all standing probes byte-identical to prior cycle (OpenAPI MD5 357b94d3, JWKS 200/16257B, OIDC 200/2169B introspection_endpoint absent, introspect OPTIONS 405, authorize 200/6176B, tools.li

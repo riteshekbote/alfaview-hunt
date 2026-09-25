@@ -1,4 +1,5 @@
-## 2026-09-25 04:58:57 UTC [target] (model nemotron3)
+## 2026-09-25 09:59:44 UTC [target] (model nemotron3)
+[NEW] NO_DELTA — all standing probes byte-identical to prior cycle (OpenAPI MD5 357b94d3, JWKS 200/16257B, OIDC 200/2169B introspection_endpoint absent, introspect OPTIONS 405, authorize 200/6176B, tools.list GET 501/55B, users/me 401/107B, graphql GET 400/406B). Surface fully stable 28+ cycles.
 [PRIO] sso.alfaview.com/oauth2/introspect,9.15,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=8,cloud_surface=7,freshness=10
 [PRIO] tools.alfaview.com/poll/pollservice,7.55,attack_surface=9,business_value=8,tech_exposure=9,gate_ease=3,cloud_surface=6,freshness=9
 [PRIO] app.alfaview.com/graphql,7.45,attack_surface=9,business_value=9,tech_exposure=9,gate_ease=2,cloud_surface=5,freshness=8

@@ -30631,3 +30631,1155 @@ introspection_endpoint ABSENT
 400 406
 200 6176
 [0m
+===== ANALYST bigpickle 2026-09-25 10:03:13 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mdate -u +"%Y-%m-%d %H:%M:%S UTC"
+2026-09-25 09:58:47 UTC
+[0m
+[0m$ [0mls -la 2>/dev/null | head -40; echo "---"; ls -la art/ 2>/dev/null | head -20
+total 692
+drwxr-xr-x 12 runner runner   4096 Sep 25 09:58 .
+drwxr-xr-x  3 runner runner   4096 Sep 25 09:58 ..
+drwxr-xr-x  7 runner runner   4096 Sep 25 09:58 .git
+drwxr-xr-x  3 runner runner   4096 Sep 25 09:58 .github
+-rw-r--r--  1 runner runner   1883 Sep 25 09:58 README.md
+-rw-r--r--  1 runner runner     32 Sep 25 09:58 analyst-out.txt
+-rw-r--r--  1 runner runner 275157 Sep 25 09:58 analyst-prompt.txt
+-rw-r--r--  1 runner runner 271247 Sep 25 09:58 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 25 09:58 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 25 09:58 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 25 09:58 leads
+-rw-r--r--  1 runner runner  58861 Sep 25 09:58 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 25 09:58 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 25 09:58 reports
+drwxr-xr-x  2 runner runner   4096 Sep 25 09:58 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 25 09:58 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 25 09:58 scripts
+-rw-r--r--  1 runner runner     33 Sep 25 09:58 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 25 09:58 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 25 09:58 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 25 09:58 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 25 09:58 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 25 09:58 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 25 09:58 triage
+---
+[0m
+[0m$ [0mcd /tmp/opencode 2>/dev/null || mkdir -p /tmp/opencode && cd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+# Probe 1: OpenAPI prod
+curl -s -o openapi_prod.json -w "openapi_prod %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://apis.alfaview.com/v2/docs/openapi.json
+sleep 1
+# Probe 2: OpenAPI beta
+curl -s -o openapi_beta.json -w "openapi_beta %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://beta-apis.alfaview.com/v2/docs/openapi.json
+sleep 1
+md5sum openapi_prod.json openapi_beta.json 2>/dev/null
+openapi_prod 200 127532
+openapi_beta 200 127532
+357b94d367909a40b9299b543d23712b  openapi_prod.json
+357b94d367909a40b9299b543d23712b  openapi_beta.json
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+python3 -c "
+import json
+d=json.load(open('openapi_prod.json'))
+print('paths',len(d.get('paths',{})))
+print('title',d.get('info',{}).get('title'),d.get('info',{}).get('version'))
+"
+sleep 1
+curl -s -o oidc.json -w "oidc %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://sso.alfaview.com/.well-known/openid-configuration
+sleep 1
+curl -s -o jwks.json -w "jwks %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://sso.alfaview.com/.well-known/jwks.json
+paths 37
+title alfaview 2
+oidc 200 2169
+jwks 200 16257
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+python3 -c "
+import json
+d=json.load(open('oidc.json'))
+for k in ['issuer','authorization_endpoint','token_endpoint','introspection_endpoint','jwks_uri','registration_endpoint','token_endpoint_auth_methods_supported','id_token_signing_alg_values_supported','response_types_supported','grant_types_supported','scopes_supported']:
+    print(k,'=',d.get(k,'<ABSENT>'))
+"
+md5sum jwks.json
+python3 -c "
+import json
+d=json.load(open('jwks.json'))
+ks=d.get('keys',[])
+print('jwks keys',len(ks))
+print('algs',set(k.get('alg') for k in ks))
+print('kty',set(k.get('kty') for k in ks))
+"
+issuer = acme.com
+authorization_endpoint = https://sso.alfaview.com/oauth2/authorize
+token_endpoint = https://sso.alfaview.com/oauth2/token
+introspection_endpoint = <ABSENT>
+jwks_uri = https://sso.alfaview.com/.well-known/jwks.json
+registration_endpoint = <ABSENT>
+token_endpoint_auth_methods_supported = ['client_secret_basic', 'client_secret_post', 'none']
+id_token_signing_alg_values_supported = ['ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+response_types_supported = ['code', 'id_token', 'token id_token']
+grant_types_supported = ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+scopes_supported = ['openid', 'offline_access', 'email', 'phone', 'profile']
+3f8d456c7fd92c6107f3fd77732bd0f4  jwks.json
+jwks keys 7
+algs {'RS256'}
+kty {'RSA'}
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o introspect_opt.txt -D - -X OPTIONS -w "\n[opt] %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://sso.alfaview.com/oauth2/introspect 2>&1 | tail -20
+sleep 1
+curl -s -o users_me.txt -w "users_me %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://apis.alfaview.com/v2/users/me
+sleep 1
+curl -s -o tools_list.txt -w "tools_list_GET %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://tools.alfaview.com/poll/pollservice/list
+cat tools_list.txt; echo
+cat users_me.txt; echo
+HTTP/2 405 
+cache-control: no-cache
+date: Fri, 25 Sep 2026 09:59:10 GMT
+content-length: 0
+server: edge-proxy
+
+
+[opt] 405 0
+users_me 401 107
+tools_list_GET 501 55
+{"code":12,"message":"Method Not Allowed","details":[]}
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+for p in "/" "/en/"; do
+  curl -s -o "sup$(echo $p|tr '/' '_').html" -D "sup$(echo $p|tr '/' '_').hdr" -w "support$p %{http_code} %{size_download} -> %{redirect_url}\n" --max-time 20 -A "$UA" "https://support.alfaview.com$p"
+  sleep 1
+done
+echo "=== headers / ==="; cat sup_.hdr
+echo "=== headers /en/ ==="; cat sup_en_.hdr
+support/ 301 162 -> https://support.alfaview.com/en/
+support/en/ 200 52229 -> 
+=== headers / ===
+HTTP/2 301 
+server: myracloud
+date: Fri, 25 Sep 2026 09:59:17 GMT
+content-type: text/html
+content-length: 162
+location: https://support.alfaview.com/en/
+vary: accept-language
+expires: Fri, 25 Sep 2026 09:59:17 GMT
+cache-control: max-age=0
+etag: "myra-45f27cf3"
+
+=== headers /en/ ===
+HTTP/2 200 
+server: myracloud
+date: Fri, 25 Sep 2026 09:59:18 GMT
+content-type: text/html; charset=UTF-8
+x-cache-lifetime: 604800
+x-cache-tags: ad35,ad35-post-2
+referrer-policy: same-origin
+alt-svc: h3=":443"; ma=86400
+x-cache-age: 249461
+pragma: no-cache
+cache-control: max-age=0, no-cache, no-store
+x-page-speed: 1
+link: </wp-content/uploads/98c435f5c1/pa-2wiOR7GbJ7PkH4s0wT9tp.js>; rel=preload; as=script; nopush
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+python3 - <<'EOF'
+import re
+h=open('sup_en_.html',encoding='utf-8',errors='ignore').read()
+print('len',len(h))
+# generator
+for m in re.findall(r'<meta[^>]*name="generator"[^>]*>',h): print('GEN:',m)
+# wp paths
+paths=set(re.findall(r'(/wp-content/[^"\')\s]+|/wp-includes/[^"\')\s]+)',h))
+print('wp-paths',len(paths))
+for p in sorted(paths)[:25]: print(' ',p)
+# theme/plugin hints
+print('themes:',set(re.findall(r'/themes/([^/"\'\s]+)',h)))
+print('plugins:',set(re.findall(r'/plugins/([^/"\'\s]+)',h)))
+print('title:',re.findall(r'<title>(.*?)</title>',h))
+EOF
+len 52225
+wp-paths 13
+  /wp-content/*
+  /wp-content/plugins/*
+  /wp-content/plugins/sitepress-multilingual-cms/res/js/cookies/language-cookie.js?ver=497000
+  /wp-content/plugins/sitepress-multilingual-cms/templates/language-switchers/menu-item/style.min.css?ver=1
+  /wp-content/plugins/stop-user-enumeration/frontend/js/frontend.js?ver=1.7.8
+  /wp-content/themes/alfaview-support/*
+  /wp-content/themes/alfaview-support/build/main.css?ver=1787577592
+  /wp-content/themes/alfaview-support/build/main.js?ver=1787577592
+  /wp-content/themes/alfaview-support/static/images/favicon/production/favicon.ico
+  /wp-content/themes/alfaview-support/static/images/favicon/production/icon-192x192.png
+  /wp-content/themes/alfaview-support/static/images/logo_alfaview_normal_black.svg
+  /wp-content/uploads/*
+  /wp-content/uploads/98c435f5c1/pa-2wiOR7GbJ7PkH4s0wT9tp.js
+themes: {'alfaview-support'}
+plugins: {'sitepress-multilingual-cms', '*', 'stop-user-enumeration'}
+title: ['alfaview Support Center &#8211; Home']
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o wpjson.txt -w "wpjson %{http_code} %{size_download}\n" --max-time 25 -A "$UA" "https://support.alfaview.com/wp-json/"
+sleep 1
+head -c 600 wpjson.txt; echo
+wpjson 200 280078
+{"name":"alfaview Support Center","description":"Support Center","url":"https:\/\/support.alfaview.com","home":"https:\/\/support.alfaview.com\/en\/","gmt_offset":"0","timezone_string":"","page_for_posts":0,"page_on_front":2,"show_on_front":"page","namespaces":["oembed\/1.0","wpml\/v1","redirection\/v1","wpml\/st\/v1","wpml\/tm\/v1","wpml\/ate\/v1","a63f92\/v1","duplicate-post\/v1","alfaview\/v1","two-factor\/1.0","otgs\/installer\/v1","wp\/v2","wp-site-health\/v1","wp-block-editor\/v1","wp-abilities\/v1"],"authentication":{"application-passwords":{"endpoints":{"authorization":"https:\/\/suppo
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import json
+d=json.load(open('wpjson.txt'))
+print("== authentication ==")
+print(json.dumps(d.get('authentication',{}),indent=1)[:1200])
+routes=d.get('routes',{})
+print("total routes",len(routes))
+for r in sorted(routes):
+    if any(r.startswith(n) for n in ('/alfaview','/a63f92','/otgs','/wp-site-health','/two-factor','/redirection','/duplicate-post','/wpml','/wpml/ate','/wp/v2/users','/wp/v2/settings')):
+        meth=[m for m in routes[r].get('endpoints',[{}])[0].keys() if m in ('GET','POST','PUT','PATCH','DELETE')]
+        print(f"{r}  {routes[r].get('endpoints',[{}])[0].get('methods')}")
+EOF
+== authentication ==
+{
+ "application-passwords": {
+  "endpoints": {
+   "authorization": "https://support.alfaview.com/wp-admin/authorize-application.php"
+  }
+ }
+}
+total routes 272
+/a63f92/v1  ['GET']
+/a63f92/v1/9257/831e92ed  ['POST']
+/alfaview/v1  ['GET']
+/alfaview/v1/search-index  ['GET']
+/duplicate-post/v1  ['GET']
+/duplicate-post/v1/original/(?P<post_id>\d+)  ['DELETE']
+/otgs/installer/v1  ['GET']
+/otgs/installer/v1/push/fetch-subscription  ['GET']
+/redirection/v1  ['GET']
+/redirection/v1/404  ['GET']
+/redirection/v1/bulk/404/(?P<bulk>delete)  ['POST', 'PUT', 'PATCH']
+/redirection/v1/bulk/group/(?P<bulk>delete|enable|disable)  ['POST', 'PUT', 'PATCH']
+/redirection/v1/bulk/log/(?P<bulk>delete)  ['POST', 'PUT', 'PATCH']
+/redirection/v1/bulk/redirect/(?P<bulk>delete|enable|disable|reset)  ['POST', 'PUT', 'PATCH']
+/redirection/v1/export/(?P<module>1|2|3|all)/(?P<format>csv|apache|nginx|json|redirects-file)  ['GET']
+/redirection/v1/export/404/(?P<format>csv|json)  ['GET']
+/redirection/v1/export/404/preview  ['GET']
+/redirection/v1/export/bundle  ['GET']
+/redirection/v1/export/bundle/preview  ['GET']
+/redirection/v1/export/group/(?P<format>csv|json)  ['GET']
+/redirection/v1/export/log/(?P<format>csv|json)  ['GET']
+/redirection/v1/export/log/preview  ['GET']
+/redirection/v1/export/redirect  ['GET']
+/redirection/v1/export/redirect/preview  ['GET']
+/redirection/v1/group  ['GET']
+/redirection/v1/group/(?P<id>[\d]+)  ['POST', 'PUT', 'PATCH']
+/redirection/v1/group/dropdown  ['GET']
+/redirection/v1/import/file/(?P<group_id>\d+)  ['POST', 'PUT', 'PATCH']
+/redirection/v1/import/plugin  ['GET']
+/redirection/v1/import/plugin/(?P<plugin>[a-z0-9-]+)/preview  ['GET']
+/redirection/v1/log  ['GET']
+/redirection/v1/plugin  ['GET']
+/redirection/v1/plugin/data  ['POST', 'PUT', 'PATCH']
+/redirection/v1/plugin/delete  ['POST', 'PUT', 'PATCH']
+/redirection/v1/plugin/finish  ['POST', 'PUT', 'PATCH']
+/redirection/v1/plugin/fix  ['POST', 'PUT', 'PATCH']
+/redirection/v1/plugin/test  ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+/redirection/v1/redirect  ['GET']
+/redirection/v1/redirect/(?P<id>[\d]+)  ['POST', 'PUT', 'PATCH']
+/redirection/v1/redirect/post  ['GET']
+/redirection/v1/setting  ['GET']
+/two-factor/1.0  ['GET']
+/two-factor/1.0/generate-backup-codes  ['POST']
+/two-factor/1.0/totp  ['DELETE']
+/wp-site-health/v1  ['GET']
+/wp-site-health/v1/directory-sizes  ['GET']
+/wp-site-health/v1/tests/authorization-header  ['GET']
+/wp-site-health/v1/tests/background-updates  ['GET']
+/wp-site-health/v1/tests/dotorg-communication  ['GET']
+/wp-site-health/v1/tests/https-status  ['GET']
+/wp-site-health/v1/tests/loopback-requests  ['GET']
+/wp-site-health/v1/tests/page-cache  ['GET']
+/wp/v2/settings  ['GET']
+/wp/v2/users  ['GET']
+/wp/v2/users/(?P<id>[\d]+)  ['GET']
+/wp/v2/users/(?P<user_id>(?:[\d]+|me))/application-passwords  ['GET']
+/wp/v2/users/(?P<user_id>(?:[\d]+|me))/application-passwords/(?P<uuid>[\w\-]+)  ['GET']
+/wp/v2/users/(?P<user_id>(?:[\d]+|me))/application-passwords/introspect  ['GET']
+/wp/v2/users/me  ['GET']
+/wpml/ate/v1  ['GET']
+/wpml/ate/v1/ate/proxy  ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+/wpml/st/v1  ['GET']
+/wpml/st/v1/import_mo_strings  ['POST']
+/wpml/st/v1/pre_generate_mo_files  ['POST']
+/wpml/st/v1/settings  ['POST']
+/wpml/st/v1/string-packages  ['GET']
+/wpml/st/v1/strings  ['GET']
+/wpml/st/v1/strings/filters  ['GET']
+/wpml/st/v1/strings/itemscount  ['GET']
+/wpml/st/v1/strings/processstringsqueue  ['POST']
+/wpml/st/v1/strings/settings  ['POST']
+/wpml/tm/v1  ['GET']
+/wpml/tm/v1/ams/console  ['GET']
+/wpml/tm/v1/ams/engines  ['GET']
+/wpml/tm/v1/ams/register_manager  ['POST']
+/wpml/tm/v1/ams/status  ['GET']
+/wpml/tm/v1/ams/synchronize/managers  ['GET']
+/wpml/tm/v1/ams/synchronize/translators  ['GET']
+/wpml/tm/v1/ate/jobs  ['POST']
+/wpml/tm/v1/ate/jobs/(?P<ateJobId>\d+)  ['GET']
+/wpml/tm/v1/ate/jobs/(?P<ateJobId>\d+)/fix  ['GET']
+/wpml/tm/v1/ate/jobs/download  ['POST']
+/wpml/tm/v1/ate/jobs/receive/(?P<wpmlJobId>\d+)  ['GET']
+/wpml/tm/v1/ate/jobs/retry  ['POST']
+/wpml/tm/v1/ate/jobs/store  ['POST']
+/wpml/tm/v1/ate/jobs/sync  ['POST']
+/wpml/tm/v1/jobs  ['GET']
+/wpml/tm/v1/jobs/assign  ['POST']
+/wpml/tm/v1/jobs/cancel  ['POST']
+/wpml/tm/v1/tp/apply-translations  ['POST']
+/wpml/tm/v1/tp/batches/status  ['GET']
+/wpml/tm/v1/tp/batches/sync  ['POST']
+/wpml/tm/v1/tp/xliff/download/(?P<job_id>\d+)/(?P<job_type>\w+)  ['GET']
+/wpml/tm/v1/xliff/fetch/(?P<jobId>\d+)  ['GET']
+/wpml/v1  ['GET']
+/wpml/v1/account-balances  ['GET']
+/wpml/v1/cancel-jobs  ['POST']
+/wpml/v1/cancelallautomaticjobs  ['GET']
+/wpml/v1/capture/event  ['POST']
+/wpml/v1/credits  ['GET']
+/wpml/v1/custom-xml-config  ['GET']
+/wpml/v1/custom-xml-config/validate  ['POST']
+/wpml/v1/dismiss-notice  ['POST']
+/wpml/v1/dismiss-notice-per-user  ['POST']
+/wpml/v1/enable-ate  ['POST']
+/wpml/v1/get-credits-per-word  ['GET']
+/wpml/v1/get-dismissed-notices  ['GET']
+/wpml/v1/get-engines  ['GET']
+/wpml/v1/get-needs-update-count-created-in-cte  ['GET']
+/wpml/v1/get-words-to-translate-for-items  ['POST']
+/wpml/v1/get-words-to-translate-for-types  ['POST']
+/wpml/v1/getlocaltranslatorbyid  ['GET']
+/wpml/v1/getlocaltranslators  ['GET']
+/wpml/v1/gettranslationeditortype  ['GET']
+/wpml/v1/gettranslationstatus  ['GET']
+/wpml/v1/getuntranslatedtypescount  ['GET']
+/wpml/v1/glossary-count  ['GET']
+/wpml/v1/has-posts-using-native-editor  ['GET']
+/wpml/v1/item-sections/populated  ['GET']
+/wpml/v1/minimum-requirements  ['GET']
+/wpml/v1/posthog/refresh-cache  ['POST']
+/wpml/v1/posts  ['GET']
+/wpml/v1/posts/count  ['GET']
+/wpml/v1/posts/hierarchical  ['GET']
+/wpml/v1/posts/taxonomies  ['GET']
+/wpml/v1/posts/terms  ['GET']
+/wpml/v1/reloadremotetranslationservice  ['GET']
+/wpml/v1/resend-unsolvable-jobs  ['POST']
+/wpml/v1/rest/status  ['GET']
+/wpml/v1/save-automatic-translation-settings  ['POST']
+/wpml/v1/save-translator-note  ['POST']
+/wpml/v1/send-to-translation/default-batch-name  ['GET']
+/wpml/v1/send-to-translation/validate-batch-name  ['POST']
+/wpml/v1/send-to-translation/validate-translation-options  ['POST']
+/wpml/v1/set-review-translation-option  ['POST']
+/wpml/v1/tranlsation-proxy/getlastpickedup  ['GET']
+/wpml/v1/translate-everything/disable  ['POST']
+/wpml/v1/translate-everything/enable  ['POST']
+/wpml/v1/translate-existing-content  ['POST']
+/wpml/v1/translation-proxy/commit-batch  ['POST']
+/wpml/v1/translation-proxy/getRemoteJobsCount  ['GET']
+/wpml/v1/troubleshooting/enable-alias-domain  ['POST']
+/wpml/v1/troubleshooting/posthog  ['POST']
+/wpml/v1/troubleshooting/register-alias-domain  ['POST']
+/wpml/v1/troubleshooting/reset-alias-domain  ['POST']
+/wpml/v1/unsolvable-jobs  ['GET']
+/wpml/v1/updates  ['POST']
+/wpml/v1/website-contexts  ['GET']
+/wpml/v1/wpml-content-stats  ['POST']
+/wpml/v1/wpml-ph-make-external-request  ['POST']
+/wpml/v1/wpml-proxy/status  ['GET']
+/wpml/v1/wpml/posthog/capture-event  ['POST']
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+probe(){ curl -s -o "wp_$2.txt" -w "%{http_code} %{size_download}  $1\n" --max-time 25 -A "$UA" "https://support.alfaview.com$1"; sleep 1; }
+probe "/wp-json/alfaview/v1/search-index" av_search
+probe "/wp-json/redirection/v1/export/redirect" rd_export
+probe "/wp-json/redirection/v1/redirect" rd_list
+probe "/wp-json/wp/v2/users" wp_users
+probe "/wp-json/wp-site-health/v1/tests/authorization-header" sh_auth
+echo "--- bodies ---"
+head -c 300 wp_av_search.txt; echo
+echo "###"; head -c 300 wp_rd_export.txt; echo
+echo "###"; head -c 300 wp_rd_list.txt; echo
+echo "###"; head -c 300 wp_wp_users.txt; echo
+echo "###"; head -c 300 wp_sh_auth.txt; echo
+200 32366  /wp-json/alfaview/v1/search-index
+401 98  /wp-json/redirection/v1/export/redirect
+401 98  /wp-json/redirection/v1/redirect
+401 127  /wp-json/wp/v2/users
+401 98  /wp-json/wp-site-health/v1/tests/authorization-header
+--- bodies ---
+{"lang":"en","generated_at":1790090956,"count":102,"items":[{"id":10533,"title":"File Sharing","url":"https:\/\/support.alfaview.com\/en\/alfaview-app\/alfaview-room\/primary-and-secondary-controls\/file-sharing\/","excerpt":"Before you startThe file sharing feature is disabled for newly created com
+###
+{"code":"rest_forbidden","message":"Sorry, you are not allowed to do that.","data":{"status":401}}
+###
+{"code":"rest_forbidden","message":"Sorry, you are not allowed to do that.","data":{"status":401}}
+###
+{"code":"rest_cannot_access","message":"Only authenticated users can access the User endpoint REST API.","data":{"status":401}}
+###
+{"code":"rest_forbidden","message":"Sorry, you are not allowed to do that.","data":{"status":401}}
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o stg.json -D stg.hdr -w "staging_wpjson %{http_code} %{size_download}\n" --max-time 25 -A "$UA" "https://staging.alfaview.com/wp-json/"; sleep 1
+head -c 300 stg.json; echo; echo "--- server hdrs ---"; grep -i -E "^(server|x-powered|generator|etag|location)" stg.hdr
+echo "=== staging other probes ==="
+for p in "/en/" "/xmlrpc.php" "/wp-login.php" "/wp-json/alfaview/v1/search-index"; do
+ curl -s -o /dev/null -w "%{http_code} %{size_download}  $p\n" --max-time 20 -A "$UA" "https://staging.alfaview.com$p"; sleep 1
+done
+staging_wpjson 401 574
+<html>
+<head><title>401 Authorization Required</title></head>
+<body>
+<center><h1>401 Authorization Required</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+<!-- a padding to disable MSIE and Chrome friendly error page -->
+<!-- a padding to disable MSIE and Chrome friendly error page
+--- server hdrs ---
+server: myracloud
+=== staging other probes ===
+401 574  /en/
+401 574  /xmlrpc.php
+401 574  /wp-login.php
+401 574  /wp-json/alfaview/v1/search-index
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o supmain.js -w "mainjs %{http_code} %{size_download}\n" --max-time 25 -A "$UA" "https://support.alfaview.com/wp-content/themes/alfaview-support/build/main.js?ver=1787577592"
+sleep 1
+python3 - <<'EOF'
+import re
+try:
+    s=open('supmain.js',encoding='utf-8',errors='ignore').read()
+except Exception as e:
+    print('err',e); raise SystemExit
+print('len',len(s))
+urls=set(re.findall(r'https?://[a-zA-Z0-9._~:/?#\[\]@!$&\'()*+,;=%-]+',s))
+for u in sorted(urls)[:40]: print('URL:',u)
+paths=set(re.findall(r'["\'](/[a-zA-Z0-9._~:/?#\[\]@!$&\'()*+,;=%-]{3,60})["\']',s))
+print('--- paths ---')
+for p in sorted(paths)[:60]: print(' ',p)
+for kw in ['alfaview.com','api/','graphql','token','Authorization','search','csrf','nonce']:
+    print(kw, s.count(kw))
+EOF
+mainjs 200 119983
+len 119971
+URL: http://www.w3.org/2000/svg
+--- paths ---
+  /wp-json/alfaview/v1/search-index
+  /wp-json/wp/v2/search
+alfaview.com 0
+api/ 0
+graphql 0
+token 3
+Authorization 0
+search 39
+csrf 0
+nonce 0
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import json,re
+d=json.load(open('openapi_prod.json'))
+paths=d['paths']
+print("== multipart / upload ==")
+for p,ops in paths.items():
+    for m,o in ops.items():
+        rb=o.get('requestBody',{})
+        for ct in (rb.get('content') or {}):
+            if 'multipart' in ct or 'octet' in ct:
+                print(m.upper(),p,ct)
+print()
+print("== request bodies with url-ish property names ==")
+schemas=d.get('components',{}).get('schemas',{})
+urlprops={}
+for name,sch in schemas.items():
+    for prop,ps in (sch.get('properties') or {}).items():
+        if re.search(r'url|uri|href|endpoint|callback|webhook|host|domain|image|avatar|logo|file|path',prop,re.I):
+            urlprops.setdefault(name,[]).append(prop)
+for k,v in sorted(urlprops.items()):
+    print(' ',k,v)
+EOF
+== multipart / upload ==
+
+== request bodies with url-ish property names ==
+  GroupLink ['joinUrl']
+  GroupLinkAuthenticationInfo ['clientLaunchUrl', 'webclientLaunchUrl']
+  GuestLink ['joinUrl']
+  GuestLinkAuthenticationInfo ['clientLaunchUrl', 'webclientLaunchUrl']
+  RoomLimits ['maxFiles', 'remainingFiles']
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o app.js -w "app.js %{http_code} %{size_download}\n" --max-time 40 -A "$UA" https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js
+python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='ignore').read()
+print('len',len(s))
+for kw in ['usercontent','user-content','upload','Upload','alfaview.token','Grpc-Metadata','fileService','file-service','/files/']:
+    print(kw, s.count(kw))
+u=set(re.findall(r'https?://[a-zA-Z0-9._~:/?#\[\]@!$&\'()*+,;=%-]{6,90}',s))
+sel=[x for x in sorted(u) if any(k in x.lower() for k in ('content','upload','file','apis.','sso.'))]
+for x in sel[:30]: print('URL:',x)
+EOF
+app.js 302 23
+len 23
+usercontent 0
+user-content 0
+upload 0
+Upload 0
+alfaview.token 0
+Grpc-Metadata 0
+fileService 0
+file-service 0
+/files/ 0
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o appshell.html -D appshell.hdr -w "app_root %{http_code} %{size_download}\n" --max-time 25 -A "$UA" https://app.alfaview.com/
+grep -iE "^(location|server|content-type)" appshell.hdr
+python3 - <<'EOF'
+import re
+h=open('appshell.html',encoding='utf-8',errors='ignore').read()
+print('len',len(h))
+print('title',re.findall(r'<title>(.*?)</title>',h))
+for m in sorted(set(re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"',h))): print('ASSET:',m)
+print('CSP-ish meta:',re.findall(r'<meta[^>]+>',h)[:6])
+EOF
+app_root 200 1381
+content-type: text/html; charset=UTF-8
+server: edge-proxy
+len 1381
+title ['alfaview']
+ASSET: https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js
+ASSET: https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js
+ASSET: https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js
+ASSET: https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/app.min.d046c93e5071d179142f.css
+ASSET: https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/vendor-vue-vuetify.min.04d1ead8363afa7c651b.css
+CSP-ish meta: ['<meta content="text/html; charset=UTF-8"/>', '<meta name="viewport" content="width=device-width,initial-scale=1"/>', '<meta name="description" content="High quality audio/video conferencing for professional online meetings and live classes."/>']
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o app_new.js -w "app_new %{http_code} %{size_download}\n" --max-time 60 -A "$UA" "https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js"
+md5sum app_new.js; ls -l app_new.js
+app_new 200 1092529
+2cb9128353b1f7444e222b4b61e4ffa5  app_new.js
+-rw-r--r-- 1 runner runner 1092529 Sep 25 10:00 app_new.js
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re,json
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+print('len',len(s))
+# GraphQL operation names: find "mutation X(" / "query X(" patterns inside gql template strings
+ops=set()
+for m in re.finditer(r'(?:^|[`"\'\s])(mutation|query|subscription)\s+([A-Za-z0-9_]+)\s*[\(\{]',s):
+    ops.add((m.group(1),m.group(2)))
+print('ops found',len(ops))
+open('ops_new.txt','w').write('\n'.join(f'{a} {b}' for a,b in sorted(ops)))
+for a,b in sorted(ops):
+    if a!='query': print(a,b)
+EOF
+len 1091133
+ops found 0
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+for kw in ['guestAuthenticate','guestJoin','CreateCompany','listIdentityProviders','SearchCompanies','generateFileDownloadURL','Signup','finishSignup','FinishSignup','Grpc-Metadata','alfaview.token','usercontent','uploadFile','UploadFile','/v2/','apis.alfaview','sso.alfaview','accessToken','activationToken']:
+    print(kw, s.count(kw))
+i=s.find('guestAuthenticate')
+print('---context---')
+print(s[i-600:i+400] if i>0 else 'not found')
+EOF
+guestAuthenticate 2
+guestJoin 3
+CreateCompany 5
+listIdentityProviders 2
+SearchCompanies 4
+generateFileDownloadURL 2
+Signup 35
+finishSignup 6
+FinishSignup 13
+Grpc-Metadata 0
+alfaview.token 0
+usercontent 0
+uploadFile 0
+UploadFile 0
+/v2/ 0
+apis.alfaview 0
+sso.alfaview 0
+accessToken 72
+activationToken 9
+---context---
+"Name",value:"userId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"companyId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"roomId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"guestAuthenticate"},arguments:[{kind:"Argument",name:{kind:"Name",value:"userId"},value:{kind:"Variable",name:{kind:"Name",value:"userId"}}},{kind:"Argument",name:{kind:"Name",value:"companyId"},value:{kind:"Variable",name:{kind:"Name",value:"companyId"}}},{kind:"Argument",name:{kind:"Name",value:"roomId"},value:{kind:"Variable",name:{kind:"Name",value:"roomId"}}}],directives:[],selectionSet:{kind
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+# operation names
+muts=set(re.findall(r'operation:"mutation",(?:variableDefinitions|directives|name):\{?[^}]{0,400}?value:"([A-Za-z0-9_]+)"',s))
+# fallback: any occurrence of operation:"mutation" followed within 600 chars by a Name value
+for m in re.finditer(r'operation:"(mutation|query|subscription)"',s):
+    seg=s[m.end():m.end()+800]
+    nm=re.search(r'kind:"Name",value:"([A-Za-z0-9_]+)"',seg)
+    if nm:
+        (muts if m.group(1)=='mutation' else set()).add(nm.group(1)) if m.group(1)=='mutation' else None
+muts=set()
+for m in re.finditer(r'operation:"(mutation|query|subscription)"',s):
+    seg=s[m.end():m.end()+800]
+    nm=re.search(r'kind:"Name",value:"([A-Za-z0-9_]+)"',seg)
+    if nm and m.group(1)=='mutation': muts.add(nm.group(1))
+print('MUTATIONS',len(muts))
+for x in sorted(muts): print('  mut',x)
+EOF
+MUTATIONS 90
+  mut AdminReinvitePendingUser
+  mut AdminSwitchCompany
+  mut AssignCompanyAdminPermission
+  mut AssignGrantCompanyAdminPermission
+  mut BatchAssignUsers
+  mut BatchCreateGroupLinks
+  mut BatchCreateRoomStructure
+  mut BatchCreateRooms
+  mut BatchDeleteUsers
+  mut BatchInviteExternalMembers
+  mut BatchReinvitePendingUsers
+  mut BatchUnassignUsers
+  mut BatchUpdateRoomsCapacity
+  mut BatchUpdateRoomsDefaultUserRole
+  mut BatchUpdateRoomsFeatures
+  mut BatchUpdateRoomsTranscriptionSettings
+  mut CancelMeeting
+  mut ChangePassword
+  mut Checkout
+  mut CreateApiKey
+  mut CreateCompany
+  mut CreateGroup
+  mut CreateGroupLink
+  mut CreateMagicToken
+  mut CreateMeeting
+  mut CreateRoom
+  mut CredentialsAuthenticate
+  mut DeactivateApiKey
+  mut DeleteApiKey
+  mut DeleteCompany
+  mut DeleteFiles
+  mut DeleteGroup
+  mut DeleteRoom
+  mut DeleteRoomLinks
+  mut DeleteUser
+  mut DisableMFA
+  mut DuplicateRoom
+  mut EnableMFA
+  mut FetchGuestInfo
+  mut FinishMultiFactorAuthentication
+  mut FinishSignup
+  mut GuestJoin
+  mut InviteAndAssignUsers
+  mut InviteExternalMembers
+  mut InviteUsers
+  mut LdapCredentialsAuthenticate
+  mut LeaveCompany
+  mut MagicTokenAuthenticate
+  mut MassUpdateRoomLinks
+  mut RegeneratePasscode
+  mut RegenerateRecoveryCodes
+  mut ReinvitePendingUser
+  mut RemoveCompanyBrandingLogo
+  mut ResendGuestInviteEmail
+  mut ResetPassword
+  mut SendDeleteCompanyConfirmation
+  mut SetGroupLinkName
+  mut SetNewPassword
+  mut SetPrivacyPolicyUrl
+  mut SetRoomLinkDialIn
+  mut SetRoomLinkRole
+  mut SetRoomLinkValidityPeriod
+  mut Signup
+  mut SortRooms
+  mut SwitchCompany
+  mut TokenAuthenticate
+  mut UnassignCompanyAdminPermission
+  mut UnassignGrantCompanyAdminPermission
+  mut UpdateCompany
+  mut UpdateCompanyBranding
+  mut UpdateCompanyName
+  mut UpdateCompanyOwnerId
+  mut UpdateCompanyQuotas
+  mut UpdateCompanySearchCache
+  mut UpdateFavoriteRooms
+  mut UpdateFileCompanySettings
+  mut UpdateFileRoomSettings
+  mut UpdateFiles
+  mut UpdateGroup
+  mut UpdateMeeting
+  mut UpdatePermissionGroups
+  mut UpdateRoom
+  mut UpdateRoomWaitingRoomState
+  mut UpdateRoomWaitingRoomWelcomeNote
+  mut UpdateTranscriptionProvider
+  mut UpdateTranscriptionSettings
+  mut UpdateTranslationProvider
+  mut UpdateUser
+  mut UpdateUserPermissions
+  mut VerifyMFASetup
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+def op_ctx(name, before=200, after=3000):
+    for m in re.finditer(r'operation:"(?:mutation|query)"',s):
+        seg=s[m.end():m.end()+300]
+        nm=re.search(r'kind:"Name",value:"([A-Za-z0-9_]+)"',seg)
+        if nm and nm.group(1)==name:
+            return s[max(0,m.start()-before): m.end()+after]
+    return None
+for op in ['MagicTokenAuthenticate','CreateMagicToken','TokenAuthenticate','AdminSwitchCompany','FetchGuestInfo','ResetPassword','SetNewPassword','CreateApiKey','DisableMFA']:
+    c=op_ctx(op)
+    if not c: print(op,'NOT FOUND'); continue
+    args=re.findall(r'kind:"Argument",name:\{kind:"Name",value:"([A-Za-z0-9_]+)"\}',c)
+    # first-level selections (approx: all Field names after first selectionSet)
+    idx=c.find('selectionSet')
+    tail=c[idx:] if idx>0 else c
+    fields=re.findall(r'kind:"Field",name:\{kind:"Name",value:"([A-Za-z0-9_]+)"',tail)
+    print(f"{op}: args={args[:12]} replyfields={fields[:20]}")
+EOF
+MagicTokenAuthenticate: args=['magicToken', 'userId', 'companyId', 'roomId', 'displayName'] replyfields=['magicTokenAuthenticate', 'accessToken', 'expiresAt', 'userId', 'permissions', 'accessibleAccounts', 'guestJoin', 'joinLink', 'expiry']
+CreateMagicToken: args=['username', 'alias', 'userId', 'alias', 'userId'] replyfields=['createMagicToken', 'magicToken', 'launchURL', 'deactivateApiKey', 'deleteApiKey', 'disableMFA', 'enableMFA', 'enrollmentSessionToken', 'totpSecret', 'issuer', 'accountName']
+TokenAuthenticate: args=['password', 'magicToken', 'userId'] replyfields=['tokenAuthenticate', 'accessToken', 'expiresAt', 'userId', 'userData', 'companyId', 'permissions', 'accessibleAccounts', 'magicTokenAuthenticate', 'accessToken', 'expiresAt', 'userId', 'permissions', 'accessibleAccounts', 'guestJoin']
+AdminSwitchCompany: args=['nextCompanyId', 'userId', 'userId', 'userId'] replyfields=['recoveryCodes', 'adminSwitchCompany', 'companyId', 'accessToken', 'permissions', 'assignCompanyAdminPermission', 'unassignCompanyAdminPermission', 'assignGrantCompanyAdminPermission']
+FetchGuestInfo: args=['userId', 'companyId', 'roomId', 'userId', 'companyId', 'roomId'] replyfields=['guestAuthenticate', 'accessToken', 'expiry', 'user', 'room', 'isShareable', 'role', 'isMeeting', 'fetchGuestBrandingInfo', 'companyLogoUrl', 'isBrandingEnabled', 'companyDisplayName', 'leaveCompany']
+ResetPassword: args=['passwordResetToken', 'username', 'alias', 'userId', 'alias', 'userId'] replyfields=['resetPassword', 'createMagicToken', 'magicToken', 'launchURL', 'deactivateApiKey', 'deleteApiKey', 'disableMFA']
+SetNewPassword: args=['currentPassword', 'companyId', 'username', 'password', 'passwordResetToken', 'username'] replyfields=['setNewPassword', 'resetPassword', 'createMagicToken', 'magicToken', 'launchURL']
+CreateApiKey: args=['alias', 'userId', 'username', 'newPassword', 'currentPassword'] replyfields=['createApiKey', 'alias', 'code', 'status', 'changePassword']
+DisableMFA: args=['userId', 'enrollmentSessionToken', 'totpCode', 'nextCompanyId'] replyfields=['disableMFA', 'enableMFA', 'enrollmentSessionToken', 'totpSecret', 'issuer', 'accountName', 'otpauthURL', 'verifyMFASetup', 'recoveryCodes', 'regenerateRecoveryCodes', 'recoveryCodes', 'adminSwitchCompany']
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+hosts=set(re.findall(r'([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.alfaview\.com)',s))
+print('alfaview hosts in new app bundle:',len(hosts))
+for h in sorted(hosts): print('  ',h)
+# also any wss/ws urls
+for m in sorted(set(re.findall(r'wss?://[a-zA-Z0-9._~:/?#\[\]@!$&\'()*+,;=%-]{6,80}',s)))[:20]: print('WS:',m)
+# graphql endpoint + auth header names
+for m in sorted(set(re.findall(r'"(/[a-z0-9/_-]{2,40})"',s)))[:0]: pass
+for kw in ['/graphql','x-alfaview','alfaview-token','Authorization','Bearer','token:','enrollmentSessionToken']:
+    print(kw, s.count(kw))
+EOF
+alfaview hosts in new app bundle: 12
+   alfaview-com-assets.alfaview.com
+   app.alfaview.com
+   beta-app.alfaview.com
+   plausible.alfaview.com
+   production-alfaview-assets.alfaview.com
+   staging-alfaview-assets.alfaview.com
+   staging-app.alfaview.com
+   staging-webclient.alfaview.com
+   staging.alfaview.com
+   support.alfaview.com
+   webclient.alfaview.com
+   webviewer.dev.alfaview.com
+/graphql 4
+x-alfaview 0
+alfaview-token 0
+Authorization 0
+Bearer 0
+token: 53
+enrollmentSessionToken 8
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+for h in staging-app.alfaview.com webviewer.dev.alfaview.com; do
+  curl -s -o "n_$h.html" -D "n_$h.hdr" -w "%{http_code} %{size_download}  https://$h/\n" --max-time 20 -A "$UA" "https://$h/"; sleep 1
+  grep -iE "^(server|location|www-authenticate|content-type|x-frame|content-security)" "n_$h.hdr" | sed 's/^/    /'
+done
+401 0  https://staging-app.alfaview.com/
+    content-security-policy: default-src 'self' https://alfaview.com https://*.alfaview.com;connect-src 'self' https://alfaview.com https://*.alfaview.com https://plausible.alfaview.com;img-src 'self' data: https://alfaview.com https://*.alfaview.com https://cdn.jsdelivr.net/npm/@apollographql/graphql-playground-react@1.7.42/build/favicon.png;script-src 'self' 'unsafe-eval' https://alfaview.com https://*.alfaview.com 'unsafe-inline' https://cdn.jsdelivr.net/npm/@apollographql/graphql-playground-react@1.7.42/build/static/js/middleware.js;script-src-attr 'none';child-src alfastaging:;frame-ancestors 'self' https://omega-lectures.com https://*.omega-lectures.com;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;form-action 'self';object-src 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+    www-authenticate: Basic
+    content-type: text/html; charset=utf-8
+    server: edge-proxy
+000 0  https://webviewer.dev.alfaview.com/
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+for u in "https://staging-app.alfaview.com/graphql" "https://beta-app.alfaview.com/graphql"; do
+  curl -s -o "g_$(echo $u|md5sum|cut -c1-6).txt" -w "%{http_code} %{size_download}  GET $u\n" --max-time 20 -A "$UA" "$u"; sleep 1
+done
+for f in g_*.txt; do echo "--- $f"; head -c 300 "$f"; echo; done
+401 0  GET https://staging-app.alfaview.com/graphql
+401 0  GET https://beta-app.alfaview.com/graphql
+--- g_0b76a7.txt
+
+--- g_243907.txt
+[0m
+[0m$ [0mcd /tmp/opencode
+UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36'
+curl -s -o /dev/null -D oldjs.hdr -w "old_appjs %{http_code} -> %{redirect_url}\n" --max-time 20 -A "$UA" https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js
+grep -i "^location" oldjs.hdr
+sleep 1
+curl -s -o graphqlget.txt -w "app_graphql_GET %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://app.alfaview.com/graphql
+head -c 200 graphqlget.txt; echo
+sleep 1
+curl -s -o diag.txt -w "diag_health %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://client-diagnostics-ingest.alfaview.com/health
+cat diag.txt; echo
+sleep 1
+curl -s -o test.html -w "test_root %{http_code} %{size_download}\n" --max-time 20 -A "$UA" https://test.alfaview.com/
+grep -oE "v4[0-9]{5}|alfacheck[-_a-zA-Z0-9.]*" test.html | sort -u | head -8
+old_appjs 302 -> https://app.alfaview.com/
+location: /
+app_graphql_GET 400 406
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www
+diag_health 200 16
+{"status":"ok"}
+
+test_root 200 494
+alfacheck
+alfacheck.linux.amd64.483102.bin
+alfacheck.mac.amd64.483102.bin
+alfacheck.mac.arm64.483102.bin
+alfacheck.windows.amd64.483102.exe
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+for m in list(re.finditer(r'headers:\{',s))[:6]:
+    print(repr(s[m.start()-160:m.start()+220]))
+    print('---')
+EOF
+'n(e,n,t){"use strict";t.d(n,{P:function(){return m}});var i=t(15215),a=t(91750),r=t(28117),o=t(70585),s=t(51004),l={http:{includeQuery:!0,includeExtensions:!1},headers:{accept:"*/*","content-type":"application/json"},options:{method:"POST"}},u=function(e,n,t){var i=new Error(t);throw i.name="ServerError",i.response=e,i.statusCode=e.status,i.result=n,i},d=function(e,n){var t;try'
+---
+':"Something went wrong. Check console in developer tools for more info.",refetch_action_link:"Retry",results:"Results",companies_found:"Companies found:",table_headers:{company_id:"Company ID",company_name:"Name",plan_id:"Plan ID",created_at:"Created at",updated_at:"Updated at"}},filters:{title:"Filters",plan_id:"Plan ID",creation_date:"Creation date",updated_date:"Updated date'
+---
+'assword_content:"Are you sure you want to send a reset password email to {email}?",expiredOn:"Expired on",expiresOn:"Expires on",copy_signup:"Copy signup link",headers:{name:"Name",type:"Account type",created_at:"Created at",first_login:"First login",active:"Active",actions:"Actions",valid_from:"Valid from",expiration_date:"Expiration date",room_name:"Room name",guest_name:"Gue'
+---
+'e:"Usage",full_title:"Usage Statistics",duration_hint:"A usage statistics data can be up to {days} days",from:"From",to:"To",download_csv:"Download CSV",table:{headers:{used:"Used",online_hours:"Online Hours",user_hours:"User Hours",user_joins:"User Joins",online_seconds:"Online Seconds",user_seconds:"User Seconds"},rows:{room:"Rooms",meeting:"Meetings",total:"Total"},no_entrie'
+---
+'l:"The operation will only affect selected rooms.",show_room_selection:"Show room selection",hide_room_selection:"Hide room selection",select_all:"Select all"},headers:{email:"Email",room_names:"Rooms",room_name:"Room name",new_room_name:"Room name",first_name:"First name",last_name:"Last name",role:"Role",name:"Name",locale:"Locale",send_email:"Send email",start_date:"Start da'
+---
+' save PDF",include_metadata_label:"Include report details",include_date_as_seconds:"Include dates as UNIX",no_entries:"No user activity.",delimiter:"Delimiter",headers:{name:"Name",join:"Join",leave:"Leave",first_join:"First join",last_leave:"Last leave",duration:"Duration",active_duration:"Active duration"},seconds:"seconds",download:"Download report",table_label:"Table",graph'
+---
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+for m in re.finditer(r'setContext|setContext\(',s):
+    print(repr(s[m.start()-80:m.start()+300]));print('--')
+    if m.start()>len(s): break
+EOF
+echo "=== setContext count ==="
+python3 - <<'EOF'
+import re
+s=open('/tmp/opencode/app_new.js',encoding='utf-8',errors='ignore').read()
+print(len(re.findall(r'setContext',s)))
+for m in re.finditer(r'\{token:|\btoken:\s*[a-zA-Z]',s):
+    seg=s[max(0,m.start()-120):m.start()+160]
+    if 'headers' in seg or 'ctx' in seg or 'operation' in seg:
+        print(repr(seg)); print('..')
+EOF
+')(D)}return new r.A((function(t){var i;return c(n,S).then((function(n){return e.setContext({response:n}),n})).then((i=e,function(e){return e.text().then((function(n){try{return JSON.parse(n)}catch(i){var t=i;return t.name="ServerParseError",t.response=e,t.statusCode=e.status,t.bodyText=n,Promise.reject(t)}})).then((function(n){return e.status>=300&&u(e,n,"Response not successfu'
+--
+'rror(e)}))}function d(e,n){var t=(0,r.Cl)({},e);return Object.defineProperty(n,"setContext",{enumerable:!1,value:function(e){t="function"==typeof e?(0,r.Cl)({},t,e(t)):(0,r.Cl)({},t,e)}}),Object.defineProperty(n,"getContext",{enumerable:!1,value:function(){return(0,r.Cl)({},t)}}),Object.defineProperty(n,"toKey",{enumerable:!1,value:function(){return function(e){var n=e.query,t='
+--
+=== setContext count ===
+2
+'CompanyWarning=!1,this.accessAbilities[re.ACCESS_ABILITIES.manageCompany]&&this.gql({query:Be.ListCompaniesById,headers:{token:this.accessToken},variables:{companyIdList:[this.currentCompanyId]}}).then((function(n){var t=n.listCompaniesById,i=l()(t,"companies[".concat(e.currentCo'
+..
+'".concat(e.currentCompanyId,"]"));l()(i,"plan")===je.commonPlan.PLAN_FREE&&e.gql({query:Be.FetchLastCompanyJoin,headers:{token:e.accessToken}}).then((function(n){var t=n.fetchLastCompanyJoin,a=l()(i,"createdAt",null),r=l()(t,"lastJoin",null)||parseInt(a,10);if(null!==r&&!isNaN(r)'
+..
+'rP,(function(e){var n=e.commit,t=e.rootGetters,i=t.gql,a=t.getAccessToken;return n(o.JT_),i({query:J.ListQuotas,headers:{token:a}}).then((function(e){var t=e.listQuotas.quotas;return n(o.DbI,t)})).catch((function(e){return n(o.kFk,{error:e})}))})),y.pA,(function(e){var n=e.commit'
+..
+'uments.length>1&&void 0!==arguments[1]?arguments[1]:"";n(o.zMv);var s=r||a;return i({query:J.FetchDialInNumbers,headers:{token:s}}).then((function(e){var t=e.fetchDialInNumbers.numbers;return n(o.zP,t)})).catch((function(e){return n(o.c9T,{error:e})}))})),ae=t(62193),re=t.n(ae),o'
+..
+'=d&&d,m=l.calculateSortData,p=void 0!==m&&m;return t(o.kkE),a({query:c?J.ListRooms:J.ListRoomsIntervalWithTypes,headers:{token:r}}).then((function(e){var i=e.listRooms.rooms,a=e.listAvailableRoomTypes,r={};p&&(r=Pe({children:(0,de.NU)((0,de.$E)(i)),id:""},ce.xP,i)),t(o.QbZ,{roomD'
+..
+'tion(e,n){var t=e.commit,i=e.rootGetters,a=i.gql,r=i.getAccessToken,s=n.id;return t(o.XZF),a({query:J.FetchRoom,headers:{token:r},variables:{roomId:s}}).then((function(e){var n=e.fetchRoom.room;t(o.rSy,{roomData:n})})).catch((function(e){t(o.Qc5,{error:e})}))})),y.x6,(function(e)'
+..
+'(e){var n=e.commit,t=e.rootGetters,i=t.gql,a=t.getAccessToken;return n(o.bo9),i({query:J.ListAvailableRoomTypes,headers:{token:a}}).then((function(e){var t=e.listAvailableRoomTypes.roomTypes;n(o.Zwc,t)})).catch((function(e){n(o.oFI,{error:e})}))})),y.XA,(function(e){var n=e.dispa'
+..
+'otGetters,r=a.gql,s=a.getAccessToken,l=(0,a.getHasTimer)(y.XA);return i.length?(t(o.nPO),r({query:J.StatusRooms,headers:{token:s},variables:{roomIds:i}}).then((function(e){var i=e.statusRooms,a=u()(i,"rooms");a?(t(o.xtb,{roomStatus:a}),n(y.Ww)):t(o.YwF,{error:new Error("Response '
+..
+'(e,n){var t=e.commit,i=e.rootGetters,a=i.gql,r=i.getAccessToken;return t(o.YtI),a({query:Ce.UpdateFavoriteRooms,headers:{token:r},variables:{roomIdsChanges:n}}).then((function(){t(o.qFH,{favorites:n})})).catch((function(e){t(o.lDV,{error:e})}))})),y.on,(function(e){var n=e.commit'
+..
+'on(e){var n=e.commit,t=e.rootGetters,i=t.gql,a=t.getAccessToken;return n(o.yVd),i({query:J.ListPermissionGroups,headers:{token:a}}).then((function(e){var t=e.listPermissionGroups.permissionGroups;n(o.cVm,{permissionGroups:t})})).catch((function(e){n(o.RM,{error:e})}))})),y.XX,(fu'
+..
+'(l,c);return d&&(m.quotas={name:d}),m.mode=F.commonRoomMode.ROOM_MODE_SPECTATOR,t(o.nwK),a({query:Ce.CreateRoom,headers:{token:r},variables:{room:m}}).then((function(e){var n=e.createRoom,i=n.room,a=n.roomId;t(o.XRn,{roomId:a,room:i})})).catch((function(e){throw t(o.M9z,{error:e}'
+..
+'ssToken,s=n.roomId,l=n.room,u=n.removeDefaultPermissions,d=void 0!==u&&u;return t(o.meu),a({query:Ce.UpdateRoom,headers:{token:r},variables:{roomId:s,room:l,removeDefaultPermissions:d}}).then((function(e){var n=e.updateRoom.room;t(o.Mgc,{roomId:s,room:Ie(Ie({},n),{},{subRooms:Te('
+..
+'commit,i=e.getters.getRoomIds,a=e.rootGetters,r=a.gql,s=a.getAccessToken;return t(o.SFS),r({query:Ce.DeleteRoom,headers:{token:s},variables:{roomId:n}}).then((function(){t(o.cLt,{roomId:n,roomIds:i})})).catch((function(e){t(o.ReK,{error:e})}))})),y.Ru,(function(e,n){var t=e.commi'
+..
+'tGetters,r=a.gql,s=a.getAccessToken,l=n.roomIds;t(o.D8C);var u=l.map((function(e){return r({query:Ce.DeleteRoom,headers:{token:s},variables:{roomId:e}})}));return Promise.all(u).then((function(){t(o.Txy,{deletedRoomIds:l,roomIds:i})})).catch((function(e){throw t(o.A1r,{error:e}),'
+..
+'ql,r=i.getAccessToken,s=n.roomId,l=n.invitations,u=n.timeZone;return t(o.egt),a({query:Ce.InviteExternalMembers,headers:{token:r},variables:{roomId:s,invitations:l,timeZone:u}}).then((function(){t(o.MCy)})).catch((function(e){throw t(o.hj_),e}))})),y.MV,(function(e,n){var t=e.com'
+..
+',s=i.getCompanyURLDomain,l=n.roomId,u=n.guestId,d=n.timeZone;return t(o.ccB),a({query:Ce.ResendGuestInviteEmail,headers:{token:r,companyurldomain:s},variables:{roomId:l,guestId:u,timeZone:d}}).then((function(){t(o.OaC)})).catch((function(e){throw t(o.HNX),e}))})),y.sP,(function(e'
+..
+'rRoomId})),Object.keys(t).length&&(t=Ie(Ie({},t),{},{roomId:n}),e.push(t)),e}),[]);return r({query:Ce.SortRooms,headers:{token:s},variables:{moves:u}}).then((function(e){var n=e.sortRooms.rooms;t(o.e6D,{roomData:n,roomSortData:Pe({children:(0,de.NU)((0,de.$E)(n)),id:""},ce.xP,n)}'
+..
+'it,i=e.rootGetters,a=i.gql,r=i.getAccessToken,s=n.roomId,l=n.provider;return t(o.fbA),a({query:J.FetchLanguages,headers:{token:r},variables:{roomId:s,provider:l}}).then((function(e){var n=u()(e,"fetchLanguages"),i=n.transcription,a=n.translations;t(o.r4r,{languages:{transcription'
+..
+'.commit,i=e.rootGetters,a=i.gql,r=i.getAccessToken,s=n.id;return t(o.iP6),a({query:J.FetchTranscriptionSettings,headers:{token:r},variables:{roomId:s}}).then((function(e){var n=e.fetchTranscriptionSettings;t(o.sXR,{settings:n})})).catch((function(e){throw t(o.FAq),e}))})),y.lm,(f'
+..
+'=u?[]:u,c=n.defaultSpokenLanguage,m=n.allowUserOverride;return t(o.H_T),a({query:Ce.UpdateTranscriptionSettings,headers:{token:r},variables:{roomId:s,translationLanguages:d,defaultSpokenLanguage:c,allowUserOverride:m,enabled:l}}).then((function(e){var n=e.updateTranscriptionSetti'
+..
+'ters,a=i.gql,r=i.getAccessToken,s=n.roomId,l=n.provider;return t(o.H_T),a({query:Ce.UpdateTranscriptionProvider,headers:{token:r},variables:{roomId:s,provider:l}}).then((function(e){var n=e.updateTranscriptionProvider;t(o.r5o,{settings:n})})).catch((function(e){throw t(o.W8e),e})'
+..
+'gql,r=i.getAccessToken,s=n.roomId,l=n.translationProvider;return t(o.H_T),a({query:Ce.UpdateTranslationProvider,headers:{token:r},variables:{roomId:s,translationProvider:l}}).then((function(e){var n=e.updateTranslationProvider;t(o.r5o,{settings:n})})).catch((function(e){throw t(o'
+..
+'ion(e){var n=e.commit,t=e.rootGetters,i=t.gql,a=t.getAccessToken;return n(o.I0T),i({query:J.ListAllUserProfiles,headers:{token:a}}).then((function(e){var t=e.listAllUserProfiles.users;n(o.UHc,{users:t})})).catch((function(e){n(o.$Rb,{error:e})}))})),y.Ww,(function(e){var n=e.comm'
+..
+'eturn c[n].isGuest||t.resolvedUsers[n]||e.push(n),e}),[]);return m.length?(n(o.g_S),s({query:J.ListUserProfiles,headers:{token:l},variables:{userIds:m}}).then((function(e){var t=e.listUserProfiles.users;return n(o.sRb,{users:t})})).catch((function(e){return n(o.z1,{error:e})}))):'
+..
+'=e.commit,i=e.rootGetters,a=i.gql,r=i.getAccessToken,s=n.userId;return t(o.ih_),a({query:J.FetchUserPermissions,headers:{token:r},variables:{userId:s}}).then((function(e){var n=e.fetchUserPermissions.permissions;t(o.Ogh,{permissions:n})})).catch((function(e){return t(o.B_6,{error'
+..
+'ssToken,s=n.userId,l=n.grantPermissions,u=n.revokePermissions;return t(o.BL0),a({query:Ce.UpdateUserPermissions,headers:{token:r},variables:{userId:s,grantPermissions:l,revokePermissions:u}}).then((function(e){var n=e.updateUserPermissions.permissions;t(o.rFY,{permissions:n})})).'
+..
+'ar t=e.commit,i=e.rootGetters,a=i.getAccessToken,r=i.gql,s=n.userId;return t(o.lOf),r({query:J.ListUserProfiles,headers:{token:a},variables:{userIds:[s]}}).then((function(e){var n=e.listUserProfiles.users;return t(o.Hau,{userData:u()(n,s,null)})})).catch((function(e){t(o.QET,{err'
+..
+'=e.commit,i=e.rootGetters,a=i.gql,r=i.getAccessToken,s=n.userId,l=n.user;return t(o.eyY),a({query:Ce.UpdateUser,headers:{token:r},variables:{userId:s,user:l}}).then((function(){t(o.UsJ)})).catch((function(e){throw t(o.HC_,{error:e}),e}))})),y.Ur,(function(e,n){var t=e.commit,i=e.'
+..
+'(function(e,n){var t=e.commit,i=e.rootGetters,a=i.gql,r=i.getAccessToken;return t(o.ICB),a({query:Ce.DeleteUser,headers:{token:r},variables:{userId:n}}).then((function(e){var n=e.deleteUser.deletedId;return t(o.ojG,n)})).catch((function(e){throw t(o.$du,{error:e}),e}))})),y.LI,(f'
+..
+',u=n.userInvitations,d=n.userPermissions,c=n.companyName,m=n.inviterName;return t(o.PX),r({query:Ce.InviteUsers,headers:{token:s,companyurldomain:l},variables:{userInvitations:u,userPermissions:d,companyName:c,inviterName:m}}).then((function(e){var n=e.inviteUsers.taskId;t(o.$qS)'
+..
+'ers.getSessionUserId,a=e.rootGetters,r=a.getAccessToken,s=a.gql,l=n.user;return t(o.lWe),s({query:Ce.UpdateUser,headers:{token:r},variables:{userId:i,user:l}}).then((function(){t(o.bOX,{userData:l})})).catch((function(e){throw t(o.csB,{error:e}),e}))})),y.zQ,(function(e,n){var t='
+..
+'rn s.frontendErrorCode=En.w5,n(o.L_8,{error:s}),Promise.reject(s)}return n(o.KGe),i({query:Ce.TokenAuthenticate,headers:{token:a},variables:{username:r}}).then((function(e){var t=e.tokenAuthenticate;(0,A.fK)("accessToken",t.accessToken),n(o.iJY,t)})).catch((function(e){throw n(o.'
+..
+',l=n.newPassword,d=n.currentPassword,c=u()(i,"sessionUser.username");return t(o.rfh),r({query:Ce.ChangePassword,headers:{token:s},variables:{username:c,newPassword:l,currentPassword:d}}).then((function(){t(o.DKf)})).catch((function(e){throw t(o.gk5,{error:e}),e}))})),y.Ou,(functi'
+..
+'panyURLDomain,a=e.rootGetters,r=a.gql,s=a.getAccessToken,l=n.username;return t(o.GDI),r({query:Ce.ResetPassword,headers:{token:s,companyurldomain:i},variables:{username:l}}).then((function(){return t(o.C6V)})).catch((function(e){throw t(o.vbN),e}))})),y.A4,(function(e,n){var t=e.'
+..
+'toRoutePath,c=void 0===d?"/welcome":d,m=(0,A.tz)("username");return s&&m&&l?(i(o.vab),r({query:Ce.SwitchCompany,headers:{token:s},variables:{companyId:l}}).then((function(e){var n=e.switchCompany,a=u()(n,"accessToken");if(a&&(0,A.fK)("accessToken",a),a&&n.companyId&&(0,A.fK)("com'
+..
+'ommit,i=e.rootGetters,a=i.gql,r=i.getAccessToken,s=n.companyIdList;return t(o.yH_),a({query:J.ListCompaniesById,headers:{token:r},variables:{companyIdList:s}}).then((function(e){var n=e.listCompaniesById.companies,i=Object.keys(n).reduce((function(e,t){return Pn(Pn({},e),{},Ln({}'
+..
+'(function(e){var n=e.commit,t=e.rootGetters,i=t.getAccessToken,a=t.gql;return n(o.WlJ),a({query:Ce.LeaveCompany,headers:{token:i}}).then((function(){return n(o.AlS)})).catch((function(e){throw n(o.ndG,{error:e}),e}))})),y.J3,(function(e){var n=e.commit,t=e.rootGetters,i=t.gql,a=t'
+..
+',(function(e){var n=e.commit,t=e.rootGetters,i=t.gql,a=t.getAccessToken;return n(o.vv0),i({query:J.ListAuthData,headers:{token:a}}).then((function(e){return n(o.fMs,u()(e,"listAuthData"))})).catch((function(e){throw n(o.UKz,{error:e}),e}))})),y.Zh,(function(e,n){var t=e.commit,i='
+..
+'.gql,r=i.getAccessToken,s=n.optionalAccessToken;t(o.HRS);var l=s||r;return(s?An.A:a)({query:Ce.CreateMagicToken,headers:{token:l}}).then((function(e){var n=u()(e,"createMagicToken.magicToken",""),i=u()(e,"createMagicToken.launchURL","");t(o.Rvf,{launchURL:i,magicToken:n})})).catc'
+..
+'n(e){var n=e.commit,t=e.getters.getAccessToken,i=e.rootGetters.gql;return n(o.oQJ),i({query:J.FetchVanityDomain,headers:{token:t}}).then((function(e){var t=e.fetchVanityDomain.domain;n(o.aES,{domain:t})})).catch((function(e){n(o.hiR,{error:e})}))})),y._J,(function(e){var n=e.disp'
+..
+'i=e.state,a=e.rootGetters.gql,r=u()(i,"adminSession.accessToken","");return r?a({query:J.AdminTokenAuthenticate,headers:{token:r}}).then(function(){var e=On(Un().mark((function e(a){var r,s,l,d;return Un().wrap((function(e){for(;;)switch(e.prev=e.next){case 0:return r=a.adminToke'
+..
+'panyId:we.AV_COMPANY_ID,permissions:c}),t.next=14;break;case 12:return t.next=14,s({query:Ce.AdminSwitchCompany,headers:{token:d},variables:{nextCompanyId:n}}).then((function(e){var n=e.adminSwitchCompany,t=u()(n,"accessToken",""),i=u()(n,"companyId",""),a=u()(n,"permissions",{})'
+..
+'n){var t=e.commit,i=e.dispatch,a=e.rootGetters,r=a.gql,s=a.getAccessToken;t(o.CFo),r({query:J.ListCompaniesById,headers:{token:s},variables:{companyIdList:Bt(n)}}).then((function(e){var a=u()(e,"listCompaniesById.companies",{});t(o.gxJ,{companies:a});var r=n.filter((function(e){r'
+..
+'ion(e,n){var t=e.commit,i=e.rootGetters,a=i.gql,r=i.getAccessToken;return t(o.fph),a({query:J.ListCompaniesById,headers:{token:r},variables:{companyIdList:[n]}}).then((function(e){var i=u()(e,"listCompaniesById.companies.".concat(n));t(o.$iB,{company:i})})).catch((function(){t(o.'
+..
+'nction(e,n){var t=e.commit,i=e.rootGetters,a=i.getAccessToken,r=i.gql;return t(o.O1x),r({query:Ce.UpdateCompany,headers:{token:a},variables:n}).then((function(e){var n=e.updateCompany,i=n.displayName,a=n.customerId,r=n.plan,s=n.trialEndsAt;return t(o.s9b,{customerId:a,plan:r,disp'
+..
+'etters,r=a.gql,s=a.getAccessToken,l=n.createCompanyPayload,d=n.planId;return t(o.ZvP),r({query:Ce.CreateCompany,headers:{token:s},variables:Ft(Ft({},l),{},{planId:d})}).then((function(e){var n=e.createCompany,a=u()(n,"companyId");return r({query:J.ListCompaniesById,headers:{token'
+..
+',{planId:d})}).then((function(e){var n=e.createCompany,a=u()(n,"companyId");return r({query:J.ListCompaniesById,headers:{token:s},variables:{companyIdList:[a]}}).then((function(){return t(o.TPm),i(y.$J,a),a})).catch((function(e){t(o.Ah1,{error:e})}))})).catch((function(e){t(o.Ah1'
+..
+'ar t=e.dispatch,i=e.commit,a=e.rootGetters,r=a.gql,s=a.getAccessToken;return i(o.s$9),r({query:Ce.DeleteCompany,headers:{token:s},variables:{companyId:n}}).then((function(e){var n=e.deleteCompany.taskId;return n?t(y.wt,{serviceName:Ke.rl,taskId:n,taskType:y.ke}).then((function(e)'
+..
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+for kw in ['AV_COMPANY_ID','AV_']:
+    for m in list(re.finditer(kw+r'\s*[:=]\s*"([^"]+)"',s))[:6]:
+        print(kw,'=',m.group(1))
+# look for uuid-looking constants
+uu=set(re.findall(r'"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"',s))
+print('UUID constants in bundle:',len(uu))
+for u in sorted(uu)[:20]: print('  ',u)
+# magic token client An.A -> find module that exports A with uri
+i=s.find('optionalAccessToken')
+print('---optionalAccessToken ctx---')
+print(s[i-500:i+200])
+EOF
+UUID constants in bundle: 1
+   00000000-0000-0000-0000-000000000000
+---optionalAccessToken ctx---
+ject.defineProperty(e,n,{value:t,enumerable:!0,configurable:!0,writable:!0}):e[n]=t,e}n.A={computed:u({},(0,i.aH)({launchClientUsername:function(e){return e.authentication.sessionUser.username},magicTokenLaunchURL:function(e){return e.authentication.magicTokenLaunchURL}})),methods:u(u({},(0,i.i0)({fetchMagicTokenLaunchURL:a.Zh})),{},{handleLaunchClient:function(e){var n,t=this;return(n=o().mark((function n(){var i,a,r,s;return o().wrap((function(n){for(;;)switch(n.prev=n.next){case 0:return i=e.optionalAccessToken,a=e.optionalUsername,r=e.useLegacyFallback,s=void 0!==r&&r,n.abrupt("return",t.fetchMagicTokenLaunchURL({optionalAccessToken:i}).then((function(){window.location.assign(t.magicToke
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+for m in list(re.finditer(r'AV_COMPANY_ID',s))[:4]:
+    print(repr(s[m.start()-200:m.start()+120])); print('--')
+qs=set()
+for m in re.finditer(r'operation:"query"',s):
+    seg=s[m.end():m.end()+900]
+    nm=re.search(r'kind:"Name",value:"([A-Za-z0-9_]+)"',seg)
+    if nm: qs.add(nm.group(1))
+print('QUERIES',len(qs))
+admin=[q for q in sorted(qs) if re.search(r'admin|Auth|Token|Session|AuthData|Company|User|Permission|Quota|Audit|Log|Setting',q,re.I)]
+print('--- admin/auth-ish queries ---')
+for q in admin: print('  q',q)
+EOF
+'l,l=e.dispatch,d=u()(i,"adminSession.accessToken",""),c=u()(i,"adminSession.permissions",{}),d&&n){t.next=5;break}throw new Error("Missing required data for company switch");case 5:if(r(o.FJd),n!==we.AV_COMPANY_ID){t.next=12;break}(0,A.fK)("companyId",we.AV_COMPANY_ID),(0,A.fK)("accessToken",d),r(o.vD2,{accessToken:d,c'
+--
+'=u()(i,"adminSession.permissions",{}),d&&n){t.next=5;break}throw new Error("Missing required data for company switch");case 5:if(r(o.FJd),n!==we.AV_COMPANY_ID){t.next=12;break}(0,A.fK)("companyId",we.AV_COMPANY_ID),(0,A.fK)("accessToken",d),r(o.vD2,{accessToken:d,companyId:we.AV_COMPANY_ID,permissions:c}),t.next=14;bre'
+--
+'issing required data for company switch");case 5:if(r(o.FJd),n!==we.AV_COMPANY_ID){t.next=12;break}(0,A.fK)("companyId",we.AV_COMPANY_ID),(0,A.fK)("accessToken",d),r(o.vD2,{accessToken:d,companyId:we.AV_COMPANY_ID,permissions:c}),t.next=14;break;case 12:return t.next=14,s({query:Ce.AdminSwitchCompany,headers:{token:d},'
+--
+'",AUTHENTICATION_FINISH_RESULT_TYPE:"authenticationResult",AUTHENTICATION_MFA_CODE_REQUIRED_RESULT_TYPE:"mfaLoginSessionToken",MFA_CODE_TYPE_TOTP:"totpCode",MFA_CODE_TYPE_RECOVERY_CODE:"recoveryCode",AV_COMPANY_ID:m,AV_SCHULUNG_COMPANY_ID:p,AUDIT_LOG_ENABLED_COMPANIES:f,TRANSLATOR_ENABLED_COMPANIES:h,TRANSLATOR_SUPPORT'
+--
+QUERIES 58
+--- admin/auth-ish queries ---
+  q AdminTokenAuthenticate
+  q FetchCompanyCacheUpdatedAt
+  q FetchCompanyOwner
+  q FetchCompanyQuotas
+  q FetchCompanyQuotasWithTypes
+  q FetchCompanyWithTypes
+  q FetchFileCompanySettings
+  q FetchFileRoomSettings
+  q FetchLastCompanyJoin
+  q FetchQuotaUsage
+  q FetchTranscriptionSettings
+  q FetchUserPermissions
+  q GetFinishSignupLinkAsAdmin
+  q GetOrphanedUsers
+  q GetPendingUserAccount
+  q ListAllUserIds
+  q ListAllUserProfiles
+  q ListAuditEvents
+  q ListAuthData
+  q ListAuthenticationsByUsername
+  q ListCompanyLinks
+  q ListPermissionGroups
+  q ListQuotas
+  q ListUserProfiles
+  q ListUsersByIds
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 - <<'EOF'
+import re
+s=open('app_new.js',encoding='utf-8',errors='ignore').read()
+i=s.find('AV_COMPANY_ID:m')
+if i<0:
+    i=s.find('AV_COMPANY_ID')
+print(repr(s[max(0,i-3000):i+900]))
+EOF
+'ive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==n(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:i,enumerable:!0,configurable:!0,writable:!0}):e[t]=i,e}var o,s={web:"logoURL",square48:"logoSquare48URL",square96:"logoSquare96URL",square256:"logoSquare256URL"},l=Object.keys(s).reduce((function(e,n){return a(a({},e),{},r({},n,n))}),{}),u=function(e){if(Array.isArray(e))return t(e)}(o=Array(51).keys())||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(o)||function(e,n){if(e){if("string"==typeof e)return t(e,n);var i={}.toString.call(e).slice(8,-1);return"Object"===i&&e.constructor&&(i=e.constructor.name),"Map"===i||"Set"===i?Array.from(e):"Arguments"===i||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(i)?t(e,n):void 0}}(o)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}(),d={admin:"Admin",moderator:"Moderator",participant:"Participant",spectator:"Spectator",guest:"Guest",noAccess:"No access"},c={admin:d.admin,moderator:d.moderator,teilnehmer:d.participant,zuschauer:d.spectator,gast:d.guest,"kein zugang":d.noAccess},m="alfatraining-internal",p="alfatraining-schulung",f=r(r({},m,!0),p,!0),g=r(r({},m,!0),"01FDY0986YK1BJF2K0F9DXR8EB",!0),h=r({},m,!0);e.exports={ALL_PLAN_IDS:["free","free-plus","free-business","custom","one","professional","premium"],UI_SETTABLE_PLAN_IDS:["free","free-business","custom"],LEGACY_ROOM_LINK_METADATA_KEYS:{Participant:"participantLinkUserId"},LINK_ROLES:{moderator:"Moderator",participant:"Participant",spectator:"Spectator",guest:"Guest",noAccess:"No access"},ROLES:d,GERMAN_ROLE_NAME_TO_ENGLISH_MAP:c,PERMISSIONS:{admin:"Admin",voice:"Voice",video:"Video",promote:"Promote",join:"Join",screen:"Screen",vip:"Vip",chat:"Chat",upload:"Upload"},UNMATCHED_ROLE_FALLBACK:"Custom",COMPANY_ADMIN_UPDATEABLE_ENGINE_FIELDS:["quotas","mode"],START_DATE_UNSET:-1,EXPIRY_UNSET:-1,DEPRECATED_PERMISSIONS:["fairUse","fileList","fileUpload","fileAdmin","subroomManage","subroomCreatePublic","subroomCreatePrivate"],CHUNK_SIZES:{LIST_AUTHENTICATIONS:125},LOGO_TYPES_TO_PROTO_KEYS:s,LOGO_TYPES:l,BILLING_ENABLED:!1,LOGO_FILE_SIZE_LIMIT_IN_KILOBYTES:250,SUBROOM_SELECTION_OPTIONS:u,MAX_SUBROOM_LIMIT:50,DEFAULT_NUM_OF_SUBROOMS:10,NO_DEFAULT_PERMISSION_ID:"noDefaultPermissionId",MEETING_STATUS:{ALLOWED:"ALLOWED",QUOTA_EXCEEDED:"QUOTA_EXCEEDED",DENIED:"DENIED",UNKNOWN:"UNKNOWN"},MEETING_DAYS_IN_FUTURE:365,MEETING_QUOTA_LIMITS:{SUBROOMS:2,PARTICIPANTS:5,SPECTATORS:6},OPERATION_FILTER_TAGS:{USERS:"users",ROOMS:"rooms",GUESTS:"guests"},PRODUCTION_COMPANY_IDS_WITH_WEBVIEWER:Object.keys(g),OUTLOOK_MODE_IDENTIFIER:"outlook_mode",AUTHENTICATION_FINISH_RESULT_TYPE:"authenticationResult",AUTHENTICATION_MFA_CODE_REQUIRED_RESULT_TYPE:"mfaLoginSessionToken",MFA_CODE_TYPE_TOTP:"totpCode",MFA_CODE_TYPE_RECOVERY_CODE:"recoveryCode",AV_COMPANY_ID:m,AV_SCHULUNG_COMPANY_ID:p,AUDIT_LOG_ENABLED_COMPANIES:f,TRANSLATOR_ENABLED_COMPANIES:h,TRANSLATOR_SUPPORTED_EXTENSIONS:[".docx",".doc",".pptx",".xlsx",".pdf",".html",".htm",".txt",".xlf",".xliff",".srt"],TRANSLATOR_MAX_DOCUMENT_SIZE_MB:10}},47181:function(e){e.exports={UNAUTHENTICATED:"UNAUTHENTICATED",EXPIRED_TOKEN:"EXPIRED_TOKEN",FORBIDDEN:"FORBIDDEN",BAD_USER_INPUT:"BAD_USER_INPUT",FAILED_PRECONDITION:"FAILED_PRECONDITION",UNKNOWN:"UNKNOWN"}},20458:function(e){e.exports={calendarWarningBlocker:function(e,n,t){"The .native modifier for v-on is only valid on components but it was used on <div>."===e&&"v-calendar"===n.$vnode.data.staticClass||console.error(e+t)},incrementalUniqueIdCreator:function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:"",n=0;return function(){return n++,"".concat(e).concat(n)}},isEqualLowerCase:function(){var e=arguments.length>1&&'
+[0m
+## STEP 1 — DELTA
+
+```
+[NEW] @ support.alfaview.com — first-ever full mapping (31 cycles only ever recorded a 301). WordPress "alfaview Support Center" (server: myracloud, etag "myra-*", host: support/staging → *.ax4z.com), custom theme alfaview-support. GET /wp-json/ → 200/280078B, 272 routes, namespaces: alfaview/v1, a63f92/v1, otgs/installer/v1, redirection/v1, duplicate-post/v1, two-factor/1.0, wpml/{v1,st/v1,tm/v1,ate/v1}, wp-site-health/v1. Every state/sensitive route is 401-gated; only /alfaview/v1/search-index is public (200/32366B, 102 public KB articles).
+[NEW] @ app.alfaview.com — bundle generation rotated. Old https://app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js → 302 Location: / (asset retired). Live 1381B shell now references https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js (200, 1092529B, md5 2cb9128353b1f7444e222b4f61e4ffa5). AST recovery: 90 mutations + 58 queries (prior map claimed 60+/45+).
+[NEW] @ app.alfaview.com/graphql — never-mapped passwordless path: CreateMagicToken is invoked with an *optional* token (`fetchMagicTokenLaunchURL({optionalAccessToken})`, a separate Apollo client `An.A` when supplied) → {magicToken, launchURL}; MagicTokenAuthenticate(magicToken, userId?, companyId?, roomId?, displayName?) → {accessToken, expiresAt, userId, permissions, accessibleAccounts, guestJoin{joinLink,expiry}}. No password field on either.
+[NEW] @ app.alfaview.com bundle — admin session surface in the SPA: query AdminTokenAuthenticate → Vuex adminSession.accessToken/permissions; mutation AdminSwitchCompany(nextCompanyId); queries GetFinishSignupLinkAsAdmin, ListAuthenticationsByUsername, ListAuditEvents, GetOrphanedUsers, ListAllUserIds, ListAllUserProfiles; mutations Assign/Unassign(Grant)CompanyAdminPermission, UpdateCompanyOwnerId, DisableMFA, CreateApiKey/DeleteApiKey/DeactivateApiKey.
+[NEW] @ app.alfaview.com bundle — hardcoded internal config in public asset: AV_COMPANY_ID="alfatraining-internal", AV_SCHULUNG_COMPANY_ID="alfatraining-schulung", AUDIT_LOG_ENABLED_COMPANIES={both:true}, PRODUCTION_COMPANY_IDS_WITH_WEBVIEWER={alfatraining-internal, "01FDY0986YK1BJF2K0F9DXR8EB"} (real internal production tenant ULID).
+[NEW] @ staging-app.alfaview.com — host referenced by new bundle, absent from inventory: 401 WWW-Authenticate: Basic on / and /graphql (edge-proxy, CSP references jsdelivr graphql-playground assets). Exhausted.
+[NEW] @ webviewer.dev.alfaview.com — host referenced by new bundle, absent from inventory: 000, no HTTP response. Exhausted.
+[CHANGED] @ staging.alfaview.com — 2026-09-02 recon recorded 301 → /en; today /, /en/, /xmlrpc.php, /wp-json/ all return 401 (574B nginx Basic page). Whole staging twin now edge-gated.
+[CHANGED] @ app.alfaview.com bundle — GraphQL auth transport pinned: authenticated ops send headers:{token:<accessToken>} (custom `token` header, not Authorization/Bearer); Signup/FinishSignup/CreateMagicToken send no token header.
+[NO_DELTA] standing probes byte-stable — apis openapi 200/127532B md5 357b94d367909a40b9299b543d23712b (37 paths, prod==beta); sso OIDC 200/2169B (issuer=acme.com, introspection_endpoint ABSENT, registration_endpoint ABSENT, auth_methods [client_secret_basic,client_secret_post,none], algs ES/HS/RS); sso JWKS 200/16257B md5 3f8d456c7fd92c6107f3fd77732bd0f4 (7× RS256/RSA); /oauth2/introspect OPTIONS 405; /v2/users/me 401/107B; tools.alfaview.com /poll/pollservice/list GET 501/55B {"code":12}; app /graphql GET 400/406B (CSRF block msg); client-diagnostics-ingest /health 200/16B; test.alfaview.com alfacheck v483102.
+```
+
+## STEP 2 — PRIORITIZE
+
+```
+[PRIO] app.alfaview.com/graphql (magic-token + admin-session surface) 8.55  a=9 b=9 t=9 g=8 c=5 f=10
+[PRIO] tools.alfaview.com /poll/pollservice/* 6.10  a=7 b=7 t=7 g=5 c=4 f=4
+[PRIO] sso.alfaview.com/oauth2/introspect 6.15  a=6 b=6 t=8 g=9 c=3 f=3
+[PRIO] support.alfaview.com/wp-json 5.35  a=7 b=5 t=6 g=1 c=4 f=9
+[PRIO] staging-app.alfaview.com 5.15  a=5 b=7 t=7 g=0 c=3 f=8
+```
+
+## STEP 3 — HYPOTHESES
+
+```
+[HYP] Passwordless bearer issuance via magic-token path (no password, optional token)
+class: AUTH
+asset: app.alfaview.com/graphql — mutation CreateMagicToken, mutation MagicTokenAuthenticate
+confidence: 68
+reasoning: New-bundle call site dispatches CreateMagicToken with an *optional* client token (separate Apollo client when optionalAccessToken is set, store action dispatch({optionalAccessToken})), i.e. the design intent is that it is callable with no session; reply exposes magicToken + launchURL. MagicTokenAuthenticate(magicToken, userId?, companyId?, roomId?, displayName?) returns accessToken/expiresAt/permissions/accessibleAccounts and its optional room context mirrors the accessKey-less guestAuthenticate shape (30-cycle standing finding). Sibling credential-free mutations (Signup, FinishSignup, guestAuthenticate, guestJoin, FetchGuestInfo) are all confirmed anonymous-reachable (BAD_USER_INPUT, never UNAUTHENTICATED) in the same 90-mutation surface. No probe of these two mutations has ever been run.
+evidence_needed: Anonymous CreateMagicToken → UNAUTHENTICATED (chain dead) vs BAD_USER_INPUT/magicToken returned (resolver reachable pre-auth). Then MagicTokenAuthenticate with the returned magicToken → 200 accessToken or UNAUTHENTICATED. Also whether magicToken is username-bound (fails for a username you don't own) or bearer-only.
+verify_steps: (1) POST https://app.alfaview.com/graphql, content-type: application/json, body {"query":"mutation{createMagicToken{magicToken}}"} — no token header, no variables: expect UNAUTHENTICATED vs BAD_USER_INPUT. (2) Same with variables {username:"<self-registered-test-user>"} only if a self-owned account exists. (3) If (1) returns BAD_USER_INPUT, retry with variables {username:"nonexistent-probe-user-zzz"} and compare error class against a known-nonexistent vs known-valid pattern. (4) Chain: MagicTokenAuthenticate(magicToken) → accessToken, then reuse that bearer against tools.alfaview.com /poll/pollservice/list to test the BOLA hypothesis.
+impact: Passwordless ATO primitive — a minted magicToken that exchanges for a bearer removes the account/email gate from every other chain (tools BOLA, REST IDOR, introspect oracle). HIGH.
+testability: AUTH_HELPED
+```
+
+```
+[HYP] Poll RPC cross-room BOLA keyed solely by roomId
+class: IDOR
+asset: tools.alfaview.com / staging-tools.alfaview.com POST /poll/pollservice/{list,create,delete,update,updateState,vote,get,hasVoted}
+confidence: 85
+reasoning: 8 verbs POST-only (GET reconfirmed 501/55B {"code":12,"message":"Method Not Allowed"} this cycle); payloads carry only {roomId}(+{id}), zero tenant-scope field; auth via custom Grpc-Metadata-alfaview.token (b64url→b64, opaque family); bundle pins the token gate client-side only (reject("Invalid access token")); staging-tools vendor bundle hash 8caab24e = prod build on an independent backend. New this cycle: the GraphQL admin session flow (AdminTokenAuthenticate → adminSession.accessToken) and the hardcoded tenant IDs mean cross-tenant comparison is now constructible.
+evidence_needed: owned bearer + foreign-tenant roomId → 200 {polls[]} (BOLA) vs {code:7} (scoped); owned roomId → {polls:[]}; token omitted → {code:16}.
+verify_steps: HUMAN_ONLY — bearer via app.alfaview.com signup→email→finishSignup, or via MagicTokenAuthenticate if that chain opens; POST /poll/pollservice/list {"roomId":"<OWNED>"} with headers Grpc-Metadata-alfaview.token + request_id list-poll-<ms>; repeat token-omitted / foreign roomId (alfatraining-internal tenant is a legal target); diff prod vs staging-tools.
+impact: Cross-tenant read/write of live polls/Q&A on foreign boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+```
+
+```
+[HYP] Introspect fabricated-client_id as unauthenticated bearer oracle
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 70
+reasoning: OPTIONS 405 (POST-only, alive) reconfirmed this cycle; POST-body and HTTP Basic both accept ANY client_id (200 {"active":false}); only residual check is Basic-vs-body client_id_mismatch (401); discovery advertises client_secret_basic/post/none with zero runtime secret verification; introspection_endpoint absent from discovery while the route stays live. Any bearer obtained from either of the other two chains is immediately testable here.
+evidence_needed: valid bearer → 200 {"active":true}+claims; invalid → active:false (liveness/subject/expiry oracle, enables token replay triage).
+verify_steps: HUMAN_ONLY — POST /oauth2/introspect client_id=fabricated-12345&token=<base64 bearer>; then HTTP Basic with the same creds; diff active + returned claims; then repeat with a revoked/expired token to confirm the oracle discriminates.
+impact: Token liveness/subject/expiry fingerprinting for ATO chaining; MEDIUM.
+testability: HUMAN_ONLY
+```
+
+## STEP 4 — SELF-CRITIQUE
+
+```
+[PARKED] support.alfaview.com WordPress REST exposure (MISCONFIG, would be 35): all state-touching routes return 401 — /wp/v2/users → "Only authenticated users can access the User endpoint REST API" (401/127B), /redirection/v1/export/redirect + /redirect + /wp-site-health/v1/tests/authorization-header → rest_forbidden (401/98B). The one public route, /alfaview/v1/search-index, returns only the 102 knowledge-base articles already rendered publicly at /en/ — public-content exposure, and the /a63f92/v1/9257/831e92ed route is POST-only so untestable under passive rules. No logic flaw, no finding.
+[PARKED] staging-app.alfaview.com / webviewer.dev.alfaview.com: 401 Basic at edge (incl. /graphql) and 000 respectively. No surface; target exhausted. Rejected class (auth-gated / unreachable).
+[PARKED] Hardcoded tenant ULID 01FDY0986YK1BJF2K0F9DXR8EB in public bundle (MISCONFIG, 38): real value is as a pivot for the guest chain, not a standalone finding; folded into the magic-token/guest evidence set.
+[FINAL] 1) tools poll RPC BOLA — 85  2) sso introspect client-auth bypass/oracle — 70  3) magic-token passwordless bearer issuance — 68
+```
+
+## STEP 5 — NEXT ACTION
+
+```
+[NEXT] PROBE: POST https://app.alfaview.com/graphql  (content-type: application/json, no token header, no variables)  body: {"query":"mutation{createMagicToken{magicToken}}"}  → classify the reply as UNAUTHENTICATED (resolver auth-gated, magic-token chain dead) vs BAD_USER_INPUT (resolver reachable pre-auth, chain live). This single non-state-creating request discriminates the 68-confidence lead; if BAD_USER_INPUT, follow with the same shape for magicTokenAuthenticate{magicToken} to get a bearer and immediately re-run the tools BOLA differential.
+```
+
+## STEP 6 — LEARNING
+
+```
+[LEARN] REJECTED MISCONFIG @ support.alfaview.com: First full map of the support WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1) — no unauthenticated data exposure; every sensitive route 401s and the only public route serves the 102 public KB articles. New inventory facts, no finding. Target mapped and closed.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com (public bundle): asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5, old 5b3949… js now 302→/); the public asset now carries an admin session flow (AdminTokenAuthenticate → adminSession.accessToken/permissions → AdminSwitchCompany(nextCompanyId)) plus hardcoded production tenant identifiers (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB) and a 90-mutation/58-query surface including a never-mapped passwordless magic-token pair. Internal admin/session config in a public asset; informational-to-low severity pending the anonymous-reachability answer.
+[LEARN] REJECTED MISCONFIG @ staging.alfaview.com: staging twin is now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02. No surface; change recorded, no finding.
+[LEARN] REJECTED MISCONFIG @ staging-app.alfaview.com + webviewer.dev.alfaview.com: two bundle-referenced hosts absent from inventory; both exhausted immediately (401 Basic incl. /graphql; 000). Inventory extended, zero attack surface.
+```
+
+## STEP 7 — RISK
+
+```
+[RISK] alfaview: 57 — 31st cycle breaks the 30-cycle NO_DELTA streak: the app bundle rotated and the new generation exposed a never-mapped passwordless token-minting/exchange pair plus an admin-session switch flow, and the support WordPress got its first full map. Standing chains unchanged (tools BOLA 85, introspect 70) and all still need a bearer, but the bar for obtaining one just dropped from "email-verified signup" to "one anonymous POST" if CreateMagicToken is reachable pre-auth. Passive posture unchanged, no customer data touched, program exposure low-to-moderate and rising.
