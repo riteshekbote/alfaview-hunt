@@ -943,3 +943,12 @@ www.alfaview.com
 - NEW support.alfaview.com: First full map — WordPress "alfaview Support Center" (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; every sensitive 
 - NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle now carries admin session flow (AdminTokenAuthenticate → ad
 - NEW app.alfaview.com/graphql: Passwordless bearer issuance path — CreateMagicToken invoked with optional token (fetchMagicTokenLaunchURL({optionalAccessToken}), separate Apollo client An.A without token h
+
+## 2026-09-25 19:10:58 UTC
+- NEW support.alfaview.com: First full map — WordPress "alfaview Support Center" (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; every sensitive 
+- NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle now carries admin session flow (AdminTokenAuthenticate → ad
+- NEW app.alfaview.com/graphql: CreateMagicToken mutation confirmed auth-gated (UNAUTHENTICATED) — not anonymous-reachable; no optionalAccessToken argument exists (GRAPHQL_VALIDATION_FAILED). Passwordless b
+- NEW staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02. No surface; change recorded, no finding.
+- NEW staging-app.alfaview.com + webviewer.dev.alfaview.com: Two bundle-referenced hosts absent from inventory; both exhausted immediately (401 Basic incl. /graphql; 000). Inventory extended, zero attack su
+- CHANGED sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_
+- CHANGED app.alfaview.com/graphql: Signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles); all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70) gate

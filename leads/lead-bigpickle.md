@@ -6131,3 +6131,4 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: the current bundle still exposes the magic-token and admin-session operation surface, while GET remains 400/406B with CSRF guidance; resolver authorization is still unconfirmed.
 [LEARN] REJECTED MISCONFIG @ sso.alfaview.com: the OIDC metadata/JWKS algorithm divergence persists, but no standalone key-confusion exploit is established.
 [RISK] alfaview: 57 — no new surface was observed; the highest-value IDOR and introspection chains remain token- or tenant-gated, while the current public bundle retains a plausible passwordless authentication lead. No customer data or mutating request was used.
+## 2026-09-25 19:06:15 UTC [target] (model bigpickle)

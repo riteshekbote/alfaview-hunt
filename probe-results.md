@@ -1193,3 +1193,14 @@ https://sso.alfaview.com/.well-known/openid-configuration` -> HTTP 404
 https://sso.alfaview.com/.well-known/jwks.json` -> HTTP 404
 https://sso.alfaview.com/oauth2/authorize?client_id=probe-invalid-20260925&redirect_uri=https%3A%2F%2Fexample.invalid%2Fcb&response_type=code` -> 200 len=0
 https://tools.alfaview.com/` -> 200 len=615
+
+## 2026-09-25 19:11:11 UTC
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js -> 200 len=137343
+https://tools.alfaview.com/poll/pollservice/list -> HTTP 501
+https://app.alfaview.com/graphql -> HTTP 400
+https://apis.alfaview.com/v2/users/{foreign-uuid -> HTTP 405
+https://apis.alfaview.com/v2/rooms/{foreign-roomId -> HTTP 401
+https://app.alfaview.com/` -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect` -> HTTP 404
