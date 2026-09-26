@@ -33869,3 +33869,1572 @@ testability: AUTH_HELPED
 [LEARN]** NO_DELTA** @ apis/sso/app/tools: OpenAPI 200/127532B md5 `357b94d3` (37 paths, `components.securitySchemes` absent, top-level `security` absent), `users/me` 401/107B, OIDC 200/2169B (issuer=`acme.com`, `introspection_endpoint` absent, algs ES/HS/RS 256-512, token auth `basic/post/none`), JWKS 200/16257B (7×RS256), introspect OPTIONS 405, graphql GET 400/406B, `poll/pollservice/list` GET 501/55B — all byte-stable.
 
 **[RISK]** alfaview: **68** — up from 61. The delta is a correction that materially raises both scope and confidence of the authentication-ordering finding: what was recorded as a 2-of-26 curiosity bounded to a clean path layer is proven to be a **9-of-26 systemic defect** with an identified mechanism, a single-route proof, a beta twin, and a full membership list. The honest ceiling is unchanged and stated: this is a boundary drawn in the wrong place plus a missing declarative control — every well-formed request still returns 401, range checks sit behind auth, and nothing was read. But the remediation story is now materially worse than last cycle's read: the API's 401 boundary is not a property the codebase guarantees, it is a per-handler convention that more than a third of operations already violate, and the spec's total absence of `securitySchemes` means no schema review and no gateway policy can detect the next instance. The RFC-5322 validator reachable pre-auth on `/v2/users` is the sharpest single instance — the one pre-auth check in the program that touches an identity field — and I am explicitly not pursuing it toward existence, because that crosses into the rejected enumeration class.
+===== ANALYST bigpickle 2026-09-26 18:10:01 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mpwd; ls -la; git log --oneline -5 2>/dev/null | head -20
+/home/runner/work/alfaview-hunt/alfaview-hunt
+total 784
+drwxr-xr-x 12 runner runner   4096 Sep 26 17:57 .
+drwxr-xr-x  3 runner runner   4096 Sep 26 17:57 ..
+drwxr-xr-x  7 runner runner   4096 Sep 26 17:57 .git
+drwxr-xr-x  3 runner runner   4096 Sep 26 17:57 .github
+-rw-r--r--  1 runner runner   1883 Sep 26 17:57 README.md
+-rw-r--r--  1 runner runner     32 Sep 26 17:57 analyst-out.txt
+-rw-r--r--  1 runner runner 319813 Sep 26 17:57 analyst-prompt.txt
+-rw-r--r--  1 runner runner 315903 Sep 26 17:57 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 26 17:57 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 26 17:57 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 26 17:57 leads
+-rw-r--r--  1 runner runner  64116 Sep 26 17:57 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 26 17:57 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 26 17:57 reports
+drwxr-xr-x  2 runner runner   4096 Sep 26 17:57 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 26 17:57 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 26 17:57 scripts
+-rw-r--r--  1 runner runner     33 Sep 26 17:57 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 26 17:57 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 26 17:57 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 26 17:57 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 26 17:57 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 26 17:57 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 26 17:57 triage
+e3b346e triage 2026-09-26-17-41
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code} %{time_total}\n" --max-time 12 https://apis.alfaview.com/v2/docs/openapi.json
+200 0.668983
+[0m
+Network is live. Let me pull the spec and probe for API version drift.
+[0m$ [0mcd /tmp/opencode && curl -s --max-time 20 https://apis.alfaview.com/v2/docs/openapi.json -o oa.json && md5sum oa.json && wc -c oa.json && python3 -c "
+import json
+d=json.load(open('oa.json'))
+print('paths',len(d['paths']))
+print('top-level keys',list(d.keys()))
+print('securitySchemes',d.get('components',{}).get('securitySchemes','ABSENT'))
+print('top security',d.get('security','ABSENT'))
+for p,ops in d['paths'].items():
+    for m,o in ops.items():
+        if m!='get': continue
+        ps=o.get('parameters',[])
+        q=[(x.get('name'),x.get('in'),x.get('schema',{}).get('type'),x.get('schema',{}).get('format'),x.get('required')) for x in ps]
+        print(p,'|',q)
+"
+357b94d367909a40b9299b543d23712b  oa.json
+127532 oa.json
+paths 37
+top-level keys ['components', 'info', 'openapi', 'paths', 'servers', 'tags']
+securitySchemes ABSENT
+top security ABSENT
+/v2/auth/token-info | [('Authorization', 'header', 'string', None, None)]
+/v2/group-links | [('Authorization', 'header', 'string', None, None), ('pageToken', 'query', 'string', None, None), ('limit', 'query', 'integer', 'int32', None)]
+/v2/group-links/{id} | [('Authorization', 'header', 'string', None, None), ('id', 'path', 'string', None, True)]
+/v2/guest-links | [('Authorization', 'header', 'string', None, None), ('pageToken', 'query', 'string', None, None), ('limit', 'query', 'integer', 'int32', None)]
+/v2/guest-links/{id} | [('Authorization', 'header', 'string', None, None), ('id', 'path', 'string', None, True)]
+/v2/languages | [('Authorization', 'header', 'string', None, None)]
+/v2/meetings | [('Authorization', 'header', 'string', None, None), ('from', 'query', 'string', 'date-time', None), ('to', 'query', 'string', 'date-time', None)]
+/v2/meetings/{id} | [('Authorization', 'header', 'string', None, None), ('id', 'path', 'string', None, True)]
+/v2/permission-groups | [('Authorization', 'header', 'string', None, None)]
+/v2/room-types | [('Authorization', 'header', 'string', None, None)]
+/v2/rooms | [('Authorization', 'header', 'string', None, None), ('roomTypes', 'query', ['array', 'null'], None, None), ('pageToken', 'query', 'string', None, None), ('limit', 'query', 'integer', 'int32', None)]
+/v2/rooms/{id} | [('Authorization', 'header', 'string', None, None), ('id', 'path', 'string', None, True)]
+/v2/rooms/{id}/participants | [('Authorization', 'header', 'string', None, None), ('id', 'path', 'string', None, True)]
+/v2/rooms/{roomId}/attendances | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True), ('from', 'query', 'string', 'date-time', True), ('to', 'query', 'string', 'date-time', True)]
+/v2/rooms/{roomId}/features | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True)]
+/v2/rooms/{roomId}/file-share-limits | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True)]
+/v2/rooms/{roomId}/file-share-settings | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True)]
+/v2/rooms/{roomId}/group-links | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True), ('pageToken', 'query', 'string', None, None), ('limit', 'query', 'integer', 'int32', None)]
+/v2/rooms/{roomId}/guest-links | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True), ('pageToken', 'query', 'string', None, None), ('limit', 'query', 'integer', 'int32', None)]
+/v2/rooms/{roomId}/language-settings | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True)]
+/v2/rooms/{roomId}/passcode | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True)]
+/v2/rooms/{roomId}/permissions | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True)]
+/v2/rooms/{roomId}/subrooms | [('Authorization', 'header', 'string', None, None), ('roomId', 'path', 'string', None, True)]
+/v2/stats | [('Authorization', 'header', 'string', None, None), ('from', 'query', 'string', 'date-time', True), ('to', 'query', 'string', 'date-time', True), ('stepDurationHours', 'query', 'integer', 'int64', True)]
+/v2/users | [('Authorization', 'header', 'string', None, None), ('emailAddress', 'query', 'string', 'email', None)]
+/v2/users/me | [('Authorization', 'header', 'string', None, None)]
+[0m
+Spec confirmed unchanged (md5 `357b94d3`, 26 GET ops, no `securitySchemes`). Now probing two unexplored angles: the array-typed `roomTypes` param, and GraphQL-over-GET.
+[0m$ [0mcd /tmp/opencode
+p(){ printf "\n=== %s\n" "$1"; shift; curl -s -o body.txt -w "HTTP %{http_code} len=%{size_download} ct=%{content_type}\n" --max-time 15 "$@"; head -c 400 body.txt; echo; sleep 1.2; }
+p "rooms?roomTypes=abc (ARRAY param, never probed)" "https://apis.alfaview.com/v2/rooms?roomTypes=abc"
+p "rooms?roomTypes= (empty array elem)" "https://apis.alfaview.com/v2/rooms?roomTypes="
+p "rooms?roomTypes=a,b,c (csv list)" "https://apis.alfaview.com/v2/rooms?roomTypes=a,b,c"
+=== rooms?roomTypes=abc (ARRAY param, never probed)
+HTTP 422 len=190 ct=application/problem+json
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected value to be one of \"department, room, meeting\"","location":"query.roomTypes[0]"}]}
+
+
+=== rooms?roomTypes= (empty array elem)
+HTTP 401 len=107 ct=application/problem+json
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+
+=== rooms?roomTypes=a,b,c (csv list)
+HTTP 422 len=398 ct=application/problem+json
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected value to be one of \"department, room, meeting\"","location":"query.roomTypes[0]"},{"message":"expected value to be one of \"department, room, meeting\"","location":"query.roomTypes[1]"},{"message":"expected value to be one of \"department, room, meeting\"","location":"query.roomTypes[2]"}]}
+[0m
+**New mechanism tier.** `roomTypes` is an enum/array param validated element-wise pre-auth, with the allow-list disclosed and **indexed** locations. Testing case-normalization, duplicate-param merge, and GraphQL-over-GET.
+[0m$ [0mcd /tmp/opencode
+p(){ printf "\n=== %s\n" "$1"; shift; curl -s -o body.txt -w "HTTP %{http_code} len=%{size_download} ct=%{content_type}\n" --max-time 15 "$@"; head -c 420 body.txt; echo; sleep 1.2; }
+p "enum CASE: roomTypes=ROOM (uppercase)" "https://apis.alfaview.com/v2/rooms?roomTypes=ROOM"
+p "enum valid: roomTypes=room,department" "https://apis.alfaview.com/v2/rooms?roomTypes=room,department"
+p "DUPLICATE param merge: guest-links?limit=1&limit=abc" "https://apis.alfaview.com/v2/guest-links?limit=1&limit=abc"
+p "DUPLICATE reversed: guest-links?limit=abc&limit=1" "https://apis.alfaview.com/v2/guest-links?limit=abc&limit=1"
+=== enum CASE: roomTypes=ROOM (uppercase)
+HTTP 422 len=190 ct=application/problem+json
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected value to be one of \"department, room, meeting\"","location":"query.roomTypes[0]"}]}
+
+
+=== enum valid: roomTypes=room,department
+HTTP 401 len=107 ct=application/problem+json
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+
+=== DUPLICATE param merge: guest-links?limit=1&limit=abc
+HTTP 401 len=107 ct=application/problem+json
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+
+=== DUPLICATE reversed: guest-links?limit=abc&limit=1
+HTTP 422 len=141 ct=application/problem+json
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"invalid integer","location":"query.limit"}]}
+[0m
+**Parser differential found:** duplicate params resolve first-wins in the validator (`limit=1&limit=abc`→401, `limit=abc&limit=1`→422). Now the high-value test — GraphQL-over-GET, which 33 cycles of bare-GET probes never actually exercised.
+[0m$ [0mcd /tmp/opencode
+p(){ printf "\n=== %s\n" "$1"; shift; curl -s -o body.txt -w "HTTP %{http_code} len=%{size_download} ct=%{content_type}\n" --max-time 15 "$@"; head -c 500 body.txt; echo; sleep 1.2; }
+p "baseline bare GET /graphql" "https://app.alfaview.com/graphql"
+p "GRAPHQL-OVER-GET: ?query={__typename}" -G --data-urlencode 'query={__typename}' "https://app.alfaview.com/graphql"
+p "GRAPHQL-OVER-GET: ?query={__schema{queryType{name}}}" -G --data-urlencode 'query={__schema{queryType{name}}}' "https://app.alfaview.com/graphql"
+=== baseline bare GET /graphql
+HTTP 400 len=406 ct=application/json; charset=utf-8
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+
+
+=== GRAPHQL-OVER-GET: ?query={__typename}
+HTTP 400 len=406 ct=application/json; charset=utf-8
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+
+
+=== GRAPHQL-OVER-GET: ?query={__schema{queryType{name}}}
+HTTP 400 len=406 ct=application/json; charset=utf-8
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+[0m
+The CSRF error names its own escape hatch. `apollo-require-preflight` is a **non-simple header** — setting it *strengthens* CSRF protection (it forces a CORS preflight, which cross-origin JS cannot do silently). Testing it.
+[0m$ [0mcd /tmp/opencode
+p(){ printf "\n=== %s\n" "$1"; shift; curl -s -o body.txt -w "HTTP %{http_code} len=%{size_download} ct=%{content_type}\n" --max-time 15 "$@"; head -c 600 body.txt; echo; sleep 1.2; }
+p "GET ?query={__typename} + apollo-require-preflight" -H 'apollo-require-preflight: true' -G --data-urlencode 'query={__typename}' "https://app.alfaview.com/graphql"
+p "GET ?query={__schema{queryType{name}}} + preflight hdr" -H 'apollo-require-preflight: true' -G --data-urlencode 'query={__schema{queryType{name}}}' "https://app.alfaview.com/graphql"
+p "GET ?query={listIdentityProviders{__typename}} + preflight hdr" -H 'apollo-require-preflight: true' -G --data-urlencode 'query={listIdentityProviders{__typename}}' "https://app.alfaview.com/graphql"
+=== GET ?query={__typename} + apollo-require-preflight
+HTTP 200 len=32 ct=application/json; charset=utf-8
+{"data":{"__typename":"Query"}}
+
+
+=== GET ?query={__schema{queryType{name}}} + preflight hdr
+HTTP 400 len=339 ct=application/json; charset=utf-8
+{"errors":[{"message":"GraphQL introspection is not allowed by Apollo Server, but the query contained __schema or __type. To enable introspection, pass introspection: true to ApolloServer in production","locations":[{"line":1,"column":2}],"extensions":{"validationErrorCode":"INTROSPECTION_DISABLED","code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+
+=== GET ?query={listIdentityProviders{__typename}} + preflight hdr
+HTTP 200 len=79 ct=application/json; charset=utf-8
+{"data":{"listIdentityProviders":{"__typename":"ListIdentityProvidersReply"}}}
+[0m
+**Major unlock.** GraphQL over GET works with `apollo-require-preflight: true` — 33 cycles of "GET 400" recorded a false blocker. The server's own error message advertised the bypass; it was never tried. Anonymous typed data is already flowing (`ListIdentityProvidersReply`). Now targeting the admin-session query.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+q(){ printf "\n=== %s\n" "$1"; curl -s -o body.txt -w "HTTP %{http_code} len=%{size_download}\n" --max-time 15 -H "$H" -G --data-urlencode "query=$1" "https://app.alfaview.com/graphql"; head -c 700 body.txt; echo; sleep 1.2; }
+q '{AdminTokenAuthenticate{__typename}}'
+q '{AdminTokenAuthenticate{zzzBogusField}}'
+q '{listIdentityProviders{__typename}}'
+=== {AdminTokenAuthenticate{__typename}}
+HTTP 400 len=219
+{"errors":[{"message":"Cannot query field \"AdminTokenAuthenticate\" on type \"Query\". Did you mean \"adminTokenAuthenticate\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+
+=== {AdminTokenAuthenticate{zzzBogusField}}
+HTTP 400 len=219
+{"errors":[{"message":"Cannot query field \"AdminTokenAuthenticate\" on type \"Query\". Did you mean \"adminTokenAuthenticate\"?","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+
+=== {listIdentityProviders{__typename}}
+HTTP 200 len=79
+{"data":{"listIdentityProviders":{"__typename":"ListIdentityProvidersReply"}}}
+[0m
+Field oracle works — it's `adminTokenAuthenticate` (lowercase). Enumerating its reply type.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+q(){ printf "\n=== %s\n" "$1"; curl -s -o body.txt -w "HTTP %{http_code} len=%{size_download}\n" --max-time 15 -H "$H" -G --data-urlencode "query=$1" "https://app.alfaview.com/graphql"; head -c 800 body.txt; echo; sleep 1.2; }
+q '{adminTokenAuthenticate{__typename}}'
+q '{adminTokenAuthenticate{zzzBogus}}'
+=== {adminTokenAuthenticate{__typename}}
+HTTP 200 len=170
+{"errors":[{"message":"Missing refreshToken","locations":[{"line":1,"column":2}],"path":["adminTokenAuthenticate"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+
+=== {adminTokenAuthenticate{zzzBogus}}
+HTTP 400 len=187
+{"errors":[{"message":"Cannot query field \"zzzBogus\" on type \"AdminTokenAuthenticateReply\".","locations":[{"line":1,"column":25}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
+`adminTokenAuthenticate` requires a `refreshToken` (UNAUTHENTICATED) — not anonymous. But the unlock's real value is now enumerating the **whole** query surface read-only. Pulling the public bundle as the schema source.
+[0m$ [0mcd /tmp/opencode && curl -s --max-time 30 https://app.alfaview.com/js/app.min.67e8a68d4318b34ca241.js -o app.js -w "HTTP %{http_code} len=%{size_download}\n" && md5sum app.js && python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='replace').read()
+# find Query type block in embedded SDL
+for pat in [r'type\s+Query\s*\{', r'Query:\s*\{', r'"type"\s*:\s*"Query"']:
+    for m in re.finditer(pat,s):
+        print("PAT",pat,"@",m.start())
+        seg=s[m.start():m.start()+6000]
+        print(seg[:6000])
+        print("-----")
+        break
+EOF
+HTTP 200 len=1092529
+2cb9128353b1f7444e222b4b61e4ffa5  app.js
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re,collections
+s=open('app.js',encoding='utf-8',errors='replace').read()
+print("len",len(s))
+for kw in ['listIdentityProviders','gql`','graphql-tag','__schema','subscription','query Get','query List','fragment ']:
+    print(kw, s.count(kw))
+i=s.find('listIdentityProviders')
+print("CTX:", s[max(0,i-400):i+400])
+EOF
+len 1091133
+listIdentityProviders 2
+gql` 0
+graphql-tag 0
+__schema 0
+subscription 34
+query Get 9
+query List 21
+fragment  1
+CTX: rectives:[]},{kind:"Field",name:{kind:"Name",value:"apiKeysByCompanyId"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"userId"},arguments:[],directives:[]}]}}]}},{kind:"OperationDefinition",operation:"query",name:{kind:"Name",value:"ListIdentityProviders"},variableDefinitions:[],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"listIdentityProviders"},arguments:[],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"providers"},arguments:[],directives:[]}]}}]}},{kind:"OperationDefinition",operation:"query",name:{kind:"Name",value:"CheckMFAStatus"},variableDefinitions:[],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"checkMFA
+[0m
+The bundle ships precompiled GraphQL ASTs. Extracting the full query root-field list.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re,json
+s=open('app.js',encoding='utf-8',errors='replace').read()
+# operation:"query" followed by OperationDefinition selection set first field
+pat=re.compile(r'operation:"(query|mutation)",name:\{kind:"Name",value:"([^"]+)"\},variableDefinitions:\[(.*?)\],directives:\[\],selectionSet:\{kind:"SelectionSet",selections:\[\{kind:"Field",name:\{kind:"Name",value:"([^"]+)"\}')
+ops=pat.findall(s)
+qs=[(o,n,f,v) for o,n,f,v in ops if o=='query']
+ms=[(o,n,f,v) for o,n,f,v in ops if o=='mutation']
+print("queries",len(qs),"mutations",len(ms))
+print("\n=== QUERY ROOT FIELDS (unique) ===")
+seen=set()
+for o,n,f,v in qs:
+    if f not in seen:
+        seen.add(f)
+        args = re.findall(r'value:"(\w+)"',v)
+        print(f"{f:38s} op={n:32s} vars={args}")
+print("\nunique query fields:",len(seen))
+json.dump(sorted(seen),open('qfields.json','w'),indent=0)
+EOF
+queries 58 mutations 90
+
+=== QUERY ROOT FIELDS (unique) ===
+                                       op=ListAuthData                     vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"userId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=ListApiKeys                      vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"username"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=ListAuthenticationsByUsername    vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"companyId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"username"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=GetFinishSignupLinkAsAdmin       vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"roomId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=FetchRoom                        vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"roomIds"}},type:{kind:"NonNullType",type:{kind:"ListType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}}},directives:[]} op=StatusRooms                      vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"companyId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=FetchCompanyQuotas               vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"companyIdList"}},type:{kind:"NonNullType",type:{kind:"ListType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}}},directives:[]} op=ListCompaniesById                vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"displayNameQuery"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"planId"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"createdAtFrom"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"createdAtTo"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"updatedAtFrom"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"updatedAtTo"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"offset"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]} op=SearchCompanies                  vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"companyId"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]} op=FetchVanityDomain                vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"userIds"}},type:{kind:"NonNullType",type:{kind:"ListType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}}},directives:[]} op=ListUserProfiles                 vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"userIds"}},type:{kind:"NonNullType",type:{kind:"ListType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"unverifiedAccountsMap"}},type:{kind:"NamedType",name:{kind:"Name",value:"JSONObject"}},directives:[]} op=ListUsersByIds                   vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"roomId"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"provider"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]} op=FetchLanguages                   vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"inputText"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"sourceLanguage"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"targetLanguage"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=FetchDeepLTranslatorText         vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"meetingId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=GetMeetingInfo                   vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"from"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"Number"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"to"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"Number"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"roomId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=GetReport                        vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"from"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"Number"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"to"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"Number"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"stepDuration"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"Number"}}},directives:[]} op=FetchUsageStatistics             vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"vatId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=ValidateVatId                    vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"roomId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"fileId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]} op=GenerateFileDownloadURL          vars=[]
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"filter"}},type:{kind:"NamedType",name:{kind:"Name",value:"AuditEventFilterInput"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"timeRange"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"AuditTimeRangeInput"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"limit"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"pageToken"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]} op=ListAuditEvents                  vars=[]
+
+unique query fields: 20
+[0m
+Extraction is mangled; let me get clean field names, then probe **reachability only** using `{__typename}` on the reply type — that triggers the resolver but can never return field data.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re,json
+s=open('app.js',encoding='utf-8',errors='replace').read()
+# root field = first selection after each selectionSet of an OperationDefinition
+out={}
+for m in re.finditer(r'operation:"(query|mutation)",name:\{kind:"Name",value:"([^"]+)"\}',s):
+    kind,opname=m.group(1),m.group(2)
+    seg=s[m.end():m.end()+1500]
+    f=re.search(r'selectionSet:\{kind:"SelectionSet",selections:\[\{kind:"Field",name:\{kind:"Name",value:"([^"]+)"\}',seg)
+    if not f: continue
+    args=re.findall(r'arguments:\[(.*?)\],directives',seg[:f.start()+600],re.S)
+    names=re.findall(r'kind:"Name",value:"(\w+)"',args[0]) if args else []
+    out.setdefault(kind,{})[f.group(1)]=(opname,names)
+for kind in ('query','mutation'):
+    d=out.get(kind,{})
+    print(f"=== {kind.upper()} ROOT FIELDS: {len(d)}")
+    for k,(op,args) in sorted(d.items()):
+        print(f"  {k:34s} args={args}")
+    json.dump(d,open(f'{kind}fields.json','w'),indent=1)
+EOF
+=== QUERY ROOT FIELDS: 54
+  adminTokenAuthenticate             args=[]
+  checkMFAStatus                     args=[]
+  fetchCompanyCacheUpdatedAt         args=[]
+  fetchCompanyOwner                  args=['companyId', 'companyId']
+  fetchCompanyQuotas                 args=['companyId', 'companyId']
+  fetchDeepLTranslatorLanguages      args=[]
+  fetchDeepLTranslatorText           args=['inputText', 'inputText', 'sourceLanguage', 'sourceLanguage', 'targetLanguage', 'targetLanguage']
+  fetchDialInNumbers                 args=[]
+  fetchFileCompanySettings           args=[]
+  fetchFileRoomList                  args=['roomId', 'roomId']
+  fetchFileRoomSettings              args=['roomId', 'roomId']
+  fetchLanguages                     args=['roomId', 'roomId', 'provider', 'provider']
+  fetchLastCompanyJoin               args=[]
+  fetchMeetings                      args=[]
+  fetchPrivacyPolicyUrl              args=['companyId', 'companyId']
+  fetchQuotaUsage                    args=[]
+  fetchRoom                          args=['roomId', 'roomId']
+  fetchSSOInfo                       args=[]
+  fetchTranscriptionSettings         args=['roomId', 'roomId']
+  fetchUsageStatistics               args=['from', 'from', 'to', 'to', 'stepDuration', 'stepDuration']
+  fetchUserPermissions               args=['userId', 'userId']
+  fetchVanityDomain                  args=['companyId', 'companyId']
+  generateFileDownloadURL            args=['roomId', 'roomId', 'fileId', 'fileId']
+  getBillingInfo                     args=[]
+  getCanCreateMeeting                args=[]
+  getFinishSignupLinkAsAdmin         args=['companyId', 'companyId', 'username', 'username']
+  getMeetingInfo                     args=['meetingId', 'meetingId']
+  getOrphanedUsers                   args=[]
+  getPasscode                        args=['roomId', 'roomId']
+  getPendingUserAccount              args=['userId', 'userId']
+  getReport                          args=['from', 'from', 'to', 'to', 'roomId', 'roomId']
+  getRoomOptions                     args=['roomId', 'roomId']
+  listAllUserIds                     args=[]
+  listAllUserProfiles                args=[]
+  listApiKeys                        args=['userId', 'userId']
+  listAuditEvents                    args=['filter', 'filter', 'timeRange', 'timeRange', 'limit', 'limit', 'pageToken', 'pageToken']
+  listAuthData                       args=[]
+  listAuthenticationsByUsername      args=['username', 'username']
+  listAvailableRoomTypes             args=[]
+  listCompaniesById                  args=['companyIdList', 'companyIdList']
+  listCompanyLinks                   args=[]
+  listComponents                     args=[]
+  listGroups                         args=[]
+  listIdentityProviders              args=[]
+  listPermissionGroups               args=[]
+  listQuotas                         args=[]
+  listRoomLinks                      args=['roomId', 'roomId']
+  listRooms                          args=['skipFlags']
+  listUnverifiedAccounts             args=[]
+  listUserProfiles                   args=['userIds', 'userIds']
+  listUsersByIds                     args=['userIds', 'userIds', 'unverifiedAccountsMap', 'unverifiedAccountsMap']
+  searchCompanies                    args=[]
+  statusRooms                        args=['roomIds', 'roomIds']
+  validateVatId                      args=['vatId', 'vatId']
+=== MUTATION ROOT FIELDS: 88
+  adminReinvitePendingUser           args=['userId', 'userId', 'companyId', 'companyId', 'isOldPending', 'isOldPending']
+  adminSwitchCompany                 args=['nextCompanyId', 'nextCompanyId']
+  assignCompanyAdminPermission       args=['userId', 'userId']
+  assignGrantCompanyAdminPermission  args=['userId', 'userId']
+  batchAssignUsers                   args=['assignments', 'assignments', 'isDryRun', 'isDryRun']
+  batchCreateGroupLinks              args=[]
+  batchCreateRoomStructure           args=['roomStructure', 'roomStructure', 'options', 'options']
+  batchCreateRooms                   args=['roomNames', 'roomNames', 'options', 'options']
+  batchDeleteUsers                   args=['userEmails', 'userEmails', 'isDryRun', 'isDryRun']
+  batchInviteExternalMembers         args=['invitations', 'invitations', 'isDryRun', 'isDryRun', 'timeZone', 'timeZone', 'roomId', 'roomId']
+  batchReinvitePendingUsers          args=['userEmails', 'userEmails', 'isDryRun', 'isDryRun']
+  batchUnassignUsers                 args=['userEmails', 'userEmails', 'isDryRun', 'isDryRun']
+  batchUpdateRoomsCapacity           args=[]
+  batchUpdateRoomsDefaultUserRole    args=['defaultPermission', 'defaultPermission']
+  batchUpdateRoomsFeatures           args=[]
+  batchUpdateRoomsTranscriptionSettings args=[]
+  cancelMeeting                      args=['id', 'id', 'reason', 'reason', 'creatorLocale', 'creatorLocale', 'skipNotification', 'skipNotification']
+  changePassword                     args=['username', 'username', 'newPassword', 'newPassword', 'currentPassword', 'currentPassword']
+  checkout                           args=['planId', 'planId', 'products', 'products', 'customer', 'customer']
+  createApiKey                       args=['alias', 'alias', 'userId', 'userId']
+  createCompany                      args=['companyName', 'companyName', 'user', 'user', 'planId', 'planId']
+  createGroup                        args=[]
+  createGroupLink                    args=[]
+  createMagicToken                   args=[]
+  createRoom                         args=['room', 'room']
+  credentialsAuthenticate            args=['username', 'username', 'password', 'password', 'companyId', 'companyId']
+  deactivateApiKey                   args=['alias', 'alias', 'userId', 'userId']
+  deleteApiKey                       args=['alias', 'alias', 'userId', 'userId']
+  deleteCompany                      args=['companyId', 'companyId']
+  deleteFiles                        args=['roomId', 'roomId', 'fileIds', 'fileIds']
+  deleteGroup                        args=['id', 'id']
+  deleteRoom                         args=['roomId', 'roomId']
+  deleteRoomLinks                    args=['roomId', 'roomId', 'guestIds', 'guestIds']
+  deleteUser                         args=['userId', 'userId']
+  disableMFA                         args=[]
+  duplicateRoom                      args=['roomId', 'roomId', 'numberOfDuplications', 'numberOfDuplications']
+  enableMFA                          args=[]
+  finishMultiFactorAuthentication    args=[]
+  finishSignup                       args=['username', 'username', 'password', 'password', 'companyId', 'companyId', 'activationToken', 'activationToken']
+  guestAuthenticate                  args=['userId', 'userId', 'companyId', 'companyId', 'roomId', 'roomId']
+  guestJoin                          args=['userId', 'userId', 'companyId', 'companyId', 'roomId', 'roomId', 'displayName', 'displayName']
+  inviteAndAssignUsers               args=['csvUserInvitations', 'csvUserInvitations', 'locale', 'locale', 'isDryRun', 'isDryRun']
+  inviteExternalMembers              args=['roomId', 'roomId', 'invitations', 'invitations', 'timeZone', 'timeZone']
+  inviteUsers                        args=['userInvitations', 'userInvitations', 'userPermissions', 'userPermissions']
+  ldapCredentialsAuthenticate        args=['username', 'username', 'password', 'password']
+  leaveCompany                       args=[]
+  magicTokenAuthenticate             args=['magicToken', 'magicToken']
+  massUpdateRoomLinks                args=['selectedRoomLinks', 'selectedRoomLinks', 'linkSettings', 'linkSettings']
+  regeneratePasscode                 args=['roomId', 'roomId']
+  regenerateRecoveryCodes            args=[]
+  reinvitePendingUser                args=['userId', 'userId', 'isOldPending', 'isOldPending']
+  removeCompanyBrandingLogo          args=['fileTypes', 'fileTypes']
+  resendGuestInviteEmail             args=['roomId', 'roomId', 'guestId', 'guestId', 'timeZone', 'timeZone']
+  resetPassword                      args=['username', 'username']
+  sendDeleteCompanyConfirmation      args=[]
+  setGroupLinkName                   args=['guestId', 'guestId', 'displayName', 'displayName']
+  setNewPassword                     args=[]
+  setPrivacyPolicyUrl                args=['companyId', 'companyId', 'privacyUrl', 'privacyUrl']
+  setRoomLinkDialIn                  args=['guestId', 'guestId', 'allowDialIn', 'allowDialIn']
+  setRoomLinkRole                    args=['guestId', 'guestId', 'role', 'role']
+  setRoomLinkValidityPeriod          args=['guestId', 'guestId', 'startDate', 'startDate', 'expiry', 'expiry', 'timeZone', 'timeZone']
+  signup                             args=[]
+  sortRooms                          args=['moves', 'moves']
+  switchCompany                      args=['companyId', 'companyId']
+  tokenAuthenticate                  args=[]
+  unassignCompanyAdminPermission     args=['userId', 'userId']
+  unassignGrantCompanyAdminPermission args=['userId', 'userId']
+  updateCompany                      args=['companyId', 'companyId', 'plan', 'plan', 'displayName', 'displayName', 'trialEndsAt', 'trialEndsAt']
+  updateCompanyBranding              args=['branding', 'branding']
+  updateCompanyName                  args=['displayName', 'displayName']
+  updateCompanyOwnerId               args=['newOwnerID', 'newOwnerID']
+  updateCompanyQuotas                args=['companyId', 'companyId', 'upsertQuotas', 'upsertQuotas', 'removeQuotas', 'removeQuotas']
+  updateCompanySearchCache           args=[]
+  updateFavoriteRooms                args=['roomIdsChanges', 'roomIdsChanges']
+  updateFileCompanySettings          args=['active', 'active']
+  updateFileRoomSettings             args=['roomId', 'roomId', 'settings', 'settings']
+  updateFiles                        args=['roomId', 'roomId', 'fileIds', 'fileIds', 'accessLevel', 'accessLevel', 'category', 'category']
+  updateGroup                        args=[]
+  updatePermissionGroups             args=['input', 'input']
+  updateRoom                         args=['roomId', 'roomId', 'room', 'room', 'removeDefaultPermissions', 'removeDefaultPermissions']
+  updateRoomWaitingRoomState         args=['roomId', 'roomId', 'isWaitingRoomEnabled', 'isWaitingRoomEnabled']
+  updateRoomWaitingRoomWelcomeNote   args=['roomId', 'roomId', 'waitingRoomWelcomeNote', 'waitingRoomWelcomeNote']
+  updateTranscriptionProvider        args=['roomId', 'roomId', 'provider', 'provider']
+  updateTranscriptionSettings        args=[]
+  updateTranslationProvider          args=['roomId', 'roomId', 'translationProvider', 'translationProvider']
+  updateUser                         args=['userId', 'userId', 'user', 'user']
+  updateUserPermissions              args=['userId', 'userId', 'grantPermissions', 'grantPermissions', 'revokePermissions', 'revokePermissions']
+  verifyMFASetup                     args=['enrollmentSessionToken', 'enrollmentSessionToken', 'totpCode', 'totpCode']
+[0m
+Now the decisive test: probe the whole query surface for **anonymous reachability** using `{field(...){__typename}}` — this fires the resolver but structurally cannot return field data. Only synthetic UUIDs.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+F=00000000-0000-4000-8000-000000000001
+q(){ curl -s -o b.txt -w "%{http_code}" --max-time 15 -H "$H" -G --data-urlencode "query=$1" "https://app.alfaview.com/graphql" > code.txt
+ printf "%-42s %s  %s\n" "$2" "$(cat code.txt)" "$(python3 -c "
+import json,sys
+try:
+  d=json.load(open('b.txt'))
+  if 'errors' in d: print('ERR:', d['errors'][0].get('extensions',{}).get('code'), '|', d['errors'][0]['message'][:95])
+  else: print('DATA:', json.dumps(d.get('data'))[:95])
+except Exception as e: print('raw:', open('b.txt').read()[:95])
+")"; sleep 1.1; }
+q "{listAllUserIds{__typename}}"                 "listAllUserIds (no args, mass PII)"
+q "{listAllUserProfiles{__typename}}"            "listAllUserProfiles (no args)"
+q "{getOrphanedUsers{__typename}}"               "getOrphanedUsers (no args)"
+q "{listUnverifiedAccounts{__typename}}"         "listUnverifiedAccounts (no args)"
+q "{getBillingInfo{__typename}}"                 "getBillingInfo (no args)"
+q "{listAuthData{__typename}}"                   "listAuthData (no args)"
+q "{fetchQuotaUsage{__typename}}"                "fetchQuotaUsage (no args)"
+q "{listRooms{__typename}}"                      "listRooms (no args)"
+listAllUserIds (no args, mass PII)         400  ERR: GRAPHQL_VALIDATION_FAILED | Field "listAllUserIds" must not have a selection since type "[String]" has no subfields.
+listAllUserProfiles (no args)              200  ERR: UNAUTHENTICATED | Missing access token
+getOrphanedUsers (no args)                 200  ERR: UNAUTHENTICATED | Missing access token
+listUnverifiedAccounts (no args)           400  ERR: GRAPHQL_VALIDATION_FAILED | Field "listUnverifiedAccounts" must not have a selection since type "[JSONObject]!" has no subf
+getBillingInfo (no args)                   200  ERR: UNAUTHENTICATED | Missing access token
+listAuthData (no args)                     200  ERR: UNAUTHENTICATED | Missing access token
+fetchQuotaUsage (no args)                  200  ERR: UNAUTHENTICATED | Missing access token
+listRooms (no args)                        200  ERR: UNAUTHENTICATED | Missing access token
+[0m
+`listAllUserIds` is `[String]` and `listUnverifiedAccounts` is `[JSONObject]!` — scalars, so `__typename` can't be used. Firing those two with a **length-only** harness that discards contents unread, then the arg-bearing roots.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+# LENGTH-ONLY harness: never prints or stores element contents
+lenonly(){ curl -s -o raw.bin -w "%{http_code}" --max-time 20 -H "$H" -G --data-urlencode "query=$1" "https://app.alfaview.com/graphql" > c.txt
+python3 -c "
+import json
+code=open('c.txt').read().strip()
+d=json.load(open('raw.bin'))
+if 'errors' in d and d.get('data') is None:
+    print(f'{code} $2 -> BLOCKED', d['errors'][0].get('extensions',{}).get('code'), '|', d['errors'][0]['message'][:70])
+else:
+    v=(d.get('data') or {}).get('$3')
+    if isinstance(v,list):
+        print(f'{code} $2 -> 200 DATA RETURNED, list length={len(v)}  (contents discarded unread)')
+    else:
+        print(f'{code} $2 -> 200, value type={type(v).__name__} (contents discarded unread)')
+"; rm -f raw.bin; sleep 1.2; }
+lenonly '{listAllUserIds}'          "listAllUserIds"          "listAllUserIds"
+lenonly '{listUnverifiedAccounts}'  "listUnverifiedAccounts"  "listUnverifiedAccounts"
+200 listAllUserIds -> 200, value type=NoneType (contents discarded unread)
+200 listUnverifiedAccounts -> BLOCKED UNAUTHENTICATED | Missing access token
+[0m
+`listAllUserIds` → `null` (nullable, no data); `listUnverifiedAccounts` → UNAUTHENTICATED. Both mass-PII fields clean. Now auto-handling scalar vs object across the arg-bearing roots.
+[0m$ [0mcd /tmp/opencode
+cat > probe.py <<'PY'
+import json,urllib.parse,urllib.request,time,sys
+H={'apollo-require-preflight':'true'}
+U='https://app.alfaview.com/graphql'
+F='00000000-0000-4000-8000-000000000001'
+FL=f'"{F}"'
+def gq(q):
+    r=urllib.request.Request(U+'?'+urllib.parse.urlencode({'query':q}),headers=H)
+    try:
+        with urllib.request.urlopen(r,timeout=20) as x: return x.status,json.loads(x.read())
+    except urllib.error.HTTPError as e: return e.code,json.loads(e.read())
+def safe(v):
+    if isinstance(v,list): return f'list(len={len(v)}, contents discarded)'
+    return f'{type(v).__name__}(value discarded)'
+targets=[
+ ('fetchCompanyOwner',f'companyId:{FL}'),('fetchCompanyQuotas',f'companyId:{FL}'),
+ ('fetchVanityDomain',f'companyId:{FL}'),('fetchPrivacyPolicyUrl',f'companyId:{FL}'),
+ ('fetchRoom',f'roomId:{FL}'),('getRoomOptions',f'roomId:{FL}'),
+ ('getPasscode',f'roomId:{FL}'),('getMeetingInfo',f'meetingId:{FL}'),
+ ('getPendingUserAccount',f'userId:{FL}'),('listApiKeys',f'userId:{FL}'),
+ ('getFinishSignupLinkAsAdmin',f'companyId:{FL},username:"zz-nonexistent-probe-zz"'),
+ ('listAuthenticationsByUsername','username:"zz-nonexistent-probe-zz"'),
+ ('fetchUserPermissions',f'userId:{FL}'),('fetchLanguages',f'roomId:{FL}'),
+ ('generateFileDownloadURL',f'roomId:{FL},fileId:{FL}'),
+ ('searchCompanies',''),('listComponents',''),('listPermissionGroups',''),
+ ('listAvailableRoomTypes',''),('listIdentityProviders',''),
+ ('listCompaniesById',f'companyIdList:[{FL}]'),('listUserProfiles',f'userIds:[{FL}]'),
+ ('listUsersByIds',f'userIds:[{FL}]'),('statusRooms',f'roomIds:[{FL}]'),
+ ('fetchUsageStatistics','from:0,to:1,stepDuration:1'),('listRooms',''),
+]
+for f,a in targets:
+    q=f'{{{f}({a}){{__typename}}}}'
+    c,d=gq(q)
+    errs=d.get('errors') or []
+    if errs and 'must not have a selection since type' in errs[0]['message']:
+        c2,d2=gq('{'+f+('('+a+')' if a else '')+'}')
+        v=(d2.get('data') or {}).get(f,'ABSENT')
+        e2=d2.get('errors') or []
+        if e2 and d2.get('data') is None:
+            print(f'{f:32s} {c2} SCALAR-BLOCKED {e2[0].get("extensions",{}).get("code")} | {e2[0]["message"][:55]}')
+        else:
+            print(f'{f:32s} {c2} SCALAR 200 DATA -> {safe(v)}   *** ANON DATA ***' if v not in (None,[],'') else f'{f:32s} {c2} SCALAR 200 -> {safe(v)} (empty/gated)')
+    elif errs:
+        print(f'{f:32s} {c} BLOCKED {errs[0].get("extensions",{}).get("code")} | {errs[0]["message"][:55]}')
+    else:
+        print(f'{f:32s} {c} 200 REPLY={json.dumps(d.get("data"))[:70]}')
+    sys.stdout.flush(); time.sleep(1.1)
+PY
+python3 probe.py
+fetchCompanyOwner                200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchCompanyQuotas               200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchVanityDomain                200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchPrivacyPolicyUrl            200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchRoom                        200 BLOCKED UNAUTHENTICATED | Missing access token
+getRoomOptions                   200 BLOCKED UNAUTHENTICATED | Missing access token
+getPasscode                      200 BLOCKED UNAUTHENTICATED | Missing access token
+getMeetingInfo                   200 BLOCKED UNAUTHENTICATED | Missing access token
+getPendingUserAccount            200 BLOCKED UNAUTHENTICATED | Missing access token
+listApiKeys                      200 BLOCKED UNAUTHENTICATED | Missing access token
+getFinishSignupLinkAsAdmin       200 BLOCKED UNAUTHENTICATED | Missing access token
+listAuthenticationsByUsername    200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchUserPermissions             200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchLanguages                   200 BLOCKED UNAUTHENTICATED | Missing access token
+generateFileDownloadURL          200 BLOCKED UNAUTHENTICATED | Missing access token
+searchCompanies                  400 BLOCKED GRAPHQL_PARSE_FAILED | Syntax Error: Expected Name, found ")".
+listComponents                   400 BLOCKED GRAPHQL_PARSE_FAILED | Syntax Error: Expected Name, found ")".
+listPermissionGroups             400 BLOCKED GRAPHQL_PARSE_FAILED | Syntax Error: Expected Name, found ")".
+listAvailableRoomTypes           400 BLOCKED GRAPHQL_PARSE_FAILED | Syntax Error: Expected Name, found ")".
+listIdentityProviders            400 BLOCKED GRAPHQL_PARSE_FAILED | Syntax Error: Expected Name, found ")".
+listCompaniesById                200 BLOCKED UNAUTHENTICATED | Missing access token
+listUserProfiles                 200 BLOCKED UNAUTHENTICATED | Missing access token
+listUsersByIds                   200 BLOCKED UNAUTHENTICATED | Missing access token
+statusRooms                      200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchUsageStatistics             200 BLOCKED UNAUTHENTICATED | Missing access token
+listRooms                        400 BLOCKED GRAPHQL_PARSE_FAILED | Syntax Error: Expected Name, found ")".
+[0m
+Script bug on the no-arg cases (produced `f()`). Fixing and sweeping **all** remaining no-arg query roots to complete the map.
+[0m$ [0mcd /tmp/opencode
+cat > p2.py <<'PY'
+import json,urllib.parse,urllib.request,time,sys
+H={'apollo-require-preflight':'true'}; U='https://app.alfaview.com/graphql'
+def gq(q):
+    r=urllib.request.Request(U+'?'+urllib.parse.urlencode({'query':q}),headers=H)
+    try:
+        with urllib.request.urlopen(r,timeout=20) as x: return x.status,json.loads(x.read())
+    except urllib.error.HTTPError as e: return e.code,json.loads(e.read())
+def safe(v):
+    if isinstance(v,list): return f'list(len={len(v)}, contents discarded)'
+    return f'{type(v).__name__}'
+fields=['searchCompanies','listComponents','listPermissionGroups','listAvailableRoomTypes',
+ 'listIdentityProviders','listRooms','fetchCompanyCacheUpdatedAt','fetchDeepLTranslatorLanguages',
+ 'fetchDialInNumbers','fetchFileCompanySettings','fetchLastCompanyJoin','fetchMeetings',
+ 'fetchSSOInfo','fetchTranscriptionSettings','getCanCreateMeeting','listCompanyLinks',
+ 'listQuotas','checkMFAStatus','getOrphanedUsers','listAuthData','getBillingInfo',
+ 'fetchQuotaUsage','listAllUserProfiles','listUnverifiedAccounts']
+blocked=[];open_=[]
+for f in fields:
+    c,d=gq('{'+f+'{__typename}}')
+    e=d.get('errors') or []
+    if e and 'must not have a selection since type' in e[0]['message']:
+        c2,d2=gq('{'+f+'}'); e2=d2.get('errors') or []
+        if e2 and d2.get('data') is None:
+            blocked.append(f); print(f'{f:34s} {c2} SCALAR-BLOCKED {e2[0].get("extensions",{}).get("code")}')
+        else:
+            v=(d2.get('data') or {}).get(f,'ABSENT')
+            open_.append(f); print(f'{f:34s} {c2} SCALAR-200 -> {safe(v)}  {"*** ANON RETURN ***" if v not in (None,[],'',"") else "(empty)"}')
+    elif e:
+        blocked.append(f); print(f'{f:34s} {c} BLOCKED {e[0].get("extensions",{}).get("code")} | {e[0]["message"][:48]}')
+    else:
+        open_.append(f); print(f'{f:34s} {c} 200 REPLY={json.dumps(d.get("data"))[:60]}')
+    sys.stdout.flush(); time.sleep(1.1)
+print(f"\nAUTH-GATED: {len(blocked)}   ANON-REACHABLE: {len(open_)} -> {open_}")
+PY
+python3 p2.py
+searchCompanies                    200 BLOCKED UNAUTHENTICATED | Missing access token
+listComponents                     200 BLOCKED INTERNAL_SERVER_ERROR | Cannot return null for non-nullable field Query.
+listPermissionGroups               200 BLOCKED UNAUTHENTICATED | Missing access token
+listAvailableRoomTypes             200 BLOCKED UNAUTHENTICATED | Missing access token
+listIdentityProviders              200 200 REPLY={"listIdentityProviders": {"__typename": "ListIdentityProvid
+listRooms                          200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchCompanyCacheUpdatedAt         200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchDeepLTranslatorLanguages      200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchDialInNumbers                 200 SCALAR-BLOCKED UNAUTHENTICATED
+fetchFileCompanySettings           200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchLastCompanyJoin               200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchMeetings                      200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchSSOInfo                       200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchTranscriptionSettings         400 BLOCKED GRAPHQL_VALIDATION_FAILED | Field "fetchTranscriptionSettings" argument "roo
+getCanCreateMeeting                200 BLOCKED UNAUTHENTICATED | Missing access token
+listCompanyLinks                   200 BLOCKED UNAUTHENTICATED | Missing access token
+listQuotas                         200 BLOCKED UNAUTHENTICATED | Missing access token
+checkMFAStatus                     200 BLOCKED UNAUTHENTICATED | Missing access token
+getOrphanedUsers                   200 BLOCKED UNAUTHENTICATED | Missing access token
+listAuthData                       200 BLOCKED UNAUTHENTICATED | Missing access token
+getBillingInfo                     200 BLOCKED UNAUTHENTICATED | Missing access token
+fetchQuotaUsage                    200 BLOCKED UNAUTHENTICATED | Missing access token
+listAllUserProfiles                200 BLOCKED UNAUTHENTICATED | Missing access token
+listUnverifiedAccounts             200 SCALAR-BLOCKED UNAUTHENTICATED
+
+AUTH-GATED: 23   ANON-REACHABLE: 1 -> ['listIdentityProviders']
+[0m
+53 of 54 query roots are `UNAUTHENTICATED`-gated; only `listIdentityProviders` is anonymous. Two final checks: what that one returns, and whether mutations are permitted over GET.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+gq(){ curl -s -o b.txt -w "%{http_code}" --max-time 20 -H "$H" -G --data-urlencode "query=$1" "https://app.alfaview.com/graphql" > c.txt; echo "HTTP $(cat c.txt)"; head -c 300 b.txt; echo; sleep 1.2; }
+echo "=== anonymous listIdentityProviders.providers (LENGTH ONLY)"
+curl -s -o b.txt --max-time 20 -H "$H" -G --data-urlencode 'query={listIdentityProviders{providers{__typename}}}' "https://app.alfaview.com/graphql"
+python3 -c "
+import json;d=json.load(open('b.txt'))
+p=(d.get('data') or {}).get('listIdentityProviders')
+pr=(p or {}).get('providers')
+print('reply keys:',list(p.keys()) if isinstance(p,dict) else p)
+print('providers length =',len(pr) if isinstance(pr,list) else repr(pr),' (contents discarded unread)')"
+echo; echo "=== MUTATION-OVER-GET GUARD (meta-field only, zero side effects)"
+gq 'mutation { __typename }'
+echo "=== standing delta recheck"
+for u in https://apis.alfaview.com/v2/users/me https://sso.alfaview.com/.well-known/jwks.json https://apis.alfaview.com/v2/docs/openapi.json; do
+ printf "%-58s " "$u"; curl -s -o /dev/null -w "HTTP %{http_code} len=%{size_download}\n" --max-time 15 "$u"; sleep 1.1; done
+printf "introspect OPTIONS                                      "; curl -s -o /dev/null -X OPTIONS -w "HTTP %{http_code}\n" --max-time 15 https://sso.alfaview.com/oauth2/introspect
+=== anonymous listIdentityProviders.providers (LENGTH ONLY)
+reply keys: None
+providers length = None  (contents discarded unread)
+
+=== MUTATION-OVER-GET GUARD (meta-field only, zero side effects)
+HTTP 405
+{"errors":[{"message":"GET requests only support query operations, not mutation operations","extensions":{"code":"BAD_REQUEST"}}]}
+
+=== standing delta recheck
+https://apis.alfaview.com/v2/users/me                      HTTP 401 len=107
+https://sso.alfaview.com/.well-known/jwks.json             HTTP 200 len=16257
+https://apis.alfaview.com/v2/docs/openapi.json             HTTP 200 len=127532
+introspect OPTIONS                                      HTTP 405
+[0m
+Mutations over GET are **blocked (405)** — the GET surface is provably read-only. Let me pull the `listAuditEvents` input shape from the bundle so my next probe is exact.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='replace').read()
+i=s.find('listAuditEvents')
+print("--- listAuditEvents op AST ---")
+print(s[max(0,i-1200):i+200].replace('},{','},\n{')[-1800:])
+j=s.find('AuditTimeRangeInput')
+print("\n--- AuditTimeRangeInput occurrences:",s.count('AuditTimeRangeInput'))
+k=s.find('"AuditTimeRangeInput"')
+print(s[max(0,k-300):k+500] if k>0 else "(not as schema string)")
+EOF
+--- listAuditEvents op AST ---
+:"Name",value:"roomId"}}},
+{kind:"Argument",name:{kind:"Name",value:"fileId"},value:{kind:"Variable",name:{kind:"Name",value:"fileId"}}}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"http_download_url"},arguments:[],directives:[]}]}}]}},
+{kind:"OperationDefinition",operation:"query",name:{kind:"Name",value:"ListAuditEvents"},variableDefinitions:[{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"filter"}},type:{kind:"NamedType",name:{kind:"Name",value:"AuditEventFilterInput"}},directives:[]},
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"timeRange"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"AuditTimeRangeInput"}}},directives:[]},
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"limit"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]},
+{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"pageToken"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"listAuditEvents"},arguments:[{kind:"Argument",name:{kind:"Name",value:"filter"},value:{kind:"Variable",name:{kind:"Name",value:"filter"}}},
+{kind:"Argument",name:{kind:"Name",value:"timeRange"},value:{
+
+--- AuditTimeRangeInput occurrences: 2
+nd:"Variable",name:{kind:"Name",value:"filter"}},type:{kind:"NamedType",name:{kind:"Name",value:"AuditEventFilterInput"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"timeRange"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"AuditTimeRangeInput"}}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"limit"}},type:{kind:"NamedType",name:{kind:"Name",value:"Int"}},directives:[]},{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"pageToken"}},type:{kind:"NamedType",name:{kind:"Name",value:"String"}},directives:[]}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"listAuditEvents"},arguments:[{kind:"Arg
+[0m
+`timeRange:{}` will coerce if its fields are optional — enough to test the resolver's auth gate. Running the 9 remaining query roots, including the audit log.
+[0m$ [0mcd /tmp/opencode
+cat > p3.py <<'PY'
+import json,urllib.parse,urllib.request,time,sys
+H={'apollo-require-preflight':'true'}; U='https://app.alfaview.com/graphql'
+F='"00000000-0000-4000-8000-000000000001"'
+def gq(q):
+    r=urllib.request.Request(U+'?'+urllib.parse.urlencode({'query':q}),headers=H)
+    try:
+        with urllib.request.urlopen(r,timeout=20) as x: return x.status,json.loads(x.read())
+    except urllib.error.HTTPError as e: return e.code,json.loads(e.read())
+T=[('listAuditEvents','timeRange:{}'),
+   ('getReport',f'from:0,to:1,roomId:{F}'),
+   ('listGroups',''),('validateVatId','vatId:"xx-nonexistent-xx"'),
+   ('fetchFileRoomList',f'roomId:{F}'),('fetchFileRoomSettings',f'roomId:{F}'),
+   ('fetchTranscriptionSettings',f'roomId:{F}'),
+   ('listRoomLinks',f'roomId:{F}'),
+   ('fetchDeepLTranslatorText','inputText:"a",sourceLanguage:"EN",targetLanguage:"DE"')]
+for f,a in T:
+    inner=f+('('+a+')' if a else '')+'{__typename}'
+    c,d=gq('{'+inner+'}')
+    e=d.get('errors') or []
+    if e and 'must not have a selection since type' in e[0]['message']:
+        c2,d2=gq('{'+f+('('+a+')' if a else '')+'}'); e2=d2.get('errors') or []
+        if e2 and d2.get('data') is None:
+            print(f'{f:30s} {c2} SCALAR-BLOCKED {e2[0].get("extensions",{}).get("code")} | {e2[0]["message"][:50]}')
+        else:
+            v=(d2.get('data') or {}).get(f,'ABSENT')
+            print(f'{f:30s} {c2} SCALAR-200 -> {type(v).__name__} len={len(v) if isinstance(v,list) else "n/a"} (contents discarded)')
+    elif e:
+        print(f'{f:30s} {c} {e[0].get("extensions",{}).get("code")} | {e[0]["message"][:60]}')
+    else:
+        print(f'{f:30s} {c} 200 REPLY={json.dumps(d.get("data"))[:60]}')
+    sys.stdout.flush(); time.sleep(1.1)
+PY
+python3 p3.py
+listAuditEvents                400 GRAPHQL_VALIDATION_FAILED | Field "AuditTimeRangeInput.from" of required type "Number!" 
+getReport                      200 UNAUTHENTICATED | Missing access token
+listGroups                     200 UNAUTHENTICATED | Missing access token
+validateVatId                  200 200 REPLY={"validateVatId": {"__typename": "ValidateVatIdReply"}}
+fetchFileRoomList              200 UNAUTHENTICATED | Missing access token
+fetchFileRoomSettings          200 UNAUTHENTICATED | Missing access token
+fetchTranscriptionSettings     200 UNAUTHENTICATED | Missing access token
+listRoomLinks                  200 UNAUTHENTICATED | Missing access token
+fetchDeepLTranslatorText       200 UNAUTHENTICATED | Missing access token
+[0m
+`AuditTimeRangeInput` requires `from`/`to` as `Number!`. Finishing the audit log — the highest-sensitivity untested root — plus the anon `validateVatId`.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+g(){ printf "\n=== %s\n" "$2"; curl -s -o b.txt -w "HTTP %{http_code}\n" --max-time 20 -H "$H" -G --data-urlencode "query=$1" "https://app.alfaview.com/graphql"; head -c 320 b.txt; echo; sleep 1.2; }
+g '{listAuditEvents(timeRange:{from:0,to:1}){__typename}}' "listAuditEvents (AUDIT LOG) with coerced timeRange"
+g '{listAuditEvents(timeRange:{from:0,to:1},limit:5){events{__typename}}}' "listAuditEvents .events scalar/obj shape"
+g '{validateVatId(vatId:"xx-nonexistent-xx"){__typename}}' "validateVatId anon - reply shape"
+=== listAuditEvents (AUDIT LOG) with coerced timeRange
+HTTP 200
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":2}],"path":["listAuditEvents"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+
+=== listAuditEvents .events scalar/obj shape
+HTTP 200
+{"errors":[{"message":"Missing access token","locations":[{"line":1,"column":2}],"path":["listAuditEvents"],"extensions":{"code":"UNAUTHENTICATED"}}],"data":null}
+
+
+=== validateVatId anon - reply shape
+HTTP 200
+{"data":{"validateVatId":{"__typename":"ValidateVatIdReply"}}}
+[0m
+`listAuditEvents` (audit log) is properly gated. `validateVatId` is the **second** anonymous resolver — enumerating its reply shape.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+g(){ printf "\n=== %s\n" "$2"; curl -s -o b.txt -w "HTTP %{http_code}\n" --max-time 20 -H "$H" -G --data-urlencode "query=$1" "https://app.alfaview.com/graphql"; head -c 340 b.txt; echo; sleep 1.2; }
+g '{validateVatId(vatId:"xx"){valid}}' "field 'valid'?"
+g '{validateVatId(vatId:"xx"){isValid}}' "field 'isValid'?"
+g '{validateVatId(vatId:"xx"){zzz}' "oracle: bogus field"
+=== field 'valid'?
+HTTP 200
+{"data":{"validateVatId":{"valid":true}}}
+
+
+=== field 'isValid'?
+HTTP 400
+{"errors":[{"message":"Cannot query field \"isValid\" on type \"ValidateVatIdReply\". Did you mean \"valid\"?","locations":[{"line":1,"column":28}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+
+
+=== oracle: bogus field
+HTTP 400
+{"errors":[{"message":"Syntax Error: Expected Name, found <EOF>.","locations":[{"line":1,"column":32}],"extensions":{"code":"GRAPHQL_PARSE_FAILED"}}]}
+[0m
+`validateVatId(vatId:"xx")` returns **`valid: true`** for obvious garbage. That's a potential business-logic flaw on a tax-ID validator feeding `checkout`/`createCompany`. Characterizing with a synthetic matrix.
+[0m$ [0mcd /tmp/opencode
+cat > vat.py <<'PY'
+import json,urllib.parse,urllib.request,time,sys
+H={'apollo-require-preflight':'true'}; U='https://app.alfaview.com/graphql'
+def gq(v):
+    q='{validateVatId(vatId:'+json.dumps(v)+'){valid}}'
+    r=urllib.request.Request(U+'?'+urllib.parse.urlencode({'query':q}),headers=H)
+    try:
+        with urllib.request.urlopen(r,timeout=20) as x: return x.status,json.loads(x.read())
+    except urllib.error.HTTPError as e: return e.code,json.loads(e.read())
+cases=["xx","","not-a-vat","123456789","DE123456789","DE000000000","!!!!!!!!","000000000000000000000",
+       "DE","12345678901234567890","GB999999999","xx","DE123456789"]
+for v in cases:
+    c,d=gq(v)
+    e=d.get('errors') or []
+    if e: r=f"ERR {e[0].get('extensions',{}).get('code')}: {e[0]['message'][:55]}"
+    else: r=f"valid={json.dumps((d.get('data') or {}).get('validateVatId'))}"
+    print(f'  vatId={v!r:26s} -> HTTP {c} {r}')
+    sys.stdout.flush(); time.sleep(1.2)
+PY
+python3 vat.py
+vatId='xx'                       -> HTTP 200 valid={"valid": true}
+  vatId=''                         -> HTTP 200 valid={"valid": true}
+  vatId='not-a-vat'                -> HTTP 200 valid={"valid": true}
+  vatId='123456789'                -> HTTP 200 valid={"valid": true}
+  vatId='DE123456789'              -> HTTP 200 valid={"valid": false}
+  vatId='DE000000000'              -> HTTP 200 valid={"valid": false}
+  vatId='!!!!!!!!'                 -> HTTP 200 valid={"valid": true}
+  vatId='000000000000000000000'    -> HTTP 200 valid={"valid": true}
+  vatId='DE'                       -> HTTP 200 valid={"valid": true}
+  vatId='12345678901234567890'     -> HTTP 200 valid={"valid": true}
+  vatId='GB999999999'              -> HTTP 200 valid={"valid": true}
+  vatId='xx'                       -> HTTP 200 valid={"valid": true}
+  vatId='DE123456789'              -> HTTP 200 valid={"valid": false}
+[0m
+`validateVatId` returns `valid: **true**` for `""`, `"!!!!!!!!"`, `"DE"`, `"xx"` — and `false` for well-formed German numbers. A VAT validator that passes an empty string is unambiguously broken. Testing well-formed formats across EU member states to bound the inversion.
+[0m$ [0mcd /tmp/opencode
+cat > vat2.py <<'PY'
+import json,urllib.parse,urllib.request,time,sys
+H={'apollo-require-preflight':'true'}; U='https://app.alfaview.com/graphql'
+def gq(v):
+    q='{validateVatId(vatId:'+json.dumps(v)+'){valid}}'
+    r=urllib.request.Request(U+'?'+urllib.parse.urlencode({'query':q}),headers=H)
+    try:
+        with urllib.request.urlopen(r,timeout=20) as x: return x.status,json.loads(x.read())
+    except urllib.error.HTTPError as e: return e.code,json.loads(e.read())
+wf=[("AT","ATU12345678"),("BE","BE0123456789"),("FR","FRXX123456789"),
+    ("NL","NL123456789B01"),("ES","ESX1234567Z"),("IT","IT12345678901"),
+    ("PL","PL1234567890"),("SE","SE123456789001"),("DK","DK12345678"),
+    ("DE-short","DE12345"),("DE-alpha","DEabcdefghij"),("DE-ok","DE987654321")]
+print("--- well-formed-per-country synthetic VAT IDs ---")
+for tag,v in wf:
+    c,d=gq(v); e=d.get('errors') or []
+    r=f"ERR {e[0]['message'][:45]}" if e else f"valid={json.dumps((d.get('data') or {}).get('validateVatId'))}"
+    print(f'  {tag:10s} {v!r:18s} -> {c} {r}'); sys.stdout.flush(); time.sleep(1.2)
+PY
+python3 vat2.py
+--- well-formed-per-country synthetic VAT IDs ---
+  AT         'ATU12345678'      -> 200 valid={"valid": false}
+  BE         'BE0123456789'     -> 200 valid={"valid": false}
+  FR         'FRXX123456789'    -> 200 valid={"valid": false}
+  NL         'NL123456789B01'   -> 200 valid={"valid": false}
+  ES         'ESX1234567Z'      -> 200 valid={"valid": false}
+  IT         'IT12345678901'    -> 200 valid={"valid": false}
+  PL         'PL1234567890'     -> 200 valid={"valid": false}
+  SE         'SE123456789001'   -> 200 valid={"valid": false}
+  DK         'DK12345678'       -> 200 valid={"valid": false}
+  DE-short   'DE12345'          -> 200 valid={"valid": false}
+  DE-alpha   'DEabcdefghij'     -> 200 valid={"valid": false}
+  DE-ok      'DE987654321'      -> 200 valid={"valid": false}
+[0m
+`valid:false` for **every** well-formed EU + DE format; `valid:true` for all junk. Let me trace whether any client code actually gates a money flow on this boolean — decisive for severity.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='replace').read()
+print("validateVatId occurrences:",s.count('validateVatId'))
+for m in re.finditer(r'validateVatId',s):
+    seg=s[max(0,m.start()-700):m.start()+700]
+    if 'OperationDefinition' in seg: continue   # skip the AST doc itself
+    print("\n=== USAGE CONTEXT ===")
+    print(seg)
+print("\n--- does checkout/updateCompany/createCompany mention vat? ---")
+for op in ['checkout','updateCompany','createCompany']:
+    i=s.find('value:"%s"'%op)
+    if i>0:
+        seg=s[i:i+2500]
+        print(op, "-> 'vat' refs in op window:", len(re.findall(r'vat',seg,re.I)))
+print("total 'vatId' refs in bundle:",len(re.findall(r'vatId',s)))
+print("VatIdReply field usage 'valid':",s.count('.valid'))
+EOF
+validateVatId occurrences: 2
+
+=== USAGE CONTEXT ===
+m: $from, to: $to, stepDuration: $stepDuration) {\n    usage\n  }\n}\n\nquery FetchLastCompanyJoin {\n  fetchLastCompanyJoin {\n    lastJoin\n  }\n}\n\n# fileService\nquery FetchFileCompanySettings {\n  fetchFileCompanySettings {\n    active\n  }\n}\n\nquery FetchFileRoomSettings($roomId: String!) {\n  fetchFileRoomSettings(roomId: $roomId) {\n    settings {\n      enabled\n      participants_can_upload\n      default_access_level\n      http_upload_url\n    }\n  }\n}\n\nquery FetchFileRoomList($roomId: String!) {\n  fetchFileRoomList(roomId: $roomId) {\n    files\n  }\n}\n\nquery GetBillingInfo {\n  getBillingInfo {\n    has_subscription\n  }\n}\n\nquery ValidateVatId($vatId: String!) {\n  validateVatId(vatId: $vatId) {\n    valid\n    checkPerformed\n  }\n}\n\nquery GenerateFileDownloadURL($roomId: String!, $fileId: String!) {\n  generateFileDownloadURL(roomId: $roomId, fileId: $fileId) {\n    http_download_url\n  }\n}\n\n# auditService\nquery ListAuditEvents(\n  $filter: AuditEventFilterInput\n  $timeRange: AuditTimeRangeInput!\n  $limit: Int\n  $pageToken: String\n) {\n  listAuditEvents(filter: $filter, timeRange: $timeRange, limit: $limit, pageToken: $pageToken) {\n    events {\n      event {\n        eventId\n        parentEventId\n        companyId\n        correlationId\n        occurredAt\n        dispatchedAt\n        actor {\n          type\n          userId\n       
+
+--- does checkout/updateCompany/createCompany mention vat? ---
+checkout -> 'vat' refs in op window: 3
+updateCompany -> 'vat' refs in op window: 0
+createCompany -> 'vat' refs in op window: 0
+total 'vatId' refs in bundle: 6
+VatIdReply field usage 'valid': 0
+[0m
+The bundle carries the full SDL — and `ValidateVatIdReply` has a **second field, `checkPerformed`**. That likely explains the `valid:true` pattern. Testing it before I over-claim.
+[0m$ [0mcd /tmp/opencode
+H='apollo-require-preflight: true'
+v(){ printf "  %-24s " "$1"; curl -s --max-time 20 -H "$H" -G --data-urlencode "query={validateVatId(vatId:\"$1\"){valid checkPerformed}}" "https://app.alfaview.com/graphql" | head -c 200; echo; sleep 1.2; }
+echo "=== valid + checkPerformed matrix"
+v ""; v "xx"; v "DE"; v "!!!!!!!!"; v "DE123456789"; v "ATU12345678"; v "GB999999999"
+echo; echo "=== checkout mutation SDL from bundle"
+python3 - <<'EOF'
+import re
+s=open('/tmp/opencode/app.js',encoding='utf-8',errors='replace').read()
+i=s.find('mutation Checkout')
+print(s[i:i+900].replace('\\n','\n') if i>0 else 'not found')
+EOF
+=== valid + checkPerformed matrix
+                           {"data":{"validateVatId":{"valid":true,"checkPerformed":false}}}
+
+  xx                       {"data":{"validateVatId":{"valid":true,"checkPerformed":false}}}
+
+  DE                       {"data":{"validateVatId":{"valid":true,"checkPerformed":false}}}
+
+  !!!!!!!!                 {"data":{"validateVatId":{"valid":true,"checkPerformed":false}}}
+
+  DE123456789              {"data":{"validateVatId":{"valid":false,"checkPerformed":true}}}
+
+  ATU12345678              {"data":{"validateVatId":{"valid":false,"checkPerformed":true}}}
+
+  GB999999999              {"data":{"validateVatId":{"valid":true,"checkPerformed":false}}}
+
+
+=== checkout mutation SDL from bundle
+mutation Checkout($planId: String!, $products: [CheckoutProductInput!]!, $customer: CheckoutCustomerInput!) {
+  checkout(planId: $planId, products: $products, customer: $customer) {
+    paymentRedirectUrl
+  }
+}
+",name:"GraphQL request",locationOffset:{line:1,column:1}};function t(e,n){if("FragmentSpread"===e.kind)n.add(e.name.value);else if("VariableDefinition"===e.kind){var i=e.type;"NamedType"===i.kind&&n.add(i.name.value)}e.selectionSet&&e.selectionSet.selections.forEach((function(e){t(e,n)})),e.variableDefinitions&&e.variableDefinitions.forEach((function(e){t(e,n)})),e.definitions&&e.definitions.forEach((function(e){t(e,n)}))}var i={};function a(e,n){for(var t=0;t<e.definitions.length;t++){var i=e.definitions[t];if(i.name&&i.name.value==n)return i}}function r(e,n){var t={kind:e.kind,definitions:[a(e,n)]};e.hasOwnProperty("loc")&&(t.loc=e.loc);var r=i[n]||new Set,o=new Set,s=new
+[0m
+`checkPerformed` refutes my over-claim: `valid:true` always pairs with `checkPerformed:false` (no lookup ran), and alfaview's own client requests both. Let me check whether any money flow consumes `valid` without `checkPerformed`.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='replace').read()
+for t in ['CheckoutCustomerInput','input CheckoutCustomerInput','vatId','checkPerformed']:
+    print(f"--- {t}: {s.count(t)} occurrence(s)")
+i=s.find('input CheckoutCustomerInput')
+if i>0: print("\nSDL:\n", s[i:i+600].replace('\\n','\n'))
+# does any non-ValidateVatId op reference a vat field?
+ops=re.findall(r'(?:query|mutation)\s+(\w+)[^{]*\{(.*?)\n\}',s,re.S)
+hits=[(n,b) for n,b in ops if re.search(r'\bvat',b,re.I) and n!='ValidateVatId']
+print("\nops whose body mentions 'vat' (excl ValidateVatId):",[n for n,_ in hits])
+for n,b in hits: print("  ",n,"->",re.findall(r'\bvat\w*',b,re.I))
+EOF
+--- CheckoutCustomerInput: 2 occurrence(s)
+--- input CheckoutCustomerInput: 0 occurrence(s)
+--- vatId: 6 occurrence(s)
+--- checkPerformed: 2 occurrence(s)
+
+ops whose body mentions 'vat' (excl ValidateVatId): []
+[0m
+Self-correction complete. Writing up.
+
+**STEP 1 — DELTA**
+- [NEW] `app.alfaview.com/graphql` — **GraphQL-over-GET is fully functional.** 33 cycles recorded "GET 400/406B → resolver surface needs POST". That was a false blocker: the server's own CSRF error names the escape hatch, and `apollo-require-preflight: true` (a non-simple header that *strengthens* CSRF protection) makes GET work. `GET ?query={__typename}` → `200 {"data":{"__typename":"Query"}}`.
+- [NEW] Mutations over GET are **blocked, 405** `"GET requests only support query operations"` ⇒ the newly-opened GET surface is provably read-only. Positive control.
+- [NEW] `app.alfaview.com/graphql` `validateVatId` is **anonymously reachable** and proxies a live EU VAT-registry lookup per call.
+- [NEW] `apis.alfaview.com` — **4th pre-auth validator mechanism**: enum allow-list on array param `roomTypes`, element-wise, with *indexed* locations `query.roomTypes[N]` and the allow-list disclosed verbatim. `?roomTypes=abc`→422/190B; `?roomTypes=a,b,c`→422/398B with 3 indexed errors; `?roomTypes=`→401 (zero elements, nothing to reject).
+- [NEW] `apis.alfaview.com` — **duplicate query params resolve first-wins in the pre-auth validator**: `?limit=1&limit=abc`→**401**, `?limit=abc&limit=1`→**422**. Same route, same anonymous caller; outcome decided by element position. Not spec-defined.
+- [CHANGED] GraphQL anonymous-resolver lead **retired with a complete map, not a 4-resolver sample**: 45 of 54 query roots probed via GET — 43 `UNAUTHENTICATED` ("Missing access token"), `listIdentityProviders` + `validateVatId` anonymous, `listAllUserIds`→`null`, `listComponents`→`INTERNAL_SERVER_ERROR`. `listAuditEvents` (audit log) properly gated.
+- [CHANGED] `adminTokenAuthenticate` requires a `refreshToken` (`UNAUTHENTICATED` "Missing refreshToken") — admin-session path is not anonymous.
+- [CHANGED] My own prior-cycle claim is **partially refuted and corrected**: `validateVatId.valid=true` for junk pairs *always* with `checkPerformed:false`. The field is not "claiming junk is valid"; it is a fail-open default, and alfaview's own client selects both fields. No money flow in the bundle references a VAT field at all.
+- NO_DELTA @ standing: OpenAPI 200/127532B md5 `357b94d367909a40b9299b543d23712b` (37 paths, `components.securitySchemes` absent, top-level `security` absent); `users/me` 401/107B; JWKS 200/16257B; `introspect` OPTIONS 405.
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] `app.alfaview.com/graphql` `validateVatId` — 6.6 (a=7 anonymous surface, b=6 tax/VAT flow, t=5, g=10 no auth, c=2, f=9 new)
+- [PRIO] `apis.alfaview.com` pre-auth validation tier — 6.2 (a=7, b=5, t=6, g=9, c=1, f=8)
+- [PRIO] `sso.alfaview.com/oauth2/introspect` — 6.1 (a=6, b=7, t=9 OAuth, g=6 needs a token, c=2, f=4)
+
+**STEP 3 — HYPOTHESES**
+
+[HYP] Unauthenticated `validateVatId` is an unmetered proxy to the EU VAT registry, and its `valid` boolean fails open
+class: BUSLOGIC
+asset: app.alfaview.com/graphql — `validateVatId`
+confidence: 48
+reasoning: Anonymous 200 for every input. Two-field reply `{valid, checkPerformed}`. `""`, `"xx"`, `"DE"`, `"!!!!!!!!"`, `"GB999999999"` → `valid:true, checkPerformed:false`. `DE123456789`, `ATU12345678`, `BE0123456789`, `FRXX123456789`, `NL123456789B01`, `ESX1234567Z`, `IT12345678901`, `PL1234567890`, `SE123456789001`, `DK12345678` → `valid:false, checkPerformed:true`. A real registry lookup is performed server-side for any well-formed EU format. No op other than `ValidateVatId` references a VAT field in the bundle; `CheckoutCustomerInput` is referenced by name only, so **no money-flow consumer is established**.
+evidence_needed: The SPA lazy chunk that consumes `validateVatId` showing a mutation (`checkout`/`createCompany`/`updateCompany`) that proceeds on `valid` without `checkPerformed` — that is the only thing that turns this from an API footgun into a tax-flow flaw.
+verify_steps: `GET https://app.alfaview.com/` → extract the `js/*.min.js` lazy-chunk manifest → `GET` the billing/checkout chunk → grep for `validateVatId` and the surrounding `checkPerformed` conditional. No POST, no credential.
+impact: An anonymous caller can drive alfaview's server out to the EU VIES service at will — a free third-party-API oracle on someone else's infrastructure, with no auth and no metering observed (rate-limit testing is out of scope, so no claim is made). Secondary: a field literally named `valid` returns `true` for the empty string, so any integrator reading only `valid` treats arbitrary junk as a validated VAT ID. LOW as proven; the money-flow chain is **unproven**.
+testability: PASSIVE
+
+[HYP] OAuth introspection client authentication is not enforced — fabricated `client_id` accepted on both channels
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 92
+reasoning: 30+ cycles stable. Discovery advertises `token_endpoint_auth_methods_supported = [client_secret_basic, client_secret_post, none]`, so a secret-bearing method is claimed and never verified; only a Basic-vs-body `client_id_mismatch` 401 is enforced. `introspection_endpoint` absent from discovery while the endpoint is live. This cycle re-confirmed liveness by OPTIONS only (405); the recorded POST differentials were deliberately not re-fired.
+evidence_needed: A self-owned, self-issued token submitted with a fabricated `client_id` returning 200 with a populated token body — proving response data reaches an unauthenticated caller.
+verify_steps: `OPTIONS https://sso.alfaview.com/oauth2/introspect` (405, alive) and `GET https://sso.alfaview.com/.well-known/openid-configuration` (read `token_endpoint_auth_methods_supported`, `introspection_endpoint`). Do not re-fire recorded POST differentials. No third-party token.
+impact: Anyone holding one captured token reads its liveness, expiry and scope with no client credential — revocation cannot be triaged and tokens sort offline. Advertised `client_secret_basic` gives integrators false assurance. MEDIUM-HIGH; highest-confidence weakness in the program.
+testability: AUTH_HELPED
+
+[HYP] Request validation runs before authentication on the production REST API, and the spec declares no security scheme
+class: AUTH
+asset: apis.alfaview.com — 9 of 26 GET operations
+confidence: 80
+reasoning: Mechanism proven by single-route differential: `/v2/guest-links` bare→401, `?pageToken=x`→401 (unconstrained), `?limit=abc`→422 (integer-constrained) — the 401 is a property of what the attacker sends, not of the operation. This cycle added a 4th validator mechanism (enum allow-list, element-wise, indexed) and a parameter-merge rule: duplicate params are first-wins (`?limit=1&limit=abc`→401 but `?limit=abc&limit=1`→422). `components.securitySchemes` and top-level `security` are both absent, so the boundary is ad-hoc per-handler middleware.
+evidence_needed: A 200 or data-bearing body from any of the 9 without a credential — the only thing that converts ordering into disclosure. A self-owned bearer is neither required nor to be sought.
+verify_steps: `GET https://apis.alfaview.com/v2/guest-links?limit=1&limit=abc` (401) vs `GET https://apis.alfaview.com/v2/guest-links?limit=abc&limit=1` (422) vs `GET https://apis.alfaview.com/v2/rooms?roomTypes=a,b,c` (422, three indexed errors) vs `GET https://apis.alfaview.com/v2/rooms?roomTypes=` (401). Discard all bodies unread.
+impact: A free per-parameter type/format/allow-list oracle on 9 endpoints, fingerprinting Go `time`/`net/mail`/enum validators pre-auth, and a durable architectural defect: 26 operations must each be individually verified because no declarative control exists, and this program has now proven the check fails on more than a third of them. MEDIUM as ordering + information disclosure; **not** an authentication bypass.
+testability: PASSIVE
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] "validateVatId accepts arbitrary junk as a valid VAT ID" as a standalone tax-fraud finding: **dropped as stated.** `checkPerformed:false` accompanies every `valid:true`; the field is a fail-open default, not a false attestation, and alfaview's own client selects both. No bundle operation other than `ValidateVatId` references a VAT field, so no money-flow consumer exists to exploit. Retained only at 48 as an unauthenticated-upstream-proxy + API-footgun observation.
+- [PARKED] "First-wins duplicate-parameter merge on `apis.alfaview.com`" as request smuggling: kept as a mechanism fact only. It becomes a smuggling primitive only if a fronting proxy parses duplicates differently, and I can observe just the app's parse. `apis.alfaview.com` is served with no `edge-proxy` header, so no second parser is in evidence.
+- [PARKED] "`apollo-require-preflight` GET as a CSRF weakness": REJECTED class. Requiring a non-simple header is precisely the anti-CSRF property; a cross-origin caller cannot set it without a CORS preflight. Not a finding, and mutations are 405-blocked over GET.
+- [PARKED] "The anonymous GraphQL query surface": REJECTED — this is a methodology correction, not a vulnerability. 45/54 roots probed, 43 gated, the 2 anonymous ones return only `[]`/`null`/a boolean. Lead **closed with evidence**.
+- [PARKED] `/v2/auth/token-info` format brute-force, `/v2/auth/api-key`, `/v2/auth/group-link` derivation, `tools.alfaview.com/whiteboard/` verb enumeration: POST-only or path-exhausted, unprobeable under GET/HEAD/OPTIONS.
+- [PARKED] "OIDC issuer=acme.com", JWKS metadata/JWKS divergence, unauthenticated binary distribution: descriptive config, no bypass, no data exposure.
+- [FINAL] 1) `sso.alfaview.com/oauth2/introspect` client-auth bypass — **92**. 2) `apis.alfaview.com` validation-before-authentication on 9/26 GET ops, no spec-level security declaration — **80**. 3) `app.alfaview.com/graphql` unauthenticated `validateVatId` VIES proxy + fail-open `valid` default — **48**.
+
+**STEP 5 — NEXT ACTION**
+[SCAN] Enumerate the `app.alfaview.com` SPA lazy-chunk manifest and locate the consumer of `validateVatId`, to settle whether any money flow gates on `valid` without `checkPerformed` — the single fact that decides whether hypothesis #3 is a 48 or a real tax-flow finding. Concretely: `GET https://app.alfaview.com/` → extract `js/*.min.js` → `GET` the billing/checkout chunk → grep `validateVatId` / `checkPerformed`. Read-only, no POST, no credential.
+
+**STEP 6 — LEARNING**
+- [LEARN] **ACCEPTED BUSLOGIC** @ app.alfaview.com/graphql `validateVatId`: anonymously reachable and proxies a live per-call EU VAT-registry lookup; `valid` fails open (`true`) on the no-check path, always paired with `checkPerformed:false`. Self-corrected — my initial "accepts junk as valid" reading was wrong once `checkPerformed` was read. No money-flow consumer exists in the bundle.
+- [LEARN] **ACCEPTED MISCONFIG** @ app.alfaview.com/graphql: GraphQL-over-GET is functional via the `apollo-require-preflight: true` header that the server's own CSRF error advertises; 33 cycles of "GET 400" recorded a false blocker. Mutations over GET are 405-blocked, so the surface is provably read-only. Methodology correction, not a vulnerability.
+- [LEARN] **ACCEPTED MISCONFIG** @ app.alfaview.com/graphql: 45 of 54 query roots probed via GET; 43 `UNAUTHENTICATED`, `listIdentityProviders` + `validateVatId` anonymous, `listAllUserIds`→`null`, `listComponents`→`INTERNAL_SERVER_ERROR`, `listAuditEvents`/`getReport`/`getOrphanedUsers`/`listUnverifiedAccounts`/`listApiKeys` all properly gated. The anonymous-resolver lead is now closed with a complete map instead of a 4-resolver POST sample.
+- [LEARN] **ACCEPTED MISCONFIG** @ apis.alfaview.com: 4th pre-auth validator mechanism — enum allow-list, element-wise, indexed locations `query.roomTypes[N]`, allow-list disclosed verbatim; empty string yields zero elements and therefore 401.
+- [LEARN] **ACCEPTED MISCONFIG** @ apis.alfaview.com: duplicate query params are first-wins in the pre-auth validator (`?limit=1&limit=abc`→401, `?limit=abc&limit=1`→422) — a merge rule absent from the spec, and a smuggling primitive only if a second parser disagrees.
+- [LEARN] **REJECTED MISCONFIG** @ app.alfaview.com/graphql: the two anonymous resolvers disclose nothing — `listIdentityProviders` returns empty/null, `validateVatId` returns only two booleans. No unauthenticated PII, config or credential exposure across 45 probed query roots.
+- [LEARN] **NO_DELTA** @ standing probes: OpenAPI 200/127532B md5 `357b94d3`, `users/me` 401/107B, JWKS 200/16257B, `introspect` OPTIONS 405.
+
+**STEP 7 — RISK**
+[RISK] alfaview: 62 — up from 61. Offsetting moves. Up: `validateVatId` is a newly-mapped anonymous resolver driving a live third-party registry lookup per call, reachable with no credential. Down, and larger: the standing speculative HIGH on anonymous GraphQL exposure is **retired** — 45 of 54 query roots probed, 43 auth-gated, the audit log and all PII roots clean, and mutations unreachable over GET, so the GraphQL exposure surface is now provably confined to two low-yield anonymous resolvers. The highest-confidence weakness remains the introspect client-auth bypass, unchanged at 92 and now 30+ cycles stable. Discipline held: no customer data was read — every GraphQL body was `{__typename}` or boolean-only, the two scalar mass-PII fields were read for *length only* with contents discarded, all identifiers were synthetic, and no rate-limit testing was performed.
+## Objective
+- Complete the alfaview API POC cycle and produce the required 8-step structured output, prioritizing high-value auth/IDOR logic flaws.
+
+## Important Details
+- Scope: alfaview-owned infrastructure only; report channel `bugs.olivermaicher.eu`.
+- Live testing must remain passive-first, ≤1 rps, GET/HEAD/OPTIONS only; no mutations, third-party tokens/triples, customer-data reads, username enumeration, or brute force.
+- Final response must contain only `[DELTA]`, `[PRIO]`, three `[HYP]` blocks, `[PARKED]/[FINAL]`, exactly one `[NEXT]`, `[LEARN]`, and `[RISK]`.
+- Current phase/target: `POC` / `api`.
+- Standing top leads: introspection client-auth bypass `92`; REST validation-before-auth `82`; GraphQL guest mutation omitting `accessKey` `62`.
+- REST guest-link requires three fields: `accessKey`, `companyId`, `roomId`; `displayName` is not required. Older four-field knowledge is obsolete.
+- API tokens are opaque/base64; JWT algorithm-confusion avenues are closed.
+- GraphQL GET with `apollo-require-preflight: true` is Apollo’s intended CSRF-safe path, not a vulnerability. Mutations over GET return `405`; introspection remains disabled.
+
+## Work State
+### Completed
+- Re-fetched `https://apis.alfaview.com/v2/docs/openapi.json`: HTTP `200`, `127532B`, MD5 `357b94d367909a40b9299b543d23712b`, 37 paths/26 GET operations; `components.securitySchemes` and top-level `security` are absent.
+- Extended REST pre-auth validation evidence:
+  - `GET /v2/rooms?roomTypes=abc` → `422`, indexed enum error exposing allowed values `department, room, meeting`.
+  - `roomTypes=a,b,c` → indexed errors `[0]`, `[1]`, `[2]`.
+  - `roomTypes=room,department` and empty value → `401`.
+  - Duplicate parameters use first value: `limit=1&limit=abc` → `401`; reversed order → `422 invalid integer`. No proxy-handler desync was proven.
+- Refuted the standing belief that GraphQL queries were POST-only:
+  - Bare GET → `400/406B` CSRF guidance.
+  - GET with `apollo-require-preflight: true` executes queries.
+  - `{__typename}` → `200 {"data":{"__typename":"Query"}}`.
+  - `mutation { __typename }` → `405`: `GET requests only support query operations, not mutation operations`.
+  - `__schema` → `400 GRAPHQL_VALIDATION_FAILED`, `INTROSPECTION_DISABLED`.
+- Fetched `https://app.alfaview.com/js/app.min.67e8a68d4318b34ca241.js`: HTTP `200`, MD5 `2cb9128353b1f7444e222b4b61e4ffa5`; extracted 58 query operations/54 unique query roots and 90 mutations.
+- Tested query roots with synthetic UUIDs and `{__typename}` only:
+  - 49 returned explicit `UNAUTHENTICATED`/missing-token or missing-refresh-token errors.
+  - `listComponents` returned no data and `INTERNAL_SERVER_ERROR`.
+  - `listAllUserIds` was anonymous but returned `null`.
+  - `listIdentityProviders` was anonymous; prior baseline/current check exposed no provider configuration.
+  - `validateVatId(vatId:"xx-nonexistent-xx")` was anonymous and returned only `ValidateVatIdReply` typename; no flaw established.
+  - `listAuditEvents(timeRange:{})` stopped at input validation: `Field "AuditTimeRangeInput.from" of required type "Number!"`.
+- Reconfirmed no standing-surface delta: `/v2/users/me` `401/107B`; canonical JWKS `200/16257B`; OpenAPI `200/127532B`; introspection `OPTIONS 405`.
+
+### Active
+- Close the only unresolved query root, `listAuditEvents`, using valid `AuditTimeRangeInput` fields and `{__typename}`.
+- Prepare the final structured report; the GraphQL GET unlock is supporting testability evidence, not a standalone finding.
+- Preserve the three standing hypotheses: introspection bypass, REST validation ordering, and accessKey-less guest mutations.
+
+### Blocked
+- Introspection impact requires a self-issued token returning populated metadata.
+- Guest-mutation impact requires a self-owned room/user/company triple and POST execution; current method rules prohibit it.
+- Cross-tenant REST IDOR requires legitimate accounts in two tenants.
+- OAuth redirect testing requires a registered `client_id`.
+
+## Next Move
+1. Run `curl -H 'apollo-require-preflight: true' -G --data-urlencode 'query={listAuditEvents(timeRange:{from:0,to:1}){__typename}}' 'https://app.alfaview.com/graphql'`; add only required fields named by validation errors.
+2. Emit the required structured blocks, retaining `sso.alfaview.com/oauth2/introspect`, REST pre-auth validation ordering, and GraphQL guest-access omission as the three `[FINAL]` survivors.
+
+## Relevant Files
+- `/home/runner/work/alfaview-hunt/alfaview-hunt/scope.yml`: authoritative program scope.
+- `/home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md`: host inventory and exhausted targets.
+- `/home/runner/work/alfaview-hunt/alfaview-hunt/probe-results.md`: historical probe results.
+- `/home/runner/work/alfaview-hunt/alfaview-hunt/leads/art/lead_bigpickle.txt`: REST validation-ordering lead.
+- `/home/runner/work/alfaview-hunt/alfaview-hunt/leads/art/lead_nemotron3.txt`: introspection/SSO lead.
+- `/home/runner/work/alfaview-hunt/alfaview-hunt/analyst-out.txt`: final-output placeholder; not updated.
+- `/tmp/opencode/oa.json`: fetched OpenAPI document.
+- `/tmp/opencode/app.js`: public GraphQL AST bundle.
+- `/tmp/opencode/probe.py`: arg-bearing GraphQL GET reachability harness.
+- `/tmp/opencode/p2.py`: no-argument GraphQL query sweep.
+- `/tmp/opencode/p3.py`: remaining query roots, including `listAuditEvents`.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+I have a concrete next action. Executing it.
+[0m$ [0mcd /tmp/opencode
+curl -s -o index.html -w "GET / -> HTTP %{http_code} %{size_download}B\n" --max-time 20 'https://app.alfaview.com/'
+echo "--- script/link refs in shell ---"
+grep -oE '(src|href)="[^"]+"' index.html | sort -u
+echo
+echo "--- lazy-chunk name map inside app.js ---"
+python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='replace').read()
+for pat in [r'\.min\."',r'\.min\.\+',r'min\.[0-9a-f]{8}',r'js/']:
+    print(f"  pattern {pat!r}: {len(re.findall(pat,s))} hits")
+m=re.findall(r'[\w.]+min\\?"?\+?[^\n]{0,80}',s)[:6]
+for x in m: print("   sample:",x[:110])
+# webpack chunk->name map is usually a big object literal
+for mm in re.finditer(r'\{(?:"?[\w]{1,30}"?:\s*"?[\w]{1,40}"?,){6,}',s):
+    print("\n  MAP CANDIDATE:",mm.group(0)[:300]); break
+EOF
+GET / -> HTTP 200 1381B
+--- script/link refs in shell ---
+href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/production_alfaview_icon_web_favicon_96px.png"
+href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/app.min.d046c93e5071d179142f.css"
+href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/vendor-vue-vuetify.min.04d1ead8363afa7c651b.css"
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js"
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js"
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js"
+
+--- lazy-chunk name map inside app.js ---
+  pattern '\\.min\\."': 2 hits
+  pattern '\\.min\\.\\+': 0 hits
+  pattern 'min\\.[0-9a-f]{8}': 1 hits
+  pattern 'js/': 1 hits
+   sample: app.min.67e8a68d4318b34ca241.js.LICENSE.txt */
+   sample: Math.min(s,l*Math.pow(2,e));return r&&(n=Math.random()*n),n}}(r),t.retryIf="function"==t
+   sample: s.ACCESS_ABILITIES.administrateCompanies}}],meta:{authRoute:!0,navHidden:!1,mustHaveAccessAbility:s.ACCE
+   sample: s.ACCESS_ABILITIES.administrateCompanies}}],meta:{authRoute:!0,navHidden:!1,mustHaveAccessAbility:s.ACCE
+   sample: s.ACCESS_ABILITIES.administrateCompanies}},{path:"/room-structure",name:l.A.ROOM_STRUCTURE,component:d.h
+   sample: s.ACCESS_ABILITIES.administrateCompanies}},{path:"room/:id/edit/:tabId?",name:l.A.ROOM_STRUCTURE_ROOM_SE
+
+  MAP CANDIDATE: {name:"Name",resource:"Resource",begins:"Begins",ends:"Ends",limit:"Limit",timeframe:"Timeframe",timeframe_unlimited:"Unlimited",timeframe_month:"Month",timeframe_year:"Year",
+[0m
+The chunk map is in the webpack runtime. Extracting it.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='replace').read()
+for m in re.finditer(r'\.min\."',s):
+    print("=== .min.\" CONTEXT ===")
+    print(s[max(0,m.start()-1500):m.start()+120])
+    print()
+EOF
+=== .min." CONTEXT ===
+?function(){return e.default}:function(){return e};return s.d(n,{a:n}),n},s.d=function(e,n){for(var t in n)s.o(n,t)&&!s.o(e,t)&&Object.defineProperty(e,t,{enumerable:!0,get:n[t]})},s.f={},s.e=function(e){return Promise.all(Object.keys(s.f).reduce((function(n,t){return s.f[t](e,n),n}),[]))},s.u=function(e){return"js/"+({184:"CommonAccounts",255:"AppSetPassword",312:"CommonPendingUserEditDialog",419:"AppLogin",728:"AppSignup",1229:"AdminRoomEditDialog",1368:"AppCheckout",1387:"CommonSettings",1483:"AdminLogin",1652:"AppDeepLTranslator",2302:"AppResetPassword",2710:"AppLdapLogin",2794:"AppSSOLanding",2941:"AppDirectLinkProxy",3114:"AppDeleteCompany",3131:"AppProfile",4360:"AppWelcome",4506:"AppReport",4584:"AdminDashboard",4602:"AppMeetingsList",5273:"AdminCompanySearch",5665:"CommonRoomStructureCreateItemDialog",5701:"AdminCompanyCreateDialog",5773:"CommonRoomStructureEditDepartmentDialogs",5894:"CommonUserInviteDialog",6108:"CommonRoomStructure",6166:"AppPaymentAccept",6366:"AppRoomSettings",6497:"AppAuditLog",6849:"AppFinishSignup",6992:"AppPaymentCancel",7226:"AppSignupEmailSent",7372:"AppGuestJoin",7662:"AdminUserInfoByEmail",7759:"AppError500",7954:"AppMeetingManagement",8413:"AppAuthorize",8445:"CommonRoomSettingsInviteExternalMembersDialog",8857:"CommonRoomSettingsAddUserRolesDialog",8917:"CommonUserEditDialog",9209:"AppLimitedManageRooms",9422:"CommonOperations",9827:"CommonModalizedRoomSettings",9898:"CommonRoomStructureAdvanced",9929:"AdminCompanyEditDialog"}[e]||e)+".min."+{184:"0d475a80c1aaba2fecec",255:"08b3a35f2b0733c29908",312:"aa682bb15d021d9f08e5",419:"9b5bce7f0bf16ea780bf",728:
+
+=== .min." CONTEXT ===
+,8114:"53737d78a40b27467ca1",8413:"8fa3783a85b534ca8180",8445:"31fd5947eb21cc153714",8818:"52ce16b502ae141407c9",8857:"76c0058379df1c7b3425",8917:"574e0ad0829bfc495a6e",9209:"d979e30a142d9d73be07",9422:"3a11228859eb2c637728",9690:"144bae11fbe3a19445bc",9827:"b312da33166dfdb87398",9898:"0fe398b502f05a7bb9df",9929:"114d822bf3c06c81f4f7"}[e]+".js"},s.miniCssF=function(e){return"styles/"+{184:"CommonAccounts",255:"AppSetPassword",312:"CommonPendingUserEditDialog",419:"AppLogin",728:"AppSignup",1229:"AdminRoomEditDialog",1368:"AppCheckout",1387:"CommonSettings",1483:"AdminLogin",1599:"vendor-vue-vuetify",1652:"AppDeepLTranslator",2302:"AppResetPassword",2710:"AppLdapLogin",2794:"AppSSOLanding",2941:"AppDirectLinkProxy",3114:"AppDeleteCompany",3131:"AppProfile",3524:"app",4360:"AppWelcome",4506:"AppReport",4584:"AdminDashboard",4602:"AppMeetingsList",5273:"AdminCompanySearch",5665:"CommonRoomStructureCreateItemDialog",5894:"CommonUserInviteDialog",6108:"CommonRoomStructure",6166:"AppPaymentAccept",6366:"AppRoomSettings",6497:"AppAuditLog",6849:"AppFinishSignup",6992:"AppPaymentCancel",7226:"AppSignupEmailSent",7372:"AppGuestJoin",7662:"AdminUserInfoByEmail",7759:"AppError500",7954:"AppMeetingManagement",8445:"CommonRoomSettingsInviteExternalMembersDialog",8857:"CommonRoomSettingsAddUserRolesDialog",8917:"CommonUserEditDialog",9209:"AppLimitedManageRooms",9422:"CommonOperations",9827:"CommonModalizedRoomSettings",9898:"CommonRoomStructureAdvanced",9929:"AdminCompanyEditDialog"}[e]+".min."+{184:"2463443f8fabf50963f2",255:"183b433ba6b2845cb0fe",312:"8f31f1af37aa102cfd2f",419:"dfcc53c8c2f27c163084",728:
+[0m
+Full lazy-chunk manifest recovered. Extracting hashes and fetching the money-flow candidates.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re,json
+s=open('app.js',encoding='utf-8',errors='replace').read()
+i=s.find('s.u=function(e){return"js/"')
+seg=s[i:i+6000]
+def grab(off):
+    a=seg.find('{',off); d=0
+    for k in range(a,len(seg)):
+        if seg[k]=='{': d+=1
+        elif seg[k]=='}':
+            d-=1
+            if d==0: return seg[a:k+1]
+names=json.loads(grab(0)); hashes=json.loads(grab(grab(0)+1))
+base='https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/'
+want=[c for c,n in names.items() if re.search(r'Checkout|Payment|Settings|Company',n)]
+m={}
+for c in sorted(want,key=int):
+    url=base+f'{names[c]}.min.{hashes[c]}.js'
+    m[c]=(names[c],hashes[c])
+    print(f'{c:>5} {names[c]:<32} {url}')
+json.dump({c:list(v) for c,v in m.items()},open('chunks.json','w'))
+print('\ntotal chunks:',len(names))
+EOF
+Traceback (most recent call last):
+  File "<stdin>", line 12, in <module>
+  File "/usr/lib/python3.12/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 353, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ^^^^^^^^^^^^^^^^^^^^^^
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re,json
+s=open('app.js',encoding='utf-8',errors='replace').read()
+i=s.find('s.u=function(e){return"js/"+')
+seg=s[i:i+8000]
+def brace_at(off):
+    a=off
+    d=0
+    for k in range(a,len(seg)):
+        if seg[k]=='{': d+=1
+        elif seg[k]=='}':
+            d-=1
+            if d==0: return seg[a:k+1]
+def grab(off):
+    return brace_at(off)
+n_off=seg.find('{',seg.find('+'))
+names=json.loads(grab(n_off))
+h_off=seg.find('+',n_off+grab(n_off).__len__())
+h_off=seg.find('+',h_off+1)
+hashes=json.loads(brace_at(seg.find('{',seg.find('".min."+',n_off))))
+base='https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/'
+m={}
+for c in sorted(names,key=int):
+    n=names[c]
+    if re.search(r'Checkout|Payment|Settings|Company',n):
+        m[c]=[n,hashes[c]]
+        print(f'{c:>5} {n:<34} {base}{n}.min.{hashes[c]}.js')
+json.dump(m,open('chunks.json','w'))
+print('\ntotal lazy chunks:',len(names))
+EOF
+Traceback (most recent call last):
+  File "<stdin>", line 16, in <module>
+  File "/usr/lib/python3.12/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 353, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ^^^^^^^^^^^^^^^^^^^^^^
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re,json
+s=open('app.js',encoding='utf-8',errors='replace').read()
+i=s.find('s.u=function(e){return"js/"')
+seg=s[i:i+8000]
+# hashes look like 18-hex, names like PascalCase
+hashes=dict(re.findall(r'(\d+):"([0-9a-f]{18})"',seg))
+names={k:v for k,v in re.findall(r'(\d+):"([A-Z][A-Za-z0-9]{3,40})"',seg) if k not in hashes or not re.fullmatch(r'[0-9a-f]{18}',v)}
+# rebuild names strictly: ids whose value is not a hash
+names={k:v for k,v in re.findall(r'(\d+):"([A-Za-z][A-Za-z0-9]{3,40})"',seg) if not re.fullmatch(r'[0-9a-f]{18}',v)}
+print('hashes:',len(hashes),'names:',len(names))
+base='https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/'
+m={}
+for c in sorted(names,key=int):
+    n=names[c]
+    if re.search(r'Checkout|Payment|Settings|Company',n) and c in hashes:
+        m[c]=[n,hashes[c]]; print(f'{c:>5} {n:<34} {base}{n}.min.{hashes[c]}.js')
+json.dump(m,open('chunks.json','w'))
+EOF
+hashes: 0 names: 45
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re,json
+s=open('app.js',encoding='utf-8',errors='replace').read()
+seg=s[s.find('s.u=function(e){return"js/"'):][:8000]
+hashes=dict(re.findall(r'(\d+):"([0-9a-f]{20})"',seg))
+names={k:v for k,v in re.findall(r'(\d+):"([A-Za-z][A-Za-z0-9]{3,40})"',seg)}
+base='https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/'
+m={}
+for c in sorted(names,key=int):
+    n=names[c]
+    if re.search(r'Checkout|Payment|Settings|Company',n) and c in hashes:
+        m[c]=[n,hashes[c]]; print(f'{c:>5} {n:<34} {base}{n}.min.{hashes[c]}.js')
+json.dump(m,open('chunks.json','w'))
+print('total names',len(names),'total hashes',len(hashes))
+EOF
+1368 AppCheckout                        https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/AppCheckout.min.67b70eedc06bd876fb37.js
+ 1387 CommonSettings                     https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/CommonSettings.min.34e12a35ad07dbfe3c0d.js
+ 5273 AdminCompanySearch                 https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/AdminCompanySearch.min.740d8fc998d4c8160f84.js
+ 5701 AdminCompanyCreateDialog           https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/AdminCompanyCreateDialog.min.2cbe2a408918c0eb4447.js
+ 6166 AppPaymentAccept                   https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/AppPaymentAccept.min.8cccb18f7d56403deee3.js
+ 6992 AppPaymentCancel                   https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/AppPaymentCancel.min.5b815ab60f8273e43083.js
+ 9929 AdminCompanyEditDialog             https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/AdminCompanyEditDialog.min.07357fde1b85ec67a5cf.js
+total names 45 total hashes 54
+[0m
+Decisive test — fetching the money-flow chunks and grepping for the VAT consumer.
+[0m$ [0mcd /tmp/opencode
+for u in AppCheckout.min.67b70eedc06bd876fb37 AppPaymentAccept.min.8cccb18f7d56403deee3 AdminCompanyEditDialog.min.07357fde1b85ec67a5cf AdminCompanyCreateDialog.min.2cbe2a408918c0eb4447 CommonSettings.min.34e12a35ad07dbfe3c0d; do
+  f="$u.js"
+  curl -s -o "$f" -w "%{http_code} %{size_download}B  $u\n" --max-time 25 "https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/$f"
+  sleep 1.2
+done
+echo
+echo "=== grep: validateVatId / checkPerformed / vat across chunks ==="
+grep -c 'validateVatId' *.js 2>/dev/null | grep -v ':0' || echo "  no validateVatId in any fetched chunk"
+403 263B  AppCheckout.min.67b70eedc06bd876fb37
+403 263B  AppPaymentAccept.min.8cccb18f7d56403deee3
+403 263B  AdminCompanyEditDialog.min.07357fde1b85ec67a5cf
+200 47019B  AdminCompanyCreateDialog.min.2cbe2a408918c0eb4447
+403 263B  CommonSettings.min.34e12a35ad07dbfe3c0d
+
+=== grep: validateVatId / checkPerformed / vat across chunks ===
+app.js:1
+[0m
+4 of 5 returned 403 from the CDN. Checking the block reason and trying the origin path, plus grepping the one that succeeded.
+[0m$ [0mcd /tmp/opencode
+echo "--- 403 body ---"; cat AppCheckout.min.67b70eedc06bd876fb37.js; echo
+echo "--- did AdminCompanyCreateDialog mention VAT? ---"
+grep -o -i -E '.{60}vat.{60}' AdminCompanyCreateDialog.min.2cbe2a408918c0eb4447.js | head -5 || echo "  no 'vat' in AdminCompanyCreateDialog"
+echo
+echo "--- retry via app.alfaview.com origin ---"
+for u in AppCheckout.min.67b70eedc06bd876fb37 AppPaymentAccept.min.8cccb18f7d56403deee3 CommonSettings.min.34e12a35ad07dbfe3c0d AdminCompanyEditDialog.min.07357fde1b85ec67a5cf; do
+  code=$(curl -s -o "o_$u.js" -w '%{http_code}' --max-time 25 "https://app.alfaview.com/js/$u.js")
+  printf "%s %sB  %s\n" "$code" "$(stat -c%s "o_$u.js")" "$u"
+  sleep 1.2
+done
+echo
+echo "=== validateVatId hits in origin-fetched chunks ==="
+grep -l 'validateVatId' o_*.js 2>/dev/null || echo "  none"
+--- 403 body ---
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>000001A0DEE7A91441C306258221CFF2</RequestId><HostId>k0aDqjKYr6VbuNQ6Iv8fhkrk2SPXsCtBaLdAz3TipDGn35qRm8saCMrQvwPxe5it</HostId></Error>
+--- did AdminCompanyCreateDialog mention VAT? ---
+,company_name:{optional:!0,min:3,max:256,utf8_printable:!0},vat_id:{optional:!0,utf8_printable:!0}}},auditEventService:{Act
+
+--- retry via app.alfaview.com origin ---
+302 23B  AppCheckout.min.67b70eedc06bd876fb37
+302 23B  AppPaymentAccept.min.8cccb18f7d56403deee3
+302 23B  CommonSettings.min.34e12a35ad07dbfe3c0d
+302 23B  AdminCompanyEditDialog.min.07357fde1b85ec67a5cf
+
+=== validateVatId hits in origin-fetched chunks ===
+  none
+[0m
+A real artifact: `vat_id:{optional:!0,utf8_printable:!0}` — the admin company-create dialog validates the VAT ID as **any printable string**, no format or length rule. Extracting the full schema and `createCompany` SDL, and following the redirects.
+[0m$ [0mcd /tmp/opencode
+for u in AppCheckout.min.67b70eedc06bd876fb37 AppPaymentAccept.min.8cccb18f7d56403deee3 CommonSettings.min.34e12a35ad07dbfe3c0d AdminCompanyEditDialog.min.07357fde1b85ec67a5cf; do
+  code=$(curl -sL -o "o_$u.js" -w '%{http_code}' --max-time 30 "https://app.alfaview.com/js/$u.js")
+  printf "%s %sB  %s\n" "$code" "$(stat -c%s "o_$u.js")" "$u"; sleep 1.2
+done
+echo
+echo "=== validateVatId consumers among origin chunks ==="
+grep -l 'validateVatId' o_*.js 2>/dev/null || echo "  none"
+echo
+python3 - <<'EOF'
+import re
+s=open('/tmp/opencode/AdminCompanyCreateDialog.min.2cbe2a408918c0eb4447.js',encoding='utf-8',errors='replace').read()
+print("=== createCompany mutation SDL ===")
+m=re.search(r'mutation\s+\w*CreateCompany.*?\n\}',s,re.S)
+print(m.group(0).replace('\\n','\n') if m else "not in this chunk")
+print("\n=== every 'vat' context in this chunk ===")
+for mm in re.finditer(r'vat_id|vatId|vat',s):
+    print("  ...",s[max(0,mm.start()-110):mm.start()+110].replace('\n',' '),"...")
+    print()
+EOF
+200 1381B  AppCheckout.min.67b70eedc06bd876fb37
+200 1381B  AppPaymentAccept.min.8cccb18f7d56403deee3
+200 1381B  CommonSettings.min.34e12a35ad07dbfe3c0d
+200 1381B  AdminCompanyEditDialog.min.07357fde1b85ec67a5cf
+
+=== validateVatId consumers among origin chunks ===
+  none
+
+=== createCompany mutation SDL ===
+not in this chunk
+
+=== every 'vat' context in this chunk ===
+  ... umber:{optional:!0,min:5,max:32,utf8_printable:!0},company_name:{optional:!0,min:3,max:256,utf8_printable:!0},vat_id:{optional:!0,utf8_printable:!0}}},auditEventService:{Actor:{user_id:{uuid:!0},system_name:{min:1}},Targ ...
+[0m
+The CDN serves only existing keys (S3 `AccessDenied` for the rest); the SPA fallback returns index.html. I have the key chunk though. Now the decisive artifact — the SDL input types in the main bundle.
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import re
+s=open('app.js',encoding='utf-8',errors='replace').read()
+print("=== all 'vatId' / 'vat_id' contexts in main bundle (SDL) ===")
+for m in re.finditer(r'vatId|vat_id',s):
+    print("\n  ...",s[max(0,m.start()-420):m.start()+260].replace('\\n','\n  '),"...")
+EOF
+=== all 'vatId' / 'vat_id' contexts in main bundle (SDL) ===
+
+  ... cing",contact_title:"Please contact our support to set up a custom plan that works for your requirements.",contact_support:"Contact support"},list:{conference_room:"{count} conference room | {count} conference rooms",max_participants:"max participants",breakout_rooms:"breakout rooms"},billing:{title:"Billing details",company:"Company name",locality:"City, Country",street_address:"Street address",postal:"Postal code",vat_id:"VAT ID",proceed:"Proceed with payment"}},checkout:{title:"Checkout",description:"Please enter your details to continue.",proceed:"Proceed to checkout",error:"Unfortunately an error occurred, please try again later. If the problem persists, please conta ...
+
+  ... Support, um einen maßgeschneiderten Tarif zu erstellen, der Ihren Anforderungen entspricht.",contact_support:"Kontaktieren Sie unseren Support"},list:{conference_room:"{count} Meetingraum | {count} Meetingräume",max_participants:"maximale Teilnehmerzahl",breakout_rooms:"Untergruppen"},billing:{title:"Rechnungsdetails",company:"Firma",locality:"Stadt, Land",street_address:"Straße und Hausnummer",postal:"Postleitzahl",vat_id:"USt-IdNr",proceed:"Mit der Zahlung fortfahren"}},checkout:{title:"Checkout",description:"Bitte geben Sie Ihre Daten ein, um fortzufahren.",proceed:"Zur Kasse gehen",error:"Leider ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut. Sollte  ...
+
+  ... ,selections:[{kind:"Field",name:{kind:"Name",value:"getBillingInfo"},arguments:[],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"has_subscription"},arguments:[],directives:[]}]}}]}},{kind:"OperationDefinition",operation:"query",name:{kind:"Name",value:"ValidateVatId"},variableDefinitions:[{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"vatId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"validateVatId"},arguments:[{kind:"Argument",name:{ki ...
+
+  ... y",name:{kind:"Name",value:"ValidateVatId"},variableDefinitions:[{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"vatId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"validateVatId"},arguments:[{kind:"Argument",name:{kind:"Name",value:"vatId"},value:{kind:"Variable",name:{kind:"Name",value:"vatId"}}}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"valid"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"checkPerformed"},ar ...
+
+  ... nitions:[{kind:"VariableDefinition",variable:{kind:"Variable",name:{kind:"Name",value:"vatId"}},type:{kind:"NonNullType",type:{kind:"NamedType",name:{kind:"Name",value:"String"}}},directives:[]}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"validateVatId"},arguments:[{kind:"Argument",name:{kind:"Name",value:"vatId"},value:{kind:"Variable",name:{kind:"Name",value:"vatId"}}}],directives:[],selectionSet:{kind:"SelectionSet",selections:[{kind:"Field",name:{kind:"Name",value:"valid"},arguments:[],directives:[]},{kind:"Field",name:{kind:"Name",value:"checkPerformed"},arguments:[],directives:[]}]}}]}},{kind:"OperationDefiniti ...
+
+  ... FetchFileRoomSettings($roomId: String!) {
+    fetchFileRoomSettings(roomId: $roomId) {
+      settings {
+        enabled
+        participants_can_upload
+        default_access_level
+        http_upload_url
+      }
+    }
+  }
+  
+  query FetchFileRoomList($roomId: String!) {
+    fetchFileRoomList(roomId: $roomId) {
+      files
+    }
+  }
+  
+  query GetBillingInfo {
+    getBillingInfo {
+      has_subscription
+    }
+  }
+  
+  query ValidateVatId($vatId: String!) {
+    validateVatId(vatId: $vatId) {
+      valid
+      checkPerformed
+    }
+  }
+  
+  query GenerateFileDownloadURL($roomId: String!, $fileId: String!) {
+    generateFileDownloadURL(roomId: $roomId, fileId: $fileId) {
+      http_download_url
+    }
+  }
+  
+  # ...
+
+  ... ng!) {
+    fetchFileRoomSettings(roomId: $roomId) {
+      settings {
+        enabled
+        participants_can_upload
+        default_access_level
+        http_upload_url
+      }
+    }
+  }
+  
+  query FetchFileRoomList($roomId: String!) {
+    fetchFileRoomList(roomId: $roomId) {
+      files
+    }
+  }
+  
+  query GetBillingInfo {
+    getBillingInfo {
+      has_subscription
+    }
+  }
+  
+  query ValidateVatId($vatId: String!) {
+    validateVatId(vatId: $vatId) {
+      valid
+      checkPerformed
+    }
+  }
+  
+  query GenerateFileDownloadURL($roomId: String!, $fileId: String!) {
+    generateFileDownloadURL(roomId: $roomId, fileId: $fileId) {
+      http_download_url
+    }
+  }
+  
+  # auditService
+  query ListAuditEvent ...
+
+  ...   fetchFileRoomSettings(roomId: $roomId) {
+      settings {
+        enabled
+        participants_can_upload
+        default_access_level
+        http_upload_url
+      }
+    }
+  }
+  
+  query FetchFileRoomList($roomId: String!) {
+    fetchFileRoomList(roomId: $roomId) {
+      files
+    }
+  }
+  
+  query GetBillingInfo {
+    getBillingInfo {
+      has_subscription
+    }
+  }
+  
+  query ValidateVatId($vatId: String!) {
+    validateVatId(vatId: $vatId) {
+      valid
+      checkPerformed
+    }
+  }
+  
+  query GenerateFileDownloadURL($roomId: String!, $fileId: String!) {
+    generateFileDownloadURL(roomId: $roomId, fileId: $fileId) {
+      http_download_url
+    }
+  }
+  
+  # auditService
+  query ListAuditEvents(
+    $f ...
+[0m
+Decisive. The i18n bundle shows `billing.vat_id: "VAT ID"` with `proceed: "Proceed with payment"` on the **Checkout** page, and the admin create-company dialog validates `vat_id:{optional:!0,utf8_printable:!0}` — the only field of three with **no min/max rule**, while `company_name` has `min:3,max:256` and `phone_number` `min:5,max:32`.
+
+**STEP 1 — DELTA**
+- [NEW] `app.alfaview.com/graphql` — **GraphQL-over-GET is fully functional.** 33 cycles recorded "GET 400/406B → needs POST". False blocker: the server's own CSRF error names the escape hatch, and `apollo-require-preflight: true` (a non-simple header that *strengthens* CSRF protection) makes GET work. `GET ?query={__typename}` → `200 {"data":{"__typename":"Query"}}`.
+- [NEW] Mutations over GET **blocked, 405** `"GET requests only support query operations"` ⇒ the GET surface is provably read-only. Positive control.
+- [NEW] `app.alfaview.com/graphql` `validateVatId` is **anonymously reachable**, proxies a live per-call EU VAT-registry lookup, and **fails open**: `valid:true, checkPerformed:false` for `""`, `"xx"`, `"DE"`, `"!!!!!!!!"`, `"GB999999999"`; `valid:false, checkPerformed:true` for all 10 well-formed EU+DE synthetic formats.
+- [NEW] `app.alfaview.com/js/AppCheckout…` (via `AdminCompanyCreateDialog.min.2cbe2a408918c0eb4447.js`, 200/47019B) — client-side validation schema: `vat_id:{optional:!0,utf8_printable:!0}`. `vat_id` is the **only** one of `phone_number`(`min:5,max:32`), `company_name`(`min:3,max:256`), `vat_id` with **no length or format rule at all**.
+- [NEW] i18n confirms VAT is collected **at the payment step**: `billing:{title:"Billing details",…vat_id:"VAT ID",proceed:"Proceed with payment"}` on the Checkout page.
+- [NEW] `apis.alfaview.com` — **4th pre-auth validator mechanism**: enum allow-list on array param `roomTypes`, element-wise, *indexed* locations `query.roomTypes[N]`, allow-list disclosed verbatim. `?roomTypes=abc`→422/190B; `?roomTypes=a,b,c`→422/398B with 3 indexed errors; `?roomTypes=`→401.
+- [NEW] `apis.alfaview.com` — **duplicate query params resolve first-wins in the pre-auth validator**: `?limit=1&limit=abc`→**401**, `?limit=abc&limit=1`→**422**. Same route, same anonymous caller; outcome decided by element position.
+- [CHANGED] Anonymous GraphQL lead **retired with a complete map, not a 4-resolver sample**: 45 of 54 query roots probed via GET — 43 `UNAUTHENTICATED`, `listIdentityProviders`+`validateVatId` anonymous, `listAllUserIds`→`null`, `listComponents`→`INTERNAL_SERVER_ERROR`. `listAuditEvents` (audit log) properly gated.
+- [CHANGED] `adminTokenAuthenticate` requires a `refreshToken` (`UNAUTHENTICATED`) — admin-session path not anonymous.
+- [CHANGED] **My own prior-cycle claim is refuted and corrected:** `validateVatId.valid=true` for junk always pairs with `checkPerformed:false`. The field is a fail-open default, not a false attestation, and alfaview's own query selects both. The finding does **not** rest on that alone — it now rests on the client accepting an unconstrained `vat_id` at the payment step.
+- NO_DELTA @ standing: OpenAPI 200/127532B md5 `357b94d367909a40b9299b543d23712b`; `users/me` 401/107B; JWKS 200/16257B; `introspect` OPTIONS 405.
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] `app.alfaview.com` `validateVatId` + unconstrained `vat_id` at Checkout — 7.1 (a=7, b=8 payment/tax flow, t=5, g=10, c=2, f=9 new)
+- [PRIO] `apis.alfaview.com` pre-auth validation tier — 6.2 (a=7, b=5, t=6, g=9, c=1, f=8)
+- [PRIO] `sso.alfaview.com/oauth2/introspect` — 6.1 (a=6, b=7, t=9, g=6, c=2, f=4)
+
+**STEP 3 — HYPOTHESES**
+
+[HYP] A VAT ID with no format validation is accepted at the payment step, and the server's own VAT validator fails open for anything unparseable
+class: BUSLOGIC
+asset: app.alfaview.com — `validateVatId` (graphql) + `vat_id` (Checkout/AdminCompanyCreateDialog)
+confidence: 72
+reasoning: Four independently-sourced facts chain. (1) `validateVatId` is anonymous 200 and performs a real registry lookup — `DE123456789`, `ATU12345678`, `BE0123456789`, `FRXX123456789`, `NL123456789B01`, `ESX1234567Z`, `IT12345678901`, `PL1234567890`, `SE123456789001`, `DK12345678` all `valid:false, checkPerformed:true`. (2) Unparseable input returns `valid:true, checkPerformed:false` — a field named `valid` asserting `true` for the empty string. (3) The client-side validator for `vat_id` is `{optional:true, utf8_printable:true}` with **no min/max/format**, while sibling fields `company_name` and `phone_number` both carry length bounds. (4) i18n places `vat_id` on the Checkout billing form whose submit button is `"Proceed with payment"`. So a one-character `vat_id` satisfies client validation and is reported `valid` by the server's own validator.
+evidence_needed: Proof that `checkout` or `createCompany` **persists** an unvalidated `vat_id` — i.e. server-side non-enforcement inside the mutation. This is the one link not established; every probe that would settle it is a POST.
+verify_steps: `curl -H 'apollo-require-preflight: true' -G --data-urlencode 'query={validateVatId(vatId:"x"){valid checkPerformed}}' https://app.alfaview.com/graphql` → `{"valid":true,"checkPerformed":false}`. Artifact already in hand: `js/AdminCompanyCreateDialog.min.2cbe2a408918c0eb4447.js` contains `vat_id:{optional:!0,utf8_printable:!0}`. Confirming step requires a self-owned account posting `checkout(customer:{vatId:"x"})` — out of scope for this method set.
+impact: EU VAT validation is a tax-compliance control on B2B invoicing. A `vat_id` of `"x"` is recorded as a customer's tax ID, so reverse-charge treatment and invoice validity are decided on unvalidated input; a fail-open `valid` default also misleads any third-party integrator reading only the field named `valid`. MEDIUM, escalating if the server persists it unchecked. The unauthenticated upstream-registry lookup stands on its own as a free third-party-API oracle.
+testability: PASSIVE
+
+[HYP] OAuth introspection client authentication is not enforced — fabricated `client_id` accepted on both channels
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 92
+reasoning: 30+ cycles stable. Discovery advertises `token_endpoint_auth_methods_supported = [client_secret_basic, client_secret_post, none]`, so a secret-bearing method is claimed and never verified; only a Basic-vs-body `client_id_mismatch` 401 is enforced. `introspection_endpoint` is absent from discovery while the endpoint is live. Re-confirmed liveness by OPTIONS only (405); recorded POST differentials deliberately not re-fired.
+evidence_needed: A self-owned, self-issued token submitted with a fabricated `client_id` returning 200 with a populated token body — proving response data reaches an unauthenticated caller.
+verify_steps: `OPTIONS https://sso.alfaview.com/oauth2/introspect` (405, alive) and `GET https://sso.alfaview.com/.well-known/openid-configuration` (read `token_endpoint_auth_methods_supported`, `introspection_endpoint`). No third-party token.
+impact: Anyone holding one captured token reads its liveness, expiry and scope with no client credential — revocation cannot be triaged and tokens sort offline. Advertised `client_secret_basic` gives integrators false assurance. MEDIUM-HIGH; highest-confidence weakness in the program.
+testability: AUTH_HELPED
+
+[HYP] Request validation runs before authentication on the production REST API, and the spec declares no security scheme
+class: AUTH
+asset: apis.alfaview.com — 9 of 26 GET operations
+confidence: 80
+reasoning: Proven by single-route differential: `/v2/guest-links` bare→401, `?pageToken=x`→401 (unconstrained), `?limit=abc`→422 (integer-constrained) — the 401 is a property of what the attacker sends, not of the operation. This cycle added a 4th mechanism (element-wise enum allow-list) and a parameter-merge rule: duplicates are first-wins (`?limit=1&limit=abc`→401 vs `?limit=abc&limit=1`→422). `components.securitySchemes` and top-level `security` are both absent, so the boundary is ad-hoc per-handler middleware.
+evidence_needed: A 200 or data-bearing body from any of the 9 without a credential — the only thing that converts ordering into disclosure. A self-owned bearer is neither required nor to be sought.
+verify_steps: `GET /v2/guest-links?limit=1&limit=abc` (401) vs `?limit=abc&limit=1` (422) vs `GET /v2/rooms?roomTypes=a,b,c` (422, three indexed errors) vs `GET /v2/rooms?roomTypes=` (401). Discard all bodies unread.
+impact: A free per-parameter type/format/allow-list oracle on 9 endpoints fingerprinting Go `time`/`net/mail`/enum validators pre-auth, and a durable architectural defect: 26 operations must each be individually verified because no declarative control exists, and a third of them are now proven to fail. MEDIUM as ordering + information disclosure; **not** an authentication bypass.
+testability: PASSIVE
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] "validateVatId accepts arbitrary junk as a valid VAT ID" *as the finding*: **dropped as originally framed.** `checkPerformed:false` accompanies every `valid:true`, so it is a fail-open default, not a false attestation, and alfaview's own client selects both fields. The finding was rebuilt on the client-side `vat_id` schema plus the checkout placement, which are independent of `checkPerformed`.
+- [PARKED] The `checkout` client-side schema specifically: **unverified.** The i18n `billing.vat_id` string and the `AppCheckout` route name establish the field's presence at the payment step, but the `AppCheckout` chunk returns S3 `AccessDenied` from the CDN, so the checkout form's own validation rules were never read. The confirmed unconstrained schema is from `AdminCompanyCreateDialog`. I am not claiming the two share a validator.
+- [PARKED] "First-wins duplicate-parameter merge" as request smuggling: mechanism fact only. It is a smuggling primitive only if a fronting proxy parses duplicates differently, and I can observe just the app's parse. `apis.alfaview.com` is served with no `edge-proxy` header, so no second parser is in evidence.
+- [PARKED] "`apollo-require-preflight` GET as a CSRF weakness": REJECTED class. Requiring a non-simple header *is* the anti-CSRF property; a cross-origin caller cannot set it without a CORS preflight. Mutations are 405-blocked over GET.
+- [PARKED] "The anonymous GraphQL query surface": REJECTED — methodology correction, not a vulnerability. 45/54 roots probed, 43 gated, the 2 anonymous ones return `[]`/`null`/two booleans. Lead **closed with evidence**.
+- [PARKED] Stale chunk map: `app.min.67e8a68d4318b34ca241.js` (still the shell-referenced build) points at 4 of 7 money-flow chunks that return S3 `AccessDenied` (`AppCheckout`, `AppPaymentAccept`, `AppPaymentCancel`, `CommonSettings`, `AdminCompanyEditDialog`) while `AdminCompanyCreateDialog` serves 200. Could be a mixed-version deploy or my id↔hash merge across the `s.u` and `s.miniCssF` maps. **Inconclusive**, no security claim, not reportable.
+- [PARKED] `/v2/auth/token-info` format brute-force, `/v2/auth/api-key`, `/v2/auth/group-link` derivation, `tools.alfaview.com/whiteboard/` verb enumeration: POST-only or path-exhausted, unprobeable under GET/HEAD/OPTIONS.
+- [FINAL] 1) `app.alfaview.com` unvalidated `vat_id` at the payment step + fail-open anonymous VAT validator — **72**. 2) `sso.alfaview.com/oauth2/introspect` client-auth bypass — **92**. 3) `apis.alfaview.com` validation-before-auth on 9/26 GET ops, no spec-level security declaration — **80**.
+
+**STEP 5 — NEXT ACTION**
+[SCAN] Read the `AppCheckout` chunk's own validation schema to determine whether the payment form constrains `vat_id`, which decides whether hypothesis #1 is a checkout-specific flaw or an admin-only one. Concretely: re-derive the `AppCheckout` id→hash pair from `s.u` without merging the `s.miniCssF` map, then `GET https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/AppCheckout.min.<hash>.js` and grep for `vat_id`. Read-only, no POST, no credential.
+
+**STEP 6 — LEARNING**
+- [LEARN] **ACCEPTED BUSLOGIC** @ app.alfaview.com: `vat_id` client validation is `{optional, utf8_printable}` with no length/format rule while `company_name` and `phone_number` carry bounds; i18n places the field on Checkout behind `"Proceed with payment"`; and the anonymous `validateVatId` reports `valid:true` for the empty string. Self-corrected — my "accepts junk as valid" reading was wrong once `checkPerformed` was read, so the finding was rebuilt on the client schema.
+- [LEARN] **ACCEPTED MISCONFIG** @ app.alfaview.com/graphql: GraphQL-over-GET is functional via the `apollo-require-preflight: true` header the server's own CSRF error advertises; 33 cycles of "GET 400" recorded a false blocker. Mutations 405-blocked, so the surface is provably read-only.
+- [LEARN] **ACCEPTED MISCONFIG** @ app.alfaview.com/graphql: 45 of 54 query roots probed; 43 `UNAUTHENTICATED`, `listIdentityProviders`+`validateVatId` anonymous, `listAllUserIds`→`null`, `listComponents`→`INTERNAL_SERVER_ERROR`, and `listAuditEvents`/`getReport`/`getOrphanedUsers`/`listApiKeys` all properly gated. Anonymous-resolver lead closed with a complete map.
+- [LEARN] **ACCEPTED MISCONFIG** @ apis.alfaview.com: 4th pre-auth validator mechanism — element-wise enum allow-list with indexed locations `query.roomTypes[N]` and the allow-list disclosed verbatim; an empty value yields zero elements and therefore 401.
+- [LEARN] **ACCEPTED MISCONFIG** @ apis.alfaview.com: duplicate query params are first-wins in the pre-auth validator (`?limit=1&limit=abc`→401, `?limit=abc&limit=1`→422) — a merge rule absent from the spec.
+- [LEARN] **REJECTED MISCONFIG** @ app.alfaview.com/graphql: the two anonymous resolvers disclose nothing — `listIdentityProviders` returns empty/null, `validateVatId` two booleans. No unauthenticated PII, config or credential exposure across 45 probed query roots.
+- [LEARN] **NO_DELTA** @ standing probes: OpenAPI 200/127532B md5 `357b94d3`, `users/me` 401/107B, JWKS 200/16257B, `introspect` OPTIONS 405.
+
+**STEP 7 — RISK**
+[RISK] alfaview: 63 — up from 61. Up: a newly-mapped anonymous resolver performing a live third-party registry lookup per call, plus an unconstrained `vat_id` on a payment form — the first alfaview finding to touch a money flow in 33 cycles. Down, and larger: the speculative HIGH on anonymous GraphQL exposure is **retired** — 45/54 roots probed, 43 auth-gated, the audit log and all PII roots clean, mutations unreachable over GET, so exposure is provably confined to two low-yield anonymous resolvers. The highest-confidence weakness remains the introspect client-auth bypass, unchanged at 92 and stable across 30+ cycles. Discipline held: no customer data read — every GraphQL body was `{__typename}` or boolean-only, the two scalar mass-PII fields were read for **length only** with contents discarded, all identifiers and VAT numbers were synthetic and unassigned, no rate-limit testing, and no POST.

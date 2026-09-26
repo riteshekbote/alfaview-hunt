@@ -1030,3 +1030,18 @@ www.alfaview.com
 - NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle carries admin session flow (AdminTokenAuthenticate → adminS
 - CHANGED staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02.
 - CHANGED staging-app.alfaview.com + webviewer.dev.alfaview.com: Bundle-referenced hosts exhausted (401 Basic incl. /graphql; 000).
+
+## 2026-09-26 18:10:01 UTC
+- NEW apis.alfaview.com/v2/rooms/{roomId}/attendances: GET unauthenticated → 422/232B pre-auth validation (query.from, query.to required); 9 of 26 GET ops now confirmed validation-before-auth (stats, attend
+- NEW tools.alfaview.com/whiteboard/: Second unmapped RPC backend proven by controlled differential — returns 47B gRPC status envelope vs poll gateway's 45B compact jsonpb; distinct marshaller (space-after-
+- NEW staging-tools.alfaview.com/whiteboard/: Byte-identical 47B envelope → unmapped RPC mount mirrored to staging with equal exposure
+- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 /; / = 386B "board deleted/access expired"); zero security headers,
+- NEW support.alfaview.com: First full map — WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; every sensitive route 401s, only public ro
+- NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle carries admin session flow (AdminTokenAuthenticate → adminS
+- CHANGED staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02
+- CHANGED staging-app.alfaview.com + webviewer.dev.alfaview.com: Bundle-referenced hosts exhausted (401 Basic incl. /graphql; 000)
+- CHANGED apis.alfaview.com/v2/auth/token-info: Parse oracle unchanged — base64 of {}, {"token":"x"}, raw UUID, random 16-128 byte payloads all return identical 422 "invalid access token format"; only non-base6
+- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable livene
+- CHANGED sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_
+- CHANGED app.alfaview.com/graphql: Signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed); all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70) gate on i
