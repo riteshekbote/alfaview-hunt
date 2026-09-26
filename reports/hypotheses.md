@@ -3590,3 +3590,5 @@
 - LEARN: REJECTED MISCONFIG @ staging-app.alfaview.com + webviewer.dev.alfaview.com: Two bundle-referenced hosts absent from inventory; both exhausted immediately (401 B
 - LEARN: REJECTED MISCONFIG @ design-assets.alfaview.com, design-tokens.alfaview.com, ops.alfaview.com: 404/548B and 404/19B plaintext — no independent surface, targets 
 - LEARN: NO_DELTA @ apis/sso/app/tools: All standing probes byte-identical for 32nd consecutive cycle; only structural change is addition of mapped host, not change to k
+
+## RANKED HYPOTHESES 2026-09-26 14:32:54 UTC

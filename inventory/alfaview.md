@@ -1009,3 +1009,24 @@ www.alfaview.com
 - NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle carries admin session flow (AdminTokenAuthenticate → adminS
 - CHANGED staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02.
 - CHANGED staging-app.alfaview.com + webviewer.dev.alfaview.com: Bundle-referenced hosts exhausted (401 Basic incl. /graphql; 000).
+
+## 2026-09-26 14:32:54 UTC
+- NEW `GET /v2/rooms/{roomId}/attendances` — the last unprobed GET op — returns **422/232B pre-auth** with `{query.from, query.to}` required-parameter errors. My prior cycle's bound ("path-parameter routes 
+- CHANGED The defect is **not** limited to required params. `/v2/meetings?from=abc&to=zzz` → 422/290B although `from`/`to` are `required:false` in the spec. Rule corrected: *any format-constrained query param t
+- NEW Full pre-auth validation map completed — **9 of 26** GET ops (was "2 of 26"): `stats` 422/319B, `rooms/{roomId}/attendances` 422/232B, `meetings` 422/290B, `rooms?limit=abc` 422/141B, `users?emailAddr
+- NEW **Mechanism proven by single-route differential:** `GET /v2/guest-links` → 401, `?pageToken=x` → 401 (unconstrained string, nothing to reject), `?limit=abc` → 422 (integer-constrained). Same route, sa
+- NEW Pre-auth error bodies disclose the internal validator stack: Go `time.Parse` layout string `2006-01-02T15:04:05.999999999Z07:00`, Go `net/mail` RFC-5322 parser (`expected string to be RFC 5322 email: 
+- NEW Identity-adjacent surface: `/v2/users?emailAddress=` is the only pre-auth validator touching an identity field. **Existence was deliberately not tested** — that is the rejected enumeration class. Form
+- CHANGED Business-rule checks stay behind auth: `from=2025-08-01` (400 days, far outside the documented 62-day floor) → 401. Valid params → 401 on every op. **No attendance, user, or tenant data read; every ca
+- NEW `beta-apis.alfaview.com/v2/rooms/{roomId}/attendances` byte-identical 422/232B → same code path serves both environments.
+- NEW Spec re-confirmed: `components.securitySchemes` **absent**, top-level `security` **absent** (`None` in the fetched doc) — no declarative control exists that could have caught this ordering.
+- NEW apis.alfaview.com/v2/stats: GET unauthenticated, no params → 422/319B with per-field validation body (query.from, query.to, query.stepDurationHours); 11/26 other GET ops return 401. Valid params → 401
+- NEW apis.alfaview.com/v2/auth/token-info: Base64 of {}, {"token":"x"}, raw UUID, random 16-128 byte payloads all return identical 422 "invalid access token format"; only non-base64 header gives distinct e
+- NEW apis.alfaview.com/v2/users/invitation: Returns 405/19B text/plain (Go-native) vs application/problem+json 401 for rest of /v2 — different runtime fronts this route.
+- NEW tools.alfaview.com/whiteboard/: Second unmapped RPC backend proven by controlled differential — `/whiteboard/` returns 47B gRPC status envelope while `/health/`, `/foo/`, `/zzznotreal/` return 615B SP
+- NEW staging-tools.alfaview.com/whiteboard/: Byte-identical 47B envelope ⇒ unmapped RPC mount mirrored to staging with equal exposure.
+- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 `/`; `/` = 386B "board deleted/access expired"); zero security head
+- NEW support.alfaview.com: First full map — WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; every sensitive route 401s, only public ro
+- NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle carries admin session flow (AdminTokenAuthenticate → adminS
+- CHANGED staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02.
+- CHANGED staging-app.alfaview.com + webviewer.dev.alfaview.com: Bundle-referenced hosts exhausted (401 Basic incl. /graphql; 000).
