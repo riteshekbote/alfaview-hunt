@@ -992,3 +992,20 @@ www.alfaview.com
 - CHANGED tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with custom auth header Grpc-Metadata-alfaview.token (b64url→b64, opaque family); staging-tools.alfaview.com byte-ide
 
 ## 2026-09-26 05:42:18 UTC
+
+## 2026-09-26 10:16:57 UTC
+- NEW GET https://apis.alfaview.com/v2/stats — never probed in 33 cycles. Unauthenticated, no query params → 422/319B application/problem+json carrying a per-field validation body (query.from, query.to, que
+- NEW /v2/stats with valid params (from=2026-07-27T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=24) → 401/107B, and a fabricated base64 bearer (Zm9vOmJhcg==) → 401/115B. Auth IS enforced before the d
+- NEW Ordering defect is environment-wide: beta-apis.alfaview.com/v2/stats is byte-identical (422/319B bare, 401/107B with valid params), and /v2/auth/token-info bare → 422/85B on both.
+- NEW Defect is BOUNDED and the bound is proven: path-parameter routes do not share it. GET /v2/rooms|meetings|group-links|guest-links/{malformed-id} all return 401/107B, never 422 — the UUID path validator
+- NEW /v2/stats schema bound reproduced pre-auth: stepDurationHours=0 → 422/158B "expected number >= 1" (matches spec minimum:1); stepDurationHours=abc → 422/357B. A from= date 63 days back (outside the doc
+- NEW Root cause is visible in the spec: /v2/docs/openapi.json declares components.securitySchemes = {} and top-level security = null. Authentication is enforced purely by handler-level middleware, which is
+- CHANGED /v2/auth/token-info parse oracle unchanged, and NO third error tier exists: base64 of {}, {"token":"x"}, a raw UUID, and random 16/32/48/64/128-byte payloads all return the identical 422 "invalid acce
+- CHANGED GET /v2/users/invitation → 405/19B text/plain (Go-native), not the application/problem+json 401 every other /v2 path returns → a different runtime fronts that route.
+- NEW tools.alfaview.com/whiteboard/: Second unmapped RPC backend proven by controlled differential — `/whiteboard/` returns 47B gRPC status envelope while `/health/`, `/foo/`, `/zzznotreal/` return 615B SP
+- NEW staging-tools.alfaview.com/whiteboard/: Byte-identical 47B envelope ⇒ unmapped RPC mount mirrored to staging with exposure equal to production.
+- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 `/`; `/` = 386B "board deleted/access expired"); zero security head
+- NEW support.alfaview.com: First full map — WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; every sensitive route 401s, only public ro
+- NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle carries admin session flow (AdminTokenAuthenticate → adminS
+- CHANGED staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02.
+- CHANGED staging-app.alfaview.com + webviewer.dev.alfaview.com: Bundle-referenced hosts exhausted (401 Basic incl. /graphql; 000).

@@ -1246,3 +1246,17 @@ https://sso.alfaview.com/oauth2/introspect` -> HTTP 404
 https://apis.alfaview.com/v2/auth/token-info` -> HTTP 404
 https://apis.alfaview.com/v2/users/me` -> HTTP 405
 https://apis.alfaview.com/v2/auth/group-link` -> HTTP 404
+
+## 2026-09-26 10:17:13 UTC
+https://app.alfaview.com/ -> 200 len=1381
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://tools.alfaview.com/whiteboard/ -> HTTP 404
+https://app.alfaview.com/graphql -> HTTP 400
+https://tools.alfaview.com/whiteboard/` -> HTTP 404
+https://tools.alfaview.com/whiteboard/List` -> HTTP 404
+https://staging-tools.alfaview.com/whiteboard/` -> HTTP 404
+https://apis.alfaview.com/v2/stats -> HTTP 422
+https://apis.alfaview.com/v2/auth/token-info -> HTTP 422
+https://apis.alfaview.com/v2/rooms/not-a-uuid -> HTTP 401
+https://sso.alfaview.com/.well-known/openid-configuration -> 200 len=0
+https://app.alfaview.com/js/app.min.67e8a68d4318b34ca241.js -> 200 len=1092529

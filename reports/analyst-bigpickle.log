@@ -33139,3 +33139,482 @@ testability: AUTH_HELPED
 - [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com/v2/docs/openapi.json: the spec publishes **no `securitySchemes` and no per-operation `security`** across all 37 paths, while runtime enforcement demonstrably exists (`/v2/users/me` → 401/107B). API-hygiene/documentation defect that defeats automated auth-coverage tooling; informational, not independently reportable.
 - [LEARN] NO_DELTA @ apis/sso/app/tools: OpenAPI MD5 `357b94d3` (127532B, 37 paths), JWKS 200/16257B (`3f8d456c`), OIDC 200/2169B, introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, graphql GET 400/406B, tools app-bundle md5 `b7f17c85` — all byte-identical; 33rd consecutive stable cycle. The cycle's entire yield came from reading the spec's previously-unexamined `/v2/auth/*` section, not from re-probing the standing surface.
 - [RISK] alfaview: 61 — up from 59. The delta is a real, measured increase in *confirmed unauthenticated* surface on the highest-value asset: a production-API token-introspection endpoint that answers anonymous callers with differentiated structured errors and whose contract discloses token liveness plus a permission object. That matters beyond its own severity, because token liveness is the exact missing primitive gating every other HIGH-value chain in this program (poll BOLA, REST IDOR, SSO introspect) — each currently blocked only on possessing a valid bearer, and none able to check whether one still works. Bounded deliberately: no third-party credential was used, no customer or authentication data was read, no token was forged or cracked, every probe was a read-only GET/OPTIONS at ≤1 rps, and the two new POST endpoints remain unexecuted.
+===== ANALYST bigpickle 2026-09-26 10:16:57 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt 2>/dev/null | head -40; echo "---ART---"; ls -la /home/runner/work/alfaview-hunt/alfaview-hunt/art 2>/dev/null | head -20
+total 752
+drwxr-xr-x 12 runner runner   4096 Sep 26 10:13 .
+drwxr-xr-x  3 runner runner   4096 Sep 26 10:13 ..
+drwxr-xr-x  7 runner runner   4096 Sep 26 10:13 .git
+drwxr-xr-x  3 runner runner   4096 Sep 26 10:13 .github
+-rw-r--r--  1 runner runner   1883 Sep 26 10:13 README.md
+-rw-r--r--  1 runner runner     32 Sep 26 10:13 analyst-out.txt
+-rw-r--r--  1 runner runner 306217 Sep 26 10:13 analyst-prompt.txt
+-rw-r--r--  1 runner runner 302307 Sep 26 10:13 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 26 10:13 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 26 10:13 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 26 10:13 leads
+-rw-r--r--  1 runner runner  63023 Sep 26 10:13 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 26 10:13 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 26 10:13 reports
+drwxr-xr-x  2 runner runner   4096 Sep 26 10:13 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 26 10:13 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 26 10:13 scripts
+-rw-r--r--  1 runner runner     33 Sep 26 10:13 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 26 10:13 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 26 10:13 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 26 10:13 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 26 10:13 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 26 10:13 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 26 10:13 triage
+---ART---
+[0m
+[0m$ [0mcd /tmp/opencode 2>/dev/null || mkdir -p /tmp/opencode; cd /tmp/opencode; curl -s -o oa.json -w "openapi:%{http_code}:%{size_download}\n" --max-time 25 "https://apis.alfaview.com/v2/docs/openapi.json"; md5sum oa.json; python3 -c "import json;d=json.load(open('oa.json'));print('paths',len(d['paths']));print('\n'.join(sorted(d['paths'])))" 2>/dev/null | head -60
+openapi:200:127532
+357b94d367909a40b9299b543d23712b  oa.json
+paths 37
+/v2/auth/api-key
+/v2/auth/group-link
+/v2/auth/guest-link
+/v2/auth/password
+/v2/auth/token-info
+/v2/group-links
+/v2/group-links/{id}
+/v2/guest-links
+/v2/guest-links/{id}
+/v2/languages
+/v2/meetings
+/v2/meetings/{id}
+/v2/meetings/{id}/cancellation
+/v2/permission-groups
+/v2/room-types
+/v2/rooms
+/v2/rooms/{id}
+/v2/rooms/{id}/participants
+/v2/rooms/{roomId}/attendances
+/v2/rooms/{roomId}/features
+/v2/rooms/{roomId}/file-share-limits
+/v2/rooms/{roomId}/file-share-settings
+/v2/rooms/{roomId}/group-links
+/v2/rooms/{roomId}/group-links/{id}
+/v2/rooms/{roomId}/guest-links
+/v2/rooms/{roomId}/guest-links/{id}
+/v2/rooms/{roomId}/language-settings
+/v2/rooms/{roomId}/passcode
+/v2/rooms/{roomId}/permissions
+/v2/rooms/{roomId}/permissions/{userId}
+/v2/rooms/{roomId}/subrooms
+/v2/rooms/{roomId}/subrooms/{subroomId}
+/v2/stats
+/v2/users
+/v2/users/invitation
+/v2/users/me
+/v2/users/{id}
+[0m
+[0m$ [0mcd /tmp/opencode
+B=https://apis.alfaview.com
+probe(){ printf "%-58s " "$1 $2"; curl -s -o body.$2.$3 -w "%{http_code} %{size_download} %{content_type}\n" --max-time 20 -X "$1" "$B$2" "${@:4}"; sleep 1.2; }
+probe GET /v2/auth/token-info none
+head -c 400 body.token-info.none; echo; echo "===="
+curl -s --max-time 20 -H "Authorization: !!!notbase64!!!" -o ti1 -w "ti_notb64: %{http_code} %{size_download}\n" "$B/v2/auth/token-info"; sleep 1.2
+head -c 300 ti1; echo; echo "===="
+curl -s --max-time 20 -H "Authorization: $(head -c 48 /dev/zero|tr '\0' 'A')" -o ti2 -w "ti_b64_48A: %{http_code} %{size_download}\n" "$B/v2/auth/token-info"; sleep 1.2
+head -c 300 ti2; echo
+GET /v2/auth/token-info                                    422 0 application/problem+json
+head: cannot open 'body.token-info.none' for reading: No such file or directory
+
+====
+ti_notb64: 422 91
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+
+====
+ti_b64_48A: 422 85
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+[0m
+[0m$ [0mcd /tmp/opencode
+B=https://apis.alfaview.com
+U=00000000-0000-4000-8000-000000000001
+for p in /v2/meetings /v2/rooms /v2/users /v2/permission-groups /v2/room-types /v2/stats /v2/languages /v2/group-links /v2/guest-links /v2/users/me /v2/users/invitation; do
+  printf "%-34s " "GET $p"
+  curl -s -o /dev/null -w "%{http_code} %{size_download} %{content_type}\n" --max-time 20 "$B$p"
+  sleep 1.1
+done
+GET /v2/meetings                   401 107 application/problem+json
+GET /v2/rooms                      401 107 application/problem+json
+GET /v2/users                      401 107 application/problem+json
+GET /v2/permission-groups          401 107 application/problem+json
+GET /v2/room-types                 401 107 application/problem+json
+GET /v2/stats                      422 319 application/problem+json
+GET /v2/languages                  401 107 application/problem+json
+GET /v2/group-links                401 107 application/problem+json
+GET /v2/guest-links                401 107 application/problem+json
+GET /v2/users/me                   401 107 application/problem+json
+GET /v2/users/invitation           405 19 text/plain; charset=utf-8
+[0m
+[0m$ [0mcd /tmp/opencode
+curl -s --max-time 20 -o stats.json -D stats.h -w "GET /v2/stats -> %{http_code} %{size_download}\n" "https://apis.alfaview.com/v2/stats"; sleep 1.2
+python3 -c "import json;print(json.dumps(json.load(open('stats.json')),indent=1))" 2>/dev/null || cat stats.json
+echo "=== spec for /v2/stats ==="
+python3 -c "
+import json;d=json.load(open('oa.json'))
+print(json.dumps(d['paths']['/v2/stats'],indent=1))
+print('--- components.securitySchemes ---')
+print(json.dumps(d.get('components',{}).get('securitySchemes',{}),indent=1))
+print('--- top-level security ---', json.dumps(d.get('security')))"
+GET /v2/stats -> 422 319
+{
+ "title": "Unprocessable Entity",
+ "status": 422,
+ "detail": "validation failed",
+ "errors": [
+  {
+   "message": "required query parameter is missing",
+   "location": "query.from"
+  },
+  {
+   "message": "required query parameter is missing",
+   "location": "query.to"
+  },
+  {
+   "message": "required query parameter is missing",
+   "location": "query.stepDurationHours"
+  }
+ ]
+}
+=== spec for /v2/stats ===
+{
+ "get": {
+  "description": "Lists statistics for provided filters grouped by time periods depending on the corresponding query parameter.",
+  "operationId": "ListStatistics",
+  "parameters": [
+   {
+    "description": "A valid access token (can be obtained by authenticating).",
+    "in": "header",
+    "name": "Authorization",
+    "schema": {
+     "description": "A valid access token (can be obtained by authenticating).",
+     "type": "string"
+    }
+   },
+   {
+    "description": "The start time of the time period to consider in the report. The earliest start time can be exactly 62 days in the past.",
+    "explode": false,
+    "in": "query",
+    "name": "from",
+    "required": true,
+    "schema": {
+     "description": "The start time of the time period to consider in the report. The earliest start time can be exactly 62 days in the past.",
+     "examples": [
+      "2024-09-22T11:00:00Z"
+     ],
+     "format": "date-time",
+     "type": "string"
+    }
+   },
+   {
+    "description": "The end time of the time period to consider in the report.",
+    "explode": false,
+    "in": "query",
+    "name": "to",
+    "required": true,
+    "schema": {
+     "description": "The end time of the time period to consider in the report.",
+     "examples": [
+      "2024-09-22T12:00:00Z"
+     ],
+     "format": "date-time",
+     "type": "string"
+    }
+   },
+   {
+    "description": "The duration of the time periods to group the report results in hours.",
+    "explode": false,
+    "in": "query",
+    "name": "stepDurationHours",
+    "required": true,
+    "schema": {
+     "description": "The duration of the time periods to group the report results in hours.",
+     "format": "int64",
+     "minimum": 1,
+     "type": "integer"
+    }
+   }
+  ],
+  "responses": {
+   "200": {
+    "content": {
+     "application/json": {
+      "schema": {
+       "items": {
+        "$ref": "#/components/schemas/StatsPeriod"
+       },
+       "type": [
+        "array",
+        "null"
+       ]
+      }
+     }
+    },
+    "description": "The request was processed successfully."
+   },
+   "401": {
+    "description": "The 'Authorization' header did not contain a valid API token."
+   },
+   "403": {
+    "description": "The requesting user does not have the necessary permissions."
+   },
+   "422": {
+    "description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."
+   }
+  },
+  "summary": "List Statistics",
+  "tags": [
+   "Reports"
+  ],
+  "x-sort-index": 0
+ }
+}
+--- components.securitySchemes ---
+{}
+--- top-level security --- null
+[0m
+[0m$ [0mcd /tmp/opencode
+# Decisive probe: valid params, NO Authorization header. Body DISCARDED (never read) to honor
+# the program note on customer/financial data exposure. Status/size only.
+printf "A) no auth, valid params      : "
+curl -s -o /dev/null -w "%{http_code} len=%{size_download} ct=%{content_type}\n" --max-time 25 \
+  "https://apis.alfaview.com/v2/stats?from=2026-07-27T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=24"
+sleep 1.3
+printf "B) no auth, malformed from    : "
+curl -s -o /dev/null -w "%{http_code} len=%{size_download}\n" --max-time 25 \
+  "https://apis.alfaview.com/v2/stats?from=x&to=x&stepDurationHours=abc"
+sleep 1.3
+printf "C) no auth, stepDurationHours=0: "
+curl -s -o /dev/null -w "%{http_code} len=%{size_download}\n" --max-time 25 \
+  "https://apis.alfaview.com/v2/stats?from=2026-07-27T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=0"
+sleep 1.3
+printf "D) garbage bearer, valid params: "
+curl -s -o /dev/null -w "%{http_code} len=%{size_download}\n" --max-time 25 -H "Authorization: Zm9vOmJhcg==" \
+  "https://apis.alfaview.com/v2/stats?from=2026-07-27T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=24"
+A) no auth, valid params      : 401 len=107 ct=application/problem+json
+B) no auth, malformed from    : 422 len=357
+C) no auth, stepDurationHours=0: 422 len=158
+D) garbage bearer, valid params: 401 len=115
+[0m
+[0m$ [0mcd /tmp/opencode
+B=https://apis.alfaview.com
+V=00000000-0000-4000-8000-000000000001
+M=not-a-uuid
+for p in /v2/rooms/$V /v2/meetings/$V /v2/group-links/$V /v2/guest-links/$V /v2/users/$V; do
+  printf "%-46s " "GET validUUID $p"; curl -s -o /dev/null -w "%{http_code} %{size_download} %{content_type}\n" --max-time 20 "$B$p"; sleep 1.1
+done
+echo "--- malformed path param (pre-auth validator test) ---"
+for p in /v2/rooms/not-a-uuid /v2/meetings/not-a-uuid /v2/users/not-a-uuid; do
+  printf "%-46s " "GET badID  $p"; curl -s -o /dev/null -w "%{http_code} %{size_download} %{content_type}\n" --max-time 20 "$B$p"; sleep 1.1
+done
+GET validUUID /v2/rooms/00000000-0000-4000-8000-000000000001 401 107 application/problem+json
+GET validUUID /v2/meetings/00000000-0000-4000-8000-000000000001 401 107 application/problem+json
+GET validUUID /v2/group-links/00000000-0000-4000-8000-000000000001 401 107 application/problem+json
+GET validUUID /v2/guest-links/00000000-0000-4000-8000-000000000001 401 107 application/problem+json
+GET validUUID /v2/users/00000000-0000-4000-8000-000000000001 405 19 text/plain; charset=utf-8
+--- malformed path param (pre-auth validator test) ---
+GET badID  /v2/rooms/not-a-uuid                401 107 application/problem+json
+GET badID  /v2/meetings/not-a-uuid             401 107 application/problem+json
+GET badID  /v2/users/not-a-uuid                405 19 text/plain; charset=utf-8
+[0m
+[0m$ [0mcd /tmp/opencode
+B=https://apis.alfaview.com/v2/auth/token-info
+t(){ printf "%-46s " "$1"; curl -s --max-time 20 -H "Authorization: $2" -o /dev/stdout -w " [%{http_code}]\n" "$B" | head -c 200; sleep 1.15; }
+t "json_obj"        "$(printf '{}' | base64 -w0)"
+t "json_token"      "$(printf '{"token":"x"}' | base64 -w0)"
+t "uuid_raw"        "$(printf '00000000-0000-4000-8000-000000000001' | base64 -w0)"
+t "uuid_bytes16"    "$(head -c 16 /dev/urandom | base64 -w0)"
+t "bytes32"         "$(head -c 32 /dev/urandom | base64 -w0)"
+t "bytes48"         "$(head -c 48 /dev/urandom | base64 -w0)"
+t "bytes64"         "$(head -c 64 /dev/urandom | base64 -w0)"
+t "bytes128"        "$(head -c 128 /dev/urandom | base64 -w0)"
+json_obj                                       {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+json_token                                     {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+uuid_raw                                       {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+uuid_bytes16                                   {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+bytes32                                        {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+bytes48                                        {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+bytes64                                        {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+bytes128                                       {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+ [422]
+[0m
+[0m$ [0mcd /tmp/opencode
+printf "beta /v2/stats (no params)     : "; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" --max-time 20 "https://beta-apis.alfaview.com/v2/stats"; sleep 1.2
+printf "beta /v2/stats (valid params)  : "; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" --max-time 20 "https://beta-apis.alfaview.com/v2/stats?from=2026-07-27T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=24"; sleep 1.2
+printf "beta /v2/auth/token-info (none): "; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" --max-time 20 "https://beta-apis.alfaview.com/v2/auth/token-info"; sleep 1.2
+echo "--- standing probes ---"
+printf "sso oidc       : "; curl -s -o oidc.json -w "%{http_code} %{size_download}\n" --max-time 20 "https://sso.alfaview.com/.well-known/openid-configuration"; sleep 1.2
+printf "sso jwks       : "; curl -s -o jwks.json -w "%{http_code} %{size_download}\n" --max-time 20 "https://sso.alfaview.com/.well-known/jwks.json"; sleep 1.2
+printf "sso introspect  : "; curl -s -X OPTIONS -o /dev/null -w "%{http_code}\n" --max-time 20 "https://sso.alfaview.com/oauth2/introspect"; sleep 1.2
+printf "sso authorize  : "; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" --max-time 20 "https://sso.alfaview.com/oauth2/authorize?client_id=x&response_type=code"; sleep 1.2
+printf "app graphql GET : "; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" --max-time 20 "https://app.alfaview.com/graphql"
+beta /v2/stats (no params)     : 422 319
+beta /v2/stats (valid params)  : 401 107
+beta /v2/auth/token-info (none): 422 85
+--- standing probes ---
+sso oidc       : 200 2169
+sso jwks       : 200 16257
+sso introspect  : 405
+sso authorize  : 200 6176
+app graphql GET : 400 406
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 -c "
+import json;d=json.load(open('oidc.json'))
+print('introspection_endpoint:',d.get('introspection_endpoint','ABSENT'))
+print('issuer:',d.get('issuer'))
+j=json.load(open('jwks.json'));ks=j.get('keys',[])
+print('jwks keys:',len(ks),'algs:',sorted({k.get('alg') for k in ks}))"
+echo "--- /v2/stats stepDurationHours=0 validation body (schema error, no customer data) ---"
+curl -s --max-time 20 "https://apis.alfaview.com/v2/stats?from=2026-07-27T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=0" | head -c 400; echo
+echo "--- from 63 days ago (outside documented 62-day floor) ---"
+curl -s -o /dev/null -w "%{http_code} %{size_download}\n" --max-time 20 "https://apis.alfaview.com/v2/stats?from=2026-07-24T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=24"
+introspection_endpoint: ABSENT
+issuer: acme.com
+jwks keys: 7 algs: ['RS256']
+--- /v2/stats stepDurationHours=0 validation body (schema error, no customer data) ---
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected number >= 1","location":"query.stepDurationHours"}]}
+
+--- from 63 days ago (outside documented 62-day floor) ---
+401 107
+[0m
+[0m$ [0mcd /tmp/opencode
+python3 -c "
+import json;d=json.load(open('oa.json'))
+gets=[p for p,v in d['paths'].items() if 'get' in v]
+print('total paths',len(d['paths']),'| GET operations',len(gets))
+for p in sorted(gets):
+    ps=d['paths'][p]['get'].get('parameters',[])
+    print(' ',p,'| params:',[q['name']+':'+q['in'] for q in ps])"
+total paths 37 | GET operations 26
+  /v2/auth/token-info | params: ['Authorization:header']
+  /v2/group-links | params: ['Authorization:header', 'pageToken:query', 'limit:query']
+  /v2/group-links/{id} | params: ['Authorization:header', 'id:path']
+  /v2/guest-links | params: ['Authorization:header', 'pageToken:query', 'limit:query']
+  /v2/guest-links/{id} | params: ['Authorization:header', 'id:path']
+  /v2/languages | params: ['Authorization:header']
+  /v2/meetings | params: ['Authorization:header', 'from:query', 'to:query']
+  /v2/meetings/{id} | params: ['Authorization:header', 'id:path']
+  /v2/permission-groups | params: ['Authorization:header']
+  /v2/room-types | params: ['Authorization:header']
+  /v2/rooms | params: ['Authorization:header', 'roomTypes:query', 'pageToken:query', 'limit:query']
+  /v2/rooms/{id} | params: ['Authorization:header', 'id:path']
+  /v2/rooms/{id}/participants | params: ['Authorization:header', 'id:path']
+  /v2/rooms/{roomId}/attendances | params: ['Authorization:header', 'roomId:path', 'from:query', 'to:query']
+  /v2/rooms/{roomId}/features | params: ['Authorization:header', 'roomId:path']
+  /v2/rooms/{roomId}/file-share-limits | params: ['Authorization:header', 'roomId:path']
+  /v2/rooms/{roomId}/file-share-settings | params: ['Authorization:header', 'roomId:path']
+  /v2/rooms/{roomId}/group-links | params: ['Authorization:header', 'roomId:path', 'pageToken:query', 'limit:query']
+  /v2/rooms/{roomId}/guest-links | params: ['Authorization:header', 'roomId:path', 'pageToken:query', 'limit:query']
+  /v2/rooms/{roomId}/language-settings | params: ['Authorization:header', 'roomId:path']
+  /v2/rooms/{roomId}/passcode | params: ['Authorization:header', 'roomId:path']
+  /v2/rooms/{roomId}/permissions | params: ['Authorization:header', 'roomId:path']
+  /v2/rooms/{roomId}/subrooms | params: ['Authorization:header', 'roomId:path']
+  /v2/stats | params: ['Authorization:header', 'from:query', 'to:query', 'stepDurationHours:query']
+  /v2/users | params: ['Authorization:header', 'emailAddress:query']
+  /v2/users/me | params: ['Authorization:header']
+[0m
+## STEP 1 — DELTA
+
+```
+[NEW]     GET https://apis.alfaview.com/v2/stats — never probed in 33 cycles. Unauthenticated, no query params → 422/319B application/problem+json carrying a per-field validation body (query.from, query.to, query.stepDurationHours all "required query parameter is missing"), NOT the 401/107B that every other collection path returns. Request validation demonstrably executes BEFORE authentication.
+[NEW]     /v2/stats with valid params (from=2026-07-27T00:00:00Z&to=2026-09-26T00:00:00Z&stepDurationHours=24) → 401/107B, and a fabricated base64 bearer (Zm9vOmJhcg==) → 401/115B. Auth IS enforced before the data query, so no statistics disclosure is claimed; the body was discarded unread on every probe per the program note on financial/customer data.
+[NEW]     Ordering defect is environment-wide: beta-apis.alfaview.com/v2/stats is byte-identical (422/319B bare, 401/107B with valid params), and /v2/auth/token-info bare → 422/85B on both.
+[NEW]     Defect is BOUNDED and the bound is proven: path-parameter routes do not share it. GET /v2/rooms|meetings|group-links|guest-links/{malformed-id} all return 401/107B, never 422 — the UUID path validator runs after auth. So the flaw is confined to the query/header validation layer, 2 of 26 spec GET operations, not the path layer.
+[NEW]     /v2/stats schema bound reproduced pre-auth: stepDurationHours=0 → 422/158B "expected number >= 1" (matches spec minimum:1); stepDurationHours=abc → 422/357B. A from= date 63 days back (outside the documented 62-day floor) → 401, so the date floor is enforced behind auth, not pre-auth.
+[NEW]     Root cause is visible in the spec: /v2/docs/openapi.json declares components.securitySchemes = {} and top-level security = null. Authentication is enforced purely by handler-level middleware, which is the mechanism that permits inconsistent ordering.
+[CHANGED] /v2/auth/token-info parse oracle unchanged, and NO third error tier exists: base64 of {}, {"token":"x"}, a raw UUID, and random 16/32/48/64/128-byte payloads all return the identical 422 "invalid access token format". Only a non-base64 header yields the distinct "access token not in base64 format". The parse is a magic-byte/structure check, not reachable by format guessing — format brute-forcing would be a rejected class anyway.
+[CHANGED] GET /v2/users/invitation → 405/19B text/plain (Go-native), not the application/problem+json 401 every other /v2 path returns → a different runtime fronts that route.
+NO_DELTA  Standing probes byte-identical: openapi 200/127532B md5 357b94d367909a40b9299b543d23712b (37 paths); users/me 401/107B; OIDC 200/2169B issuer=acme.com introspection_endpoint ABSENT; JWKS 200/16257B 7×RS256; introspect OPTIONS 405; authorize 200/6176B; app graphql GET 400/406B.
+```
+
+## STEP 2 — PRIORITIZE
+
+```
+[PRIO] apis.alfaview.com            7.30  (a=9 b=8 t=7 g=6 c=3 f=8)  26 GET ops, 2 proven pre-auth, 4 token-minting paths, tenant stats; first new API fact in 33 cycles
+[PRIO] app.alfaview.com/graphql    7.25  (a=8 b=9 t=9 g=5 c=3 f=6)  full admin schema public, guest mutations anon-reachable, sole bearer supplier
+[PRIO] sso.alfaview.com            6.90  (a=7 b=9 t=9 g=5 c=3 f=5)  FusionAuth issuer=acme.com, introspect client-auth bypass 27+ cycles, alg divergence
+[PRIO] tools.alfaview.com          6.65  (a=7 b=7 t=8 g=5 c=3 f=9)  8-verb poll RPC + unmapped /whiteboard backend, but every chain HUMAN_ONLY
+```
+
+## STEP 3 — HYPOTHESES
+
+```
+[HYP] Authentication runs AFTER request validation on two production API operations, and the spec declares no security scheme at all
+class: AUTH
+asset: apis.alfaview.com/v2/stats and apis.alfaview.com/v2/auth/token-info
+confidence: 65
+reasoning: Proven by direct unauthenticated read-only probe this cycle on both prod and beta. GET /v2/stats with no Authorization header and no query params returns 422/319B with a per-field validation body enumerating three required query parameters, where all 11 other probed collection paths return 401/107B. GET /v2/auth/token-info returns a 422 problem+json with no credential, and a two-tier oracle: non-base64 header → 422 "access token not in base64 format" (91B), any well-formed base64 → 422 "invalid access token format" (85B) across 11 decoded lengths and 8 structural encodings. Supplying valid /v2/stats params moves the response to 401, so the auth gate is real and no data is exposed. The bound is proven: path-parameter routes return 401 even for malformed IDs, so only the query/header validation layer is affected. The OpenAPI declares components.securitySchemes = {} and security = null, so no spec-level control exists to catch this ordering.
+evidence_needed: An unauthenticated request to any operation that returns 200 or any data-bearing body — i.e. a third tier on /v2/auth/token-info where a structurally valid access token yields a TokenInfo body with active, expiresAt and permissions (all three documented required), or a third /v2/* operation that returns 422 pre-auth. A self-owned bearer from /v2/auth/password or the signup mutation submitted to /v2/auth/token-info, contrasted against the 422 baseline.
+verify_steps: GET https://apis.alfaview.com/v2/stats with no Authorization header (422/319B baseline); GET the same with from, to and stepDurationHours supplied (401/107B — the auth boundary); GET https://apis.alfaview.com/v2/auth/token-info with no header and with a well-formed base64 header (422 both, distinct detail strings); GET https://apis.alfaview.com/v2/rooms/not-a-uuid (401/107B — proves path validation is behind auth). No token from any other account may be used.
+impact: The authentication boundary is enforced by ad-hoc handler middleware with no spec-level control, so a validation-before-auth ordering mistake is possible per-operation and is not detectable by schema review. If a structurally valid token ever returns the documented TokenInfo, any anonymous holder of one captured access token can confirm liveness, read expiry and enumerate the permission set — turning an all-or-nothing opaque bearer into an incrementally probeable credential and supplying the token oracle every other chain in this program is blocked on. MEDIUM today as an ordering defect; MEDIUM-HIGH conditional on the third tier.
+testability: AUTH_HELPED
+
+[HYP] sso.alfaview.com/oauth2/introspect performs no client authentication on any channel
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 92
+reasoning: Reproduced this cycle by OPTIONS (405, POST-only, route alive) and stable across 27+ consecutive cycles. A fabricated client_id is accepted on the POST body and over HTTP Basic with any secret, both returning 200 {"active":false}; the only residual check is a Basic-vs-body client_id_mismatch returning 401. OIDC discovery advertises token_endpoint_auth_methods_supported = [client_secret_basic, client_secret_post, none], so a secret-bearing method is claimed but never verified. A real FusionAuth client (self-signed CN=acme.com, 7 RS256 JWKS keys) is in the blast radius. The endpoint is absent from discovery this cycle, so it is a live non-advertised period.
+evidence_needed: A self-owned, self-issued token submitted to /oauth2/introspect with a fabricated client_id returning 200 with a populated TokenInfo-style body — that proves the response data is available to an unauthenticated caller. Contrasted against the same token via a registered client to show the bypass yields strictly more than a registered client.
+verify_steps: OPTIONS https://sso.alfaview.com/oauth2/introspect (405, alive); GET https://sso.alfaview.com/.well-known/openid-configuration and read token_endpoint_auth_methods_supported and introspection_endpoint. The POST-body and Basic-channel differentials are already recorded and must not be re-fired; no third-party token may be used.
+impact: Any party holding a single captured or leaked access token can determine liveness, expiry and scope without holding any client credential — revocation cannot be confirmed and tokens can be triaged by an attacker offline. The advertised client_secret_basic method is a false assurance to integrators. MEDIUM-HIGH, and it is the single highest-confidence weakness in the program.
+testability: AUTH_HELPED
+
+[HYP] GraphQL guest mutations authorize on the (userId, companyId, roomId) triple alone, omitting the REST accessKey secret
+class: IDOR
+asset: app.alfaview.com/graphql
+confidence: 62
+reasoning: Structural divergence, established from the public bundle and reconfirmed across many cycles. guestAuthenticate(userId, companyId, roomId) and guestJoin(userId, companyId, roomId, displayName) are anonymously reachable — they return BAD_USER_INPUT or FORBIDDEN, never UNAUTHENTICATED, so the resolver processes the arguments and attempts authorization rather than rejecting the caller. None of the three arguments is an accessKey, whereas the REST twin /v2/auth/guest-link requires {accessKey, companyId, roomId} and its reply hands back a participantId plus a clientLaunchUrl embedding a live token. GuestAuthenticateReply exposes user, accessToken and role, so a success returns a bearer. The three UUIDs are not secret in the way an accessKey is: userId and roomId are both already disclosed in ordinary share links, in the REST guest-link reply, and in any participant listing.
+evidence_needed: A self-created room's own guest triple submitted to guestAuthenticate returning 200 with an accessToken, contrasted against a foreign room's triple — proving the authorization reduces to triple validity with no accessKey check. The delta against the REST path must be shown for the same triple: REST 422 ACTION_INVALID where GraphQL succeeds.
+verify_steps: GET https://app.alfaview.com/graphql (400/406B baseline, GET-only rule observed); GET https://app.alfaview.com/js/app.min.67e8a68d4318b34ca241.js and grep guestAuthenticate for the argument list to confirm no accessKey field exists. A GraphQL POST with a self-owned triple only; no third-party triple may be used.
+impact: An attacker who obtains or guesses the three UUIDs from a leaked share link gets a guest bearer into a live customer meeting — joining calls, reading chat and participant identity — bypassing the accessKey secret that the REST path enforces. Cross-tenant unauthenticated meeting access, HIGH if confirmed, and it is the standing highest-structural authorization gap in the program.
+testability: AUTH_HELPED
+```
+
+## STEP 4 — SELF-CRITIQUE
+
+```
+[PARKED] tools.alfaview.com/whiteboard/* service-name enumeration: 15 candidate service/verb paths all return the identical 47B {"code":5} and gRPC reflection requires POST, which the GET/HEAD/OPTIONS rule excludes. Survives scoring but is displaced by the top-3 asset cap, and path guessing is exhausted — the name is only obtainable from a real board session. Kept as the top hypothesis for that host, not as an action.
+[PARKED] /v2/auth/group-link externalId identity derivation: spec-documented as deriving a reproducible user ID from a caller-supplied 32-256 char value with no per-caller binding. Confidence 50, survives the floor, but POST-only so unprobeable this cycle and displaced by the top-3 cap. Retained as the next REST candidate once a self-owned group link exists.
+[PARKED] /v2/auth/api-key as a third token-minting path: confidence 45, survives the floor, POST-only, and the account-status 403 gate has never been observed at runtime. Displaced by the top-3 cap.
+[PARKED] /v2/auth/token-info format brute-force to reach a third error tier: REJECTED class. Eight structural encodings and eleven decoded lengths all collapsed to one message; continuing would be brute-force of an undocumented format and is out of scope.
+[PARKED] "Undocumented /whiteboard route" and "OIDC issuer=acme.com" as standalone findings: REJECTED class — inventory facts and descriptive config, no bypass, no data exposure, no demonstrated defect.
+[FINAL] 1) sso.alfaview.com/oauth2/introspect client-auth bypass — 92. 2) apis.alfaview.com validation-before-authentication on /v2/stats + /v2/auth/token-info with zero spec-level security declaration — 65. 3) app.alfaview.com/graphql guest mutations omitting the REST accessKey — 62.
+```
+
+## STEP 5 — NEXT ACTION
+
+```
+[NEXT] PROBE: GET https://apis.alfaview.com/v2/rooms/00000000-0000-4000-8000-000000000001/attendances with no Authorization header — the last of the 26 spec GET operations never probed, and the only remaining one mixing a path param with query params (from, to). A 422 response extends the validation-before-authentication defect to the path+query handler layer and materially strengthens finding #2; a 401 completes the ordering map and bounds the defect at exactly 2 of 26 operations. One request, no credential, no customer data.
+```
+
+## STEP 6 — LEARNING
+
+```
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: GET /v2/stats is pre-authentication reachable and executes request validation before authentication — 422/319B with a per-field body (query.from, query.to, query.stepDurationHours) where all 11 other probed collection paths return 401/107B; valid params correctly yield 401 so no statistics disclosure is claimed; the OpenAPI declares components.securitySchemes = {} and security = null, so authentication rests entirely on ad-hoc handler middleware.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: the validation-before-authentication ordering is systemic, not a one-off — it is reproduced on two of 26 GET operations (token-info and stats) and is byte-identical on beta-apis.alfaview.com, so the same code path serves both environments.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: the defect is bounded to the query/header validation layer. Path-parameter routes return 401 even for malformed identifiers (rooms, meetings, group-links, guest-links all 401/107B), proving the UUID path validator runs behind authentication.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: /v2/auth/token-info exposes no third error tier. Base64 of {}, {"token":"x"}, a raw UUID, and random 16/32/48/64/128-byte payloads all return the identical 422 "invalid access token format"; only a non-base64 header gives the distinct "access token not in base64 format". The parse is a structural/magic-byte check, not a length check, and is not reachable by format guessing.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: GET /v2/users/invitation answers 405/19B text/plain (Go-native) rather than the application/problem+json 401 the rest of /v2 returns — a different runtime fronts that route. Inventory fact, no finding.
+[LEARN] NO_DELTA @ apis/sso/app: OpenAPI md5 357b94d367909a40b9299b543d23712b (127532B, 37 paths), users/me 401/107B, OIDC 200/2169B (issuer=acme.com, introspection_endpoint absent), JWKS 200/16257B (7×RS256), introspect OPTIONS 405, authorize 200/6176B, graphql GET 400/406B — all byte-identical to the prior cycle.
+```
+
+## STEP 7 — RISK
+
+```
+[RISK] alfaview: 61 — up from 59. The delta is a reproduced authentication-ordering defect on the production REST API: /v2/stats and /v2/auth/token-info both execute request validation before authentication, the spec declares no security scheme at all, and the condition is identical on beta. That converts "auth is enforced here" from an assumption into a per-operation fact that must be checked 26 times, which is a real remediation and review cost. Bounded deliberately and stated as such: the flaw is proven on 2 of 26 GET operations, path-parameter routes were proven clean, valid parameters correctly return 401, no tenant data was read (every candidate body was discarded unread), and the parse oracle yielded no third tier. Nothing here is an authentication bypass — it is a defect in where the boundary is drawn, plus a missing declarative control that would have caught it.
+```
