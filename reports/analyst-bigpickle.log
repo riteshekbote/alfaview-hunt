@@ -32363,3 +32363,260 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED MISCONFIG @ design-assets.alfaview.com, design-tokens.alfaview.com, ops.alfaview.com: 404/548B and 404/19B plaintext — no independent surface, targets confirmed exhausted.
 [LEARN] NO_DELTA @ apis/sso/app/tools: all standing probes byte-identical for the 32nd consecutive cycle; the only structural change this cycle is the addition of a mapped host, not a change to known surface.
 [RISK] alfaview: 56 — no new exploitable surface and the highest-value IDOR chain is unchanged at 85. Risk moved down from 57 because the CreateMagicToken passwordless lead is now proven closed (removing the cheapest theoretical path to a bearer), and up-bounded by the newly mapped whiteboard renderer, which introduces the program's only unauthenticated content-rendering endpoint with a clean existence oracle. Program exposure remains low-to-moderate: everything of value stays token- or tenant-gated, no customer data was read or modified, and all probing was read-only at ≤1 rps.
+===== ANALYST bigpickle 2026-09-26 00:55:06 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll start by verifying the current surface state with minimal read-only probes.
+[0m$ [0mecho "=== OPENAPI apis ==="; curl -s -o /tmp/opencode/oa.json -w "code=%{http_code} size=%{size_download}\n" --max-time 15 "https://apis.alfaview.com/v2/docs/openapi.json"; md5sum /tmp/opencode/oa.json 2>/dev/null
+=== OPENAPI apis ===
+code=200 size=127532
+357b94d367909a40b9299b543d23712b  /tmp/opencode/oa.json
+[0m
+[0m$ [0mecho "=== OIDC ==="; curl -s -o /tmp/opencode/oidc.json -w "code=%{http_code} size=%{size_download}\n" --max-time 15 "https://sso.alfaview.com/.well-known/openid-configuration"; echo "=== JWKS ==="; curl -s -o /tmp/opencode/jwks.json -w "code=%{http_code} size=%{size_download}\n" --max-time 15 "https://sso.alfaview.com/.well-known/jwks.json"; md5sum /tmp/opencode/jwks.json 2>/dev/null
+=== OIDC ===
+code=200 size=2169
+=== JWKS ===
+code=200 size=16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/opencode/jwks.json
+[0m
+Standing core is byte-stable. Now breadth-probing the newest unmapped surface (`tools.alfaview.com` service prefixes) for anomalies.
+[0m$ [0mfor p in poll qa survey feedback whiteboard recording file chat user auth health status metrics debug admin internal version config; do
+  r=$(curl -s -o /dev/null -w "%{http_code}:%{size_download}" --max-time 8 -X OPTIONS "https://tools.alfaview.com/$p/testservice/list")
+  echo "$p -> $r"
+  sleep 0.7
+done
+poll -> 404:19
+qa -> 405:0
+survey -> 405:0
+feedback -> 405:0
+whiteboard -> 404:47
+recording -> 405:0
+file -> 405:0
+chat -> 405:0
+user -> 405:0
+auth -> 405:0
+health -> 405:0
+status -> 405:0
+metrics -> 405:0
+debug -> 405:0
+admin -> 405:0
+internal -> 405:0
+version -> 405:0
+config -> 405:0
+[0m
+Two distinct 404 sizes amid a 405 catch-all — that's a real differential. Let me pull bodies and headers.
+[0m$ [0mfor u in "poll/testservice/list" "whiteboard/testservice/list" "health/testservice/list" "poll/pollservice/list"; do
+  echo "===== /$u ====="
+  curl -s -D- -o /tmp/opencode/b.txt --max-time 8 -X OPTIONS "https://tools.alfaview.com/$u" | sed -n '1,20p'
+  echo "--- body ($(wc -c </tmp/opencode/b.txt)B) ---"; cat /tmp/opencode/b.txt; echo
+  sleep 0.7
+done
+===== /poll/testservice/list =====
+HTTP/2 404 
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+date: Sat, 26 Sep 2026 00:50:28 GMT
+content-length: 19
+server: edge-proxy
+
+--- body (19B) ---
+404 page not found
+
+===== /whiteboard/testservice/list =====
+HTTP/2 404 
+content-type: application/json
+date: Sat, 26 Sep 2026 00:50:30 GMT
+content-length: 47
+server: edge-proxy
+vary: Accept-Encoding
+
+--- body (47B) ---
+{"code":5, "message":"Not Found", "details":[]}
+===== /health/testservice/list =====
+HTTP/2 405 
+allow: GET, HEAD
+vary: Accept-Encoding
+date: Sat, 26 Sep 2026 00:50:31 GMT
+content-length: 0
+server: edge-proxy
+
+--- body (0B) ---
+
+===== /poll/pollservice/list =====
+HTTP/2 501 
+content-type: application/json
+date: Sat, 26 Sep 2026 00:50:32 GMT
+content-length: 55
+server: edge-proxy
+vary: Accept-Encoding
+
+--- body (55B) ---
+{"code":12,"message":"Method Not Allowed","details":[]}
+[0m
+Significant: `/whiteboard/*` returns a **gRPC-gateway JSON status envelope** (`{"code":5,...}`) — the same shape as the known poll service — while unknown prefixes get a Go 405 catch-all. This is a second, unmapped microservice. Confirming the gateway path pattern.
+[0m$ [0mfor svc in whiteboardservice whiteboardservicev1 whiteboardservices whiteboard board whiteboards; do
+  r=$(curl -s -o /tmp/opencode/b.txt -w "%{http_code}:%{size_download}" --max-time 8 "https://tools.alfaview.com/whiteboard/$svc/list")
+  echo "GET /whiteboard/$svc/list -> $r  body=$(cat /tmp/opencode/b.txt)"
+  sleep 0.7
+done
+GET /whiteboard/whiteboardservice/list -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/whiteboardservicev1/list -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/whiteboardservices/list -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/whiteboard/list -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/board/list -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/whiteboards/list -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+[0m
+All subpaths under `/whiteboard` yield the gRPC envelope, so the prefix is registered but the service name is wrong. The public bundle will name it definitively — fetching it.
+[0m$ [0mcd /tmp/opencode && curl -s -o tb.js -w "code=%{http_code} size=%{size_download}\n" --max-time 20 "https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js"; md5sum tb.js
+code=200 size=137343
+b7f17c85ccd8d91e9b831a6bc2aa863c  tb.js
+[0m
+Bundle unchanged (`b7f17c85…`). Extracting the service-path contract.
+[0m$ [0mcd /tmp/opencode && echo "--- */xservice/ style paths ---" && grep -oE '"/[a-z0-9_-]+/[a-z0-9_-]*service/[a-zA-Z0-9_]+"' tb.js | sort -u; echo "--- any *service* string ---" && grep -oE '[a-z0-9_-]*service[a-z0-9_-]*' tb.js | sort -u | head -40; echo "--- whiteboard mentions ---" && grep -oiE '.{60}whiteboard.{60}' tb.js | head -20
+--- */xservice/ style paths ---
+--- any *service* string ---
+pollservice
+--- whiteboard mentions ---
+[0m
+Bundle contains **zero** `whiteboard` references — only `pollservice`. Let me see the exact path construction and re-verify the `/whiteboard` prefix is real.
+[0m$ [0mcd /tmp/opencode && echo "--- pollservice context ---" && grep -oE '.{100}pollservice.{80}' tb.js | head -10; echo; echo "--- path-ish literals ---" && grep -oE '"/[a-zA-Z0-9_/-]{3,60}"' tb.js | sort -u | head -40
+--- pollservice context ---
+,[],!1,null,null,null).exports;var Ra=i(40173),Ha=i(74659);const Ga=`${window.location.origin}/poll/pollservice`,za=a=>`${a}-poll-${Date.now()}`;function Fa(a){let{verb:e,payload:i,accessToke
+
+--- path-ish literals ---
+"/poll/view"
+"/poll/vote"
+"/polls"
+"/unauthenticated"
+"/unknown-error"
+[0m
+Confirmed construction: `Ga = ${origin}/poll/pollservice` — so the pattern is `/<prefix>/<service>`, and `/whiteboard` is a genuinely separate, unreferenced gateway mount. Probing for its service name and any reflection/doc surface.
+[0m$ [0mcd /tmp/opencode
+for u in "whiteboard" "whiteboard/" "whiteboard/v1" "whiteboard/v1/" "whiteboard/docs" "whiteboard/swagger.json" "whiteboard/openapi.json" "whiteboard/whiteboardservice" ; do
+  r=$(curl -s -o b.txt -w "%{http_code}:%{size_download}" --max-time 8 "https://tools.alfaview.com/$u")
+  echo "GET /$u -> $r  body=$(head -c 120 b.txt)"
+  sleep 0.7
+done
+GET /whiteboard -> 200:615  body=<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-sc
+GET /whiteboard/ -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/v1 -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/v1/ -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/docs -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/swagger.json -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/openapi.json -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+GET /whiteboard/whiteboardservice -> 404:47  body={"code":5, "message":"Not Found", "details":[]}
+[0m
+`/whiteboard` (no slash) returns the 615B SPA shell — so trailing slash may be the real discriminator, not the prefix. Running the control.
+[0m$ [0mcd /tmp/opencode
+for u in "health/" "foo/" "zzznotreal/" "poll/" "whiteboard/" "poll/pollservice" "poll/pollservice/"; do
+  r=$(curl -s -D h.txt -o b.txt -w "%{http_code}:%{size_download}" --max-time 8 "https://tools.alfaview.com/$u")
+  ct=$(grep -i '^content-type' h.txt | tr -d '\r')
+  echo "GET /$u -> $r | $ct | body=$(head -c 90 b.txt)"
+  sleep 0.7
+done
+GET /health/ -> 200:615 | content-type: text/html; charset=utf-8 | body=<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content=
+GET /foo/ -> 200:615 | content-type: text/html; charset=utf-8 | body=<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content=
+GET /zzznotreal/ -> 200:615 | content-type: text/html; charset=utf-8 | body=<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content=
+GET /poll/ -> 404:19 | content-type: text/plain; charset=utf-8 | body=404 page not found
+GET /whiteboard/ -> 404:47 | content-type: application/json | body={"code":5, "message":"Not Found", "details":[]}
+GET /poll/pollservice -> 307:54 | content-type: text/html; charset=utf-8 | body=<a href="/poll/pollservice/">Temporary Redirect</a>.
+GET /poll/pollservice/ -> 404:45 | content-type: application/json | body={"code":5,"message":"Not Found","details":[]}
+[0m
+Controls confirm the differential is real: `/health/`, `/foo/`, `/zzznotreal/` all return the 615B SPA catch-all, but `/poll/` (Go 404) and `/whiteboard/` (gRPC JSON, different marshaller) are both distinct backends. Checking whether this second RPC mount is shared across hosts.
+[0m$ [0mcd /tmp/opencode
+for h in "staging-tools.alfaview.com" "whiteboard.alfaview.com" "staging-whiteboard.alfaview.com"; do
+  for p in "whiteboard/" "poll/pollservice/"; do
+    r=$(curl -s -D h2.txt -o b2.txt -w "%{http_code}:%{size_download}" --max-time 8 "https://$h/$p")
+    ct=$(grep -i '^content-type' h2.txt | tr -d '\r')
+    echo "$h/$p -> $r | $ct | $(head -c 70 b2.txt)"
+    sleep 0.7
+  done
+done
+staging-tools.alfaview.com/whiteboard/ -> 404:47 | content-type: application/json | {"code":5, "message":"Not Found", "details":[]}
+staging-tools.alfaview.com/poll/pollservice/ -> 404:45 | content-type: application/json | {"code":5,"message":"Not Found","details":[]}
+whiteboard.alfaview.com/whiteboard/ -> 302:23 | content-type: text/plain; charset=utf-8 | Found. Redirecting to /
+whiteboard.alfaview.com/poll/pollservice/ -> 302:23 | content-type: text/plain; charset=utf-8 | Found. Redirecting to /
+staging-whiteboard.alfaview.com/whiteboard/ -> 302:23 | content-type: text/plain; charset=utf-8 | Found. Redirecting to /
+staging-whiteboard.alfaview.com/poll/pollservice/ -> 302:23 | content-type: text/plain; charset=utf-8 | Found. Redirecting to /
+[0m
+`/whiteboard/` is on both tools hosts (mirrored to staging), absent from the whiteboard hosts. One bounded service-name enumeration, then I'll stop.
+[0m$ [0mcd /tmp/opencode
+for s in "whiteboardservice.v1.WhiteboardService" "whiteboard.v1.WhiteboardService" "whiteboard.v1.Whiteboard" "WhiteboardService" "whiteboardservice.v1" "wb/whiteboardservice" "whiteboard/boardservice" "whiteboard/whiteboard.v1.WhiteboardService"; do
+  r=$(curl -s -o b3.txt -w "%{http_code}:%{size_download}" --max-time 8 "https://tools.alfaview.com/$s/get")
+  echo "/$s/get -> $r  $(head -c 70 b3.txt)"
+  sleep 0.7
+done
+/whiteboardservice.v1.WhiteboardService/get -> 200:615  <!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name
+/whiteboard.v1.WhiteboardService/get -> 200:615  <!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name
+/whiteboard.v1.Whiteboard/get -> 200:615  <!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name
+/WhiteboardService/get -> 200:615  <!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name
+/whiteboardservice.v1/get -> 200:615  <!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name
+/wb/whiteboardservice/get -> 200:615  <!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name
+/whiteboard/boardservice/get -> 404:47  {"code":5, "message":"Not Found", "details":[]}
+/whiteboard/whiteboard.v1.WhiteboardService/get -> 404:47  {"code":5, "message":"Not Found", "details":[]}
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "poll OPTIONS: $(curl -s -o /dev/null -w '%{http_code}:%{size_download}' --max-time 8 -X OPTIONS https://tools.alfaview.com/poll/pollservice/list)"; sleep 0.7
+echo "users/me:     $(curl -s -o /dev/null -w '%{http_code}:%{size_download}' --max-time 8 https://apis.alfaview.com/v2/users/me)"; sleep 0.7
+echo "graphql GET:  $(curl -s -o /dev/null -w '%{http_code}:%{size_download}' --max-time 8 https://app.alfaview.com/graphql)"; sleep 0.7
+echo "introspect:   $(curl -s -o /dev/null -w '%{http_code}:%{size_download}' --max-time 8 -X OPTIONS https://sso.alfaview.com/oauth2/introspect)"
+poll OPTIONS: 501:55
+users/me:     401:107
+graphql GET:  400:406
+introspect:   405:0
+[0m
+[NEW] `tools.alfaview.com/whiteboard/` — a **second, previously-unmapped RPC backend**, distinct from the documented `/poll/pollservice/*` gateway. Control set proves the differential: `/health/`, `/foo/`, `/zzznotreal/` → 615B SPA catch-all; `/poll/` → Go 404/19B; `/whiteboard/` → gRPC JSON/47B.
+[NEW] `tools.alfaview.com`: two **distinct RPC marshallers** — `/poll/pollservice/` returns compact jsonpb `{"code":5,"message":...}` (45B), `/whiteboard/` returns `{"code":5, "message":...}` (47B, space-after-comma) ⇒ two different server implementations behind one host, not one gateway.
+[NEW] `tools.alfaview.com` public bundle re-hashed `b7f17c85ccd8d91e9b831a6bc2aa863c` (137343B) contains **zero** `whiteboard` references and only `Ga=${origin}/poll/pollservice` ⇒ the `/whiteboard/` backend is referenced by **no** client asset — an orphaned/unadvertised route.
+[NEW] `staging-tools.alfaview.com/whiteboard/` returns the byte-identical 47B envelope ⇒ staging exposure equals production (same build family).
+[NEW] `/whiteboard/` is **absent** from `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` (both 302→`/`, strict single-route) ⇒ the board *renderer* host and the board *data RPC* are separate systems; the renderer only ever exposed an existence oracle, its probable data backend was never mapped.
+[NEW] `/whiteboard/` prefix routing is exclusive: every `/whiteboard/**` subpath reaches the RPC backend; identical-looking non-prefixed paths (`/whiteboardservice.v1.WhiteboardService/get`, `/WhiteboardService/get`) fall to the SPA catch-all. Service name unresolved — all subpaths return identical `code:5`.
+[CHANGED] `tools.alfaview.com`: prior model held the tool host's surface as poll-only (8 verbs). That is now known-incomplete — a second mounted prefix exists with unmapped verbs and unknown auth enforcement.
+NO_DELTA core standing probes — OpenAPI 200/127532B `357b94d3`; OIDC 200/2169B; JWKS 200/16257B `3f8d456c`; `users/me` 401/107B; graphql GET 400/406B; introspect OPTIONS 405; poll OPTIONS 501/55B.
+
+[PRIO] tools.alfaview.com/whiteboard/*,7.55,attack_surface=6;business_value=9;tech_exposure=8;gate_ease=8;cloud_surface=4;freshness=10
+[PRIO] tools.alfaview.com/poll/pollservice/*,6.10,attack_surface=7;business_value=7;tech_exposure=7;gate_ease=5;cloud_surface=4;freshness=4
+[PRIO] whiteboard.alfaview.com/:boardId,6.95,attack_surface=5;business_value=8;tech_exposure=6;gate_ease=10;cloud_surface=3;freshness=8
+
+[HYP] Board-data RPC is mounted on the tools host and may authorize on board ID alone, converting the renderer's existence oracle into content read
+class: IDOR
+asset: tools.alfaview.com/whiteboard/*
+confidence: 55
+reasoning: Proven this cycle by controlled differential, not inference from a single 404. With `Ga=${origin}/poll/pollservice` pinned in the public bundle, the host's gateway convention is `/<prefix>/<service>`. Against that convention `/whiteboard/` returns `{"code": 5, "message": "Not Found", "details":[]}` (47B, application/json) while the negative controls `/health/`, `/foo/`, `/zzznotreal/` all return the 615B SPA shell and `/poll/` returns a Go-native `404 page not found` (19B, text/plain, nosniff). The `/whiteboard/` envelope additionally uses a different marshaller than the poll gateway's 45B compact jsonpb, so it is a separate server implementation. The 47B response carries no `WWW-Authenticate` and no 401 on any probed path, i.e. the router is reachable pre-authentication. The bundle contains no `whiteboard` string, so no client contract exists to compare against. `whiteboard.alfaview.com` does not expose this mount, so the renderer host and the data RPC are distinct systems.
+evidence_needed: One verb under `/whiteboard/` that returns `code:0`/`code:5` differing by board ID, or a response body containing board payload fields; and a token-present versus token-absent comparison on the same board ID.
+verify_steps: `GET https://tools.alfaview.com/`; `OPTIONS https://tools.alfaview.com/whiteboard/`; `GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js` and grep for `whiteboard`/`service` literals; `GET https://tools.alfaview.com/whiteboard/<service>/<verb>` comparing 47B `code:5` against a 0/200/other code. No board mutation is authorized.
+impact: If board content is served here on ID possession alone, an attacker reads live customer meeting content (notes, diagrams) cross-tenant where the renderer host currently yields only a 200-vs-302 existence bit; MEDIUM-HIGH, and it would supersede the renderer-side IDOR lead with a direct data path.
+testability: HUMAN_ONLY
+
+[HYP] Poll RPC roomId-only authorization may permit cross-room BOLA
+class: IDOR
+asset: tools.alfaview.com/poll/pollservice/*
+confidence: 85
+reasoning: Bundle re-hashed byte-identical (`b7f17c85…`, 137343B), so the standing mapping holds: 8 POST verbs, payloads are `{roomId}` plus optional `{id}` only, no tenant/company scope field, auth via `Grpc-Metadata-alfaview.token` (b64url→b64, opaque family). `OPTIONS /poll/pollservice/list` returns 501/55B `{"code":12,"message":"Method Not Allowed"}` — edge-proxy forwards all methods, route alive. Server-side token enforcement unverified.
+evidence_needed: With a self-owned bearer, an owned room and a foreign room produce distinguishable authorization outcomes; token-omitted requests compared against the same two room IDs.
+verify_steps: `GET https://tools.alfaview.com/`; `OPTIONS https://tools.alfaview.com/poll/pollservice/list`; `GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js` and diff md5 against `b7f17c85ccd8d91e9b831a6bc2aa863c`. No poll mutation is authorized.
+impact: Cross-tenant read/write of live polls and Q&A on foreign boards; MEDIUM-HIGH.
+testability: HUMAN_ONLY
+
+[HYP] Whiteboard board-ID is the sole access control, enabling cross-tenant board read
+class: IDOR
+asset: whiteboard.alfaview.com/:boardId
+confidence: 60
+reasoning: Strict single-route Express renderer behind `edge-proxy`; unknown path 302→`/`, root serves the 386B "board deleted or access expired" page, recognized ID 200. Clean existence oracle with no secondary auth observable — no `Set-Cookie` ever issued, no auth header presented, access is possession-of-URL. No format oracle (`abc`, `1`, nil-UUID identical). This cycle's `/whiteboard/` discovery locates the probable data backend on a different host, so the renderer's oracle may not be the only read path.
+evidence_needed: A self-created board's rendered response contrasted with a foreign board ID, proving content is returned for an ID not owned by the requester; or a demonstrated non-guessable-ID assumption failure.
+verify_steps: `GET https://whiteboard.alfaview.com/`; `GET https://whiteboard.alfaview.com/<self-owned-board-id>`; `HEAD https://whiteboard.alfaview.com/<foreign-id>`; compare `200`-vs-`302` and body length only. Do not render or copy third-party board content.
+impact: If IDs are low-entropy or link-leaked, an attacker reads live customer whiteboard content cross-tenant; MEDIUM-HIGH. If IDs are 128-bit random, this is link-based access control by design.
+testability: HUMAN_ONLY
+
+[PARKED] `tools.alfaview.com/whiteboard/` service-name enumeration: 15 candidate service/verb paths all return the identical 47B `code:5`, and gRPC reflection/Connect handshakes require POST, which passive rules exclude. Path guessing is exhausted; the name is only obtainable from a real board session. Kept as the top hypothesis, not as an action.
+[PARKED] `whiteboard.alfaview.com` missing security headers / absent `Set-Cookie`: REJECTED class (descriptive headers, cookie flags on non-sensitive data) — the only response is a non-sensitive error page. Not filed.
+[FINAL] 1) tools.alfaview.com poll BOLA — 85; 2) whiteboard.alfaview.com board-ID IDOR — 60; 3) tools.alfaview.com/whiteboard/* board-data RPC authz — 55 (new this cycle).
+
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com/whiteboard/*: second, previously-unmapped RPC backend mount proven by controlled differential — `/whiteboard/` returns a 47B gRPC status envelope while negative controls `/health/`, `/foo/`, `/zzznotreal/` all return the 615B SPA catch-all and `/poll/` returns a Go-native 19B 404; a distinct marshaller from the poll gateway's 45B compact jsonpb confirms a separate server implementation; no `WWW-Authenticate`/401 on any probed path, so the router is pre-auth reachable; the public bundle (md5 `b7f17c85`) contains zero `whiteboard` references, so the route is referenced by no client asset. Inventory fact, no finding.
+[LEARN] ACCEPTED MISCONFIG @ staging-tools.alfaview.com/whiteboard/*: byte-identical 47B envelope ⇒ the unmapped RPC mount is mirrored to staging with exposure equal to production.
+[LEARN] ACCEPTED MISCONFIG @ whiteboard.alfaview.com: `/whiteboard/` absent from the renderer host (302→`/`, strict single-route, as is staging) ⇒ board renderer and board data RPC are separate systems; the renderer's 200-vs-302 existence oracle is not the only possible read path.
+[LEARN] NO_DELTA @ apis/sso/app/poll: OpenAPI MD5 `357b94d3` (127532B), OIDC 200/2169B, JWKS 200/16257B (`3f8d456c`), `users/me` 401/107B, graphql GET 400/406B, introspect OPTIONS 405, poll OPTIONS 501/55B — all byte-identical to prior cycle.
+[LEARN] REJECTED MISCONFIG @ tools.alfaview.com: "unadvertised orphan route" is not itself a reportable weakness — no auth bypass, no data exposure and no configuration defect was demonstrated; retained as an attack-surface fact supporting an IDOR hypothesis only.
+
+[RISK] alfaview: 59 — up from 56. The delta is a genuinely new, pre-authentication-reachable RPC backend on `tools.alfaview.com` and its staging twin that no client asset references, located on the same host family that fronts the whiteboard product — the program's only unauthenticated content-render path. That widens the whiteboard ceiling from a passive 200-vs-302 existence bit toward a possible direct data API, and it is the first structural surface change in 33 cycles. Bounded deliberately: nothing is proven exploitable, the service name and verb set remain unresolved, no authentication bypass was demonstrated, no customer data was read or modified, and every probe was read-only GET/OPTIONS at ≤1 rps.

@@ -970,3 +970,23 @@ www.alfaview.com
 - CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored.
 - CHANGED sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable liveness signal.
 - CHANGED tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with custom auth header Grpc-Metadata-alfaview.token (b64url→b64, opaque family); staging-tools.alfaview.com byte-ide
+
+## 2026-09-26 00:55:06 UTC
+- NEW `tools.alfaview.com/whiteboard/` — a **second, previously-unmapped RPC backend**, distinct from the documented `/poll/pollservice/*` gateway. Control set proves the differential: `/health/`, `/foo/`, 
+- NEW `tools.alfaview.com`: two **distinct RPC marshallers** — `/poll/pollservice/` returns compact jsonpb `{"code":5,"message":...}` (45B), `/whiteboard/` returns `{"code":5, "message":...}` (47B, space-af
+- NEW `tools.alfaview.com` public bundle re-hashed `b7f17c85ccd8d91e9b831a6bc2aa863c` (137343B) contains **zero** `whiteboard` references and only `Ga=${origin}/poll/pollservice` ⇒ the `/whiteboard/` backen
+- NEW `staging-tools.alfaview.com/whiteboard/` returns the byte-identical 47B envelope ⇒ staging exposure equals production (same build family).
+- NEW `/whiteboard/` is **absent** from `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` (both 302→`/`, strict single-route) ⇒ the board *renderer* host and the board *data RPC* are separate sy
+- NEW `/whiteboard/` prefix routing is exclusive: every `/whiteboard/**` subpath reaches the RPC backend; identical-looking non-prefixed paths (`/whiteboardservice.v1.WhiteboardService/get`, `/WhiteboardSer
+- CHANGED `tools.alfaview.com`: prior model held the tool host's surface as poll-only (8 verbs). That is now known-incomplete — a second mounted prefix exists with unmapped verbs and unknown auth enforcement.
+- NEW support.alfaview.com: First full map — WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1); no unauthenticated data exposure; sensitive routes 401, only public KB artic
+- NEW app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5); bundle now carries admin session flow (AdminTokenAuthenticate → ad
+- NEW app.alfaview.com/graphql: CreateMagicToken mutation confirmed auth-gated (UNAUTHENTICATED) — not anonymous-reachable; no optionalAccessToken argument (GRAPHQL_VALIDATION_FAILED). Passwordless bearer i
+- NEW staging.alfaview.com: Now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301→/en on 2026-09-02. No surface; change recorded, no finding.
+- NEW staging-app.alfaview.com + webviewer.dev.alfaview.com: Bundle-referenced hosts absent from inventory; both exhausted (401 Basic incl. /graphql; 000). Zero attack surface.
+- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 `/`; `/` = 386B "board deleted/access expired"); zero security head
+- CHANGED sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertise client_
+- CHANGED app.alfaview.com/graphql: Signup mutation remains sole unauthenticated path to legit bearer token; all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70) gate on it — email-gated, HUMAN_ONLY.
+- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored.
+- CHANGED sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable liveness signal.
+- CHANGED tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with custom auth header Grpc-Metadata-alfaview.token (b64url→b64, opaque family); staging-tools.alfaview.com byte-ide
