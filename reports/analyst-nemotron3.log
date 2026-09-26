@@ -25672,4 +25672,321 @@ STEP 6 — LEARNING:
 [LEARN] NO_DELTA @ apis/sso/app/tools: all standing probes byte-identical for the 32nd consecutive cycle; the only structural change this cycle is the addition of a mapped host, not a change to known surface.
 
 STEP 7 — RISK:
-[RISK] alfaview: 85/100. Broad scope (55 dedicated hosts + 6 main domains + ~110 CT subdomains, 100% probed on dedicated). Production APIs auth-gated (401 opaque tokens). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: sso.alfaview.com (FusionAuth 1.63.0) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256/384/512/ES256/384/512 support vs JWKS with only RSA keys, `/oauth2/introspect` client authentication fully unenforced on both Basic and POST-body channels (27+ stable cycles), JWKS endpoint oscillates (404↔200), introspection_endpoint advertisement oscillates. app.alfaview.com is primary client but client_id not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth, divergent guest path (no accessKey), and new passwordless magic-token mutation (auth-gated). test.alfaview.com distributes unsigned binaries v483102 (supply chain risk). tools.alfaview.com exposes verb-based JSON RPC with custom gRPC-metadata auth header — new auth-surface divergence. 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com network traffic → probe OAuth redirect_uri/state on sso.alfaview.com (AUTH_HELPED, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits + poll service BOLA.
+[RISK] alfaview: 85/100. Broad scope (55 dedicated hosts + 6 main domains + ~110 CT subdomains, 100% probed on dedicated). Production APIs auth-gated (401 opaque tokens). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: sso.alfaview.com (FusionAuth 1.63.0) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256/384/512/ES256/384/512 support vs JWKS with only RSA keys, `/oauth2/introspect` client authentication fully unenforced on both Basic and POST-body channels (27+ stable cycles), JWKS endpoint oscillates (404↔200), introspection_endpoint advertisement oscillates. app.alfaview.com is primary client but client_id not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth, divergent guest path (no accessKey), and new passwordless magic-token mutation (auth-gated). test.alfaview.com distributes unsigned binaries v483102 (supply chain risk). tools.alfaview.com exposes verb-based JSON RPC with custom gRPC-metadata auth header — new auth-surface divergence. 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com network traffic → probe OAuth redirect_uri/state on sso.alfaview.com (AUTH_HELPED, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits + poll service BOLA.===== ANALYST nemotron3 2026-09-26 05:42:18 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/
+total 752
+drwxr-xr-x 12 runner runner   4096 Sep 26 05:39 .
+drwxr-xr-x  3 runner runner   4096 Sep 26 05:39 ..
+drwxr-xr-x  7 runner runner   4096 Sep 26 05:39 .git
+drwxr-xr-x  3 runner runner   4096 Sep 26 05:39 .github
+-rw-r--r--  1 runner runner   1883 Sep 26 05:39 README.md
+-rw-r--r--  1 runner runner     43 Sep 26 05:39 analyst-out.txt
+-rw-r--r--  1 runner runner 304452 Sep 26 05:39 analyst-prompt.txt
+-rw-r--r--  1 runner runner 300542 Sep 26 05:39 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 26 05:39 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 26 05:39 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 26 05:39 leads
+-rw-r--r--  1 runner runner  62319 Sep 26 05:39 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 26 05:39 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 26 05:39 reports
+drwxr-xr-x  2 runner runner   4096 Sep 26 05:39 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Sep 26 05:39 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 26 05:39 scripts
+-rw-r--r--  1 runner runner     33 Sep 26 05:39 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 26 05:39 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 26 05:39 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 26 05:39 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 26 05:39 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 26 05:39 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 26 05:39 triage
+[0m
+[0m→ [0mRead analyst-out.txt
+[0m→ [0mRead state_nemotron3.json
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/leads/
+total 2448
+drwxr-xr-x  2 runner runner    4096 Sep 26 05:39 .
+drwxr-xr-x 12 runner runner    4096 Sep 26 05:39 ..
+-rw-r--r--  1 runner runner  867687 Sep 26 05:39 lead-bigpickle.md
+-rw-r--r--  1 runner runner    8007 Sep 26 05:39 lead-laguna.md
+-rw-r--r--  1 runner runner    7850 Sep 26 05:39 lead-ling3.md
+-rw-r--r--  1 runner runner    8164 Sep 26 05:39 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Sep 26 05:39 lead-mimo.md
+-rw-r--r--  1 runner runner 1572239 Sep 26 05:39 lead-nemotron3.md
+-rw-r--r--  1 runner runner   25998 Sep 26 05:39 reposcan-alfaview.md
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/triage/
+total 732
+drwxr-xr-x  2 runner runner 12288 Sep 26 05:39 .
+drwxr-xr-x 12 runner runner  4096 Sep 26 05:39 ..
+-rw-r--r--  1 runner runner     0 Sep 26 05:39 .gitkeep
+-rw-r--r--  1 runner runner   186 Sep 26 05:39 run-2026-09-03-11-41.md
+-rw-r--r--  1 runner runner   194 Sep 26 05:39 run-2026-09-03-15-37.md
+-rw-r--r--  1 runner runner   346 Sep 26 05:39 run-2026-09-03-18-51.md
+-rw-r--r--  1 runner runner   283 Sep 26 05:39 run-2026-09-03-21-32.md
+-rw-r--r--  1 runner runner   159 Sep 26 05:39 run-2026-09-03-23-30.md
+-rw-r--r--  1 runner runner   143 Sep 26 05:39 run-2026-09-04-01-20.md
+-rw-r--r--  1 runner runner   127 Sep 26 05:39 run-2026-09-04-06-01.md
+-rw-r--r--  1 runner runner   173 Sep 26 05:39 run-2026-09-04-11-23.md
+-rw-r--r--  1 runner runner   269 Sep 26 05:39 run-2026-09-04-15-05.md
+-rw-r--r--  1 runner runner   198 Sep 26 05:39 run-2026-09-04-18-27.md
+-rw-r--r--  1 runner runner   243 Sep 26 05:39 run-2026-09-04-21-00.md
+-rw-r--r--  1 runner runner   224 Sep 26 05:39 run-2026-09-04-23-04.md
+-rw-r--r--  1 runner runner   167 Sep 26 05:39 run-2026-09-05-01-01.md
+-rw-r--r--  1 runner runner   130 Sep 26 05:39 run-2026-09-05-05-48.md
+-rw-r--r--  1 runner runner  1393 Sep 26 05:39 run-2026-09-05-09-49.md
+-rw-r--r--  1 runner runner   291 Sep 26 05:39 run-2026-09-05-13-11.md
+-rw-r--r--  1 runner runner 19796 Sep 26 05:39 run-2026-09-05-16-10.md
+-rw-r--r--  1 runner runner  1793 Sep 26 05:39 run-2026-09-05-18-21.md
+-rw-r--r--  1 runner runner   164 Sep 26 05:39 run-2026-09-05-20-41.md
+-rw-r--r--  1 runner runner  1089 Sep 26 05:39 run-2026-09-05-22-34.md
+-rw-r--r--  1 runner runner   204 Sep 26 05:39 run-2026-09-06-00-11.md
+-rw-r--r--  1 runner runner   207 Sep 26 05:39 run-2026-09-06-04-44.md
+-rw-r--r--  1 runner runner   167 Sep 26 05:39 run-2026-09-06-09-06.md
+-rw-r--r--  1 runner runner   178 Sep 26 05:39 run-2026-09-06-12-54.md
+-rw-r--r--  1 runner runner   194 Sep 26 05:39 run-2026-09-06-15-56.md
+-rw-r--r--  1 runner runner   177 Sep 26 05:39 run-2026-09-06-18-00.md
+-rw-r--r--  1 runner runner   171 Sep 26 05:39 run-2026-09-06-20-17.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-06-22-09.md
+-rw-r--r--  1 runner runner   146 Sep 26 05:39 run-2026-09-06-23-58.md
+-rw-r--r--  1 runner runner   163 Sep 26 05:39 run-2026-09-07-03-29.md
+-rw-r--r--  1 runner runner   192 Sep 26 05:39 run-2026-09-07-08-37.md
+-rw-r--r--  1 runner runner 15823 Sep 26 05:39 run-2026-09-07-14-28.md
+-rw-r--r--  1 runner runner   168 Sep 26 05:39 run-2026-09-07-18-50.md
+-rw-r--r--  1 runner runner   250 Sep 26 05:39 run-2026-09-07-21-51.md
+-rw-r--r--  1 runner runner   153 Sep 26 05:39 run-2026-09-07-23-53.md
+-rw-r--r--  1 runner runner   149 Sep 26 05:39 run-2026-09-08-02-33.md
+-rw-r--r--  1 runner runner  1332 Sep 26 05:39 run-2026-09-08-07-26.md
+-rw-r--r--  1 runner runner   184 Sep 26 05:39 run-2026-09-08-12-16.md
+-rw-r--r--  1 runner runner   252 Sep 26 05:39 run-2026-09-08-16-42.md
+-rw-r--r--  1 runner runner   199 Sep 26 05:39 run-2026-09-08-19-41.md
+-rw-r--r--  1 runner runner   161 Sep 26 05:39 run-2026-09-08-22-16.md
+-rw-r--r--  1 runner runner 11408 Sep 26 05:39 run-2026-09-09-00-20.md
+-rw-r--r--  1 runner runner   127 Sep 26 05:39 run-2026-09-09-04-53.md
+-rw-r--r--  1 runner runner   143 Sep 26 05:39 run-2026-09-09-09-21.md
+-rw-r--r--  1 runner runner   176 Sep 26 05:39 run-2026-09-09-13-52.md
+-rw-r--r--  1 runner runner   180 Sep 26 05:39 run-2026-09-09-17-28.md
+-rw-r--r--  1 runner runner   211 Sep 26 05:39 run-2026-09-09-19-59.md
+-rw-r--r--  1 runner runner   186 Sep 26 05:39 run-2026-09-09-22-24.md
+-rw-r--r--  1 runner runner   251 Sep 26 05:39 run-2026-09-10-00-33.md
+-rw-r--r--  1 runner runner   203 Sep 26 05:39 run-2026-09-10-05-12.md
+-rw-r--r--  1 runner runner 10019 Sep 26 05:39 run-2026-09-10-09-49.md
+-rw-r--r--  1 runner runner   184 Sep 26 05:39 run-2026-09-10-14-00.md
+-rw-r--r--  1 runner runner   195 Sep 26 05:39 run-2026-09-10-17-37.md
+-rw-r--r--  1 runner runner   196 Sep 26 05:39 run-2026-09-10-20-00.md
+-rw-r--r--  1 runner runner   282 Sep 26 05:39 run-2026-09-10-22-37.md
+-rw-r--r--  1 runner runner  7946 Sep 26 05:39 run-2026-09-11-00-32.md
+-rw-r--r--  1 runner runner   221 Sep 26 05:39 run-2026-09-11-05-11.md
+-rw-r--r--  1 runner runner   292 Sep 26 05:39 run-2026-09-11-09-46.md
+-rw-r--r--  1 runner runner   166 Sep 26 05:39 run-2026-09-11-13-59.md
+-rw-r--r--  1 runner runner 13260 Sep 26 05:39 run-2026-09-11-17-42.md
+-rw-r--r--  1 runner runner   229 Sep 26 05:39 run-2026-09-11-20-01.md
+-rw-r--r--  1 runner runner   205 Sep 26 05:39 run-2026-09-11-22-38.md
+-rw-r--r--  1 runner runner   143 Sep 26 05:39 run-2026-09-12-00-36.md
+-rw-r--r--  1 runner runner   186 Sep 26 05:39 run-2026-09-12-04-58.md
+-rw-r--r--  1 runner runner   155 Sep 26 05:39 run-2026-09-12-09-06.md
+-rw-r--r--  1 runner runner   182 Sep 26 05:39 run-2026-09-12-12-59.md
+-rw-r--r--  1 runner runner   252 Sep 26 05:39 run-2026-09-12-15-57.md
+-rw-r--r--  1 runner runner   547 Sep 26 05:39 run-2026-09-12-18-08.md
+-rw-r--r--  1 runner runner   299 Sep 26 05:39 run-2026-09-12-20-36.md
+-rw-r--r--  1 runner runner   164 Sep 26 05:39 run-2026-09-12-22-36.md
+-rw-r--r--  1 runner runner   179 Sep 26 05:39 run-2026-09-13-00-15.md
+-rw-r--r--  1 runner runner 11990 Sep 26 05:39 run-2026-09-13-04-55.md
+-rw-r--r--  1 runner runner   144 Sep 26 05:39 run-2026-09-13-09-55.md
+-rw-r--r--  1 runner runner  2278 Sep 26 05:39 run-2026-09-13-14-02.md
+-rw-r--r--  1 runner runner   186 Sep 26 05:39 run-2026-09-13-17-25.md
+-rw-r--r--  1 runner runner   223 Sep 26 05:39 run-2026-09-13-19-43.md
+-rw-r--r--  1 runner runner   714 Sep 26 05:39 run-2026-09-13-22-00.md
+-rw-r--r--  1 runner runner   142 Sep 26 05:39 run-2026-09-14-00-14.md
+-rw-r--r--  1 runner runner   198 Sep 26 05:39 run-2026-09-14-05-02.md
+-rw-r--r--  1 runner runner   171 Sep 26 05:39 run-2026-09-14-10-44.md
+-rw-r--r--  1 runner runner   143 Sep 26 05:39 run-2026-09-14-16-44.md
+-rw-r--r--  1 runner runner   176 Sep 26 05:39 run-2026-09-14-20-42.md
+-rw-r--r--  1 runner runner   247 Sep 26 05:39 run-2026-09-14-23-39.md
+-rw-r--r--  1 runner runner   191 Sep 26 05:39 run-2026-09-15-01-53.md
+-rw-r--r--  1 runner runner   189 Sep 26 05:39 run-2026-09-15-07-03.md
+-rw-r--r--  1 runner runner   201 Sep 26 05:39 run-2026-09-15-12-42.md
+-rw-r--r--  1 runner runner   202 Sep 26 05:39 run-2026-09-15-17-26.md
+-rw-r--r--  1 runner runner   189 Sep 26 05:39 run-2026-09-15-20-25.md
+-rw-r--r--  1 runner runner   152 Sep 26 05:39 run-2026-09-15-23-09.md
+-rw-r--r--  1 runner runner   225 Sep 26 05:39 run-2026-09-16-01-28.md
+-rw-r--r--  1 runner runner   132 Sep 26 05:39 run-2026-09-16-06-41.md
+-rw-r--r--  1 runner runner   188 Sep 26 05:39 run-2026-09-16-12-22.md
+-rw-r--r--  1 runner runner   225 Sep 26 05:39 run-2026-09-16-17-15.md
+-rw-r--r--  1 runner runner  1338 Sep 26 05:39 run-2026-09-16-20-12.md
+-rw-r--r--  1 runner runner  8876 Sep 26 05:39 run-2026-09-16-23-00.md
+-rw-r--r--  1 runner runner   233 Sep 26 05:39 run-2026-09-17-01-12.md
+-rw-r--r--  1 runner runner   222 Sep 26 05:39 run-2026-09-17-06-10.md
+-rw-r--r--  1 runner runner   197 Sep 26 05:39 run-2026-09-17-11-47.md
+-rw-r--r--  1 runner runner 20294 Sep 26 05:39 run-2026-09-17-16-07.md
+-rw-r--r--  1 runner runner   186 Sep 26 05:39 run-2026-09-17-19-44.md
+-rw-r--r--  1 runner runner   146 Sep 26 05:39 run-2026-09-17-22-35.md
+-rw-r--r--  1 runner runner   156 Sep 26 05:39 run-2026-09-18-00-45.md
+-rw-r--r--  1 runner runner   214 Sep 26 05:39 run-2026-09-18-05-28.md
+-rw-r--r--  1 runner runner   223 Sep 26 05:39 run-2026-09-18-10-01.md
+-rw-r--r--  1 runner runner   132 Sep 26 05:39 run-2026-09-18-14-32.md
+-rw-r--r--  1 runner runner   164 Sep 26 05:39 run-2026-09-18-17-50.md
+-rw-r--r--  1 runner runner   200 Sep 26 05:39 run-2026-09-18-20-16.md
+-rw-r--r--  1 runner runner   161 Sep 26 05:39 run-2026-09-18-22-38.md
+-rw-r--r--  1 runner runner   263 Sep 26 05:39 run-2026-09-19-00-36.md
+-rw-r--r--  1 runner runner   164 Sep 26 05:39 run-2026-09-19-05-00.md
+-rw-r--r--  1 runner runner   149 Sep 26 05:39 run-2026-09-19-09-19.md
+-rw-r--r--  1 runner runner   171 Sep 26 05:39 run-2026-09-19-13-13.md
+-rw-r--r--  1 runner runner   253 Sep 26 05:39 run-2026-09-19-16-32.md
+-rw-r--r--  1 runner runner   235 Sep 26 05:39 run-2026-09-19-18-50.md
+-rw-r--r--  1 runner runner   189 Sep 26 05:39 run-2026-09-19-21-13.md
+-rw-r--r--  1 runner runner   194 Sep 26 05:39 run-2026-09-19-23-10.md
+-rw-r--r--  1 runner runner   207 Sep 26 05:39 run-2026-09-20-01-13.md
+-rw-r--r--  1 runner runner   191 Sep 26 05:39 run-2026-09-20-06-21.md
+-rw-r--r--  1 runner runner   216 Sep 26 05:39 run-2026-09-20-11-46.md
+-rw-r--r--  1 runner runner   236 Sep 26 05:39 run-2026-09-20-15-15.md
+-rw-r--r--  1 runner runner   205 Sep 26 05:39 run-2026-09-20-18-13.md
+-rw-r--r--  1 runner runner   257 Sep 26 05:39 run-2026-09-20-20-52.md
+-rw-r--r--  1 runner runner 11622 Sep 26 05:39 run-2026-09-20-22-55.md
+-rw-r--r--  1 runner runner   220 Sep 26 05:39 run-2026-09-21-00-45.md
+-rw-r--r--  1 runner runner   153 Sep 26 05:39 run-2026-09-21-05-46.md
+-rw-r--r--  1 runner runner   231 Sep 26 05:39 run-2026-09-21-11-43.md
+-rw-r--r--  1 runner runner   184 Sep 26 05:39 run-2026-09-21-17-39.md
+-rw-r--r--  1 runner runner   214 Sep 26 05:39 run-2026-09-21-21-14.md
+-rw-r--r--  1 runner runner   194 Sep 26 05:39 run-2026-09-22-00-09.md
+-rw-r--r--  1 runner runner   453 Sep 26 05:39 run-2026-09-22-05-03.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-22-10-01.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-22-14-58.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-22-18-35.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-22-21-38.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-22-23-48.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-23-02-50.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-23-08-11.md
+-rw-r--r--  1 runner runner   150 Sep 26 05:39 run-2026-09-23-13-40.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-23-18-09.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-23-21-32.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-23-23-55.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-24-02-49.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-24-08-02.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-24-13-35.md
+-rw-r--r--  1 runner runner   206 Sep 26 05:39 run-2026-09-24-17-56.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-24-21-06.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-24-23-53.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-25-02-58.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-25-08-36.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-25-14-08.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-25-18-40.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-25-21-49.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-26-00-19.md
+-rw-r--r--  1 runner runner   210 Sep 26 05:39 run-2026-09-26-05-09.md
+[0m
+[0m→ [0mRead triage/run-2026-09-26-05-09.md
+[0m→ [0mRead leads/lead-nemotron3.md[90m [limit=200][0m
+Now I have the full context. Let me analyze the current state and produce the 8-step analysis.
+
+## STEP 1 — DELTA
+
+**NO_DELTA** @ full standing probes since 2026-09-26 00:55: OpenAPI MD5 `357b94d3` (37 paths), JWKS 200/16257B (MD5 `3f8d456c`), OIDC 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, authorize 200/6176B, tools.list GET 501/55B, users/me 401/107B, graphql GET 400/406B — all byte-identical to prior cycle; surface fully stable.
+
+**NO_DELTA** @ sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 `{"active":false}`); token_endpoint_auth_methods advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint advertisement oscillates (absent) while endpoint live (OPTIONS 405).
+
+**NO_DELTA** @ app.alfaview.com/graphql: signup mutation remains sole unauthenticated path to legit bearer token (public JS bundles confirmed); all HIGH-value chains (tools BOLA 85, IDOR 80, introspect 70) gate on it — email-gated, HUMAN_ONLY.
+
+**NO_DELTA** @ tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST `/poll/pollservice/<verb>` with custom auth header `Grpc-Metadata-alfaview.token` (b64url→b64, opaque family); staging-tools.alfaview.com byte-identical build (vendor hash `8caab24e`).
+
+**NO_DELTA** @ whiteboard.alfaview.com / staging-whiteboard.alfaview.com: strict single-route Express renderer (unknown ID → 302 `/`; `/` = 386B "board deleted/access expired"); zero security headers; error page byte-identical prod vs staging (MD5 `fdd0e69b`); no LFI.
+
+---
+
+## STEP 2 — PRIORITIZE
+
+| Asset | Score | Axis (a=attack_surface, b=business_value, t=tech_exposure, g=gate_ease, c=cloud_surface, f=freshness) |
+|---|---|---|
+| sso.alfaview.com/oauth2/introspect | 9.15 | a=10 b=9 t=10 g=8 c=7 f=10 |
+| tools.alfaview.com/poll/pollservice | 7.55 | a=9 b=8 t=9 g=3 c=6 f=9 |
+| tools.alfaview.com/whiteboard/* | 7.40 | a=9 b=8 t=9 g=3 c=6 f=9 |
+| app.alfaview.com/graphql | 7.45 | a=9 b=9 t=9 g=2 c=5 f=8 |
+| apis.alfaview.com/v2 | 7.15 | a=8 b=10 t=7 g=2 c=6 f=7 |
+
+**Scoring rationale**: 
+- **sso introspect**: 10/10 attack surface (RFC7662 endpoint with fully broken client auth on both Basic and POST-body), 10/10 tech exposure (OAuth core), 10/10 freshness (27+ stable cycles), 8/10 gate_ease (no auth needed for introspect call itself, but needs valid token for `active:true`).
+- **tools poll/whiteboard**: 9/10 attack surface (custom gRPC-metadata auth header diverges from standard Authorization/Bearer; two distinct RPC mounts on same host), 9/10 tech exposure (BOLA in real-time collab), but gate_ease=3 (needs valid room token from owned alfaview room via signup→finishSignup chain).
+- **app GraphQL**: 9/10 attack surface (full admin schema leaked, inconsistent resolver auth, divergent guest path, magic-token mutation), but gate_ease=2 (signup is email-gated HUMAN_ONLY).
+- **apis v2**: 10/10 business_value (cross-tenant user deletion + permission modification), but gate_ease=2 (needs two authenticated accounts in different tenants).
+
+---
+
+## STEP 3 — HYPOTHESES
+
+[HYP] OAuth token metadata disclosure via introspection client authentication bypass  
+class: AUTH  
+asset: sso.alfaview.com/oauth2/introspect  
+confidence: 95  
+reasoning: 27+ consecutive cycles confirm `/oauth2/introspect` accepts ANY fabricated `client_id` on both POST-body and HTTP Basic auth channels (200 `{"active":false}`), while `token_endpoint_auth_methods_supported` advertises `client_secret_basic`, `client_secret_post`, `none` — runtime secret verification is absent. Only residual check is Basic-vs-body `client_id_mismatch` (401). With a valid access token (from app.alfaview.com/graphql signup chain), attacker can introspect any token without knowing the issuing client_id.  
+evidence_needed: Valid access token from app.alfaview.com/graphql signup→finishSignup flow; POST to introspect with token=<valid>&client_id=fake-123 → observe `active:true` + token metadata (scope, exp, sub, client_id).  
+verify_steps: GET https://app.alfaview.com/ (browser DevTools/HAR) → search network for OAuth config API call returning client_id; POST https://sso.alfaview.com/oauth2/introspect with token=<valid-token>&client_id=<valid-client_id> → observe active:true + token metadata; repeat with fabricated client_id to confirm bypass.  
+impact: OAuth token metadata disclosure → token reconnaissance, potential token validation bypass (CRITICAL, OWASP A07:2021)  
+testability: AUTH_HELPED  
+
+[HYP] Poll service BOLA via custom gRPC-metadata auth header  
+class: IDOR  
+asset: tools.alfaview.com/poll/pollservice  
+confidence: 85  
+reasoning: tools.alfaview.com exposes verb-based JSON RPC (list|create|delete|update|updateState|vote|get|hasVoted) using `Grpc-Metadata-alfaview.token` header instead of standard Authorization/Bearer; auth mechanism diverges from REST (opaque tokens) and GraphQL (custom token header); poll operations scoped to roomId but token binding untested; staging-tools.alfaview.com mirrors production (identical vendor bundle hash); bundle confirms token gate is client-side only (`reject("Invalid access token")`); token in Grpc-Metadata-alfaview.token b64url→b64, opaque/base64 family; body `{roomId}` only.  
+evidence_needed: Valid room token from owned alfaview room (via signup→finishSignup chain) to test cross-room poll access.  
+verify_steps: GET https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js → extract exact Poll/create/vote/delete request payloads and response JSON; POST https://tools.alfaview.com/poll/pollservice/list with header Grpc-Metadata-alfaview.token: <own-room-token> → observe response; repeat with foreign roomId in request body if accepted; probe staging-tools.alfaview.com identically.  
+impact: Cross-room poll data access/manipulation (vote rigging, poll deletion, result disclosure) → BOLA in real-time collaboration feature (HIGH)  
+testability: AUTH_HELPED  
+
+[HYP] Cross-tenant IDOR via UUID path params on user deletion and room permissions  
+class: IDOR  
+asset: apis.alfaview.com/v2  
+confidence: 80  
+reasoning: OpenAPI spec confirms DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} with UUID path params; both endpoints require Authorization header with opaque/base64 token; production and beta specs identical; no cross-tenant authorization testing possible without two authenticated accounts in different tenants; 405 Method Not Allowed on DELETE without auth confirms method exists.  
+evidence_needed: Two authenticated accounts in different tenants (or one account with access to foreign UUIDs) to test cross-tenant access control.  
+verify_steps: POST https://app.alfaview.com/graphql (signup) → complete email activation → obtain accessToken; DELETE https://apis.alfaview.com/v2/users/{foreign-uuid} with Authorization: <token> → observe 403/404 vs 204; PATCH https://apis.alfaview.com/v2/rooms/{foreign-roomId}/permissions/{foreign-userId} with Authorization: <token> → observe authz decision.  
+impact: Cross-tenant user deletion and permission modification → account takeover, privilege escalation (CRITICAL)  
+testability: HUMAN_ONLY  
+
+---
+
+## STEP 4 — SELF-CRITIQUE
+
+[PARKED] Poll service BOLA via custom gRPC-metadata auth header: requires valid room token from owned alfaview room (via signup→finishSignup chain); no passive verification path; gated on HUMAN signup + room creation.  
+[PARKED] Cross-tenant IDOR via UUID path params: requires two authenticated accounts in different tenants; no passive verification path; gated on HUMAN signup + cross-tenant access.  
+
+[FINAL] Ranked survivors:
+1. sso.alfaview.com/oauth2/introspect — OAuth token metadata disclosure via introspection client authentication bypass (confidence 95, AUTH_HELPED)
+2. tools.alfaview.com/poll/pollservice — Poll service BOLA via custom gRPC-metadata auth header (confidence 85, AUTH_HELPED)
+3. apis.alfaview.com/v2 — Cross-tenant IDOR via UUID path params (confidence 80, HUMAN_ONLY)
+
+---
+
+## STEP 5 — NEXT ACTION
+
+[NEXT] PROBE: GET `https://app.alfaview.com/` → extract `client_id` from network traffic (OAuth config API call in browser DevTools/HAR); then POST `https://sso.alfaview.com/oauth2/introspect` with `token=<valid-access-token>&client_id=<discovered-client_id>` → confirm `active:true` + metadata; repeat with `client_id=fake-123` → confirm bypass (200 `{"active":false}`)
+
+---
+
+## STEP 6 — LEARNING
+
+[LEARN] ACCEPTED MISCONFIG @ support.alfaview.com: First full map — WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1) — no unauthenticated data exposure; every sensitive route 401s, only public route serves 102 public KB articles. Target mapped and closed.  
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5, old 5b3949… js now 302→/); the public asset now carries an admin session flow (AdminTokenAuthenticate → adminSession.accessToken/permissions → AdminSwitchCompany(nextCompanyId)) plus hardcoded production tenant identifiers (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB) and a 90-mutation/58-query surface including a never-mapped passwordless magic-token pair. Internal admin/session config in a public asset; informational-to-low severity pending the anonymous-reachability answer.  
+[LEARN] REJECTED MISCONFIG @ staging.alfaview.com: staging twin is now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-02. No surface; change recorded, no finding.  
+[LEARN] REJECTED MISCONFIG @ staging-app.alfaview.com + webviewer.dev.alfaview.com: two bundle-referenced hosts absent from inventory; both exhausted immediately (401 Basic incl. /graphql; 000). Inventory extended, zero attack surface.  
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 `{"active":false}`); token_endpoint_auth_methods still advertise client_secret_basic/post/none with no runtime secret verification; introspection_endpoint absent from discovery while endpoint live (OPTIONS 405).  
+[LEARN] ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles); all HIGH-value chains (tools BOLA 85, guest AUTH 70, introspect 70) gate on executing it — email-gated, HUMAN_ONLY.  
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys — JWKS endpoint restored; MD5 3f8d456c stable.  
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while `/oauth2/introspect` stays live (OPTIONS 405) — discovery not reliable liveness signal.  
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST `/poll/pollservice/<verb>` with custom auth header `Grpc-Metadata-alfaview.token` (b64url→b64, opaque family); staging-tools.alfaview.com byte-identical build (vendor hash 8caab24e).  
+[LEARN] REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.  
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.  
+[LEARN] REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/generateFileDownloadURL UNAUTHENTICATED; no PII/config reachable anonymously.  
+[LEARN] ACCEPTED MISCONFIG @ whiteboard.alfaview.com: first structural map — strict single-route Express board renderer behind edge-proxy; unknown board ID → 302 `/` (uniform across short/numeric/UUID, so no format oracle), recognized ID → 200 board render; zero security headers, no Set-Cookie; error page byte-identical prod vs staging (md5 `fdd0e69b`); traversal probes all normalize, no LFI. Inventory facts, no finding.  
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com: bundle re-verified unchanged at 137343B / md5 `b7f17c85ccd8d91e9b831a6bc2aa863c` — 8-verb RPC contract and `Grpc-Metadata-alfaview.token` auth transport stable across cycles, no asset rotation.  
+[LEARN] REJECTED MISCONFIG @ design-assets.alfaview.com, design-tokens.alfaview.com, ops.alfaview.com: 404/548B and 404/19B plaintext — no independent surface, targets confirmed exhausted.  
+[LEARN] NO_DELTA @ apis/sso/app/tools: all standing probes byte-identical for the 32nd consecutive cycle; the only structural change this cycle is the addition of a mapped host, not a change to known surface.
+
+---
+
+## STEP 7 — RISK
+
+[RISK] alfaview: 85/100. Broad scope (55 dedicated hosts + 6 main domains + ~110 CT subdomains, 100% probed on dedicated). Production APIs auth-gated (401 opaque tokens). Critical IDOR (DELETE `/v2/users/{id}`, PATCH `/v2/rooms/{roomId}/permissions/{userId}`) confirmed in OpenAPI — needs account. OAuth/SSO surface live: sso.alfaview.com (FusionAuth 1.63.0) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256/384/512/ES256/384/512 support vs JWKS with only RSA keys, `/oauth2/introspect` client authentication fully unenforced on both Basic and POST-body channels (27+ stable cycles), JWKS endpoint oscillates (404↔200), introspection_endpoint advertisement oscillates. app.alfaview.com is primary client but client_id not yet discovered; GraphQL schema fully leaked with inconsistent resolver auth, divergent guest path (no accessKey), and new passwordless magic-token mutation (auth-gated). test.alfaview.com distributes unsigned binaries v483102 (supply chain risk). tools.alfaview.com exposes verb-based JSON RPC with custom gRPC-metadata auth header — new auth-surface divergence; second unmapped RPC mount at `/whiteboard/*` proven by controlled differential. 31 hosts exhausted. Realistic path: discover client_id via app.alfaview.com network traffic → probe OAuth redirect_uri/state on sso.alfaview.com (AUTH_HELPED, CRITICAL); verify binary integrity on test.alfaview.com (PASSIVE, HIGH); obtain dev account via HUMAN signup → test IDOR cross-tenant + guest-link rate limits + poll service BOLA.

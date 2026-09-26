@@ -990,3 +990,5 @@ www.alfaview.com
 - CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored.
 - CHANGED sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent) while /oauth2/introspect stays live (OPTIONS 405) — discovery not reliable liveness signal.
 - CHANGED tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with custom auth header Grpc-Metadata-alfaview.token (b64url→b64, opaque family); staging-tools.alfaview.com byte-ide
+
+## 2026-09-26 05:42:18 UTC

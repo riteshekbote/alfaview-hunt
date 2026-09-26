@@ -3548,3 +3548,24 @@
 - LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com: bundle re-verified unchanged at 137343B / md5 `b7f17c85ccd8d91e9b831a6bc2aa863c` — 8-verb RPC contract and `Grpc-Metada
 - LEARN: REJECTED MISCONFIG @ design-assets.alfaview.com, design-tokens.alfaview.com, ops.alfaview.com: 404/548B and 404/19B plaintext — no independent surface, targets 
 - LEARN: NO_DELTA @ apis/sso/app/tools: all standing probes byte-identical for the 32nd consecutive cycle; the only structural change this cycle is the addition of a map
+
+## RANKED HYPOTHESES 2026-09-26 05:42:18 UTC
+- [95] sso.alfaview.com/oauth2/introspect: OAuth token metadata disclosure via introspection client authentication bypass (from art/lead_nemotron3.txt)
+- [62] apis.alfaview.com/v2/auth/token-info: Unauthenticated RFC-7662-style token introspection on the production API discloses token validity and user permissions (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET `https://app.alfaview.com/` → extract `client_id` from network traffic (OAuth config API call in browser DevTools/HAR); then POST `https://sso.alfavi
+- LEARN: ACCEPTED MISCONFIG @ support.alfaview.com: First full map — WordPress (myracloud/ax4z, 272 REST routes, 14 namespaces incl. custom alfaview/v1) — no unauthentic
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com (public bundle): Asset generation rotated to app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5, old 5b
+- LEARN: REJECTED MISCONFIG @ staging.alfaview.com: staging twin is now fully edge-gated (401 HTTP Basic on /, /en/, /xmlrpc.php, /wp-json/) — was 301 → /en on 2026-09-0
+- LEARN: REJECTED MISCONFIG @ staging-app.alfaview.com + webviewer.dev.alfaview.com: two bundle-referenced hosts absent from inventory; both exhausted immediately (401 B
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: 27th+ consecutive stable cycle — fabricated client_id accepted on POST-body and Basic channels (200 `{"activ
+- LEARN: ACCEPTED AUTH @ app.alfaview.com/graphql: signup mutation remains the sole standing unauthenticated path to a legit bearer token (public JS bundles); all HIGH-v
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys — JWKS endpoint restored; MD5 3f8d456c stable.
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com/.well-known/openid-configuration: introspection_endpoint advertisement oscillates (absent this cycle) while `/oauth2/intro
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST `/poll/pollservice/<verb>` with custom auth header `Grpc-Metadata-alfaview.token`
+- LEARN: REJECTED MISCONFIG @ test.alfaview.com: alfacheck binary — no client_id, no credentials; internal topology only. Client_id-in-binary refuted.
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens opaque/base64 — JWT alg-confusion closed.
+- LEARN: REJECTED MISCONFIG @ app.alfaview.com/graphql: Anonymous resolver slice closed — listIdentityProviders returns [], listComponents errors 500, searchCompanies/ge
+- LEARN: ACCEPTED MISCONFIG @ whiteboard.alfaview.com: first structural map — strict single-route Express board renderer behind edge-proxy; unknown board ID → 302 `/` (u
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com: bundle re-verified unchanged at 137343B / md5 `b7f17c85ccd8d91e9b831a6bc2aa863c` — 8-verb RPC contract and `Grpc-Metada
+- LEARN: REJECTED MISCONFIG @ design-assets.alfaview.com, design-tokens.alfaview.com, ops.alfaview.com: 404/548B and 404/19B plaintext — no independent surface, targets 
+- LEARN: NO_DELTA @ apis/sso/app/tools: all standing probes byte-identical for the 32nd consecutive cycle; the only structural change this cycle is the addition of a map

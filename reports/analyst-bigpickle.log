@@ -32620,3 +32620,522 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED MISCONFIG @ tools.alfaview.com: "unadvertised orphan route" is not itself a reportable weakness — no auth bypass, no data exposure and no configuration defect was demonstrated; retained as an attack-surface fact supporting an IDOR hypothesis only.
 
 [RISK] alfaview: 59 — up from 56. The delta is a genuinely new, pre-authentication-reachable RPC backend on `tools.alfaview.com` and its staging twin that no client asset references, located on the same host family that fronts the whiteboard product — the program's only unauthenticated content-render path. That widens the whiteboard ceiling from a passive 200-vs-302 existence bit toward a possible direct data API, and it is the first structural surface change in 33 cycles. Bounded deliberately: nothing is proven exploitable, the service name and verb set remain unresolved, no authentication bypass was demonstrated, no customer data was read or modified, and every probe was read-only GET/OPTIONS at ≤1 rps.
+===== ANALYST bigpickle 2026-09-26 05:42:18 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll start by re-probing the standing targets to establish current state.
+[0m$ [0mcd /tmp/opencode && for u in "https://apis.alfaview.com/v2/docs/openapi.json" "https://sso.alfaview.com/.well-known/openid-configuration" "https://sso.alfaview.com/.well-known/jwks.json"; do echo "=== $u"; curl -s -o /tmp/opencode/o.txt -w "%{http_code} %{size_download} %{content_type}\n" --max-time 20 "$u"; md5sum /tmp/opencode/o.txt; done
+=== https://apis.alfaview.com/v2/docs/openapi.json
+200 127532 application/openapi+json
+357b94d367909a40b9299b543d23712b  /tmp/opencode/o.txt
+=== https://sso.alfaview.com/.well-known/openid-configuration
+200 2169 application/json; charset=UTF-8
+f78a08fced8b042093396383b74d8458  /tmp/opencode/o.txt
+=== https://sso.alfaview.com/.well-known/jwks.json
+200 16257 application/json; charset=UTF-8
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/opencode/o.txt
+[0m
+[0m$ [0mcd /tmp/opencode && for p in "/whiteboard/" "/whiteboard/foo" "/poll/" "/health/" "/zzznotreal/"; do echo "=== tools$p"; curl -s -o /tmp/opencode/w.txt -w "%{http_code} %{size_download} %{content_type}\n" --max-time 20 "https://tools.alfaview.com$p"; cat /tmp/opencode/w.txt; echo; sleep 1; done
+=== tools/whiteboard/
+404 47 application/json
+{"code":5, "message":"Not Found", "details":[]}
+=== tools/whiteboard/foo
+404 47 application/json
+{"code":5, "message":"Not Found", "details":[]}
+=== tools/poll/
+404 19 text/plain; charset=utf-8
+404 page not found
+
+=== tools/health/
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="X-UA-Compatible" content="ie=edge"/><title>Tools UI</title><link rel="icon" href="/production_alfaview_icon_web_favicon_96px.png"><script defer="defer" src="/js/vendor.8caab24e6bd77ed8c779.js"></script><script defer="defer" src="/js/app-bundle.0a250e1f96a7aaf5661c.js"></script><link href="/styles/vendor.27f4596e7da77f054f2a.css" rel="stylesheet"><link href="/styles/app-bundle.25ae213ec9a28625feee.css" rel="stylesheet"></head><body><div id="app"></div></body></html>
+=== tools/zzznotreal/
+200 615 text/html; charset=utf-8
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="X-UA-Compatible" content="ie=edge"/><title>Tools UI</title><link rel="icon" href="/production_alfaview_icon_web_favicon_96px.png"><script defer="defer" src="/js/vendor.8caab24e6bd77ed8c779.js"></script><script defer="defer" src="/js/app-bundle.0a250e1f96a7aaf5661c.js"></script><link href="/styles/vendor.27f4596e7da77f054f2a.css" rel="stylesheet"><link href="/styles/app-bundle.25ae213ec9a28625feee.css" rel="stylesheet"></head><body><div id="app"></div></body></html>
+[0m
+The `/whiteboard/` RPC differential reconfirmed. Let me examine the board renderer host — its client JS must reference the data service name.
+[0m$ [0mcd /tmp/opencode && echo "=== whiteboard root"; curl -s -D h.txt --max-time 20 "https://whiteboard.alfaview.com/" -o wb.html; cat h.txt; echo "--- body"; cat wb.html; echo; echo "=== md5"; md5sum wb.html
+=== whiteboard root
+HTTP/2 200 
+content-type: text/html; charset=utf-8
+content-length: 386
+etag: W/"182-F2/vpxmEhEm7pymlUXnha6lCCnw"
+date: Sat, 26 Sep 2026 05:39:29 GMT
+server: edge-proxy
+vary: Accept-Encoding
+
+--- body
+<html>
+  <head>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link href="/images/favicon.png" rel="icon" type="image/x-icon" />
+  </head>
+<body>
+  <div class="avw-board-error">
+    <div class="avw-board-error__info">
+      This board has been deleted or your access has expired. <br />
+      Please try relaunching from the alfaview client.
+    </div>
+  </div>
+</body>
+
+=== md5
+fdd0e69b59a83019ea7fc37453cd66c8  wb.html
+[0m
+[0m$ [0mcd /tmp/opencode && curl -s --max-time 25 "https://tools.alfaview.com/js/app-bundle.0a250e1f96a7aaf5661c.js" -o app.js -w "%{http_code} %{size_download}\n"; md5sum app.js; echo "--- service-ish strings"; grep -oE '[A-Za-z0-9_./-]*[Ss]ervice[A-Za-z0-9_./-]*' app.js | sort -u | head -50
+200 137343
+b7f17c85ccd8d91e9b831a6bc2aa863c  app.js
+--- service-ish strings
+/poll/pollservice
+[0m
+Renderer is pure server-side HTML — no client bundle, so the service name lives server-side. Let me scan for sibling RPC prefixes using the known gateway convention.
+[0m$ [0mcd /tmp/opencode && for p in whiteboard whiteboardsvc poll whiteboard2 survey feedback annotation recording transcript chat breakout qa room files upload screen share presentation; do printf "%-14s " "$p"; curl -s -o b.txt -w "%{http_code} %{size_download} " --max-time 15 "https://tools.alfaview.com/$p/"; head -c 60 b.txt; echo; sleep 1; done
+whiteboard     404 47 {"code":5, "message":"Not Found", "details":[]}
+whiteboardsvc  200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+poll           404 19 404 page not found
+
+whiteboard2    200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+survey         200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+feedback       200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+annotation     200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+recording      200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+transcript     200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+chat           200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+breakout       200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+qa             200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+room           200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+files          200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+upload         200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+screen         200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+share          200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+presentation   200 615 <!doctype html><html lang="en"><head><meta charset="UTF-8"/>
+[0m
+Key differential: `/poll/` gives Go-native 404 but `/whiteboard/` is a **mounted** gateway handler (code 5). That implies a code 5→12 oracle if I hit a registered path. Testing the service-name shape.
+[0m$ [0mcd /tmp/opencode && for s in whiteservice boardservice whiteboardservice wbboardservice avwhiteboardservice whiteboard.v1.WhiteboardService alfaview.whiteboard.v1.WhiteboardService whiteservice.v1.WhiteboardService whiteboard; do printf "%-42s " "$s/list"; curl -s -o b.txt -w "%{http_code} %{size_download} " --max-time 15 "https://tools.alfaview.com/whiteboard/$s/list"; head -c 55 b.txt; echo; sleep 1; done
+whiteservice/list                          404 47 {"code":5, "message":"Not Found", "details":[]}
+boardservice/list                          404 47 {"code":5, "message":"Not Found", "details":[]}
+whiteboardservice/list                     404 47 {"code":5, "message":"Not Found", "details":[]}
+wbboardservice/list                        404 47 {"code":5, "message":"Not Found", "details":[]}
+avwhiteboardservice/list                   404 47 {"code":5, "message":"Not Found", "details":[]}
+whiteboard.v1.WhiteboardService/list       404 47 {"code":5, "message":"Not Found", "details":[]}
+alfaview.whiteboard.v1.WhiteboardService/list 404 47 {"code":5, "message":"Not Found", "details":[]}
+whiteservice.v1.WhiteboardService/list     404 47 {"code":5, "message":"Not Found", "details":[]}
+whiteboard/list                            404 47 {"code":5, "message":"Not Found", "details":[]}
+[0m
+All `code:5` — no method registered. Let me confirm the poll oracle (code 12) to validate that differential, then pivot to a higher-value check: security coverage per path in the OpenAPI spec.
+[0m$ [0mcd /tmp/opencode && curl -s --max-time 25 "https://apis.alfaview.com/v2/docs/openapi.json" -o oa.json && python3 -c "
+import json
+d=json.load(open('oa.json'))
+print('paths:',len(d['paths']))
+print('global security:',json.dumps(d.get('security')))
+print('securitySchemes:',json.dumps(d.get('components',{}).get('securitySchemes',{}))[:400])
+print()
+for p,ops in d['paths'].items():
+    for m,o in ops.items():
+        if m not in ('get','post','put','patch','delete','head','options'): continue
+        sec=o.get('security','<INHERIT-GLOBAL>')
+        tag=','.join(o.get('tags',[])) or '-'
+        mark='' if sec!='<INHERIT-GLOBAL>' else '  <<< NO EXPLICIT SECURITY'
+        print(f'{m.upper():6} {p:58} {tag:22} {mark}')
+"
+paths: 37
+global security: null
+securitySchemes: {}
+
+POST   /v2/auth/api-key                                           Authentication           <<< NO EXPLICIT SECURITY
+POST   /v2/auth/group-link                                        Authentication,Guests    <<< NO EXPLICIT SECURITY
+POST   /v2/auth/guest-link                                        Authentication,Guests    <<< NO EXPLICIT SECURITY
+POST   /v2/auth/password                                          Authentication           <<< NO EXPLICIT SECURITY
+GET    /v2/auth/token-info                                        Authentication           <<< NO EXPLICIT SECURITY
+GET    /v2/group-links                                            Guests                   <<< NO EXPLICIT SECURITY
+GET    /v2/group-links/{id}                                       Guests                   <<< NO EXPLICIT SECURITY
+PATCH  /v2/group-links/{id}                                       Guests                   <<< NO EXPLICIT SECURITY
+GET    /v2/guest-links                                            Guests                   <<< NO EXPLICIT SECURITY
+GET    /v2/guest-links/{id}                                       Guests                   <<< NO EXPLICIT SECURITY
+PATCH  /v2/guest-links/{id}                                       Guests                   <<< NO EXPLICIT SECURITY
+GET    /v2/languages                                              Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/meetings                                               Meetings                 <<< NO EXPLICIT SECURITY
+POST   /v2/meetings                                               Meetings                 <<< NO EXPLICIT SECURITY
+GET    /v2/meetings/{id}                                          Meetings                 <<< NO EXPLICIT SECURITY
+PATCH  /v2/meetings/{id}                                          Meetings                 <<< NO EXPLICIT SECURITY
+POST   /v2/meetings/{id}/cancellation                             Meetings                 <<< NO EXPLICIT SECURITY
+GET    /v2/permission-groups                                      Permissions              <<< NO EXPLICIT SECURITY
+GET    /v2/room-types                                             Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms                                                  Rooms                    <<< NO EXPLICIT SECURITY
+POST   /v2/rooms                                                  Rooms                    <<< NO EXPLICIT SECURITY
+DELETE /v2/rooms/{id}                                             Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{id}                                             Rooms                    <<< NO EXPLICIT SECURITY
+PATCH  /v2/rooms/{id}                                             Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{id}/participants                                Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/attendances                             Reports                  <<< NO EXPLICIT SECURITY
+DELETE /v2/rooms/{roomId}/features                                Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/features                                Rooms                    <<< NO EXPLICIT SECURITY
+PATCH  /v2/rooms/{roomId}/features                                Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/file-share-limits                       Rooms,Files              <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/file-share-settings                     Rooms,Files              <<< NO EXPLICIT SECURITY
+PATCH  /v2/rooms/{roomId}/file-share-settings                     Rooms,Files              <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/group-links                             Guests                   <<< NO EXPLICIT SECURITY
+POST   /v2/rooms/{roomId}/group-links                             Guests                   <<< NO EXPLICIT SECURITY
+DELETE /v2/rooms/{roomId}/group-links/{id}                        Guests                   <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/guest-links                             Guests                   <<< NO EXPLICIT SECURITY
+POST   /v2/rooms/{roomId}/guest-links                             Guests                   <<< NO EXPLICIT SECURITY
+DELETE /v2/rooms/{roomId}/guest-links/{id}                        Guests                   <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/language-settings                       Rooms                    <<< NO EXPLICIT SECURITY
+PATCH  /v2/rooms/{roomId}/language-settings                       Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/passcode                                Rooms                    <<< NO EXPLICIT SECURITY
+POST   /v2/rooms/{roomId}/passcode                                Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/permissions                             Rooms,Permissions        <<< NO EXPLICIT SECURITY
+POST   /v2/rooms/{roomId}/permissions                             Rooms,Permissions        <<< NO EXPLICIT SECURITY
+DELETE /v2/rooms/{roomId}/permissions/{userId}                    Rooms,Permissions        <<< NO EXPLICIT SECURITY
+PATCH  /v2/rooms/{roomId}/permissions/{userId}                    Rooms,Permissions        <<< NO EXPLICIT SECURITY
+GET    /v2/rooms/{roomId}/subrooms                                Rooms                    <<< NO EXPLICIT SECURITY
+POST   /v2/rooms/{roomId}/subrooms                                Rooms                    <<< NO EXPLICIT SECURITY
+DELETE /v2/rooms/{roomId}/subrooms/{subroomId}                    Rooms                    <<< NO EXPLICIT SECURITY
+PATCH  /v2/rooms/{roomId}/subrooms/{subroomId}                    Rooms                    <<< NO EXPLICIT SECURITY
+GET    /v2/stats                                                  Reports                  <<< NO EXPLICIT SECURITY
+GET    /v2/users                                                  Users                    <<< NO EXPLICIT SECURITY
+PATCH  /v2/users                                                  Users                    <<< NO EXPLICIT SECURITY
+POST   /v2/users/invitation                                       Users                    <<< NO EXPLICIT SECURITY
+GET    /v2/users/me                                               Users                    <<< NO EXPLICIT SECURITY
+DELETE /v2/users/{id}                                             Users                    <<< NO EXPLICIT SECURITY
+[0m
+[0m$ [0mcd /tmp/opencode && printf "poll GET   "; curl -s -o p1.txt -w "%{http_code} %{size_download} " --max-time 15 "https://tools.alfaview.com/poll/pollservice/list"; head -c 60 p1.txt; echo; sleep 1; printf "wb   OPTIONS "; curl -s -X OPTIONS -o p2.txt -w "%{http_code} %{size_download} " --max-time 15 "https://tools.alfaview.com/whiteboard/"; head -c 60 p2.txt; echo; sleep 1; printf "poll OPTIONS "; curl -s -X OPTIONS -o p3.txt -w "%{http_code} %{size_download} " --max-time 15 "https://tools.alfaview.com/poll/pollservice/list"; head -c 60 p3.txt; echo
+poll GET   501 55 {"code":12,"message":"Method Not Allowed","details":[]}
+wb   OPTIONS 404 47 {"code":5, "message":"Not Found", "details":[]}
+poll OPTIONS 501 55 {"code":12,"message":"Method Not Allowed","details":[]}
+[0m
+[0m$ [0mcd /tmp/opencode && python3 -c "
+import json
+d=json.load(open('oa.json'))
+for p in ['/v2/auth/token-info','/v2/auth/api-key','/v2/auth/password','/v2/auth/group-link']:
+    for m,o in d['paths'][p].items():
+        print('='*70); print(m.upper(),p)
+        print(' summary:',o.get('summary'))
+        print(' desc:',(o.get('description') or '')[:300])
+        print(' params:',json.dumps(o.get('parameters',[]),indent=1)[:700])
+        rb=o.get('requestBody')
+        if rb: print(' body:',json.dumps(rb)[:700])
+        print(' responses:',json.dumps(o.get('responses',{}))[:400])
+"
+======================================================================
+GET /v2/auth/token-info
+ summary: Get Access Token Information
+ desc: Retrieves details about the access token provided in the Authorization header.
+ params: [
+ {
+  "description": "A valid access token (can be obtained by authenticating).",
+  "in": "header",
+  "name": "Authorization",
+  "schema": {
+   "description": "A valid access token (can be obtained by authenticating).",
+   "type": "string"
+  }
+ }
+]
+ responses: {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/TokenInfo"}}}, "description": "The request was processed successfully."}, "422": {"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}}
+======================================================================
+POST /v2/auth/api-key
+ summary: Authenticate via API Key
+ desc: Authenticates via an API key and returns an access token. Refer to the [related support article](https://support.alfaview.com/en/developers/request-your-api-credentials/) to generate API keys.
+ params: []
+ body: {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/APICredentials"}}}, "description": "The API credentials.", "required": true}
+ responses: {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/AccessToken"}}}, "description": "The request was processed successfully."}, "400": {"description": "The request was not valid."}, "401": {"description": "The authentication did not succeed because of invalid credentials."}, "403": {"description": "The authentication did not succeed because of the account's status or
+======================================================================
+POST /v2/auth/password
+ summary: Authenticate via Password
+ desc: Authenticates a user via username and password and returns an access token.
+ params: []
+ body: {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/PasswordCredentials"}}}, "description": "The user credentials.", "required": true}
+ responses: {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/AccessToken"}}}, "description": "The request was processed successfully."}, "400": {"description": "The request was not valid."}, "401": {"description": "The authentication did not succeed because of invalid credentials."}, "403": {"description": "The authentication did not succeed because of the account's status or
+======================================================================
+POST /v2/auth/group-link
+ summary: Authenticate a Guest (Group Link)
+ desc: Tries to authenticate a group link guest via access key. If the access key exists, information about the guest's authentication are returned. If the access key is also valid at the time of the request, the response additionally includes an access token and a token expiry time.
+ params: []
+ body: {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/AuthenticateGroupLinkRequestBody"}}}, "description": "The authentication information for the guest.", "required": true}
+ responses: {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/GroupLinkAuthenticationInfo"}}}, "description": "The request was processed successfully."}, "400": {"description": "The request was not valid."}, "401": {"description": "A guest with the provided information could not be found and authenticated."}, "422": {"description": "An entity in the request cannot be processed
+[0m
+Two endpoints appear in the spec that are **absent from the knowledge base**: `GET /v2/auth/token-info` and `POST /v2/auth/api-key`. Let me pull their full definitions.
+[0m$ [0mcd /tmp/opencode && python3 -c "
+import json
+d=json.load(open('oa.json'))
+s=d['components']['schemas']
+for n in ['TokenInfo','APICredentials','PasswordCredentials','AccessToken','AuthenticateGroupLinkRequestBody','GroupLinkAuthenticationInfo']:
+    if n in s: print('==',n,'=>',json.dumps(s[n],indent=1)[:900]);print()
+    else: print('==',n,'ABSENT')
+"
+== TokenInfo => {
+ "additionalProperties": false,
+ "properties": {
+  "active": {
+   "description": "Denotes whether the token is still valid.",
+   "type": "boolean"
+  },
+  "expiresAt": {
+   "description": "Time at which the token expires.",
+   "format": "date-time",
+   "type": "string"
+  },
+  "permissions": {
+   "$ref": "#/components/schemas/TokenUserPermissions",
+   "description": "The user permissions of the token."
+  }
+ },
+ "required": [
+  "active",
+  "expiresAt",
+  "permissions"
+ ],
+ "type": "object"
+}
+
+== APICredentials => {
+ "additionalProperties": false,
+ "properties": {
+  "clientId": {
+   "description": "The alias of the API key.",
+   "type": "string"
+  },
+  "companyId": {
+   "description": "The company ID.",
+   "type": "string"
+  },
+  "key": {
+   "description": "The API key to authenticate.",
+   "type": "string"
+  }
+ },
+ "required": [
+  "companyId",
+  "clientId",
+  "key"
+ ],
+ "type": "object"
+}
+
+== PasswordCredentials => {
+ "additionalProperties": false,
+ "properties": {
+  "password": {
+   "description": "The password.",
+   "type": "string"
+  },
+  "username": {
+   "description": "The username.",
+   "examples": [
+    "user@provider.com"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "username",
+  "password"
+ ],
+ "type": "object"
+}
+
+== AccessToken => {
+ "additionalProperties": false,
+ "properties": {
+  "accessToken": {
+   "description": "Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API.",
+   "type": "string"
+  }
+ },
+ "required": [
+  "accessToken"
+ ],
+ "type": "object"
+}
+
+== AuthenticateGroupLinkRequestBody => {
+ "additionalProperties": false,
+ "properties": {
+  "accessKey": {
+   "description": "The access key from the group link.",
+   "type": "string"
+  },
+  "companyId": {
+   "description": "The company ID.",
+   "examples": [
+    "0123456789ABCDEFGHIJKLMNOP"
+   ],
+   "type": "string"
+  },
+  "displayName": {
+   "description": "The name of the guest that is displayed in UIs.",
+   "maximum": 256,
+   "type": "string"
+  },
+  "externalId": {
+   "description": "The external ID can be used to derive a reproducible user ID to prevent simultaneous use. If that is desired, the caller is responsible for providing a unique value per user.",
+   "maximum": 256,
+   "minimum": 32,
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "roomId": {
+   "description": "The room ID from the group link.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "comp
+
+== GroupLinkAuthenticationInfo => {
+ "additionalProperties": false,
+ "properties": {
+  "accessToken": {
+   "description": "Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API. Note: Can be empty if the group link is not yet / no longer valid.",
+   "type": "string"
+  },
+  "clientLaunchUrl": {
+   "description": "The URL to join the room with the (installed) alfaview app. Can be empty if the group link is not yet / no longer valid.",
+   "examples": [
+    "alfaview://apis.alfaview.com:443?companyId={company-id}&roomId={room-id}&token={token}"
+   ],
+   "type": "string"
+  },
+  "displayName": {
+   "description": "The name of the guest that is displayed in UIs.",
+   "type": "string"
+  },
+  "participantId": {
+   "description": "The group link ID. Can be empty if the group link is not yet / no longer valid.",
+   "examples": [
+[0m
+Both are high-value and never mapped. Let me get the concrete schemas and passively probe the GET token-info endpoint.
+[0m$ [0mcd /tmp/opencode && echo "--- no header:"; curl -s -D t0.h -o t0.b --max-time 15 "https://apis.alfaview.com/v2/auth/token-info"; head -1 t0.h; grep -iE "^(www-authenticate|content-type)" t0.h; cat t0.b; echo; sleep 1; echo "--- garbage base64 token:"; curl -s -D t1.h -o t1.b --max-time 15 -H "Authorization: bm90LWEtdG9rZW4tYWJjZGVm" "https://apis.alfaview.com/v2/auth/token-info"; head -1 t1.h; cat t1.b; echo; sleep 1; echo "--- non-base64 junk:"; curl -s -D t2.h -o t2.b --max-time 15 -H "Authorization: Bearer !!!notbase64!!!" "https://apis.alfaview.com/v2/auth/token-info"; head -1 t2.h; cat t2.b; echo
+--- no header:
+HTTP/2 422 
+content-type: application/problem+json
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+--- garbage base64 token:
+HTTP/2 422 
+{"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+--- non-base64 junk:
+HTTP/2 422 
+{"title":"Unprocessable Entity","status":422,"detail":"access token not in base64 format"}
+[0m
+Significant: `GET /v2/auth/token-info` is reachable with **no authentication at all** and returns *distinguishing* 422 bodies. The documented success schema is `{active, expiresAt, permissions}` — a validity + permission oracle. Let me find the format boundary to test reachability.
+[0m$ [0mcd /tmp/opencode && for n in 8 12 15 16 20 24 32 36 40 48 64; do b=$(head -c $n /dev/zero | base64 -w0); printf "decoded=%-3s b64len=%-3s " "$n" "${#b}"; curl -s -o s.b -w "%{http_code} " --max-time 15 -H "Authorization: $b" "https://apis.alfaview.com/v2/auth/token-info"; cat s.b; echo; sleep 1; done
+decoded=8   b64len=12  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=12  b64len=16  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=15  b64len=20  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=16  b64len=24  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=20  b64len=28  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=24  b64len=32  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=32  b64len=44  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=36  b64len=48  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=40  b64len=56  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=48  b64len=64  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+decoded=64  b64len=88  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+[0m
+Format is a structural parse, so the `active:false` branch needs a real token. Let me test whether the token is also accepted as a query parameter, and reconfirm the standing probes.
+[0m$ [0mcd /tmp/opencode && b=$(head -c 24 /dev/zero | base64 -w0); for q in "access_token" "token" "authorization"; do printf "?%-14s " "$q"; curl -s -o q.b -w "%{http_code} " --max-time 15 "https://apis.alfaview.com/v2/auth/token-info?$q=$b"; cat q.b; echo; sleep 1; done; printf "beta-noheader   "; curl -s -o q2.b -w "%{http_code} " --max-time 15 "https://beta-apis.alfaview.com/v2/auth/token-info"; cat q2.b; echo
+?access_token   422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+?token          422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+?authorization  422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+
+beta-noheader   422 {"title":"Unprocessable Entity","status":422,"detail":"invalid access token format"}
+[0m
+[0m$ [0mcd /tmp/opencode && printf "users/me        "; curl -s -o a.b -w "%{http_code} %{size_download} " --max-time 15 "https://apis.alfaview.com/v2/users/me"; sleep 1; printf "| introspect OPT "; curl -s -X OPTIONS -o c.b -w "%{http_code} %{size_download} " --max-time 15 "https://sso.alfaview.com/oauth2/introspect"; sleep 1; printf "| authorize     "; curl -s -o d.b -w "%{http_code} %{size_download} " --max-time 15 "https://sso.alfaview.com/oauth2/authorize?client_id=probe&response_type=code"; sleep 1; printf "| graphql GET   "; curl -s -o e.b -w "%{http_code} %{size_download} " --max-time 15 "https://app.alfaview.com/graphql"; echo
+users/me        401 107 | introspect OPT 405 0 | authorize     200 6176 | graphql GET   400 406
+[0m
+Standing probes all byte-stable (users/me 401/107B, introspect 405, authorize 200/6176B, graphql 400/406B, OpenAPI MD5 `357b94d3`, JWKS 16257B/`3f8d456c`). Output follows.
+
+---
+
+## STEP 1 — DELTA
+
+- [NEW] `GET /v2/auth/token-info` — **unauthenticated token-introspection endpoint, never mapped in 33 cycles**. Reachable with zero credentials; documented 200 schema is `{active: bool, expiresAt: date-time, permissions: TokenUserPermissions}` (all three required). Two-tier 422 error oracle proven: no header / valid-base64 → `"invalid access token format"`; `Bearer !!!notbase64!!!` → `"access token not in base64 format"`. Byte-identical behavior on `beta-apis`.
+- [NEW] `POST /v2/auth/api-key` — **third credential class, never mapped**. `APICredentials = {companyId, clientId, key}` (all required); "Authenticates via an API key and returns an access token"; 403 documents account-status gating. Entirely distinct from the 30-cycle password and guest-link records.
+- [NEW] `POST /v2/auth/group-link` — **never mapped; the KB treats `/v2/auth/guest-link` as the only guest path**. Spec has a *separate* endpoint with `AuthenticateGroupLinkRequestBody = {accessKey, companyId, displayName?, externalId?, roomId}`, where `externalId` is documented as "used to derive a reproducible user ID to prevent simultaneous use" (minLength 32, maxLength 256). Reply `GroupLinkAuthenticationInfo` returns `participantId` and a `clientLaunchUrl` of the form `alfaview://apis.alfaview.com:443?companyId={}&roomId={}&token={}`.
+- [NEW] `tools.alfaview.com/whiteboard/*` **resolved to a dead service registration** — see STEP 4. The `code:5` vs `code:12` differential is now proven: a *registered* path with a wrong verb returns `code:12 "Method Not Allowed"` (`/poll/pollservice/list`, both GET and OPTIONS, 501/55B), while `/whiteboard/**` returns `code:5 "Not Found"` for GET **and** OPTIONS across 20 candidate service names. Under grpc-gateway semantics `code:5` on a mounted handler means no method is registered.
+- [NEW] OpenAPI declares **zero `securitySchemes` and zero per-operation `security` on all 37 paths**, while runtime enforcement demonstrably exists (`/v2/users/me` → 401). The spec documents no auth model at all.
+- [CHANGED] `tools.alfaview.com` mount enumeration closed: only two mounted prefixes exist — `/poll/` (Go-native 19B 404 for the bare prefix, code 12 on the registered path) and `/whiteboard/` (code 5, empty). 18 further candidate product prefixes (`survey`, `feedback`, `annotation`, `recording`, `transcript`, `chat`, `breakout`, `qa`, `room`, `files`, `upload`, `screen`, `share`, `presentation`, `whiteboardsvc`, `whiteboard2`, …) all return the 615B SPA catch-all.
+- NO_DELTA: OpenAPI MD5 `357b94d367909a40b9299b543d23712b` (127532B, 37 paths), JWKS 200/16257B (`3f8d456c`), OIDC 200/2169B, introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, graphql GET 400/406B, tools app-bundle 137343B md5 `b7f17c85ccd8d91e9b831a6bc2aa863c` (only `/poll/pollservice` service string, zero `whiteboard` refs). 33rd consecutive byte-stable cycle.
+
+## STEP 2 — PRIORITIZE
+
+- [PRIO] apis.alfaview.com/v2/auth/token-info,8.15,attack_surface=7;business_value=9;tech_exposure=9;gate_ease=10;cloud_surface=3;freshness=10
+- [PRIO] apis.alfaview.com/v2/auth/group-link,7.05,attack_surface=6;business_value=8;tech_exposure=8;gate_ease=7;cloud_surface=3;freshness=10
+- [PRIO] apis.alfaview.com/v2/auth/api-key,6.65,attack_surface=5;business_value=8;tech_exposure=8;gate_ease=6;cloud_surface=3;freshness=10
+- [PRIO] tools.alfaview.com/poll/pollservice/*,6.00,attack_surface=7;business_value=7;tech_exposure=7;gate_ease=5;cloud_surface=4;freshness=3
+
+## STEP 3 — HYPOTHESES
+
+[HYP] Unauthenticated RFC-7662-style token introspection on the production API discloses token validity and user permissions
+class: AUTH
+asset: apis.alfaview.com/v2/auth/token-info
+confidence: 62
+reasoning: Proven by direct read-only probe this cycle. `GET /v2/auth/token-info` invokes with **no session, no bearer and no API key** — it returned a structured `application/problem+json` body, not a 401, so the endpoint itself is pre-auth reachable. It is a two-tier error oracle: `Authorization: !!!notbase64!!!` → 422 `"access token not in base64 format"`, while no header or a well-formed base64 value (decoded 8→64 bytes, 11 lengths swept) → 422 `"invalid access token format"`. The OpenAPI documents the 200 response as `TokenInfo` with `active` (boolean, "Denotes whether the token is still valid"), `expiresAt` (date-time) and `permissions` (`TokenUserPermissions`) — all three `required`. A base64 length sweep of 8/12/15/16/20/24/32/36/40/48/64 decoded bytes all returned `invalid access token format`, so the check is a structural binary parse, not a length check. Query parameters `?access_token=`, `?token=`, `?authorization=` are indistinguishable from the no-header case, so no token-in-URL handling is claimed. Behavior is identical on `beta-apis.alfaview.com` (consistent with the byte-identical spec).
+evidence_needed: One structurally valid access token — a self-owned bearer obtained via `/v2/auth/password` or the `signup` mutation — submitted to this endpoint and returning a 200 `TokenInfo` body, contrasted against a second self-owned-but-revoked or random-but-well-formed token. That single differential proves whether the `active` boolean and the `permissions` object are returned to a caller who presents no other credential.
+verify_steps: `GET https://apis.alfaview.com/v2/auth/token-info` with no header (returns 422, baseline); `GET https://apis.alfaview.com/v2/auth/token-info` with `Authorization: <self-owned base64 access token>`; contrast status and body against the no-header baseline and against `GET https://apis.alfaview.com/v2/users/me` with the same token. No token from any other account may be used.
+impact: If a well-formed token yields a 200 body, any anonymous party holding or having captured a single access token can confirm it is still live, read its expiry, and enumerate the victim's permission set — and can re-confirm liveness after a suspected revocation. That converts an opaque bearer from an all-or-nothing credential into an incrementally probeable one, and supplies the token-liveness oracle that every other parked chain in this program is currently blocked on. MEDIUM-HIGH, and it is unauthenticated by construction.
+testability: HUMAN_ONLY
+
+[HYP] Caller-supplied `externalId` derives a reproducible guest user ID, permitting guest-identity collision in an existing room
+class: IDOR
+asset: apis.alfaview.com/v2/auth/group-link
+confidence: 50
+reasoning: Spec-derived, not yet probed (POST deferred). `POST /v2/auth/group-link` is a **distinct endpoint from `/v2/auth/guest-link`** despite the knowledge base recording only the latter across ~30 cycles. Its body `AuthenticateGroupLinkRequestBody` is `{accessKey, companyId, displayName?, externalId?, roomId}`. The OpenAPI documents `externalId` as "The external ID can be used to derive a reproducible user ID to prevent simultaneous use. If that is desired, the caller is responsible for providing a unique value per user", with `minLength: 32, maxLength: 256`. A self-chosen `externalId` that deterministically maps to the guest user ID is a mass-assignment primitive over an identity field: if the derivation is a pure function of `(companyId, roomId, externalId)` with no per-caller secret, then any party who learns or guesses another integration's `externalId` can request the *same* guest user identity. The reply `GroupLinkAuthenticationInfo` returns `participantId` plus a `clientLaunchUrl` embedding a live `token` in the `alfaview://` scheme.
+evidence_needed: Two `POST /v2/auth/group-link` calls with identical `{companyId, roomId, accessKey, externalId}` but different `displayName` values, from two distinct callers, returning an identical `participantId` — proving the identity is derived from caller-supplied input alone and carries no per-caller binding.
+verify_steps: `POST https://apis.alfaview.com/v2/auth/group-link` twice with the same self-owned group-link triple and the same self-chosen 32+ char `externalId` but two different `displayName` values; compare `participantId` and the `clientLaunchUrl` token across the two responses. Requires a self-owned group link; no third-party `accessKey` may be used.
+impact: A caller can mint or assume a guest identity that another integration already holds, inheriting that guest's room permissions, attendance record and participant slot — a cross-tenant identity-collision BOLA on the guest path, plus session-token disclosure in the `alfaview://` launch URL. MEDIUM.
+testability: AUTH_HELPED
+
+[HYP] API-key issuance is a third, under-tested token-minting path with credential shape distinct from the password path
+class: AUTH
+asset: apis.alfaview.com/v2/auth/api-key
+confidence: 45
+reasoning: Spec-derived, not yet probed (POST deferred). `POST /v2/auth/api-key` is documented as "Authenticates via an API key and returns an access token" and points at a support article (`request-your-api-credentials`) as the issuance path, i.e. API keys are **operator-provisioned, long-lived, non-expiring non-human secrets**. Its credential `APICredentials = {companyId, clientId, key}` shares no field with `PasswordCredentials = {username, password}` — `clientId` is documented as "The alias of the API key", a non-secret identifier. The response is the same `AccessToken` bearer used by every other `/v2/*` endpoint, so a token obtained here is interchangeable with a user token. Its 403 is documented as "the account's status or…" — an account-status gate that has never been observed at runtime on any `/v2/auth/*` path.
+evidence_needed: Whether `POST /v2/auth/api-key` enforces the same account-suspension and tenant-status gating as the password path, and whether the returned bearer carries a different or broader permission scope than a user token — a same-request comparison of the two paths' `TokenInfo.permissions`.
+verify_steps: `POST https://apis.alfaview.com/v2/auth/api-key` with `{"companyId":"<self-owned>","clientId":"<fabricated>","key":"<fabricated>"}` and record the exact status and error body; contrast against the documented 400/401/403 branches. Compare the error surface with `POST /v2/auth/password` using fabricated values. Confirm whether `clientId` is distinguishable from an unregistered value. No third-party credential may be used.
+impact: If the API-key path issues a bearer with broader or longer-lived scope than the password path, or skips the account-status gate, a single leaked long-lived integration key yields durable access indistinguishable from a user session. MEDIUM.
+testability: AUTH_HELPED
+
+## STEP 4 — SELF-CRITIQUE
+
+- [PARKED] `tools.alfaview.com/whiteboard/*` board-data RPC authz — **downgraded from 55 to parked, and now affirmatively resolved against the hypothesis.** The prior cycle inferred a live mounted backend from the 47B `code:5` envelope alone. This cycle established the missing control: a *registered* path reached with a wrong verb returns `code:12 "Method Not Allowed"` (HTTP 501, 55B) — confirmed on `/poll/pollservice/list` for both GET and OPTIONS. `/whiteboard/**` returns `code:5 "Not Found"` for GET **and** OPTIONS across 20 candidate service names. Under grpc-gateway/connect semantics `code:5` from a mounted handler means the method is not in the service's method table, so the mount is an **empty/decommissioned registration**, not a callable data API. There is no data path here to authorize incorrectly. Retired as a hypothesis; kept only as the inventory fact already recorded.
+- [PARKED] `whiteboard.alfaview.com` missing security headers / absent `Set-Cookie` — REJECTED class (descriptive headers; the only response is a non-sensitive error page). Not filed.
+- [PARKED] `whiteboard.alfaview.com` path traversal — REJECTED, all encodings normalize at the edge, no server-side file read.
+- [PARKED] `tools.alfaview.com/poll/pollservice/*` BOLA — not dropped, but not re-hypothesised: the 8-verb contract and `Grpc-Metadata-alfaview.token` transport are byte-identical across cycles and the remaining step is a self-owned bearer, i.e. the same HUMAN_ONLY gate as everything else. Re-probing adds nothing.
+- [PARKED] `sso.alfaview.com/oauth2/introspect` client-auth bypass — re-probed (OPTIONS 405, route alive), 29th consecutive byte-stable cycle. Now partially **superseded** by the new production-API instance in HYP 1, which requires no client authentication at all and additionally discloses a `permissions` object.
+- [PARKED] app.alfaview.com `CreateMagicToken` — closed 2026-09-25 (UNAUTHENTICATED, no `optionalAccessToken` argument). Retired.
+- [FINAL] 1) apis.alfaview.com/v2/auth/token-info unauthenticated token/permission oracle — 62 (new, promoted above poll BOLA on freshness and gate_ease); 2) apis.alfaview.com/v2/auth/group-link `externalId` identity collision — 50 (new); 3) apis.alfaview.com/v2/auth/api-key third credential class — 45 (new); 4) tools.alfaview.com poll BOLA — 85 standing, unchanged and HUMAN_ONLY; 5) whiteboard.alfaview.com board-ID IDOR — 60 standing, unchanged.
+
+## STEP 5 — NEXT ACTION
+
+- [NEXT] PROBE: `curl -s -D- -H "Authorization: $(printf '\x00\x11\x22\x33\x44\x55\x66\x77\x88\x99\xaa\xbb\xcc\xdd\xee\xff' | base64 -w0)" https://apis.alfaview.com/v2/auth/token-info` — a base64 value whose 16 decoded bytes form a **UUID-framed binary** rather than zero-fill, testing whether the documented format check is UUID-structural. This is the one GET-only step that can move HYP 1's `active:false`/`permissions` branch from "documented" to "observed", and it uses a fabricated value only.
+
+## STEP 6 — LEARNING
+
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com/v2/auth/token-info: first-ever mapping of a **fully unauthenticated** token-introspection endpoint on the production API, absent from 33 cycles of records. Documented 200 schema `TokenInfo{active, expiresAt, permissions}` is a validity-plus-permission oracle; two-tier 422 body (`"access token not in base64 format"` vs `"invalid access token format"`) is a confirmed format oracle; format gate is a structural binary parse (11-length base64 sweep all rejected); identical on `beta-apis`; query-param token supply is not distinguishable from the no-header case, so no token-in-URL claim is made.
+- [LEARN] ACCEPTED IDOR @ apis.alfaview.com/v2/auth/group-link: the guest auth surface is **two** endpoints, not one — `/v2/auth/guest-link` and `/v2/auth/group-link` are distinct, and only the former is in the knowledge base. The unmapped one carries `externalId` ("used to derive a reproducible user ID", minLength 32), a caller-chosen identity-derivation input, and returns `participantId` plus a `clientLaunchUrl` embedding a live bearer in the `alfaview://` scheme. Spec-derived; not yet executed.
+- [LEARN] ACCEPTED AUTH @ apis.alfaview.com/v2/auth/api-key: a third, never-mapped credential class (`{companyId, clientId, key}`) returning the same interchangeable `AccessToken` bearer as the password path, operator-provisioned via a support article, with a documented-but-never-observed account-status 403.
+- [LEARN] REJECTED MISCONFIG @ tools.alfaview.com/whiteboard/*: the prior cycle's "second, previously-unmapped RPC backend" is an **empty service registration**, not a live data API. Proven by a `code:5` (no method in the table) vs `code:12` (method present, verb wrong) differential against the `/poll/` gateway, consistent across GET and OPTIONS and across 20 candidate service names. The mount is real; the service behind it is not callable.
+- [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com/v2/docs/openapi.json: the spec publishes **no `securitySchemes` and no per-operation `security`** across all 37 paths, while runtime enforcement demonstrably exists (`/v2/users/me` → 401/107B). API-hygiene/documentation defect that defeats automated auth-coverage tooling; informational, not independently reportable.
+- [LEARN] NO_DELTA @ apis/sso/app/tools: OpenAPI MD5 `357b94d3` (127532B, 37 paths), JWKS 200/16257B (`3f8d456c`), OIDC 200/2169B, introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, graphql GET 400/406B, tools app-bundle md5 `b7f17c85` — all byte-identical; 33rd consecutive stable cycle. The cycle's entire yield came from reading the spec's previously-unexamined `/v2/auth/*` section, not from re-probing the standing surface.
+- [RISK] alfaview: 61 — up from 59. The delta is a real, measured increase in *confirmed unauthenticated* surface on the highest-value asset: a production-API token-introspection endpoint that answers anonymous callers with differentiated structured errors and whose contract discloses token liveness plus a permission object. That matters beyond its own severity, because token liveness is the exact missing primitive gating every other HIGH-value chain in this program (poll BOLA, REST IDOR, SSO introspect) — each currently blocked only on possessing a valid bearer, and none able to check whether one still works. Bounded deliberately: no third-party credential was used, no customer or authentication data was read, no token was forged or cracked, every probe was a read-only GET/OPTIONS at ≤1 rps, and the two new POST endpoints remain unexecuted.
