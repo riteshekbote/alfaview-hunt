@@ -4720,3 +4720,28 @@
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
 - LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
 - LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
+
+## RANKED HYPOTHESES 2026-10-05 18:47:03 UTC
+- [72] apis.alfaview.com: IDOR on room permissions and user deletion (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Provide one self-owned LOW-PRIVILEGE alfaview account in a tenant you control, plus one room in that same tenant the account does not moderate. Do not se
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: BOLA write with polymorphic participantId (user ID / guest-link ID / group-link ID), scop
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live 132100B document contains "uuid" zero times, zero patte
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder reproduces public contract only (numeric bounds, enum values, RFC-5322 email, Go time la
+- LEARN: PROCEDURAL: auditing prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted onl
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: BOLA write with polymorphic participantId (user ID / guest-link ID / group-link ID), scop
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live 132100B document contains "uuid" zero times, zero patte
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder reproduces public contract only (numeric bounds, enum values, RFC-5322 email, Go time la
+- LEARN: PROCEDURAL: auditing prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted onl
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: BOLA write with polymorphic participantId (user ID / guest-link ID / group-link ID), scop
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live 132100B document contains "uuid" zero times, zero patte
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder reproduces public contract only (numeric bounds, enum values, RFC-5322 email, Go time la
+- LEARN: PROCEDURAL: auditing prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted onl
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- LEARN: REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected c
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: client authentication is enforced only for JWT-shaped tokens (3 segments, seg2 = base64-decoded JSON object)
+- LEARN: ACCEPTED AUTH: alfaview API access tokens are opaque base64, not JWTs (AccessToken schema states "base64-encoded string"; /v2/auth/token-info rejects every JWT 
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: GET /v2/audit-log is a live 39th path absent from the published spec; it performs query-parameter validation before auth
+- LEARN: ACCEPTED IDOR (contract-level, unconfirmed) @ apis.alfaview.com: 20 of 57 operations document no 403. GET /v2/group-links omits 403 while the isomorphic GET /v2
+- LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/device_authorize: prior PARKED claim that it accepts unregistered client_id is FALSE. Re-probed: 401 invalid_client_id. 
+- LEARN: PROCEDURAL: every 403-omission and status-code claim in this cycle was enumerated mechanically from the live spec and then confirmed by direct probe; the intros

@@ -1451,3 +1451,17 @@ www.alfaview.com
 ## 2026-10-05 09:26:20 UTC
 - NEW NO_DELTA @ full surface: OpenAPI MD5 `284a3383` (132100B, 38 paths, 57 ops) stable 4+ cycles; byte-identical on beta-apis. sso.alfaview.com OIDC 200/2169B md5 `f78a08fc` (issuer=acme.com, introspectio
 - CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain.
+
+## 2026-10-05 18:47:03 UTC
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+- CHANGED sso.alfaview.com/oauth2/introspect client-auth bypass is CONDITIONAL on token shape, not universal. client_id is validated ONLY when the token is a 3-segment dot-separated string whose SECOND segment 
+- CHANGED Consequence for exploitability: alfaview's own API access tokens are opaque base64 (AccessToken schema: "base64-encoded string"; GET /v2/auth/token-info enforces a base64 token and rejects all JWT for
+- CHANGED apis.alfaview.com/v2/docs/openapi.yaml is a second spec publication, 165360B, 38 paths, 57 ops, parses to a document IDENTICAL to the JSON at /v2/docs/openapi.json. No additional surface; both formats
+- NEW Full 403-discriminator audit of all 57 documented operations. 20 operations document NO 403, including reads of tenant-scoped data: GET /v2/rooms, GET /v2/rooms/{id}, GET /v2/rooms/{roomId}/features, 
+- NEW GET /v2/audit-log is confirmed a live 39th path ABSENT from the published spec (both JSON and YAML). Unauthenticated with no query params -> 422 requiring query.from/query.to; with both params -> 401 
+- NEW GET /v2/stats unauthenticated with no params -> 422/319B enumerating query.from, query.to, query.stepDurationHours. Same pre-auth validation-before-auth pattern already recorded for other query-bound 
+- NEW sso OIDC discovery: issuer="acme.com" (default/unconfigured FusionAuth value, not the deployment host), introspection_endpoint=null, revocation_endpoint=null, introspection_endpoint_auth_methods_suppo
+- NEW Authorization-header handling on apis.alfaview.com confirmed single-channel: query ?access_token= and Cookie access_token= both -> 401 "No access token was provided in the Authorization header"; HTTP 
+- NEW POST /v2/auth/group-link enforces externalId minimum 32 chars, surfacing as 422 {"detail":"ACTION_INVALID: validation error: externalId: must be at least 32 characters"} — a distinct, more specific ti
