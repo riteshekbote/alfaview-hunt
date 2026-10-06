@@ -4835,3 +4835,10 @@
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
 - LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
 - LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
+
+## RANKED HYPOTHESES 2026-10-06 19:05:53 UTC
+- [0] ?: OAuth2 introspection answers for opaque alfaview tokens with zero valid client credentials — sso.alfaview.com/oauth2/introspect — 92 — AUTH_HELPED — client auth enforced only for JWT-shaped tokens; new spec independently corroborates `bearerFormat: opaque`, i.e. issued tokens take the unchecked path — verify: POST `token=<opaque>&client_id=fabricated` → 200 active:true; +`token_type_hint=refresh_token` → 401; Basic fabricated → 200. (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: one self-owned low-privilege alfaview account in a tenant you control, one non-moderated room in that tenant, one opaque access token from a legitimate s
+- LEARN: CHANGED @ apis: first rotation since 2026-09-28 and first time the contract declares an auth scheme at all — delta is declaration depth only (scheme, problem+js
+- LEARN: PROCEDURAL: schema-level attribution for this rotation is impossible from local data (only baseline on disk is the 37-path YAML, which predates two rotations) —
+- LEARN: NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7×RS256), introspect OPTIONS 405, users/me 401/107B `60ed2f29` + `www-authenticate: Bea

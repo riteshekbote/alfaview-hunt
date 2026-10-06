@@ -82162,3 +82162,558 @@ Cycle 2026-10-06 13:40 UTC (phase POC, target api) — recorded in `leads/lead-b
 [LEARN] PROCEDURAL: schema-level attribution for this rotation is impossible from local data (only baseline on disk is the 37-path YAML, which predates two rotations) — prior-doc facts taken solely from KB statements that explicitly recorded them; dated snapshot now stored for exact future attribution. Also: guessed URL `/oauth2/jwks` gave a plausible 404 before canonical `/.well-known/jwks.json` was recovered from verify_steps — guessed URLs never become findings.
 [LEARN] NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7×RS256), introspect OPTIONS 405, users/me 401/107B `60ed2f29` + `www-authenticate: Bearer`, audit-log 422/232B, graphql 400/406B, poll list 501/55B, whiteboard OPTIONS 404/47B.
 [RISK] alfaview gmbh: 88 (unchanged). Rotation adds documentation depth with no new path, no weakened declaration, no new pre-auth surface. Introspection bypass (92) now corroborated by the vendor's own `bearerFormat: opaque`; CreatePermissions (80) highest impact pending one authorized write; 403 asymmetry (58) cheapest and provably refresh-proof. Nothing read or modified — all probes unauthenticated, returning 200/400/401/404/405/422/501. Mass assignment, alg-confusion, SSRF, logout redirect, accessKey oracle, device_authorize remain closed.
+===== ANALYST bigpickle 2026-10-06 19:05:53 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/
+total 1164
+drwxr-xr-x 12 runner runner   4096 Oct  6 19:01 .
+drwxr-xr-x  3 runner runner   4096 Oct  6 19:00 ..
+drwxr-xr-x  7 runner runner   4096 Oct  6 19:01 .git
+drwxr-xr-x  3 runner runner   4096 Oct  6 19:00 .github
+-rw-r--r--  1 runner runner   1883 Oct  6 19:00 README.md
+-rw-r--r--  1 runner runner     32 Oct  6 19:01 analyst-out.txt
+-rw-r--r--  1 runner runner 505475 Oct  6 19:01 analyst-prompt.txt
+-rw-r--r--  1 runner runner 501565 Oct  6 19:01 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 leads
+-rw-r--r--  1 runner runner  84095 Oct  6 19:00 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 reports
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct  6 19:00 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 scripts
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  6 19:00 triage
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/ /home/runner/work/alfaview-hunt/alfaview-hunt/leads/ 2>/dev/null
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/:
+total 3636
+drwxr-xr-x  2 runner runner    4096 Oct  6 19:00 .
+drwxr-xr-x 12 runner runner    4096 Oct  6 19:01 ..
+-rw-r--r--  1 runner runner 1397626 Oct  6 19:00 lead-bigpickle.md
+-rw-r--r--  1 runner runner   10710 Oct  6 19:00 lead-laguna.md
+-rw-r--r--  1 runner runner   10500 Oct  6 19:00 lead-ling3.md
+-rw-r--r--  1 runner runner   10920 Oct  6 19:00 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  6 19:00 lead-mimo.md
+-rw-r--r--  1 runner runner 2236912 Oct  6 19:00 lead-nemotron3.md
+-rw-r--r--  1 runner runner   31562 Oct  6 19:00 reposcan-alfaview.md
+
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/:
+total 192
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 .
+drwxr-xr-x 12 runner runner   4096 Oct  6 19:01 ..
+-rw-r--r--  1 runner runner   4789 Oct  6 19:00 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Oct  6 19:00 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Oct  6 19:00 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Oct  6 19:00 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Oct  6 19:00 alfaview-openapi.yaml
+[0m
+## Objective
+- Act as a senior bug bounty hunter ANALYST for the alfaview gmbh program (report channel: bugs.olivermaicher.eu), running a 7-step analysis loop (delta → prioritize → hypotheses → self-critique → next action → learning → risk) over passive-first, read-only probing of in-scope alfaview assets.
+- Drive the top hypotheses (introspection client-auth bypass, CreatePermissions BOLA, 403 asymmetry) toward a HUMAN-provided test account/token so they can be wire-confirmed.
+
+## Important Details
+- Scope: ONLY company-owned infrastructure (alfaview.com + company subdomains per scope.yml + inventory/alfaview.md). Report channel: bugs.olivermaicher.eu.
+- Probe rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests against live customer data; no POST without human authorization; single exception precedent: exactly one authorized POST /v2/rooms/{roomId}/permissions planned inside tester's own tenant once HUMAN supplies inputs.
+- REJECTED classes (never emit as findings): DoS, lockout, descriptive errors/headers only, robots.txt, OPTIONS/TRACE, CSRF-on-logout/anonymous, cookie flags, self-XSS, username enumeration, brute-force/rate-limit, TLS best practice, clickjacking w/o exploit, mail config, known-vuln lib w/o program-specific exploit, password/recovery policy, public login panels, lack of email verification, and any exposure of customer/employee/financial/auth data during testing.
+- State: `{"phase": "POC", "target": "api"}`; risk score alfaview gmbh = 88 (unchanged).
+- Current ranked priorities: (1) introspect client-auth bypass 92 (later 94 in aggregated ranking), (2) CreatePermissions BOLA 80, (3) 403 asymmetry 58. Meeting-scoped bulk link 64 in FINAL list.
+- Key standing facts:
+  - OpenAPI rotated 2026-10-06: md5 `284a3383c1ac3cfc9152ffcc631891f2` (132100B) → `06231fadca0b36c314476322337976db` (174787B); YAML `6738669c` → `c65f6a50` (228358B). Paths/ops unchanged 38/57; `/v2/audit-log` still unpublished. First-ever `components.securitySchemes.accessToken` (`bearerFormat: opaque`), `security` on 53/57 ops (only 4 `/v2/auth/*` POSTs lack it). Per-op response status sets unchanged → 403 asymmetry survives.
+  - sso.alfaview.com: FusionAuth 1.63.0, issuer=acme.com, JWKS `3f8d456c`/16257B (7×RS256) at `/.well-known/jwks.json`, OIDC md5 `f78a08fc`/2169B (`introspection_endpoint` absent while `/oauth2/introspect` live at OPTIONS 405).
+  - Introspect bypass: client auth enforced only for JWT-shaped tokens (3 segments, seg2 = base64 JSON object); opaque base64 alfaview tokens take unchecked path; POST-body and HTTP Basic both accept fabricated client_id; `token_type_hint=refresh_token` forces validation.
+  - app.alfaview.com bundle now 302 → `/` at `/assets/app.min.67e8a68d…js`; identical bytes from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/…` (200/1092529B, md5 `2cb9128353b1f7444e222b4b61e4ffa5`, `adminSwitchCompany` present). `__typename` now returns 200 (was 400 CSRF guidance); introspection still disabled.
+  - client-diagnostics.alfaview.com: NXDOMAIN (decommissioned between cycles).
+  - Standing md5s: 401 body `60ed2f29`/107B, 422 binder `551221c3`/141B, stats 422 `6d812e83`/319B, attendances 422 `b4adcd15`/232B.
+- Standing rejections: no UUID patterns in spec (zero `uuid`, zero `pattern` keys); `Permissions.admin` scope sentence was fabricated (lives on `PermissionsEdit.admin`); no accessKey existence oracle; JWT alg-confusion closed; mass assignment closed (all 21 body schemas `additionalProperties:false`); SSRF closed; logout redirect closed; pre-auth query binder reproduces public spec only (rejected as standalone finding); 403-declaration asymmetry not behaviorally load-bearing as standalone; userinfo alg confusion closed; device_authorize unregistered client_id retracted (401 invalid_client_id).
+- Procedural rules established: contract text quoted only after per-field lookup; guessed URLs never become findings (recover canonical from inventory/alfaview.md:1096 or leads verify_steps); delta claims require a second method (DNS getent vs HTTP); dated snapshot `recon-notes/alfaview-openapi-2026-10-06.json` stored for next rotation attribution.
+
+## Work State
+### Completed
+- 40+ analysis cycles completed; full inventory of 55 dedicated hosts probed, 31 exhausted.
+- OpenAPI rotation 2026-10-06 detected, confirmed by 2 prod fetches + 1 beta fetch; attribution documented; per-op status sets verified unchanged.
+- HYPs current: introspect bypass (92, AUTH_HELPED), CreatePermissions BOLA (80, AUTH_HELPED), 403 asymmetry (58, AUTH_HELPED).
+- PARKED: token-info expired-token 200 (45); device_authorize unregistered client_id (44).
+- FINALs: CreatePermissions BOLA (80), introspection bypass (92), meeting-scoped bulk link w/ permissionGroupId (64), 403 asymmetry (58).
+
+### Active
+- Awaiting HUMAN inputs to execute the wire-confirmation plan (see Next Move).
+- Standing probe suite stable across all hosts (last cycle NO_DELTA for sso/app/tools).
+
+### Blocked
+- All three HIGH chains are HUMAN-gated: need one self-owned low-privilege alfaview account in a controlled tenant, one non-moderated room, one opaque access token (plus an expired one for the parked token-info claim).
+- Signup mutation (sole unauthenticated token path) is email-gated → HUMAN_ONLY.
+
+## Next Move
+1. [NEXT] HUMAN: provide ONE self-owned low-privilege alfaview account in a tenant you control, ONE non-moderated room in that tenant, ONE opaque access token from a legitimate self-owned signup (plus a second token captured after expiry if convenient).
+2. Then, ≤1 rps: (a) GET `/v2/users/me/company`, GET `/v2/group-links?limit=1` (403-asymmetry test); (b) exactly one POST `/v2/rooms/{roomId}/permissions` with harvested participantId (BOLA test; expect 204/403/409/422); (c) three POSTs to sso `/oauth2/introspect` (POST-body, HTTP Basic, `token_type_hint=refresh_token`) expecting 200 `active:true` / 200 / 401; (d) GET `/v2/auth/token-info` live vs expired token. Record status, headers, bodies verbatim.
+
+## Relevant Files
+- `inventory/alfaview.md`: canonical host inventory and probe history; line 1096 holds canonical URLs for standing probes.
+- `recon-notes/alfaview-openapi.yaml`: stale 37-path baseline (predates two rotations).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated post-rotation snapshot for exact future rotation attribution.
+- `leads/lead-bigpickle.md`: verify_steps containing canonical JWKS path `/.well-known/jwks.json`.
+- `art/lead_nemotron3.txt`, `art/lead_bigpickle.txt`: sources of the top-ranked introspection hypotheses (94, 58).
+- `hypotheses-bigpickle.txt`, `hypotheses-nemotron3.txt`: NEXT-action drafts from sibling agents.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && cat state_bigpickle.json && echo "--- analyst-out ---" && cat analyst-out.txt && echo "--- git log ---" && git log --oneline -5 2>/dev/null && echo "--- git status ---" && git status --short | head -30
+{"phase": "POC", "target": "api"}--- analyst-out ---
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/
+total 1164
+drwxr-xr-x 12 runner runner   4096 Oct  6 19:01 .
+drwxr-xr-x  3 runner runner   4096 Oct  6 19:00 ..
+drwxr-xr-x  7 runner runner   4096 Oct  6 19:01 .git
+drwxr-xr-x  3 runner runner   4096 Oct  6 19:00 .github
+-rw-r--r--  1 runner runner   1883 Oct  6 19:00 README.md
+-rw-r--r--  1 runner runner     32 Oct  6 19:01 analyst-out.txt
+-rw-r--r--  1 runner runner 505475 Oct  6 19:01 analyst-prompt.txt
+-rw-r--r--  1 runner runner 501565 Oct  6 19:01 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 leads
+-rw-r--r--  1 runner runner  84095 Oct  6 19:00 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 reports
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct  6 19:00 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 scripts
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  6 19:00 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  6 19:00 triage
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/ /home/runner/work/alfaview-hunt/alfaview-hunt/leads/ 2>/dev/null
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/:
+total 3636
+drwxr-xr-x  2 runner runner    4096 Oct  6 19:00 .
+drwxr-xr-x 12 runner runner    4096 Oct  6 19:01 ..
+-rw-r--r--  1 runner runner 1397626 Oct  6 19:00 lead-bigpickle.md
+-rw-r--r--  1 runner runner   10710 Oct  6 19:00 lead-laguna.md
+-rw-r--r--  1 runner runner   10500 Oct  6 19:00 lead-ling3.md
+-rw-r--r--  1 runner runner   10920 Oct  6 19:00 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  6 19:00 lead-mimo.md
+-rw-r--r--  1 runner runner 2236912 Oct  6 19:00 lead-nemotron3.md
+-rw-r--r--  1 runner runner   31562 Oct  6 19:00 reposcan-alfaview.md
+
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/:
+total 192
+drwxr-xr-x  2 runner runner   4096 Oct  6 19:00 .
+drwxr-xr-x 12 runner runner   4096 Oct  6 19:01 ..
+-rw-r--r--  1 runner runner   4789 Oct  6 19:00 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Oct  6 19:00 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Oct  6 19:00 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Oct  6 19:00 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Oct  6 19:00 alfaview-openapi.yaml
+[0m
+## Objective
+- Act as a senior bug bounty hunter ANALYST for the alfaview gmbh program (report channel: bugs.olivermaicher.eu), running a 7-step analysis loop (delta → prioritize → hypotheses → self-critique → next action → learning → risk) over passive-first, read-only probing of in-scope alfaview assets.
+- Drive the top hypotheses (introspection client-auth bypass, CreatePermissions BOLA, 403 asymmetry) toward a HUMAN-provided test account/token so they can be wire-confirmed.
+
+## Important Details
+- Scope: ONLY company-owned infrastructure (alfaview.com + company subdomains per scope.yml + inventory/alfaview.md). Report channel: bugs.olivermaicher.eu.
+- Probe rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests against live customer data; no POST without human authorization; single exception precedent: exactly one authorized POST /v2/rooms/{roomId}/permissions planned inside tester's own tenant once HUMAN supplies inputs.
+- REJECTED classes (never emit as findings): DoS, lockout, descriptive errors/headers only, robots.txt, OPTIONS/TRACE, CSRF-on-logout/anonymous, cookie flags, self-XSS, username enumeration, brute-force/rate-limit, TLS best practice, clickjacking w/o exploit, mail config, known-vuln lib w/o program-specific exploit, password/recovery policy, public login panels, lack of email verification, and any exposure of customer/employee/financial/auth data during testing.
+- State: `{"phase": "POC", "target": "api"}`; risk score alfaview gmbh = 88 (unchanged).
+- Current ranked priorities: (1) introspect client-auth bypass 92 (later 94 in aggregated ranking), (2) CreatePermissions BOLA 80, (3) 403 asymmetry 58. Meeting-scoped bulk link 64 in FINAL list.
+- Key standing facts:
+  - OpenAPI rotated 2026-10-06: md5 `284a3383c1ac3cfc9152ffcc631891f2` (132100B) → `06231fadca0b36c314476322337976db` (174787B); YAML `6738669c` → `c65f6a50` (228358B). Paths/ops unchanged 38/57; `/v2/audit-log` still unpublished. First-ever `components.securitySchemes.accessToken` (`bearerFormat: opaque`), `security` on 53/57 ops (only 4 `/v2/auth/*` POSTs lack it). Per-op response status sets unchanged → 403 asymmetry survives.
+  - sso.alfaview.com: FusionAuth 1.63.0, issuer=acme.com, JWKS `3f8d456c`/16257B (7×RS256) at `/.well-known/jwks.json`, OIDC md5 `f78a08fc`/2169B (`introspection_endpoint` absent while `/oauth2/introspect` live at OPTIONS 405).
+  - Introspect bypass: client auth enforced only for JWT-shaped tokens (3 segments, seg2 = base64 JSON object); opaque base64 alfaview tokens take unchecked path; POST-body and HTTP Basic both accept fabricated client_id; `token_type_hint=refresh_token` forces validation.
+  - app.alfaview.com bundle now 302 → `/` at `/assets/app.min.67e8a68d…js`; identical bytes from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/…` (200/1092529B, md5 `2cb9128353b1f7444e222b4b61e4ffa5`, `adminSwitchCompany` present). `__typename` now returns 200 (was 400 CSRF guidance); introspection still disabled.
+  - client-diagnostics.alfaview.com: NXDOMAIN (decommissioned between cycles).
+  - Standing md5s: 401 body `60ed2f29`/107B, 422 binder `551221c3`/141B, stats 422 `6d812e83`/319B, attendances 422 `b4adcd15`/232B.
+- Standing rejections: no UUID patterns in spec (zero `uuid`, zero `pattern` keys); `Permissions.admin` scope sentence was fabricated (lives on `PermissionsEdit.admin`); no accessKey existence oracle; JWT alg-confusion closed; mass assignment closed (all 21 body schemas `additionalProperties:false`); SSRF closed; logout redirect closed; pre-auth query binder reproduces public spec only (rejected as standalone finding); 403-declaration asymmetry not behaviorally load-bearing as standalone; userinfo alg confusion closed; device_authorize unregistered client_id retracted (401 invalid_client_id).
+- Procedural rules established: contract text quoted only after per-field lookup; guessed URLs never become findings (recover canonical from inventory/alfaview.md:1096 or leads verify_steps); delta claims require a second method (DNS getent vs HTTP); dated snapshot `recon-notes/alfaview-openapi-2026-10-06.json` stored for next rotation attribution.
+
+## Work State
+### Completed
+- 40+ analysis cycles completed; full inventory of 55 dedicated hosts probed, 31 exhausted.
+- OpenAPI rotation 2026-10-06 detected, confirmed by 2 prod fetches + 1 beta fetch; attribution documented; per-op status sets verified unchanged.
+- HYPs current: introspect bypass (92, AUTH_HELPED), CreatePermissions BOLA (80, AUTH_HELPED), 403 asymmetry (58, AUTH_HELPED).
+- PARKED: token-info expired-token 200 (45); device_authorize unregistered client_id (44).
+- FINALs: CreatePermissions BOLA (80), introspection bypass (92), meeting-scoped bulk link w/ permissionGroupId (64), 403 asymmetry (58).
+
+### Active
+- Awaiting HUMAN inputs to execute the wire-confirmation plan (see Next Move).
+- Standing probe suite stable across all hosts (last cycle NO_DELTA for sso/app/tools).
+
+### Blocked
+- All three HIGH chains are HUMAN-gated: need one self-owned low-privilege alfaview account in a controlled tenant, one non-moderated room, one opaque access token (plus an expired one for the parked token-info claim).
+- Signup mutation (sole unauthenticated token path) is email-gated → HUMAN_ONLY.
+
+## Next Move
+1. [NEXT] HUMAN: provide ONE self-owned low-privilege alfaview account in a tenant you control, ONE non-moderated room in that tenant, ONE opaque access token from a legitimate self-owned signup (plus a second token captured after expiry if convenient).
+2. Then, ≤1 rps: (a) GET `/v2/users/me/company`, GET `/v2/group-links?limit=1` (403-asymmetry test); (b) exactly one POST `/v2/rooms/{roomId}/permissions` with harvested participantId (BOLA test; expect 204/403/409/422); (c) three POSTs to sso `/oauth2/introspect` (POST-body, HTTP Basic, `token_type_hint=refresh_token`) expecting 200 `active:true` / 200 / 401; (d) GET `/v2/auth/token-info` live vs expired token. Record status, headers, bodies verbatim.
+
+## Relevant Files
+- `inventory/alfaview.md`: canonical host inventory and probe history; line 1096 holds canonical URLs for standing probes.
+- `recon-notes/alfaview-openapi.yaml`: stale 37-path baseline (predates two rotations).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated post-rotation snapshot for exact future rotation attribution.
+- `leads/lead-bigpickle.md`: verify_steps containing canonical JWKS path `/.well-known/jwks.json`.
+- `art/lead_nemotron3.txt`, `art/lead_bigpickle.txt`: sources of the top-ranked introspection hypotheses (94, 58).
+- `hypotheses-bigpickle.txt`, `hypotheses-nemotron3.txt`: NEXT-action drafts from sibling agents.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+--- git log ---
+c91010c reposcan 2026-10-06-16-00
+--- git status ---
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && ls -la triage/ | head -40 && echo "--- reports ---" && ls -la reports/
+total 940
+drwxr-xr-x  2 runner runner 12288 Oct  6 19:00 .
+drwxr-xr-x 12 runner runner  4096 Oct  6 19:01 ..
+-rw-r--r--  1 runner runner     0 Oct  6 19:00 .gitkeep
+-rw-r--r--  1 runner runner   186 Oct  6 19:00 run-2026-09-03-11-41.md
+-rw-r--r--  1 runner runner   194 Oct  6 19:00 run-2026-09-03-15-37.md
+-rw-r--r--  1 runner runner   346 Oct  6 19:00 run-2026-09-03-18-51.md
+-rw-r--r--  1 runner runner   283 Oct  6 19:00 run-2026-09-03-21-32.md
+-rw-r--r--  1 runner runner   159 Oct  6 19:00 run-2026-09-03-23-30.md
+-rw-r--r--  1 runner runner   143 Oct  6 19:00 run-2026-09-04-01-20.md
+-rw-r--r--  1 runner runner   127 Oct  6 19:00 run-2026-09-04-06-01.md
+-rw-r--r--  1 runner runner   173 Oct  6 19:00 run-2026-09-04-11-23.md
+-rw-r--r--  1 runner runner   269 Oct  6 19:00 run-2026-09-04-15-05.md
+-rw-r--r--  1 runner runner   198 Oct  6 19:00 run-2026-09-04-18-27.md
+-rw-r--r--  1 runner runner   243 Oct  6 19:00 run-2026-09-04-21-00.md
+-rw-r--r--  1 runner runner   224 Oct  6 19:00 run-2026-09-04-23-04.md
+-rw-r--r--  1 runner runner   167 Oct  6 19:00 run-2026-09-05-01-01.md
+-rw-r--r--  1 runner runner   130 Oct  6 19:00 run-2026-09-05-05-48.md
+-rw-r--r--  1 runner runner  1393 Oct  6 19:00 run-2026-09-05-09-49.md
+-rw-r--r--  1 runner runner   291 Oct  6 19:00 run-2026-09-05-13-11.md
+-rw-r--r--  1 runner runner 19796 Oct  6 19:00 run-2026-09-05-16-10.md
+-rw-r--r--  1 runner runner  1793 Oct  6 19:00 run-2026-09-05-18-21.md
+-rw-r--r--  1 runner runner   164 Oct  6 19:00 run-2026-09-05-20-41.md
+-rw-r--r--  1 runner runner  1089 Oct  6 19:00 run-2026-09-05-22-34.md
+-rw-r--r--  1 runner runner   204 Oct  6 19:00 run-2026-09-06-00-11.md
+-rw-r--r--  1 runner runner   207 Oct  6 19:00 run-2026-09-06-04-44.md
+-rw-r--r--  1 runner runner   167 Oct  6 19:00 run-2026-09-06-09-06.md
+-rw-r--r--  1 runner runner   178 Oct  6 19:00 run-2026-09-06-12-54.md
+-rw-r--r--  1 runner runner   194 Oct  6 19:00 run-2026-09-06-15-56.md
+-rw-r--r--  1 runner runner   177 Oct  6 19:00 run-2026-09-06-18-00.md
+-rw-r--r--  1 runner runner   171 Oct  6 19:00 run-2026-09-06-20-17.md
+-rw-r--r--  1 runner runner   210 Oct  6 19:00 run-2026-09-06-22-09.md
+-rw-r--r--  1 runner runner   146 Oct  6 19:00 run-2026-09-06-23-58.md
+-rw-r--r--  1 runner runner   163 Oct  6 19:00 run-2026-09-07-03-29.md
+-rw-r--r--  1 runner runner   192 Oct  6 19:00 run-2026-09-07-08-37.md
+-rw-r--r--  1 runner runner 15823 Oct  6 19:00 run-2026-09-07-14-28.md
+-rw-r--r--  1 runner runner   168 Oct  6 19:00 run-2026-09-07-18-50.md
+-rw-r--r--  1 runner runner   250 Oct  6 19:00 run-2026-09-07-21-51.md
+-rw-r--r--  1 runner runner   153 Oct  6 19:00 run-2026-09-07-23-53.md
+-rw-r--r--  1 runner runner   149 Oct  6 19:00 run-2026-09-08-02-33.md
+--- reports ---
+total 11344
+drwxr-xr-x  2 runner runner    4096 Oct  6 19:00 .
+drwxr-xr-x 12 runner runner    4096 Oct  6 19:01 ..
+-rw-r--r--  1 runner runner 6043740 Oct  6 19:00 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   45570 Oct  6 19:00 analyst-laguna.log
+-rw-r--r--  1 runner runner   45360 Oct  6 19:00 analyst-ling3.log
+-rw-r--r--  1 runner runner   45780 Oct  6 19:00 analyst-longcat.log
+-rw-r--r--  1 runner runner 4627480 Oct  6 19:00 analyst-nemotron3.log
+-rw-r--r--  1 runner runner   21367 Oct  6 19:00 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Oct  6 19:00 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Oct  6 19:00 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Oct  6 19:00 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   12655 Oct  6 19:00 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  719079 Oct  6 19:00 hypotheses.md
+-rw-r--r--  1 runner runner    9922 Oct  6 19:00 valid-bugs.md
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && ls -t triage/ | head -8 && echo "=== last run ===" && cat "triage/$(ls -t triage/ | head -1)"
+run-2026-10-05-14-47.md
+run-2026-10-05-21-46.md
+run-2026-10-06-02-00.md
+run-2026-10-06-09-02.md
+run-2026-10-06-15-59.md
+run-2026-09-21-21-14.md
+run-2026-09-22-00-09.md
+run-2026-09-22-05-03.md
+=== last run ===
+
+===== TRIAGE 2026-10-05 14:47:49 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_3c4ce4f0"
+  }
+}
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && tail -c 4000 reports/hypotheses-bigpickle.txt
+cation enabled." Per-op response status sets verified identical → 403 asymmetry survives.
+[CHANGED] `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+[PRIO] 1 introspect bypass (92) · 2 CreatePermissions BOLA (80) · 3 403 asymmetry (58)
+[HYP] OAuth2 introspection answers for opaque alfaview tokens with zero valid client credentials — sso.alfaview.com/oauth2/introspect — 92 — AUTH_HELPED — client auth enforced only for JWT-shaped tokens; new spec independently corroborates `bearerFormat: opaque`, i.e. issued tokens take the unchecked path — verify: POST `token=<opaque>&client_id=fabricated` → 200 active:true; +`token_type_hint=refresh_token` → 401; Basic fabricated → 200.
+[HYP] CreatePermissions grants room-admin to any company-wide principal ID — apis.alfaview.com — 80 — AUTH_HELPED — polymorphic `participantId`, path-only scope, atomic full Permissions set; unaffected by rotation — verify: companyId + guest-link harvest → single POST `/v2/rooms/{roomId}/permissions` → 204/403/409/422.
+[HYP] Group-link vs guest-link list endpoints may not enforce equal authorization — apis.alfaview.com — 58 — AUTH_HELPED — guest-links documents 403, group-links does not; status sets confirmed unchanged this cycle — verify: minimal token → GET `/v2/group-links?limit=1` → 403 vs 200 vs 401 tier `60ed2f29`.
+[PARKED] token-info returns 200 for expired tokens (45) — documentary only, needs a self-owned expired token. device_authorize unregistered client_id (44) — POST confirmation, prior own-probe retraction stands.
+[FINAL] CreatePermissions BOLA (80) · introspection client-auth bypass (92) · meeting-scoped bulk link w/ caller-chosen permissionGroupId (64) · 403 asymmetry (58) — all AUTH_HELPED, wire confirmation pending.
+[NEXT] HUMAN: one self-owned low-privilege alfaview account in a tenant you control, one non-moderated room in that tenant, one opaque access token from a legitimate self-owned signup (plus a second token captured after expiry if convenient). Then, ≤1 rps: (a) GET `/v2/users/me/company`, GET `/v2/group-links?limit=1`; (b) exactly one POST `/v2/rooms/{roomId}/permissions`; (c) three POSTs to sso introspect (POST-body, Basic, refresh hint); (d) GET `/v2/auth/token-info` live vs expired. Status, headers, bodies recorded verbatim.
+[LEARN] CHANGED @ apis: first rotation since 2026-09-28 and first time the contract declares an auth scheme at all — delta is declaration depth only (scheme, problem+json bodies, `WWW-Authenticate`, three prose sentences); no path moved, audit-log still absent.
+[LEARN] PROCEDURAL: schema-level attribution for this rotation is impossible from local data (only baseline on disk is the 37-path YAML, which predates two rotations) — prior-doc facts taken solely from KB statements that explicitly recorded them; dated snapshot now stored for exact future attribution. Also: guessed URL `/oauth2/jwks` gave a plausible 404 before canonical `/.well-known/jwks.json` was recovered from verify_steps — guessed URLs never become findings.
+[LEARN] NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7×RS256), introspect OPTIONS 405, users/me 401/107B `60ed2f29` + `www-authenticate: Bearer`, audit-log 422/232B, graphql 400/406B, poll list 501/55B, whiteboard OPTIONS 404/47B.
+[RISK] alfaview gmbh: 88 (unchanged). Rotation adds documentation depth with no new path, no weakened declaration, no new pre-auth surface. Introspection bypass (92) now corroborated by the vendor's own `bearerFormat: opaque`; CreatePermissions (80) highest impact pending one authorized write; 403 asymmetry (58) cheapest and provably refresh-proof. Nothing read or modified — all probes unauthenticated, returning 200/400/401/404/405/422/501. Mass assignment, alg-confusion, SSRF, logout redirect, accessKey oracle, device_authorize remain closed.
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && cat triage/run-2026-10-06-15-59.md && echo "=== 09-02 ===" && cat triage/run-2026-10-06-09-02.md
+===== TRIAGE 2026-10-06 15:59:04 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_f0fe6b54"
+  }
+}
+=== 09-02 ===
+
+===== TRIAGE 2026-10-06 09:02:33 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_5af01e43"
+  }
+}
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && sed -n '1085,1115p' inventory/alfaview.md
+- CHANGED `staging-app.alfaview.com` + `webviewer.dev.alfaview.com` — bundle-referenced hosts exhausted immediately (401 Basic incl. `/graphql`; 000)
+- CHANGED `design-assets.alfaview.com`, `design-tokens.alfaview.com`, `ops.alfaview.com` — 404/548B and 404/19B plaintext confirmed exhausted
+
+## 2026-09-27 17:56:02 UTC
+- NEW apis.alfaview.com `/v2/guest-links/{id}` + `/v2/group-links/{id}`: the only link **mutations** without `roomId` in the path, while every link create/delete is room-scoped. Unscoped GET returns `access
+- NEW apis.alfaview.com `PATCH /v2/guest-links/{id}` accepts `emailAddress` + `permissionGroupId` + `validFrom`/`validUntil` + `sendEmail:true` in one call — credential rebinding plus permission-group assig
+- CHANGED Queued SCAN closed: full 37-path `Allow:`-vs-spec diff run. Exactly **one** divergence in 37 paths (`/v2/users/invitation` spec=[POST] live=[DELETE, POST]). The undeclared-method class is a single rou
+- CHANGED `GET /v2/permission-groups` = 401/107B `application/problem+json` — **proves the spec under-declares auth codes**, invalidating response-code declarations as evidence of code behaviour.
+- CHANGED `sso.alfaview.com` byte-stable: OIDC 200/2169B (issuer=acme.com, `introspection_endpoint` null, `password`+`client_credentials` advertised), JWKS 200/16257B (7×RS256, RSA-only, zero symmetric/ECDSA vs
+- CHANGED `apis.alfaview.com` OpenAPI unchanged: md5 `357b94d367909a40b9299b543d23712b`, 127532B, 37 paths, `components.securitySchemes` absent, top-level `security` absent.
+- CHANGED `apis.alfaview.com/v2/users/invitations` reconfirmed `allow: DELETE`, 405/19B Go-native, `server: edge-proxy`.
+- CHANGED `app.alfaview.com/graphql` 400/406B, `tools` poll 501/55B, `/whiteboard/` 404/47B, `/health/` 200/615B, `client-diagnostics /health` 200/16B — all byte-identical.
+- CHANGED NO_DELTA @ sso/apis/app/tools: 33rd consecutive stable cycle on every standing probe; no new endpoints, no regressions.
+
+## 2026-09-27 20:38:21 UTC
+- NEW apis.alfaview.com GET /v2/guest-links + GET /v2/group-links: the two company-wide link lists accept NO scoping parameter — only pageToken + limit. Room-scoped siblings exist separately (/v2/rooms/{roo
+- NEW apis.alfaview.com TokenUserPermissions is a CLOSED vocabulary: additionalProperties:false, all 7 fields required = manageCompany, roomAdmin, roomCreate, roomList, userAdmin, userList, userShow. There 
+- NEW apis.alfaview.com RoomPermissions proves guest links ARE permission-bearing principals: guestLinkPermissions[] and groupLinkPermissions[] of ParticipantPermissions{participantId, permissions}; Permiss
+- NEW apis.alfaview.com POST /v2/auth/group-link is LIVE and unprobed in 34 cycles: HEAD → 405 `allow: POST`, text/plain, edge-proxy. The 2026-09-26 standing-probe list recorded it as 404 (that was a GET on
+- NEW app.alfaview.com admin surface now completely enumerated from the unchanged bundle (1092529B, md5 2cb9128353b1f7444e222b4b61e4ffa5): exactly 4 admin operations — adminTokenAuthenticate{accessToken,per
+- CHANGED /v2/auth/group-link requires displayName, /v2/auth/guest-link does not — server-confirmed: omitting it gives 422/171B `expected required property displayName to be present` on group-link, while guest-
+- CHANGED The 422/88B `ACTION_INVALID: ACTION_INVALID` tier is a POST-LOOKUP business tier, not a format gate: it is returned for zero-UUID companyId+roomId with a synthetic 20-char key, for a `../../etc/passwd
+- CHANGED Queued 37-path scan closed: all four link-family routes return byte-identical 401/107B `application/problem+json` with `www-authenticate: AccessToken` pre-auth — /v2/group-links/{uuid}, /v2/guest-link
+- CHANGED NO_DELTA on every other standing probe: OpenAPI 200/127532B md5 357b94d367909a40b9299b543d23712b, users/me 401/107B md5 60ed2f29, OIDC 200/2169B md5 f78a08fc (introspection_endpoint null), JWKS 200/16
+- NEW apis.alfaview.com authentication gate precedes ALL request parsing. Eight GETs, all 401/107B application/problem+json, all body md5 60ed2f29d492ec872c598cc7d36aa37e, all headers identical: `server: ed
+- NEW The negative control settles the parameter question in the strong direction. `?bogusParam=abc` returns the identical 401, so the endpoint does not distinguish recognized from unrecognized query parame
+- NEW Whole-surface uniformity: the same 107-byte body is emitted by /v2/guest-links, /v2/group-links, /v2/rooms/{id}/guest-links, /v2/rooms/{id} and the standing /v2/users/me probe. The authenticated API h
+- CHANGED Methodological correction to my own prior turn — I must record this rather than let it stand: I proposed the test "422 on roomId ⇒ the parameter is recognized" as the discriminator for H1. That test c
+- CHANGED Contract precision confirmed against the local 37-path spec for ListGuestLinks: parameters are exactly Authorization (header), pageToken (string), limit (int32, default 100, minimum 0, maximum 500). N
+- CHANGED The 403 asymmetry is real and now quoted exactly. ListGuestLinks declares 200, 401 and 403 where 403 reads "The requesting user does not have the necessary permissions". ListGroupLinks declares only 2
+- CHANGED GuestLink is additionalProperties:false with 12 of 15 fields required: id, roomId, createdBy, createdAt, permissionGroupId, accessKey, emailAddress, locale, origin, dialInAllowed, dialInCode, joinUrl.
+[0m
+[0m$ [0mdate -u && echo "--- connectivity ---" && curl -s -o /dev/null -w "%{http_code}\n" --max-time 15 https://apis.alfaview.com/v2/openapi.json 2>&1
+Tue Oct  6 19:02:47 UTC 2026
+--- connectivity ---
+404
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -n "openapi\|standing probe" inventory/alfaview.md | tail -25
+940:- NEW NO_DELTA — all standing probes byte-identical to prior cycle (OpenAPI MD5 357b94d3, JWKS 200/16257B, OIDC 200/2169B introspection_endpoint absent, introspect OPTIONS 405, authorize 200/6176B, tools.li
+1002:- NEW Root cause is visible in the spec: /v2/docs/openapi.json declares components.securitySchemes = {} and top-level security = null. Authentication is enforced purely by handler-level middleware, which is
+1097:- CHANGED NO_DELTA @ sso/apis/app/tools: 33rd consecutive stable cycle on every standing probe; no new endpoints, no regressions.
+1108:- CHANGED NO_DELTA on every other standing probe: OpenAPI 200/127532B md5 357b94d367909a40b9299b543d23712b, users/me 401/107B md5 60ed2f29, OIDC 200/2169B md5 f78a08fc (introspection_endpoint null), JWKS 200/16
+1134:- CHANGED NO_DELTA on all other standing probes (34th consecutive byte-stable cycle)
+1146:- NEW NO_DELTA — last leads (2026-09-27 23:25) already incorporated into knowledge base; all standing probes byte-identical 34th consecutive cycle
+1149:- NEW NO_DELTA — last leads (2026-09-27 23:25) already incorporated into knowledge base; all standing probes byte-identical 34th consecutive cycle
+1175:- NEW /v2/users/me/company (GetOwnCompany, x-sort-index 32) is the 38th path — identity of the 2026-09-28 37→38 delta RESOLVED by set-diff against recon-notes/alfaview-openapi.yaml (37 paths, removed=∅). So
+1197:- NEW NEGATIVE RESULT — v1 API is gone. https://apis.alfaview.com/v1/docs/openapi.json and .../openapi/openapi both
+1199:- NEW OpenAPI spec at apis.alfaview.com/v2/docs/openapi.json rotated to MD5 284a3383c1ac3cfc9152ffcc631891f2 (132100B, 38 paths, 57 ops) — byte-identical on beta-apis.alfaview.com
+1203:- NEW OpenAPI spec at apis.alfaview.com/v2/docs/openapi.json rotated to MD5 284a3383c1ac3cfc9152ffcc631891f2 (132100B, 38 paths, 57 ops) — byte-identical on beta-apis.alfaview.com
+1208:- NEW NEGATIVE RESULT — v1 API is gone (/v1/docs/openapi.json and /v1/docs/openapi both 404/19B)
+1234:- CHANGED NEGATIVE RESULT — v1 API gone (/v1/docs/openapi.json and /v1/docs/openapi both 404/19B)
+1245:- CHANGED NEGATIVE RESULT — v1 API gone (/v1/docs/openapi.json and /v1/docs/openapi both 404/19B)
+1289:- NEW OpenAPI spec at apis.alfaview.com/v2/docs/openapi.json stable at MD5 284a3383 (38 paths, 57 ops) for 3+ cycles; byte-identical on beta-apis.alfaview.com
+1302:- CHANGED apis.alfaview.com /v2/docs/openapi.json — byte-identical on prod+beta (md5 284a3383c1ac3cfc9152ffcc631891f2, 132100B, 38 paths, 57 ops). Local recon-notes/alfaview-openapi.yaml remains 37 paths (missi
+1323:- CHANGED OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` stable at MD5 `284a3383` (38 paths, 57 ops) for 3+ cycles; byte-identical on beta-apis.alfaview.com
+1334:- CHANGED apis.alfaview.com /v2/docs/openapi.json — byte-identical on prod+beta (md5 284a3383c1ac3cfc9152ffcc631891f2, 132100B, 38 paths, 57 ops). Local recon-notes/alfaview-openapi.yaml remains 37 paths (missi
+1340:- CHANGED OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` stable at MD5 `284a3383` (38 paths, 57 ops) for 3+ cycles; byte-identical on beta-apis.alfaview.com
+1349:- NEW apis.alfaview.com/v2/docs/openapi.yaml (YAML twin, 165360B, md5 6738669c92a893c56e157c3927044134) — different byte-stream from JSON (132100B, 284a3383c1ac3cfc9152ffcc631891f2) but semantically identic
+1350:- CHANGED apis.alfaview.com/v2/docs/openapi.json — OpenAPI 3.1.0, 38 paths, 57 operations, stable md5 284a3383c1ac3cfc9152ffcc631891f2 (prod=beta byte-identical). 1 path delta vs local 37-path snapshot (/v2/use
+1371:- CHANGED apis.alfaview.com /v2/docs/openapi.json — 200/132100B md5 284a3383c1ac3cfc9152ffcc631891f2 (38 paths, 57 operations), stable 3rd cycle. sso.alfaview.com OIDC — 200/2169B md5 f78a08fc, stable. No path 
+1461:- CHANGED apis.alfaview.com/v2/docs/openapi.yaml is a second spec publication, 165360B, 38 paths, 57 ops, parses to a document IDENTICAL to the JSON at /v2/docs/openapi.json. No additional surface; both formats
+1474:- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+1476:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+[0m
+Running cycle 1 (delta check) — standing probe suite, passive GET/HEAD/OPTIONS only, ≤1 rps.
+[0m$ [0mcd /tmp/opencode && for u in "https://apis.alfaview.com/v2/docs/openapi.json" "https://apis.alfaview.com/v2/docs/openapi.yaml" "https://sso.alfaview.com/.well-known/openid-configuration" "https://sso.alfaview.com/.well-known/jwks.json"; do
+  out=$(curl -s --max-time 20 -w "\n%{http_code} %{size_download}" "$u")
+  body=$(printf '%s' "$out" | sed '$d')
+  meta=$(printf '%s' "$out" | tail -1)
+  echo "$u -> $meta md5=$(printf '%s' "$body" | md5sum | cut -c1-32)"
+  sleep 1
+done
+https://apis.alfaview.com/v2/docs/openapi.json -> 200 174787 md5=06231fadca0b36c314476322337976db
+https://apis.alfaview.com/v2/docs/openapi.yaml -> 200 228358 md5=f451b5de93305312312cb7c3fb6fdd96
+https://sso.alfaview.com/.well-known/openid-configuration -> 200 2169 md5=f78a08fced8b042093396383b74d8458
+https://sso.alfaview.com/.well-known/jwks.json -> 200 16257 md5=3f8d456c7fd92c6107f3fd77732bd0f4
+[0m
+[0m$ [0mcd /tmp/opencode && for u in "https://apis.alfaview.com/v2/users/me" "https://apis.alfaview.com/v2/group-links?limit=1"; do
+  out=$(curl -s --max-time 20 -D /tmp/opencode/h.txt -o /tmp/opencode/b.txt -w "%{http_code} %{size_download}" "$u")
+  echo "$u -> $out md5=$(md5sum < /tmp/opencode/b.txt | cut -c1-32)"
+  grep -i "^www-authenticate\|^content-type\|^server" /tmp/opencode/h.txt
+  sleep 1
+done
+echo "--- introspect OPTIONS ---"
+curl -s -o /dev/null --max-time 20 -X OPTIONS -w "%{http_code} %{size_download}\n" "https://sso.alfaview.com/oauth2/introspect"
+sleep 1
+echo "--- app graphql ---"
+curl -s -o /tmp/opencode/g.txt --max-time 20 -w "%{http_code} %{size_download}\n" "https://app.alfaview.com/graphql"
+md5sum < /tmp/opencode/g.txt
+https://apis.alfaview.com/v2/users/me -> 401 107 md5=60ed2f29d492ec872c598cc7d36aa37e
+content-type: application/problem+json
+www-authenticate: Bearer
+server: edge-proxy
+https://apis.alfaview.com/v2/group-links?limit=1 -> 401 107 md5=60ed2f29d492ec872c598cc7d36aa37e
+content-type: application/problem+json
+www-authenticate: Bearer
+server: edge-proxy
+--- introspect OPTIONS ---
+405 0
+--- app graphql ---
+400 406
+2fd0a1d014e411aeea2d5dc41ceba835  -
+[0m
+Two potential deltas: YAML md5 and graphql body. Verifying with raw (unstripped) hashes before claiming change.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -rn "406B\|406 bytes\|graphql 400" inventory/alfaview.md | tail -8
+1096:- CHANGED `app.alfaview.com/graphql` 400/406B, `tools` poll 501/55B, `/whiteboard/` 404/47B, `/health/` 200/615B, `client-diagnostics /health` 200/16B — all byte-identical.
+[0m
+[0m$ [0mcd /tmp/opencode && curl -s --max-time 20 -o y1.yaml "https://apis.alfaview.com/v2/docs/openapi.yaml" && echo "raw md5: $(md5sum < y1.yaml | cut -d' ' -f1)  size: $(stat -c%s y1.yaml)" && echo "stripped md5: $(printf '%s' "$(cat y1.yaml)" | md5sum | cut -d' ' -f1)" && sleep 1 && curl -s --max-time 20 -o j1.json "https://apis.alfaview.com/v2/docs/openapi.json" && echo "json raw md5: $(md5sum < j1.json | cut -d' ' -f1)  size: $(stat -c%s j1.json)" && echo "json stripped md5: $(printf '%s' "$(cat j1.json)" | md5sum | cut -d' ' -f1)"
+raw md5: c65f6a507c01766ec6de4f16af17654f  size: 228358
+stripped md5: f451b5de93305312312cb7c3fb6fdd96
+json raw md5: 06231fadca0b36c314476322337976db  size: 174787
+json stripped md5: 06231fadca0b36c314476322337976db
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -rn "graphql" inventory/alfaview.md | grep -i "md5\|2fd0\|body" | tail -10; echo "=== leads ==="; grep -rn "graphql.*md5\|md5.*graphql" leads/lead-bigpickle.md | tail -5
+=== leads ===
+6354:[LEARN]** NO_DELTA** @ apis/sso/app/tools: OpenAPI 200/127532B md5 `357b94d3` (37 paths, `components.securitySchemes` absent, top-level `security` absent), `users/me` 401/107B, OIDC 200/2169B (issuer=`acme.com`, `introspection_endpoint` absent, algs ES/HS/RS 256-512, token auth `basic/post/none`), JWKS 200/16257B (7×RS256), introspect OPTIONS 405, graphql GET 400/406B, `poll/pollservice/list` GET 501/55B — all byte-stable.
+6553:[LEARN] NO_DELTA @ sso/apis/app/tools: 33rd consecutive stable cycle. OpenAPI md5 357b94d3 (127532B, 37 paths), OIDC 200/2169B (issuer=acme.com, `introspection_endpoint` null, `password`+`client_credentials` advertised), JWKS 200/16257B (7×RS256, RSA-only against 9 advertised algs), introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, /v2/users/invitations 405 allow:DELETE, graphql GET 400/406B, tools poll 501/55B, /whiteboard/ 404/47B, /health/ 200/615B, client-diagnostics /health 200/16B — every probe byte-identical to the prior cycle, no new endpoints and no regressions.
+6564:[CHANGED] NO_DELTA on every other standing probe: OpenAPI 200/127532B md5 357b94d367909a40b9299b543d23712b, users/me 401/107B md5 60ed2f29, OIDC 200/2169B md5 f78a08fc (introspection_endpoint null), JWKS 200/16257B md5 3f8d456c, introspect OPTIONS 405, app /graphql 400/406B, tools /whiteboard/ 404/47B md5 ddd33510, client-diagnostics /health 200/16B.
+8439:[LEARN] NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5 3f8d456c, OIDC md5 f78a08fc (introspection_endpoint absent), introspect OPTIONS 405, users/me 401/107B md5 60ed2f29, audit-log 422/232 query.from+query.to binder, app graphql 400/406B, tools list 501/55B (staging identical) — surface byte-stable, no new unauthenticated exploit surface.
+8480:[LEARN] NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5 3f8d456c, OIDC md5 f78a08fc (introspection_endpoint absent), introspect OPTIONS 405, users/me 401/107B md5 60ed2f29, audit-log 422/232 query.from+query.to binder, app graphql 400/406B, tools list 501/55B (staging identical) — surface byte-stable, no new unauthenticated exploit surface.
+[0m
+YAML raw `c65f6a50` = recorded → my first hash was an artifact of newline-stripping (false delta, retracted). Now checking graphql body hash vs record.
+[0m$ [0mcd /tmp/opencode && curl -s --max-time 20 -D gh.txt -o gb.txt -w "GET -> %{http_code} %{size_download}\n" "https://app.alfaview.com/graphql"; echo "md5=$(md5sum < gb.txt | cut -d' ' -f1)"; echo "--- headers ---"; grep -i "^content-type\|^server\|^allow" gh.txt; echo "--- body ---"; cat gb.txt; echo; sleep 1; echo "--- HEAD ---"; curl -s -o /dev/null -I --max-time 20 -w "%{http_code}\n" "https://app.alfaview.com/graphql"
+GET -> 400 406
+md5=2fd0a1d014e411aeea2d5dc41ceba835
+--- headers ---
+content-type: application/json; charset=utf-8
+server: edge-proxy
+--- body ---
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+
+--- HEAD ---
+400
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -rn "2fd0a1d0" . 2>/dev/null | head -5; echo "exit=$?"
+./analyst-out.txt:427:2fd0a1d014e411aeea2d5dc41ceba835  -
+./analyst-out.txt:450:md5=2fd0a1d014e411aeea2d5dc41ceba835
+exit=0
+[0m
+[0m$ [0mcd /tmp/opencode && for u in "https://apis.alfaview.com/v2/audit-log?query.from=2026-01-01T00:00:00Z&query.to=2026-01-02T00:00:00Z" "https://tools.alfaview.com/poll/pollservice/list" "https://app.alfaview.com/whiteboard/" "https://app.alfaview.com/health/"; do
+  out=$(curl -s --max-time 20 -o /tmp/opencode/p.txt -w "%{http_code} %{size_download}" "$u")
+  echo "$u -> $out md5=$(md5sum < /tmp/opencode/p.txt | cut -d' ' -f1)"
+  sleep 1
+done
+echo "--- beta spec ---"
+curl -s --max-time 20 -o /tmp/opencode/beta.json -w "%{http_code} %{size_download}\n" "https://beta-apis.alfaview.com/v2/docs/openapi.json"
+md5sum < /tmp/opencode/beta.json
+https://apis.alfaview.com/v2/audit-log?query.from=2026-01-01T00:00:00Z&query.to=2026-01-02T00:00:00Z -> 422 232 md5=b4adcd157348f493646c0196c185bd34
+https://tools.alfaview.com/poll/pollservice/list -> 501 55 md5=ace9390a1364de4ae25de9a2631e9bcd
+https://app.alfaview.com/whiteboard/ -> 302 23 md5=19f1429ad5f6eb308725dc533ddbf8be
+https://app.alfaview.com/health/ -> 200 2 md5=444bcb3a3fcf8389296c49467f27e1d6
+--- beta spec ---
+200 174787
+06231fadca0b36c314476322337976db  -
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -rn "whiteboard" inventory/alfaview.md | tail -8; echo "=== health ==="; grep -rn "health" inventory/alfaview.md | grep -i "200/" | tail -8
+1343:- CHANGED `tools.alfaview.com/whiteboard/` second RPC backend confirmed (47B gRPC envelope vs poll's 45B jsonpb); staging mirror byte-identical; zero client references in bundle
+1352:- NEW tools.alfaview.com/whiteboard/ — second unmapped RPC backend prefix returns 404/47B gRPC-status envelope {"code":5,"message":"Not Found","details":[]} distinct from poll gateway (501/55B). No WWW-Auth
+1357:- CHANGED `tools.alfaview.com/whiteboard/` returns HTTP 404/47B gRPC status envelope — second unmapped RPC backend confirmed stable
+1385:- NEW NO_DELTA @ tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with Grpc-Metadata-alfaview.token; second unmapped RPC mount at /whiteboard/* proven (47B gRPC envelope vs
+1395:- NEW NO_DELTA @ tools.alfaview.com: Verb-based JSON RPC (8 verbs) at POST /poll/pollservice/<verb> with Grpc-Metadata-alfaview.token; second unmapped RPC mount at /whiteboard/* proven (47B gRPC envelope vs
+1419:- CHANGED tools.alfaview.com/whiteboard/ — second unmapped RPC backend confirmed by controlled differential (47B gRPC envelope vs poll's 45B jsonpb); distinct marshaller; no auth challenge; zero client referenc
+1436:- CHANGED tools.alfaview.com/whiteboard/ — second unmapped RPC backend confirmed (47B gRPC envelope vs poll 45B jsonpb), staging mirror byte-identical
+1443:- NEW `tools.alfaview.com/whiteboard/` — second unmapped RPC backend confirmed by controlled differential (47B gRPC envelope vs poll's 45B jsonpb); distinct marshaller; no auth challenge; zero client refere
+=== health ===
+192:- NEW Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview
+246:- NEW Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview
+1096:- CHANGED `app.alfaview.com/graphql` 400/406B, `tools` poll 501/55B, `/whiteboard/` 404/47B, `/health/` 200/615B, `client-diagnostics /health` 200/16B — all byte-identical.
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -rn "b4adcd15\|6d812e83" inventory/alfaview.md | tail -6
+(no output)
+[0m
+Two apparent deltas (`/whiteboard/` 302 vs recorded 404, `/health/` 2B vs 615B) — checking canonical hosts before attributing.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -rn "615B\|615 bytes" leads/lead-bigpickle.md inventory/alfaview.md | tail -6
+leads/lead-bigpickle.md:6438:reasoning: The mount is real and pre-auth (47B gRPC status envelope on /whiteboard/**, while /health/, /foo/ return the 615B SPA catch-all and /poll/ returns Go-native 19B). But the discriminator that would make it actionable is absent: the mount returns code:5 (NOT_FOUND) flat, whereas the poll gateway returns code:12 (UNIMPLEMENTED) on a wrong method. Three path shapes — empty, canonical gRPC service/method, and a nonsense control — are byte-identical, so the verb set is not recoverable without a client that speaks gRPC-web. Zero whiteboard references exist in the 137343B public bundle, so no client asset reveals it either.
+leads/lead-bigpickle.md:6508:[CHANGED] `app.alfaview.com/graphql` 400/406B, `tools` poll 501/55B, `/whiteboard/` 404/47B, `/health/` 200/615B, `client-diagnostics /health` 200/16B — all byte-identical.
+leads/lead-bigpickle.md:6553:[LEARN] NO_DELTA @ sso/apis/app/tools: 33rd consecutive stable cycle. OpenAPI md5 357b94d3 (127532B, 37 paths), OIDC 200/2169B (issuer=acme.com, `introspection_endpoint` null, `password`+`client_credentials` advertised), JWKS 200/16257B (7×RS256, RSA-only against 9 advertised algs), introspect OPTIONS 405, authorize 200/6176B, users/me 401/107B, /v2/users/invitations 405 allow:DELETE, graphql GET 400/406B, tools poll 501/55B, /whiteboard/ 404/47B, /health/ 200/615B, client-diagnostics /health 200/16B — every probe byte-identical to the prior cycle, no new endpoints and no regressions.
+inventory/alfaview.md:1005:- NEW tools.alfaview.com/whiteboard/: Second unmapped RPC backend proven by controlled differential — `/whiteboard/` returns 47B gRPC status envelope while `/health/`, `/foo/`, `/zzznotreal/` return 615B SP
+inventory/alfaview.md:1026:- NEW tools.alfaview.com/whiteboard/: Second unmapped RPC backend proven by controlled differential — `/whiteboard/` returns 47B gRPC status envelope while `/health/`, `/foo/`, `/zzznotreal/` return 615B SP
+inventory/alfaview.md:1096:- CHANGED `app.alfaview.com/graphql` 400/406B, `tools` poll 501/55B, `/whiteboard/` 404/47B, `/health/` 200/615B, `client-diagnostics /health` 200/16B — all byte-identical.
+[0m
+[0m$ [0mcd /tmp/opencode && for u in "https://tools.alfaview.com/whiteboard/" "https://tools.alfaview.com/health/" "https://apis.alfaview.com/health/" "https://apis.alfaview.com/health"; do
+  out=$(curl -s --max-time 15 -o p.txt -w "%{http_code} %{size_download}" "$u")
+  echo "$u -> $out md5=$(md5sum < p.txt | cut -d' ' -f1)"
+  sleep 1
+done
+echo "--- app health body ---"; curl -s --max-time 15 "https://app.alfaview.com/health/" | head -c 200; echo
+https://tools.alfaview.com/whiteboard/ -> 404 47 md5=ddd3351079af6bea6c6e808972a737ad
+https://tools.alfaview.com/health/ -> 200 615 md5=f53b3c2688a73940c337d37cc6da35c3
+https://apis.alfaview.com/health/ -> 404 19 md5=595e88012a6521aae3e12cbebe76eb9e
+https://apis.alfaview.com/health -> 404 19 md5=595e88012a6521aae3e12cbebe76eb9e
+--- app health body ---
+ok
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && grep -rn "f53b3c26" . 2>/dev/null | head -3; echo "=== app health ==="; grep -rn "app.alfaview.com/health" inventory/alfaview.md leads/lead-bigpickle.md | tail -5; echo "=== ace9390a ==="; grep -rn "ace9390a" . 2>/dev/null | head -3
+./analyst-out.txt:514:https://tools.alfaview.com/health/ -> 200 615 md5=f53b3c2688a73940c337d37cc6da35c3
+=== app health ===
+=== ace9390a ===
+./analyst-out.txt:474:https://tools.alfaview.com/poll/pollservice/list -> 501 55 md5=ace9390a1364de4ae25de9a2631e9bcd
+[0m
+[0m$ [0mcd /tmp/opencode && echo "--- /v2/users/me/company (spec-declared, unauth) ---" && curl -s --max-time 15 -o c.txt -w "%{http_code} %{size_download}\n" "https://apis.alfaview.com/v2/users/me/company" && md5sum < c.txt && sleep 1 && echo "--- /v2/docs/openapi paths count ---" && python3 -c "
+import json;d=json.load(open('j1.json'));print('paths',len(d['paths']));ops=sum(1 for p in d['paths'].values() for m in p if m in ('get','post','put','patch','delete'));print('ops',ops);print('securitySchemes',list(d.get('components',{}).get('securitySchemes',{}).keys()));print('top-level security' , 'yes' if d.get('security') else 'no')"
+--- /v2/users/me/company (spec-declared, unauth) ---
+401 107
+60ed2f29d492ec872c598cc7d36aa37e  -
+--- /v2/docs/openapi paths count ---
+paths 38
+ops 57
+securitySchemes ['accessToken']
+top-level security no
+[0m
+[0m← [0mWrite triage/run-2026-10-06-19-03.md
+Wrote file successfully.
+[0m
+Cycle complete. Standing suite is byte-stable across apis/sso/tools/app — NO_DELTA. Recording the cycle, then requesting the HUMAN inputs.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && printf '\n## 2026-10-06 19:03:42 UTC\n- CHANGED NO_DELTA 40th consecutive stable cycle @ apis/sso/tools/app: OpenAPI JSON `06231fad`/174787B (38p/57o, securitySchemes=accessToken, prod=beta), YAML `c65f6a50`/228358B, OIDC `f78a08fc`, JWKS `3f8d456c`, users/me 401/107B `60ed2f29`, users/me/company 401 `60ed2f29`, group-links?limit=1 401 `60ed2f29`, audit-log 422/232B `b4adcd15`, tools poll 501/55B, whiteboard 404/47B `ddd33510`, health 200/615B, app graphql GET 400/406B `2fd0a1d0` (md5 first recorded). No new unauth surface; all three HIGH chains still HUMAN-gated.\n- CHANGED PROCEDURAL self-retraction: openapi.yaml `f451b5de` was a newline-strip artifact; raw-body md5 `c65f6a50` = baseline. Raw-body md5 is the canonical comparison method.\n' >> inventory/alfaview.md && tail -3 inventory/alfaview.md
+## 2026-10-06 19:03:42 UTC
+- CHANGED NO_DELTA 40th consecutive stable cycle @ apis/sso/tools/app: OpenAPI JSON `06231fad`/174787B (38p/57o, securitySchemes=accessToken, prod=beta), YAML `c65f6a50`/228358B, OIDC `f78a08fc`, JWKS `3f8d456c`, users/me 401/107B `60ed2f29`, users/me/company 401 `60ed2f29`, group-links?limit=1 401 `60ed2f29`, audit-log 422/232B `b4adcd15`, tools poll 501/55B, whiteboard 404/47B `ddd33510`, health 200/615B, app graphql GET 400/406B `2fd0a1d0` (md5 first recorded). No new unauth surface; all three HIGH chains still HUMAN-gated.
+- CHANGED PROCEDURAL self-retraction: openapi.yaml `f451b5de` was a newline-strip artifact; raw-body md5 `c65f6a50` = baseline. Raw-body md5 is the canonical comparison method.
+[0m
+Cycle 40 complete — **NO_DELTA** across all standing probes (apis/sso/tools/app). OpenAPI still `06231fad`/174787B (38 paths/57 ops, `accessToken` scheme), YAML raw `c65f6a50`, JWKS `3f8d456c`, all 401/422 tiers byte-identical. One self-retraction recorded (YAML hash artifact). No new unauthenticated surface.
+
+All three HIGH chains remain blocked on inputs only you can provide. To run the wire-confirmation plan I need:
+
+1. **One self-owned low-privilege alfaview account** in a tenant you control
+2. **One non-moderated room** in that tenant
+3. **One opaque access token** from a legitimate self-owned signup (+ a second captured after expiry if convenient)
+
+Then I'll run (≤1 rps, your-tenant only): GET `/v2/users/me/company` + `/v2/group-links?limit=1` (403-asymmetry), the single authorized POST `/v2/rooms/{roomId}/permissions` (BOLA), three sso introspect variants (bypass), and GET `/v2/auth/token-info` live-vs-expired — recording status/headers/bodies verbatim.
