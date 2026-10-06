@@ -80549,3 +80549,1616 @@ Cycle complete (step 1-8) and recorded in `leads/lead-bigpickle.md`.
 **Ranking unchanged** — introspect opaque-token bypass (92), CreatePermissions BOLA (80), group-link 403 asymmetry (58); risk 88.
 
 **Blocked on you:** send one self-owned low-privilege account in a tenant you control, one non-moderated room there, and one opaque access token from that signup. With those I run the three tests (read-only ×2, one authorized write inside your own tenant, three introspect POSTs) at ≤1 rps and report verbatim.
+===== ANALYST bigpickle 2026-10-06 13:42:52 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls; echo ---; ls inventory 2>/dev/null; echo ---; ls recon-notes 2>/dev/null | head -30
+README.md
+analyst-out.txt
+analyst-prompt.txt
+ctx.txt
+inventory
+knowledge
+leads
+probe-results.md
+recon-notes
+reports
+reposcan-raw
+scope.yml
+scripts
+state_bigpickle.json
+state_laguna.json
+state_ling3.json
+state_longcat.json
+state_mimo.json
+state_nemotron3.json
+triage
+---
+alfaview.md
+---
+CORPUS-ALFAVIEW.md
+DEDICATED-DEEP.md
+DEEPER-FINDINGS.md
+SCOPE-CONFIRMATION.md
+alfaview-openapi.yaml
+[0m
+[0m$ [0mdate -u; echo ---; curl -s -m 20 -o /tmp/opencode/openapi.json -w '%{http_code} %{size_download}\n' https://apis.alfaview.com/v2/docs/openapi.json; md5sum /tmp/opencode/openapi.json
+Tue Oct  6 13:34:29 UTC 2026
+---
+200 174787
+06231fadca0b36c314476322337976db  /tmp/opencode/openapi.json
+[0m
+## Objective
+- Run the 8-step bug-bounty analyst loop for the alfaview gmbh program (report channel: bugs.olivermaicher.eu), producing only structured [HYP]/[PRIO]/[PARKED]/[FINAL]/[NEXT]/[LEARN]/[RISK] blocks each cycle.
+- Current phase: POC against target "api"; all HIGH-value chains are AUTH_HELPED/HUMAN_ONLY pending one human-supplied low-privilege account + room + opaque access token.
+
+## Important Details
+- Scope: ONLY assets from scope.yml + inventory/alfaview.md — company-owned infrastructure, web/desktop/mobile apps, APIs, backend, support systems, portals, websites, domains including alfaview.com and company subdomains.
+- Probe rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass/mutating tests against live customer data; no POST unless explicitly justified; facts vs hypotheses strictly separated; sha256 any secret; every claim must trace to context or own read-only probe.
+- OUT OF SCOPE classes (long list) include: brute-force/rate-limit/lockout, username enumeration, descriptive-errors-only, robots.txt, clickjacking w/o exploit, TLS best practice, cookie flags on non-sensitive data, public login panels, known-vuln libraries without program-specific exploit, exposure of customer/employee/financial/auth data during testing.
+- Key standing facts:
+  - OpenAPI: md5 `284a3383c1ac3cfc9152ffcc631891f2`, 132100B, 38 paths, 57 ops, byte-identical on beta-apis.alfaview.com; YAML twin md5 `6738669c`; `components.securitySchemes` absent, top-level `security` absent. Undocumented live 39th path: `GET /v2/audit-log`.
+  - RETRACTED (do not reuse): "OpenAPI confirms path-param UUID patterns" — "uuid" appears 0 times, 0 `pattern` keys, all 42 path params unconstrained `type: string`. Also retracted: `Permissions.admin` scope claim (that sentence lives on `PermissionsEdit.admin`); pre-auth 422 binder as standalone finding (reproduces public spec only); 403-declaration asymmetry not behaviorally load-bearing; accessKey existence oracle (exactly two 422 tiers); query-binder "global rule" over-generalization; two-tier 401 byte-length claims (use md5 `60ed2f29` for no-header, `3d0dc74b` with Authorization header).
+  - PROCEDURAL: quote contract text only after per-field lookup (two fabrications caught by audit); delta claims require a second method (DNS getent vs HTTP) — guessed-URL 404s nearly caused false deltas; canonical URLs in inventory/alfaview.md:1096.
+  - sso.alfaview.com: FusionAuth 1.63.0; OIDC md5 `f78a08fc` (issuer=acme.com, introspection_endpoint absent, password+client_credentials advertised); JWKS 200/16257B md5 `3f8d456c` (7×RS256); `/oauth2/introspect` OPTIONS 405, client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2 = base64 JSON object) — all other shapes → 200 `{"active":false}` with fabricated client_id; alfaview tokens are opaque base64 so they hit the unchecked path. CLOSED: userinfo JOSE alg-confusion (all variants → identical `access_token_failed_processing`), logout open redirect (302→/), device_authorize unregistered-client claim (401 invalid_client_id, retracted).
+  - apis.alfaview.com: 401/107B md5 `60ed2f29` uniform per header-presence state; `/v2/users/me/company` (38th path, sole 200-supplier of companyId); `/v2/auth/api-key` live (4th credential endpoint, HEAD→405 allow:POST); validation-before-auth on 10/26 GET ops; mass assignment CLOSED (all 21 body schemas additionalProperties:false); `/v2/users/invitation` Allow: DELETE,POST vs spec POST-only, `/v2/users/invitations` undocumented DELETE-only (405-before-401 Go router, 19B text/plain).
+  - app.alfaview.com: bundle app.min.67e8a68d4318b34ca241.js md5 `2cb91283...`; adminSwitchCompany mints cross-tenant tokens; hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB); signup mutation = sole unauthenticated path to a bearer token (email-gated, HUMAN_ONLY).
+  - tools.alfaview.com: 8-verb `/poll/pollservice/<verb>` with `Grpc-Metadata-alfaview.token`; second unmapped RPC mount `/whiteboard/` (47B gRPC envelope, no auth challenge, zero bundle references); bundle md5 `b7f17c85ccd8d91e9b831a6bc2aa863c`.
+  - client-diagnostics.alfaview.com CHANGED to NXDOMAIN (decommissioned); inventory 100% probed (55 dedicated hosts, 31 exhausted).
+
+## Work State
+### Completed
+- ~40+ analysis cycles run; standing probe suite byte-stable (last NO_DELTA 2026-10-06).
+- Standing survivors (from last cycle's [FINAL]): CreatePermissions BOLA (80), introspect client-auth bypass (92/94), meeting-scoped bulk link creation w/ caller-chosen permissionGroupId (64), 403-asymmetry group-links vs guest-links (58).
+- Closed classes: mass assignment, SSRF, JWT alg-confusion (apis + sso userinfo), logout redirect, accessKey oracle, device_authorize, anonymous GraphQL resolver slice, client_id-in-binary, subdomain takeover on whiteboard, orphan-quota-route.
+
+### Active
+- Awaiting execution of the [NEXT] HUMAN action; cycle output not yet emitted for the 2026-10-06 06:30:59 UTC session (last inventory timestamp).
+
+### Blocked
+- All HIGH chains blocked on HUMAN input: one self-owned low-privilege alfaview account in a controlled tenant, one non-moderated room in that tenant, one opaque access token from a legitimate self-owned signup.
+- PARKED: `sso.alfaview.com/oauth2/device_authorize` unregistered-client_id claim (confidence 44, requires form-encoded POST confirmation).
+
+## Next Move
+1. Emit the current cycle's structured blocks: [DELTA]/NO_DELTA, [PRIO], up to 3 [HYP] (introspect opaque-token bypass 92, CreatePermissions BOLA 80, 403-asymmetry 58), [PARKED]/[FINAL], one [NEXT] HUMAN, [LEARN], [RISK].
+2. Re-run standing passive probes (OpenAPI md5 `284a3383`, OIDC `f78a08fc`, JWKS `3f8d456c`, introspect OPTIONS 405, users/me 401, graphql GET 400) at ≤1 rps GET/HEAD/OPTIONS to confirm NO_DELTA; verify host liveness via DNS getent before any delta claim.
+
+## Relevant Files
+- inventory/alfaview.md: canonical host inventory + probe history; line 1096 holds canonical URLs (recovered after guessed-URL false-delta scare).
+- recon-notes/alfaview-openapi.yaml: local 37-path snapshot used for set-diff against live 38-path spec (identified `/v2/users/me/company`).
+- leads/lead-bigpickle.md: lead text referencing `/v2/room-types` (prior agent's notes).
+- art/lead_nemotron3.txt, art/lead_bigpickle.txt: sources of ranked hypotheses [94] and [92] introspect bypass entries.
+- hypotheses-bigpickle.txt, hypotheses-nemotron3.txt: NEXT-entries for both agent personas (HUMAN requests).
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "284a3383" --include=* . | head -20; echo === ; head -c 300 /tmp/opencode/openapi.json; echo; echo ===; wc -c /tmp/opencode/openapi.json
+./leads/lead-bigpickle.md:6842:[LEARN] NO_DELTA @ sso/app/tools: sso.alfaview.com metadata byte-stable for a 28th consecutive cycle (OIDC 200/2169B md5 `f78a08fc`, JWKS 200/16257B md5 `3f8d456c`, 7 RSA keys, `introspection_endpoint` still absent from discovery while `/oauth2/introspect` stays live at OPTIONS 405). apis.alfaview.com OpenAPI md5 moved for the first time in the program's recorded history, to `284a3383c1ac3cfc9152ffcc631891f2` (132100B, 38 paths, 57 operations), byte-identical on beta-apis.alfaview.com, so the same code path serves both environments. I could not identify *which* path the count delta added, and I am not claiming `/v2/room-types` as new since it is already recorded in `leads/lead-bigpickle.md` — an honest null result on the identity of the delta, as distinct from the measured result on its size.
+./leads/lead-bigpickle.md:6907:[CHANGED] apis OpenAPI md5 284a3383c1ac3cfc9152ffcc631891f2 (132100B, 38 paths, 57 ops) unchanged; components.securitySchemes absent, top-level security absent — 2nd consecutive cycle at this hash. Byte-identical on beta-apis.
+./leads/lead-bigpickle.md:6951:[LEARN] NO_DELTA @ sso/app/tools: 34th consecutive byte-stable cycle — OIDC 200/2169B md5 `f78a08fc`, JWKS 200/16257B md5 `3f8d456c` (7×RS256), `introspection_endpoint` still absent while `/oauth2/introspect` stays live at OPTIONS 405, tools `/whiteboard/` 404/47B and poll `list` 501/55B unchanged, OpenAPI md5 `284a3383` 2nd cycle. No new endpoints, no regressions, no new unauthenticated exploit surface.
+./leads/lead-bigpickle.md:6994:[CHANGED] apis.alfaview.com OpenAPI md5 `284a3383c1ac3cfc9152ffcc631891f2` (132100B, 38 paths, 57 ops) — 3rd consecutive
+./leads/lead-bigpickle.md:7035:[LEARN] NO_DELTA @ apis/sso/app/tools: 3rd consecutive byte-stable cycle — OpenAPI md5 284a3383 (132100B, 38 paths, 57 ops)
+./leads/lead-bigpickle.md:7446:[LEARN] NO_DELTA @ apis/sso standing surface: OpenAPI 200/132100B md5 284a3383 (38 paths, 57 ops),
+./leads/lead-bigpickle.md:7452:[LEARN] NO_DELTA @ apis/sso standing surface: OpenAPI 200/132100B md5 284a3383 (38 paths, 57 ops),
+./leads/lead-bigpickle.md:7495:[LEARN] NO_DELTA @ apis/sso standing surface: OpenAPI 200/132100B md5 284a3383 (38 paths, 57 ops),
+./leads/lead-bigpickle.md:7507:[CHANGED] apis.alfaview.com /v2/docs/openapi.json — byte-identical on prod+beta (md5 284a3383c1ac3cfc9152ffcc631891f2, 132100B, 38 paths, 57 ops). Local recon-notes/alfaview-openapi.yaml remains 37 paths (missing /v2/users/me/company)
+./leads/lead-bigpickle.md:7549:[LEARN] NO_DELTA @ apis/sso standing surface: OpenAPI 200/132100B md5 284a3383 (38 paths, 57 ops),
+./leads/lead-bigpickle.md:7561:[CHANGED] apis.alfaview.com /v2/docs/openapi.json — byte-identical on prod+beta (md5 284a3383c1ac3cfc9152ffcc631891f2, 132100B, 38 paths, 57 ops). Local recon-notes/alfaview-openapi.yaml remains 37 paths (missing /v2/users/me/company)
+./leads/lead-bigpickle.md:7599:[NEW] apis.alfaview.com/v2/docs/openapi.yaml (YAML twin, 165360B, md5 6738669c92a893c56e157c3927044134) — different byte-stream from JSON (132100B, 284a3383c1ac3cfc9152ffcc631891f2) but semantically identical (38 paths, 57 ops, same schemas, components.securitySchemes=None, security=None); exposed via Stoplight docs UI (https://apis.alfaview.com/docs references /v2/docs/openapi.yaml).
+./leads/lead-bigpickle.md:7600:[CHANGED] apis.alfaview.com/v2/docs/openapi.json — OpenAPI 3.1.0, 38 paths, 57 operations, stable md5 284a3383c1ac3cfc9152ffcc631891f2 (prod=beta byte-identical). 1 path delta vs local 37-path snapshot (/v2/users/me/company) already identified in corpus.
+./leads/lead-bigpickle.md:7648:[NEW] REJECTED (own-claim retraction, material) @ apis.alfaview.com OpenAPI: the string "uuid" appears ZERO times in the live 132100B / md5 284a3383 document, and the document contains ZERO `pattern` keys of any kind. All 42 path parameters across 40 operations are bare `type: string` — `/v2/users/{id}`, `/v2/rooms/{roomId}/permissions/{userId}`, `roomId`, `subroomId`, `id` alike. The KB premise "OpenAPI spec confirms path-param UUID patterns for permission and user delete", carried in30+ LEARN entries across 38 cycles, is FALSE. `grep -c uuid` = 0 on both the live JSON and the stored local YAML. `format` is used only 52 times total: 43×date-time, 7×email, 2×uri.
+./leads/lead-bigpickle.md:7653:[CHANGED] apis.alfaview.com /v2/docs/openapi.json — 200/132100B md5 284a3383c1ac3cfc9152ffcc631891f2 (38 paths, 57 operations), stable 3rd cycle. sso.alfaview.com OIDC — 200/2169B md5 f78a08fc, stable. No path or operation added, removed, or altered.
+./leads/lead-bigpickle.md:7697:[LEARN] NO_DELTA @ apis/sso: OpenAPI 200/132100B md5 284a3383c1ac3cfc9152ffcc631891f2 (38 paths, 57 ops) and OIDC 200/2169B md5 f78a08fc both byte-stable; HEAD on /v2/rooms/{uuid}/permissions and GET on /v2/rooms/{uuid}/participants both 401/107B — no pre-auth exposure, no regressions.
+./leads/lead-bigpickle.md:7752:[LEARN] NO_DELTA @ apis/sso: OpenAPI 200/132100B md5 284a3383c1ac3cfc9152ffcc631891f2 (38 paths, 57 ops) and OIDC 200/2169B md5 f78a08fc both byte-stable; HEAD on /v2/rooms/{uuid}/permissions and GET on /v2/rooms/{uuid}/participants both 401/107B. No POST was sent this cycle; all live traffic was GET/HEAD within the ≤1 rps and read-only constraints.
+./leads/lead-bigpickle.md:8155:[NEW] apis.alfaview.com OpenAPI md5 rotated to 284a3383 (132100B, 38 paths, 57 ops) — byte-identical on beta-apis.alfaview.com (delta path /v2/users/me/company identified)
+./leads/lead-bigpickle.md:8294:[CHANGED] apis.alfaview.com/v2/docs/openapi.yaml is a second spec publication, 165360B, 38 paths, 57 ops, parses to a document IDENTICAL to the JSON at /v2/docs/openapi.json. No additional surface; both formats byte-stable (JSON md5 284a3383c1ac3cfc9152ffcc631891f2, 132100B).
+./leads/lead-bigpickle.md:8439:[LEARN] NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5 3f8d456c, OIDC md5 f78a08fc (introspection_endpoint absent), introspect OPTIONS 405, users/me 401/107B md5 60ed2f29, audit-log 422/232 query.from+query.to binder, app graphql 400/406B, tools list 501/55B (staging identical) — surface byte-stable, no new unauthenticated exploit surface.
+===
+{"components":{"schemas":{"APICredentials":{"additionalProperties":false,"properties":{"clientId":{"description":"The alias of the API key.","examples":["my-integration"],"type":"string"},"companyId":{"description":"The company ID.","type":"string"},"key":{"description":"The API key to authenticate.
+===
+174787 /tmp/opencode/openapi.json
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "openapi" inventory/alfaview.md | head -40
+108:- NEW OpenAPI specs at `https://apis.alfaview.com/v2/docs/openapi.json` and `https://beta-apis.alfaview.com/v2/docs/openapi.json` are **identical** (same endpoints, schemas, auth requirements) — confirms ve
+359:- NEW apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable
+367:- NEW apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable
+375:- NEW apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable
+387:- NEW `apis.alfaview.com/v2/docs/openapi.json` still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable this cycle
+503:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d367909a40b9299b543d23712b) — 5th+ consecutive stable cycle
+540:- CHANGED apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+551:- CHANGED apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+562:- CHANGED apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+575:- CHANGED apis.alfaview.com/v2/docs/openapi.json still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+584:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+595:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+615:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — 5th+ consecutive stable cycle
+631:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3)
+640:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3)
+650:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3)
+657:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3)
+664:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3)
+689:- CHANGED apis.alfaview.com/v2/docs/openapi.json: byte-identical prod/beta (37 paths, MD5 357b94d3), no new endpoints — 10+ stable cycles
+698:- CHANGED apis.alfaview.com/v2/docs/openapi.json: byte-identical prod/beta (37 paths, MD5 357b94d3), no new endpoints — 10+ stable cycles
+749:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
+764:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
+780:- CHANGED apis.alfaview.com/v2/docs/openapi.json: still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
+795:- CHANGED `apis.alfaview.com/v2/docs/openapi.json` — still public, prod=beta byte-identical (37 paths, MD5 357b94d3), 10+ stable cycles
+823:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public, prod=beta byte-identical (37 paths, MD5 357b94d3) — 10+ stable cycles
+865:- CHANGED apis.alfaview.com/v2/docs/openapi.json: Still public and byte-identical prod/beta (37 paths, MD5 357b94d3) — schema surface fully stable 10+ cycles
+1002:- NEW Root cause is visible in the spec: /v2/docs/openapi.json declares components.securitySchemes = {} and top-level security = null. Authentication is enforced purely by handler-level middleware, which is
+1175:- NEW /v2/users/me/company (GetOwnCompany, x-sort-index 32) is the 38th path — identity of the 2026-09-28 37→38 delta RESOLVED by set-diff against recon-notes/alfaview-openapi.yaml (37 paths, removed=∅). So
+1197:- NEW NEGATIVE RESULT — v1 API is gone. https://apis.alfaview.com/v1/docs/openapi.json and .../openapi/openapi both
+1199:- NEW OpenAPI spec at apis.alfaview.com/v2/docs/openapi.json rotated to MD5 284a3383c1ac3cfc9152ffcc631891f2 (132100B, 38 paths, 57 ops) — byte-identical on beta-apis.alfaview.com
+1203:- NEW OpenAPI spec at apis.alfaview.com/v2/docs/openapi.json rotated to MD5 284a3383c1ac3cfc9152ffcc631891f2 (132100B, 38 paths, 57 ops) — byte-identical on beta-apis.alfaview.com
+1208:- NEW NEGATIVE RESULT — v1 API is gone (/v1/docs/openapi.json and /v1/docs/openapi both 404/19B)
+1234:- CHANGED NEGATIVE RESULT — v1 API gone (/v1/docs/openapi.json and /v1/docs/openapi both 404/19B)
+1245:- CHANGED NEGATIVE RESULT — v1 API gone (/v1/docs/openapi.json and /v1/docs/openapi both 404/19B)
+1289:- NEW OpenAPI spec at apis.alfaview.com/v2/docs/openapi.json stable at MD5 284a3383 (38 paths, 57 ops) for 3+ cycles; byte-identical on beta-apis.alfaview.com
+1302:- CHANGED apis.alfaview.com /v2/docs/openapi.json — byte-identical on prod+beta (md5 284a3383c1ac3cfc9152ffcc631891f2, 132100B, 38 paths, 57 ops). Local recon-notes/alfaview-openapi.yaml remains 37 paths (missi
+1323:- CHANGED OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` stable at MD5 `284a3383` (38 paths, 57 ops) for 3+ cycles; byte-identical on beta-apis.alfaview.com
+1334:- CHANGED apis.alfaview.com /v2/docs/openapi.json — byte-identical on prod+beta (md5 284a3383c1ac3cfc9152ffcc631891f2, 132100B, 38 paths, 57 ops). Local recon-notes/alfaview-openapi.yaml remains 37 paths (missi
+1340:- CHANGED OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` stable at MD5 `284a3383` (38 paths, 57 ops) for 3+ cycles; byte-identical on beta-apis.alfaview.com
+1349:- NEW apis.alfaview.com/v2/docs/openapi.yaml (YAML twin, 165360B, md5 6738669c92a893c56e157c3927044134) — different byte-stream from JSON (132100B, 284a3383c1ac3cfc9152ffcc631891f2) but semantically identic
+[0m
+[0m$ [0mcd /tmp/opencode; python3 -c "
+import json
+d=json.load(open('openapi.json'))
+print('openapi',d.get('openapi'))
+print('info',d.get('info',{}).get('version'))
+paths=d.get('paths',{})
+print('paths',len(paths))
+ops=sum(1 for p,v in paths.items() for m in v if m in ('get','post','put','delete','patch','head','options','trace'))
+print('ops',ops)
+print('securitySchemes',d.get('components',{}).get('securitySchemes','ABSENT'))
+print('topsecurity',d.get('security','ABSENT'))
+print('uuid_count',json.dumps(d).count('uuid'))
+"
+openapi 3.1.0
+info 2
+paths 38
+ops 57
+securitySchemes {'accessToken': {'bearerFormat': 'opaque', 'description': "Access tokens are returned by the authentication operations and are accepted without the 'Bearer ' prefix.", 'scheme': 'bearer', 'type': 'http'}}
+topsecurity ABSENT
+uuid_count 0
+[0m
+[0m$ [0mcd /tmp/opencode; curl -s -m 20 -o beta.json -w 'beta json %{http_code} %{size_download}\n' https://beta-apis.alfaview.com/v2/docs/openapi.json; md5sum beta.json; sleep 1; curl -s -m 20 -o live2.json -w 'prod2 %{http_code} %{size_download}\n' https://apis.alfaview.com/v2/docs/openapi.json; md5sum live2.json; sleep 1; curl -s -m 20 -o live.yaml -w 'yaml %{http_code} %{size_download}\n' https://apis.alfaview.com/v2/docs/openapi.yaml; md5sum live.yaml
+beta json 200 174787
+06231fadca0b36c314476322337976db  beta.json
+prod2 200 174787
+06231fadca0b36c314476322337976db  live2.json
+yaml 200 228358
+c65f6a507c01766ec6de4f16af17654f  live.yaml
+[0m
+[0m$ [0mcd /tmp/opencode; python3 -c "
+import json
+d=json.load(open('live2.json'))
+paths=d['paths']
+print('PATHS:')
+for p in sorted(paths):
+    for m in paths[p]:
+        if m in ('get','post','put','delete','patch','head','options'):
+            sec=paths[p].get(m,{}).get('security','<none>')
+            print(f'{m.upper():7} {p}  sec={sec}')
+"
+PATHS:
+POST    /v2/auth/api-key  sec=<none>
+POST    /v2/auth/group-link  sec=<none>
+POST    /v2/auth/guest-link  sec=<none>
+POST    /v2/auth/password  sec=<none>
+GET     /v2/auth/token-info  sec=[{'accessToken': []}]
+GET     /v2/group-links  sec=[{'accessToken': []}]
+GET     /v2/group-links/{id}  sec=[{'accessToken': []}]
+PATCH   /v2/group-links/{id}  sec=[{'accessToken': []}]
+GET     /v2/guest-links  sec=[{'accessToken': []}]
+GET     /v2/guest-links/{id}  sec=[{'accessToken': []}]
+PATCH   /v2/guest-links/{id}  sec=[{'accessToken': []}]
+GET     /v2/languages  sec=[{'accessToken': []}]
+GET     /v2/meetings  sec=[{'accessToken': []}]
+POST    /v2/meetings  sec=[{'accessToken': []}]
+GET     /v2/meetings/{id}  sec=[{'accessToken': []}]
+PATCH   /v2/meetings/{id}  sec=[{'accessToken': []}]
+POST    /v2/meetings/{id}/cancellation  sec=[{'accessToken': []}]
+GET     /v2/permission-groups  sec=[{'accessToken': []}]
+GET     /v2/room-types  sec=[{'accessToken': []}]
+GET     /v2/rooms  sec=[{'accessToken': []}]
+POST    /v2/rooms  sec=[{'accessToken': []}]
+DELETE  /v2/rooms/{id}  sec=[{'accessToken': []}]
+GET     /v2/rooms/{id}  sec=[{'accessToken': []}]
+PATCH   /v2/rooms/{id}  sec=[{'accessToken': []}]
+GET     /v2/rooms/{id}/participants  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/attendances  sec=[{'accessToken': []}]
+DELETE  /v2/rooms/{roomId}/features  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/features  sec=[{'accessToken': []}]
+PATCH   /v2/rooms/{roomId}/features  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/file-share-limits  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/file-share-settings  sec=[{'accessToken': []}]
+PATCH   /v2/rooms/{roomId}/file-share-settings  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/group-links  sec=[{'accessToken': []}]
+POST    /v2/rooms/{roomId}/group-links  sec=[{'accessToken': []}]
+DELETE  /v2/rooms/{roomId}/group-links/{id}  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/guest-links  sec=[{'accessToken': []}]
+POST    /v2/rooms/{roomId}/guest-links  sec=[{'accessToken': []}]
+DELETE  /v2/rooms/{roomId}/guest-links/{id}  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/language-settings  sec=[{'accessToken': []}]
+PATCH   /v2/rooms/{roomId}/language-settings  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/passcode  sec=[{'accessToken': []}]
+POST    /v2/rooms/{roomId}/passcode  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/permissions  sec=[{'accessToken': []}]
+POST    /v2/rooms/{roomId}/permissions  sec=[{'accessToken': []}]
+DELETE  /v2/rooms/{roomId}/permissions/{userId}  sec=[{'accessToken': []}]
+PATCH   /v2/rooms/{roomId}/permissions/{userId}  sec=[{'accessToken': []}]
+GET     /v2/rooms/{roomId}/subrooms  sec=[{'accessToken': []}]
+POST    /v2/rooms/{roomId}/subrooms  sec=[{'accessToken': []}]
+DELETE  /v2/rooms/{roomId}/subrooms/{subroomId}  sec=[{'accessToken': []}]
+PATCH   /v2/rooms/{roomId}/subrooms/{subroomId}  sec=[{'accessToken': []}]
+GET     /v2/stats  sec=[{'accessToken': []}]
+GET     /v2/users  sec=[{'accessToken': []}]
+PATCH   /v2/users  sec=[{'accessToken': []}]
+POST    /v2/users/invitation  sec=[{'accessToken': []}]
+GET     /v2/users/me  sec=[{'accessToken': []}]
+GET     /v2/users/me/company  sec=[{'accessToken': []}]
+DELETE  /v2/users/{id}  sec=[{'accessToken': []}]
+[0m
+[0m$ [0mcd /tmp/opencode; pip list 2>/dev/null | grep -i yaml; python3 -c "import yaml; print('yaml ok')" 2>&1 | tail -1
+PyYAML             6.0.1
+yaml ok
+[0m
+[0m$ [0mcd /tmp/opencode; cp /home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/alfaview-openapi.yaml old.yaml; python3 - <<'EOF'
+import json,yaml
+old=yaml.safe_load(open('old.yaml'))
+new=yaml.safe_load(open('live.yaml'))
+print('old paths',len(old['paths']),'new paths',len(new['paths']))
+print('added paths',sorted(set(new['paths'])-set(old['paths'])))
+print('removed paths',sorted(set(old['paths'])-set(new['paths'])))
+print('old securitySchemes',old.get('components',{}).get('securitySchemes','ABSENT'))
+print('new securitySchemes',new.get('components',{}).get('securitySchemes','ABSENT'))
+print('old top security',old.get('security','ABSENT'))
+print('new top security',new.get('security','ABSENT'))
+# ops
+def ops(d):
+    out=set()
+    for p,v in d['paths'].items():
+        for m in v:
+            if m in ('get','post','put','delete','patch','head','options'): out.add((m,p))
+    return out
+print('ops added',sorted(ops(new)-ops(old)))
+print('ops removed',sorted(ops(old)-ops(new)))
+# per-op security added
+secnew=[(m,p) for p,v in new['paths'].items() for m in v if m in ('get','post','put','delete','patch') and v[m].get('security')]
+old_sec=[(m,p) for p,v in old['paths'].items() for m in v if m in ('get','post','put','delete','patch') and v[m].get('security')]
+print('ops with security old',len(old_sec),'new',len(secnew))
+print('old securitySchemes top-level components keys',sorted(old.get('components',{}).keys()))
+print('new securitySchemes top-level components keys',sorted(new.get('components',{}).keys()))
+EOF
+old paths 37 new paths 38
+added paths ['/v2/users/me/company']
+removed paths []
+old securitySchemes ABSENT
+new securitySchemes {'accessToken': {'bearerFormat': 'opaque', 'description': "Access tokens are returned by the authentication operations and are accepted without the 'Bearer ' prefix.", 'scheme': 'bearer', 'type': 'http'}}
+old top security ABSENT
+new top security ABSENT
+ops added [('get', '/v2/users/me/company')]
+ops removed []
+ops with security old 0 new 53
+old securitySchemes top-level components keys ['schemas']
+new securitySchemes top-level components keys ['schemas', 'securitySchemes']
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json,yaml
+old=yaml.safe_load(open('old.yaml'))
+new=yaml.safe_load(open('live.yaml'))
+# compare schema sets
+os=set(old.get('components',{}).get('schemas',{}))
+ns=set(new.get('components',{}).get('schemas',{}))
+print('added schemas',sorted(ns-os))
+print('removed schemas',sorted(os-ns))
+# per-schema property deltas
+for s in sorted(os&ns):
+    op=set(old['components']['schemas'][s].get('properties',{}) or {})
+    np=set(new['components']['schemas'][s].get('properties',{}) or {})
+    if op!=np or old['components']['schemas'][s].get('additionalProperties')!=new['components']['schemas'][s].get('additionalProperties'):
+        print('SCHEMA DELTA',s,'added',sorted(np-op),'removed',sorted(op-np),'addProps old',old['components']['schemas'][s].get('additionalProperties'),'new',new['components']['schemas'][s].get('additionalProperties'))
+EOF
+added schemas ['Actor', 'Company', 'Event', 'PaginatedBodyListEvent', 'Target']
+removed schemas []
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json
+d=json.load(open('live2.json'))
+S=d['components']['schemas']
+for s in ['Actor','Company','Event','PaginatedBodyListEvent','Target']:
+    print('===',s)
+    print(json.dumps(S[s],indent=1)[:1500])
+EOF
+=== Actor
+{
+ "additionalProperties": false,
+ "properties": {
+  "systemName": {
+   "description": "The name of the acting service. Set if the actor type is 'system'.",
+   "type": "string"
+  },
+  "type": {
+   "description": "The type of actor.",
+   "enum": [
+    "user",
+    "support",
+    "system",
+    "async_task"
+   ],
+   "type": "string"
+  },
+  "userId": {
+   "description": "The ID of the acting user. Set if the actor type is 'user', 'support' or 'async_task'.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "type"
+ ],
+ "type": "object"
+}
+=== Company
+{
+ "additionalProperties": false,
+ "properties": {
+  "companyId": {
+   "description": "The ID.",
+   "examples": [
+    "0123456789ABCDEFGHIJKLMNOP"
+   ],
+   "type": "string"
+  },
+  "createdAt": {
+   "description": "The time at which the company was created.",
+   "examples": [
+    "2026-09-01T10:00:00Z"
+   ],
+   "format": "date-time",
+   "type": "string"
+  },
+  "displayName": {
+   "description": "The display name.",
+   "type": "string"
+  }
+ },
+ "required": [
+  "companyId",
+  "displayName",
+  "createdAt"
+ ],
+ "type": "object"
+}
+=== Event
+{
+ "additionalProperties": false,
+ "properties": {
+  "action": {
+   "description": "The audited action in the format 'domain.object.action'. Empty if 'checksumValid' is false.",
+   "examples": [
+    "room.room.create"
+   ],
+   "type": "string"
+  },
+  "actionType": {
+   "description": "Signals whether the action was reading or a writing operation.",
+   "enum": [
+    "read",
+    "write"
+   ],
+   "type": "string"
+  },
+  "actor": {
+   "$ref": "#/components/schemas/Actor",
+   "description": "The user or internal event that triggered the audited action."
+  },
+  "checksum": {
+   "description": "The checksum that the audit log service stored with the event.",
+   "type": "string"
+  },
+  "checksumValid": {
+   "description": "If false, the stored event does not match its checksum and its fields cannot be trusted.",
+   "type": "boolean"
+  },
+  "correlationId": {
+   "description": "The ID that groups all audit events of the same request.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  },
+  "details": {
+   "additionalProperties": {},
+   "description": "Details about the audited action, (e.g., 'before' and 'after' comparison).",
+   "type": "object"
+  },
+  "id": {
+   "description": "The audit event ID.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  },
+  "metadata": {
+   "additionalProperties": {
+    "type": "string"
+   },
+   "description": "The metadata attributes of the audit event. To get the available key
+=== PaginatedBodyListEvent
+{
+ "additionalProperties": false,
+ "properties": {
+  "data": {
+   "description": "The actual data for a paginated request.",
+   "items": {
+    "$ref": "#/components/schemas/Event"
+   },
+   "type": [
+    "array",
+    "null"
+   ]
+  },
+  "nextPageToken": {
+   "description": "A token that can be used to obtain the next page of the requested data.",
+   "type": "string"
+  }
+ },
+ "required": [
+  "data"
+ ],
+ "type": "object"
+}
+=== Target
+{
+ "additionalProperties": false,
+ "properties": {
+  "id": {
+   "description": "The resource ID.",
+   "examples": [
+    "00000000-0000-0000-0000-000000000000"
+   ],
+   "type": "string"
+  },
+  "type": {
+   "description": "The type of resource the audited action was applied to.",
+   "examples": [
+    "room"
+   ],
+   "type": "string"
+  }
+ },
+ "required": [
+  "type",
+  "id"
+ ],
+ "type": "object"
+}
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json
+d=json.load(open('live2.json'))
+raw=json.dumps(d)
+for name in ['Actor','PaginatedBodyListEvent','Target','Event','audit']:
+    print(name, raw.count(name))
+# where are they referenced
+def walk(o,path=''):
+    if isinstance(o,dict):
+        for k,v in o.items():
+            if isinstance(v,str) and v in ('Actor','Event','PaginatedBodyListEvent','Target','Company'):
+                print('ref',v,'at',path+'/'+k)
+            walk(v,path+'/'+k)
+    elif isinstance(o,list):
+        for i,v in enumerate(o): walk(v,path+f'[{i}]')
+walk(d)
+EOF
+Actor 2
+PaginatedBodyListEvent 1
+Target 2
+Event 4
+audit 11
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json,re
+raw=open('live2.json').read()
+for m in re.finditer('audit',raw):
+    print('...'+raw[max(0,m.start()-180):m.start()+180].replace('\n',' ')+'...')
+    print('---')
+d=json.load(open('live2.json'))
+refs=set(re.findall(r'#/components/schemas/(\w+)',json.dumps(d)))
+print('used schemas',sorted(refs))
+print('unused schemas',sorted(set(d['components']['schemas'])-refs))
+EOF
+...examples":["https://example.com/errors/example"],"format":"uri","type":"string"}},"type":"object"},"Event":{"additionalProperties":false,"properties":{"action":{"description":"The audited action in the format 'domain.object.action'. Empty if 'checksumValid' is false.","examples":["room.room.create"],"type":"string"},"actionType":{"description":"Signals wheth...
+---
+...reading or a writing operation.","enum":["read","write"],"type":"string"},"actor":{"$ref":"#/components/schemas/Actor","description":"The user or internal event that triggered the audited action."},"checksum":{"description":"The checksum that the audit log service stored with the event.","type":"string"},"checksumValid":{"description":"If false, the stored e...
+---
+...ring"},"actor":{"$ref":"#/components/schemas/Actor","description":"The user or internal event that triggered the audited action."},"checksum":{"description":"The checksum that the audit log service stored with the event.","type":"string"},"checksumValid":{"description":"If false, the stored event does not match its checksum and its fields cannot be trusted."...
+---
+...:{"description":"If false, the stored event does not match its checksum and its fields cannot be trusted.","type":"boolean"},"correlationId":{"description":"The ID that groups all audit events of the same request.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"details":{"additionalProperties":{},"description":"Details about the audite...
+---
+...s all audit events of the same request.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"details":{"additionalProperties":{},"description":"Details about the audited action, (e.g., 'before' and 'after' comparison).","type":"object"},"id":{"description":"The audit event ID.","examples":["00000000-0000-0000-0000-000000000000"],"type":"str...
+---
+..."string"},"details":{"additionalProperties":{},"description":"Details about the audited action, (e.g., 'before' and 'after' comparison).","type":"object"},"id":{"description":"The audit event ID.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"metadata":{"additionalProperties":{"type":"string"},"description":"The metadata attributes of...
+---
+... event ID.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"metadata":{"additionalProperties":{"type":"string"},"description":"The metadata attributes of the audit event. To get the available keys, refer to the 'List Searchable metadata attributes' endpoint.","type":"object"},"occurredAt":{"description":"The time at which the audited ac...
+---
+...es of the audit event. To get the available keys, refer to the 'List Searchable metadata attributes' endpoint.","type":"object"},"occurredAt":{"description":"The time at which the audited action happened.","examples":["2026-09-01T10:00:00Z"],"format":"date-time","type":"string"},"outcome":{"description":"The result of the audited action.","enum":["success","...
+---
+...description":"The time at which the audited action happened.","examples":["2026-09-01T10:00:00Z"],"format":"date-time","type":"string"},"outcome":{"description":"The result of the audited action.","enum":["success","failure","denied"],"type":"string"},"parentEventId":{"description":"The ID of the audit event that caused this one.","examples":["00000000-0000-...
+---
+...,"type":"string"},"outcome":{"description":"The result of the audited action.","enum":["success","failure","denied"],"type":"string"},"parentEventId":{"description":"The ID of the audit event that caused this one.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"targets":{"description":"The affected resources.","items":{"$ref":"#/compon...
+---
+...es":false,"properties":{"id":{"description":"The resource ID.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"type":{"description":"The type of resource the audited action was applied to.","examples":["room"],"type":"string"}},"required":["type","id"],"type":"object"},"TokenInfo":{"additionalProperties":false,"properties":{"active":{"d...
+---
+used schemas ['APICredentials', 'AccessToken', 'Actor', 'Attendance', 'AuthenticateGroupLinkRequestBody', 'AuthenticateGuestLinkRequestBody', 'Company', 'CreateGroupLinksRequestBody', 'CreateGuestLinksRequestBody', 'ErrorDetail', 'ErrorModel', 'Event', 'GroupLink', 'GroupLinkAuthenticationInfo', 'GroupLinkCreate', 'GroupLinkUpdate', 'GuestLink', 'GuestLinkAuthenticationInfo', 'GuestLinkCreate', 'GuestLinkUpdate', 'ID', 'InviteUserPermissions', 'LanguageSettings', 'LanguageSettingsEdit', 'Languages', 'Meeting', 'MeetingCancellation', 'MeetingCreate', 'MeetingUpdate', 'PaginatedBodyListGroupLink', 'PaginatedBodyListGuestLink', 'PaginatedBodyListRoom', 'Participant', 'ParticipantPermissions', 'Passcode', 'PasswordCredentials', 'PermissionGroup', 'Permissions', 'PermissionsEdit', 'Room', 'RoomCreate', 'RoomFeatures', 'RoomFeaturesEdit', 'RoomLimits', 'RoomPermissions', 'RoomQuotas', 'RoomQuotasEdit', 'RoomSettings', 'RoomSettingsUpdate', 'RoomTypeData', 'RoomUpdate', 'Stats', 'StatsPeriod', 'Subroom', 'SubroomCreateListItem', 'SubroomEdit', 'SubroomEditListItem', 'SubroomParticipants', 'Target', 'TokenInfo', 'TokenUserPermissions', 'Translation', 'User', 'UserAttendances', 'UserInformation', 'UserInvitation', 'UserProfile', 'UserUpdate']
+unused schemas ['PaginatedBodyListEvent']
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json
+new=json.load(open('live2.json'))
+import yaml
+old=yaml.safe_load(open('old.yaml'))
+# description / summary / tag deltas per operation
+def ops(d):
+    out={}
+    for p,v in d['paths'].items():
+        for m,o in v.items():
+            if m in ('get','post','put','delete','patch'):
+                out[(m,p)]=o
+    return out
+O,N=ops(old),ops(new)
+for k in sorted(set(O)&set(N)):
+    a,b=O[k],N[k]
+    diffs=[]
+    for f in ('summary','description','tags','deprecated','operationId','security','parameters','requestBody','responses','x-sort-index'):
+        if a.get(f)!=b.get(f): diffs.append(f)
+    if diffs: print(k,diffs)
+EOF
+('delete', '/v2/rooms/{id}') ['security', 'parameters', 'responses']
+('delete', '/v2/rooms/{roomId}/features') ['security', 'parameters', 'responses']
+('delete', '/v2/rooms/{roomId}/group-links/{id}') ['security', 'parameters', 'responses']
+('delete', '/v2/rooms/{roomId}/guest-links/{id}') ['security', 'parameters', 'responses']
+('delete', '/v2/rooms/{roomId}/permissions/{userId}') ['security', 'parameters', 'responses']
+('delete', '/v2/rooms/{roomId}/subrooms/{subroomId}') ['security', 'parameters', 'responses']
+('delete', '/v2/users/{id}') ['summary', 'security', 'parameters', 'responses']
+('get', '/v2/auth/token-info') ['description', 'security', 'parameters', 'responses']
+('get', '/v2/group-links') ['security', 'parameters', 'responses']
+('get', '/v2/group-links/{id}') ['security', 'parameters', 'responses']
+('get', '/v2/guest-links') ['security', 'parameters', 'responses']
+('get', '/v2/guest-links/{id}') ['security', 'parameters', 'responses']
+('get', '/v2/languages') ['security', 'parameters', 'responses']
+('get', '/v2/meetings') ['summary', 'security', 'parameters', 'responses']
+('get', '/v2/meetings/{id}') ['summary', 'security', 'parameters', 'responses']
+('get', '/v2/permission-groups') ['security', 'parameters', 'responses']
+('get', '/v2/room-types') ['security', 'parameters', 'responses']
+('get', '/v2/rooms') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{id}') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{id}/participants') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/attendances') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/features') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/file-share-limits') ['summary', 'security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/file-share-settings') ['summary', 'security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/group-links') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/guest-links') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/language-settings') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/passcode') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/permissions') ['security', 'parameters', 'responses']
+('get', '/v2/rooms/{roomId}/subrooms') ['security', 'parameters', 'responses']
+('get', '/v2/stats') ['security', 'parameters', 'responses']
+('get', '/v2/users') ['summary', 'security', 'parameters', 'responses']
+('get', '/v2/users/me') ['summary', 'security', 'parameters', 'responses']
+('patch', '/v2/group-links/{id}') ['security', 'parameters', 'responses']
+('patch', '/v2/guest-links/{id}') ['security', 'parameters', 'responses']
+('patch', '/v2/meetings/{id}') ['security', 'parameters', 'responses']
+('patch', '/v2/rooms/{id}') ['security', 'parameters', 'responses']
+('patch', '/v2/rooms/{roomId}/features') ['security', 'parameters', 'responses']
+('patch', '/v2/rooms/{roomId}/file-share-settings') ['summary', 'security', 'parameters', 'responses']
+('patch', '/v2/rooms/{roomId}/language-settings') ['security', 'parameters', 'responses']
+('patch', '/v2/rooms/{roomId}/permissions/{userId}') ['security', 'parameters', 'responses']
+('patch', '/v2/rooms/{roomId}/subrooms/{subroomId}') ['security', 'parameters', 'responses']
+('patch', '/v2/users') ['summary', 'security', 'parameters', 'responses']
+('post', '/v2/auth/api-key') ['responses']
+('post', '/v2/auth/group-link') ['responses']
+('post', '/v2/auth/guest-link') ['responses']
+('post', '/v2/auth/password') ['description', 'responses']
+('post', '/v2/meetings') ['security', 'parameters', 'responses']
+('post', '/v2/meetings/{id}/cancellation') ['security', 'parameters', 'responses']
+('post', '/v2/rooms') ['security', 'parameters', 'responses']
+('post', '/v2/rooms/{roomId}/group-links') ['security', 'parameters', 'responses']
+('post', '/v2/rooms/{roomId}/guest-links') ['security', 'parameters', 'responses']
+('post', '/v2/rooms/{roomId}/passcode') ['security', 'parameters', 'responses']
+('post', '/v2/rooms/{roomId}/permissions') ['security', 'parameters', 'responses']
+('post', '/v2/rooms/{roomId}/subrooms') ['security', 'parameters', 'responses']
+('post', '/v2/users/invitation') ['security', 'parameters', 'responses']
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json,yaml,deepdiff
+EOF
+pip list 2>/dev/null | grep -i deepdiff; echo rc=$?
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'deepdiff'
+rc=1
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json,yaml
+old=yaml.safe_load(open('old.yaml')); new=json.load(open('live2.json'))
+def get(d,m,p): return d['paths'][p][m]
+cases=[('delete','/v2/users/{id}'),('get','/v2/users'),('get','/v2/auth/token-info'),('post','/v2/auth/password'),('get','/v2/meetings')]
+for m,p in cases:
+    a,b=get(old,m,p),get(new,m,p)
+    print('====',m,p)
+    for f in ('summary','description'):
+        if a.get(f)!=b.get(f): print(' ',f,'OLD:',repr(a.get(f))[:300],'\n  NEW:',repr(b.get(f))[:300])
+    ar,br=a.get('responses',{}),b.get('responses',{})
+    print('  responses old',sorted(ar),'new',sorted(br))
+    for code in sorted(set(ar)|set(br)):
+        ao,bo=ar.get(code),br.get(code)
+        if ao!=bo:
+            print('   code',code)
+            print('    OLD',json.dumps(ao)[:400])
+            print('    NEW',json.dumps(bo)[:400])
+EOF
+==== delete /v2/users/{id}
+  summary OLD: 'Delete user' 
+  NEW: 'Delete User'
+  responses old ['204', '401', '422'] new ['204', '401', '422']
+   code 401
+    OLD {"description": "The 'Authorization' header did not contain a valid API token."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unauthorized", "status": 401, "detail": "The 'Authorization' header did not contain a valid API token."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The 'Authorization' header did not contain a valid API token.", "headers": {"WWW-Authenticate": {"description": "The authentication scheme, always 'Bearer'."
+   code 422
+    OLD {"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unprocessable Entity", "status": 422, "detail": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "An entity in the request cannot be processed. Either a validation (e.g. ID vali
+==== get /v2/users
+  summary OLD: 'List users' 
+  NEW: 'List Users'
+  responses old ['200', '401', '422'] new ['200', '401', '422']
+   code 401
+    OLD {"description": "The 'Authorization' header did not contain a valid API token."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unauthorized", "status": 401, "detail": "The 'Authorization' header did not contain a valid API token."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The 'Authorization' header did not contain a valid API token.", "headers": {"WWW-Authenticate": {"description": "The authentication scheme, always 'Bearer'."
+   code 422
+    OLD {"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unprocessable Entity", "status": 422, "detail": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "An entity in the request cannot be processed. Either a validation (e.g. ID vali
+==== get /v2/auth/token-info
+  description OLD: 'Retrieves details about the access token provided in the Authorization header.' 
+  NEW: 'Retrieves details about the access token provided in the Authorization header. Expired tokens are accepted.'
+  responses old ['200', '422'] new ['200', '422']
+   code 422
+    OLD {"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unprocessable Entity", "status": 422, "detail": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "An entity in the request cannot be processed. Either a validation (e.g. ID vali
+==== post /v2/auth/password
+  description OLD: 'Authenticates a user via username and password and returns an access token.' 
+  NEW: 'Authenticates a user via username and password and returns an access token. The user must not have two-factor authentication enabled.'
+  responses old ['200', '400', '401', '403', '422'] new ['200', '400', '401', '403', '422']
+   code 400
+    OLD {"description": "The request was not valid."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Bad Request", "status": 400, "detail": "The request was not valid."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The request was not valid."}
+   code 401
+    OLD {"description": "The authentication did not succeed because of invalid credentials."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unauthorized", "status": 401, "detail": "The authentication did not succeed because of invalid credentials."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The authentication did not succeed because of invalid credentials."}
+   code 403
+    OLD {"description": "The authentication did not succeed because of the account's status or permissions (e.g., account is inactive)."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Forbidden", "status": 403, "detail": "The authentication did not succeed because of the account's status or permissions (e.g., account is inactive, user has two-factor authentication activated)."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The authentication did not succeed because of the account's statu
+   code 422
+    OLD {"description": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unprocessable Entity", "status": 422, "detail": "An entity in the request cannot be processed. Either a validation (e.g. ID validity) did not succeed or a precondition was not met."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "An entity in the request cannot be processed. Either a validation (e.g. ID vali
+==== get /v2/meetings
+  summary OLD: 'List own Meetings' 
+  NEW: 'List Own Meetings'
+  responses old ['200', '401', '403'] new ['200', '401', '403']
+   code 401
+    OLD {"description": "The 'Authorization' header did not contain a valid API token."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Unauthorized", "status": 401, "detail": "The 'Authorization' header did not contain a valid API token."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The 'Authorization' header did not contain a valid API token.", "headers": {"WWW-Authenticate": {"description": "The authentication scheme, always 'Bearer'."
+   code 403
+    OLD {"description": "The requesting user does not have the necessary permissions."}
+    NEW {"content": {"application/problem+json": {"example": {"title": "Forbidden", "status": 403, "detail": "The requesting user does not have the necessary permissions."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The requesting user does not have the necessary permissions."}
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json,yaml
+old=yaml.safe_load(open('old.yaml')); new=json.load(open('live2.json'))
+def ops(d):
+    out={}
+    for p,v in d['paths'].items():
+        for m,o in v.items():
+            if m in ('get','post','put','delete','patch'): out[(m,p)]=o
+    return out
+O,N=ops(old),ops(new)
+def pset(o):
+    res=[]
+    for par in o.get('parameters',[]):
+        res.append((par.get('name'),par.get('in'),par.get('required'),json.dumps(par.get('schema',{}))))
+    return res
+for k in sorted(set(O)&set(N)):
+    a,b=pset(O[k]),pset(N[k])
+    if a!=b:
+        print(k)
+        print('  only old',[x for x in a if x not in b])
+        print('  only new',[x for x in b if x not in a])
+# requestBody delta
+for k in sorted(set(O)&set(N)):
+    a=json.dumps(O[k].get('requestBody'));b=json.dumps(N[k].get('requestBody'))
+    if a!=b: print('BODY DELTA',k,a[:300],'->',b[:300])
+# 401 header content
+r=new['paths']['/v2/users']['get']['responses']['401']
+print(json.dumps(r['headers'],indent=1))
+EOF
+('delete', '/v2/rooms/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('delete', '/v2/rooms/{roomId}/features')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('delete', '/v2/rooms/{roomId}/group-links/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('delete', '/v2/rooms/{roomId}/guest-links/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('delete', '/v2/rooms/{roomId}/permissions/{userId}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('delete', '/v2/rooms/{roomId}/subrooms/{subroomId}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('delete', '/v2/users/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/auth/token-info')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/group-links')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/group-links/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/guest-links')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/guest-links/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/languages')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/meetings')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/meetings/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/permission-groups')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/room-types')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{id}/participants')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/attendances')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/features')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/file-share-limits')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/file-share-settings')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/group-links')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/guest-links')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/language-settings')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/passcode')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/permissions')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/rooms/{roomId}/subrooms')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/stats')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/users')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('get', '/v2/users/me')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/group-links/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/guest-links/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/meetings/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/rooms/{id}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/rooms/{roomId}/features')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/rooms/{roomId}/file-share-settings')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/rooms/{roomId}/language-settings')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/rooms/{roomId}/permissions/{userId}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/rooms/{roomId}/subrooms/{subroomId}')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('patch', '/v2/users')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/meetings')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/meetings/{id}/cancellation')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/rooms')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/rooms/{roomId}/group-links')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/rooms/{roomId}/guest-links')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/rooms/{roomId}/passcode')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/rooms/{roomId}/permissions')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/rooms/{roomId}/subrooms')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+('post', '/v2/users/invitation')
+  only old [('Authorization', 'header', None, '{"description": "A valid access token (can be obtained by authenticating).", "type": "string"}')]
+  only new []
+{
+ "WWW-Authenticate": {
+  "description": "The authentication scheme, always 'Bearer'.",
+  "schema": {
+   "examples": [
+    "Bearer"
+   ],
+   "type": "string"
+  }
+ }
+}
+[0m
+[0m$ [0mcd /tmp/opencode; set -e
+p(){ printf '%s ' "$1"; curl -s -m 15 -o /tmp/opencode/s.out -w '%{http_code} %{size_download} ' "$2"; md5sum /tmp/opencode/s.out | cut -c1-8; sleep 1.1; }
+p oidc https://sso.alfaview.com/.well-known/openid-configuration
+p jwks https://sso.alfaview.com/oauth2/jwks
+p introspect-OPT -X OPTIONS -D /tmp/opencode/h.txt https://sso.alfaview.com/oauth2/introspect
+p usersme https://apis.alfaview.com/v2/users/me
+p auditlog https://apis.alfaview.com/v2/audit-log
+p apilist https://apis.alfaview.com/v2/docs/openapi.json -o /dev/null
+echo ---; grep -i -E '^(HTTP|allow)' /tmp/opencode/h.txt
+oidc 200 2169 f78a08fc
+jwks 404 4955 7f14cb67
+introspect-OPT curl: option -X: requires parameter
+curl: try 'curl --help' or 'curl --manual' for more information
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "jwks" leads/lead-bigpickle.md | tail -8; echo ===; grep -rn "jwks" inventory/alfaview.md | tail -8
+5520:[LEARN] NO_DELTA @ full standing probes: openapi md5 357b94d3 (37 paths), jwks 200/16257B (3f8d456c), oidc 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, authorize 200/6176B, tools.list GET 501/55B, users/me 401/107B, graphql GET 400/406B — all byte-stable; no new unauthenticated exploit surface.
+5562:[LEARN] NO_DELTA @ full standing probes: openapi md5 357b94d3 (37 paths), jwks 200/16257B (3f8d456c), oidc 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, authorize 200/6176B, tools.list GET 501/55B, users/me 401/107B, graphql GET 400/406B, diag /health 200/16B, test.alfaview v483102 — all byte-stable; no new unauthenticated exploit surface.
+5602:[LEARN] NO_DELTA @ full standing probes: openapi md5 357b94d3 (37 paths), jwks 200/16257B (3f8d456c), oidc 200/2169B (introspection_endpoint absent, issuer=acme.com), introspect OPTIONS 405, authorize 200/6176B, tools.list GET 501/55B, users/me 401/107B, graphql GET 400/406B, diag /health 200/16B, test.alfaview v483102 — all byte-stable; no new unauthenticated exploit surface.
+6115:verify_steps: `GET https://sso.alfaview.com/.well-known/openid-configuration`; `GET https://sso.alfaview.com/.well-known/jwks.json`; `OPTIONS https://sso.alfaview.com/oauth2/introspect`; `GET https://sso.alfaview.com/oauth2/authorize?client_id=probe-invalid-20260925&redirect_uri=https%3A%2F%2Fexample.invalid%2Fcb&response_type=code`; do not submit a token.
+6754:verify_steps: Passive: `GET https://sso.alfaview.com/.well-known/openid-configuration` and `GET https://sso.alfaview.com/.well-known/jwks.json`, recording sizes and md5 — both stable this cycle at 2169B and 16257B. Authenticated, read-only: `POST /oauth2/introspect` with `token=<self-issued token>&client_id=<fabricated>` and record whether the response returns `active` claims it should not disclose. No token other than one the tester owns.
+6797:verify_steps: Passive: `GET https://sso.alfaview.com/.well-known/openid-configuration` and `GET https://sso.alfaview.com/.well-known/jwks.json`, recording sizes and md5 — both stable this cycle at 2169B/`f78a08fc` and 16257B/`3f8d456c`. Authenticated, read-only: `POST /oauth2/introspect` with `token=<self-issued token>&client_id=<fabricated>`, record whether the response returns `active` claims it should not disclose. No token other than one the tester owns.
+6827:verify_steps: Passive: `GET https://sso.alfaview.com/.well-known/openid-configuration` and `GET https://sso.alfaview.com/.well-known/jwks.json`, recording sizes and md5 — stable this cycle at 2169B/`f78a08fc` and 16257B/`3f8d456c`. Authenticated, read-only: `POST /oauth2/introspect` with `token=<self-issued token>&client_id=<fabricated>`, record whether the response returns `active` claims it should not disclose. No token other than one the tester owns.
+6871:verify_steps: Passive (done this cycle): `GET https://sso.alfaview.com/.well-known/openid-configuration` and `GET https://sso.alfaview.com/.well-known/jwks.json`, record size and md5. Authenticated, read-only: `POST https://sso.alfaview.com/oauth2/introspect`, `Content-Type: application/x-www-form-urlencoded`, body `token=<self-issued token>&client_id=<fabricated>`, recording whether `active` claims are disclosed. No token other than one the tester owns.
+===
+818:- CHANGED sso.alfaview.com/.well-known/jwks.json: JWKS restored (200, 7 RSA keys, MD5 3f8d456c) after 404 period
+833:- CHANGED sso.alfaview.com/.well-known/jwks.json: JWKS restored (200, 7 RSA keys, MD5 3f8d456c) after 404 period
+846:- NEW sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored; MD5 3f8d456c stable
+862:- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404) — JWKS endpoint restored; MD5 3f8d456c stable
+914:- NEW sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (was 404 in prior cycles) — JWKS endpoint restored; MD5 3f8d456c stable
+970:- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored.
+990:- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored.
+1044:- CHANGED sso.alfaview.com/.well-known/jwks.json: Returns 200 with 7 RSA keys (MD5 3f8d456c stable) — JWKS restored
+[0m
+[0m$ [0mcd /tmp/opencode; curl -s -m 15 -D jwks.h -o jwks.out -w '%{http_code} %{size_download}\n' https://sso.alfaview.com/.well-known/jwks.json; md5sum jwks.out; head -c 200 jwks.out; echo; head -5 jwks.h
+200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  jwks.out
+{
+  "keys" : [
+    {
+      "alg" : "RS256",
+      "e" : "AQAB",
+      "kid" : "2_u-_NxzABfQJQ8cW-Bs1opjBKM",
+      "kty" : "RSA",
+      "n" : "qT_xytJqFqGysh3-OWpKQAwzzeTwXg8TJs3qI7A0yhe-xkBue5vsyyfT4
+HTTP/2 200 
+date: Tue, 06 Oct 2026 13:37:24 GMT
+content-type: application/json; charset=UTF-8
+cache-control: no-cache
+server: edge-proxy
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json
+d=json.load(open('live2.json'))
+# check auth endpoints descriptions/summaries changes & undocumented refs
+for p in ['/v2/auth/api-key','/v2/auth/group-link','/v2/auth/guest-link']:
+    o=d['paths'][p]['post']
+    print(p,'|',o.get('summary'),'|',o.get('description'))
+    print('  sec',o.get('security','ABSENT'),'| resp',sorted(o.get('responses',{})))
+# find any new doc mentions of metadata endpoint / search endpoints
+raw=json.dumps(d)
+for term in ['Searchable metadata','search','audit-log','/v2/audit']:
+    print(term, raw.count(term))
+EOF
+/v2/auth/api-key | Authenticate via API Key | Authenticates via an API key and returns an access token. Refer to the [related support article](https://support.alfaview.com/en/developers/request-your-api-credentials/) to generate API keys.
+  sec ABSENT | resp ['200', '400', '401', '403', '422']
+/v2/auth/group-link | Authenticate a Guest (Group Link) | Tries to authenticate a group link guest via access key. If the access key exists, information about the guest's authentication are returned. If the access key is also valid at the time of the request, the response additionally includes an access token and a token expiry time.
+  sec ABSENT | resp ['200', '400', '401', '422']
+/v2/auth/guest-link | Authenticate a Guest (Guest Link) | Tries to authenticate a guest link guest via access key. If the access key exists, information about the guest's authentication are returned. If the access key is also valid at the time of the request, the response additionally includes an access token and a token expiry time.
+  sec ABSENT | resp ['200', '400', '401', '422']
+Searchable metadata 1
+search 0
+audit-log 0
+/v2/audit 0
+[0m
+[0m$ [0mcd /tmp/opencode
+curl -s -m 15 -X OPTIONS -D o.h -o o.b -w 'introspect-OPT %{http_code} %{size_download}\n' https://sso.alfaview.com/oauth2/introspect; sleep 1.1
+curl -s -m 15 -D u.h -o u.b -w 'users/me %{http_code} %{size_download}\n' https://apis.alfaview.com/v2/users/me; md5sum u.b|cut -c1-8; sleep 1.1
+curl -s -m 15 -D a.h -o a.b -w 'audit-log %{http_code} %{size_download}\n' 'https://apis.alfaview.com/v2/audit-log'; md5sum a.b|cut -c1-8; head -c 250 a.b; echo; sleep 1.1
+curl -s -m 15 -D g.h -o g.b -w 'graphql %{http_code} %{size_download}\n' 'https://app.alfaview.com/graphql'; md5sum g.b|cut -c1-8; sleep 1.1
+curl -s -m 15 -D t.h -o t.b -w 'toolslist %{http_code} %{size_download}\n' 'https://tools.alfaview.com/poll/pollservice/list'; md5sum t.b|cut -c1-8
+echo ---; grep -i -E '^(HTTP|allow)' o.h a.h g.h t.h
+introspect-OPT 405 0
+users/me 401 107
+60ed2f29
+audit-log 422 232
+b4adcd15
+{"title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"required query parameter is missing","location":"query.from"},{"message":"required query parameter is missing","location":"query.to"}]}
+
+graphql 400 406
+2fd0a1d0
+toolslist 501 55
+ace9390a
+---
+o.h:HTTP/2 405 
+a.h:HTTP/2 422 
+g.h:HTTP/2 400 
+t.h:HTTP/2 501
+[0m
+[0m$ [0mcd /tmp/opencode; cat u.h; echo ===; cat a.h; echo ===; cat g.h
+HTTP/2 401 
+content-type: application/problem+json
+www-authenticate: Bearer
+date: Tue, 06 Oct 2026 13:37:36 GMT
+content-length: 107
+server: edge-proxy
+
+===
+HTTP/2 422 
+content-type: application/problem+json
+date: Tue, 06 Oct 2026 13:37:37 GMT
+content-length: 232
+server: edge-proxy
+
+===
+HTTP/2 400 
+strict-transport-security: max-age=15552000; includeSubDomains
+content-security-policy: default-src 'self' https://alfaview.com https://*.alfaview.com;connect-src 'self' https://alfaview.com https://*.alfaview.com https://plausible.alfaview.com;img-src 'self' data: https://alfaview.com https://*.alfaview.com;script-src 'self' 'unsafe-eval' https://alfaview.com https://*.alfaview.com ;script-src-attr 'none';child-src alfaview:;frame-ancestors 'self' https://omega-lectures.com https://*.omega-lectures.com;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;form-action 'self';object-src 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+x-content-type-options: nosniff
+x-xss-protection: 0
+referrer-policy: origin-when-cross-origin
+access-control-allow-origin: *
+content-type: application/json; charset=utf-8
+content-length: 406
+etag: W/"196-HUCJKwlQurC5GNaaJnH0d+HOnRw"
+date: Tue, 06 Oct 2026 13:37:39 GMT
+server: edge-proxy
+vary: Accept-Encoding
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; tail -40 leads/lead-bigpickle.md; echo ======; wc -l leads/lead-bigpickle.md
+[LEARN] PROCEDURAL: auditing prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted only after per-field lookup.
+[RISK] alfaview gmbh: 87 (unchanged net). Highest risk is CreatePermissions BOLA at 80 (unconstrained cross-namespace participantId, atomic full-admin grant) requiring AUTH_HELPED wire test. OAuth2 introspection client auth bypass at 94 is significant but token-gated. Mass assignment closed across write surface. Validation-before-auth bounded to query-param routes (path params correctly 401). No PII/config disclosure claimed; findings are authorization/logic flaws pending wire confirmation.
+testability: AUTH_HELPED
+[PARKED] sso.alfaview.com/oauth2/device_authorize accepts unregistered client_id: confidence 44 < 40 threshold; requires form-encoded POST confirmation (not GET/HEAD/OPTIONS) and behavior historically unstable across cycles — not advanced under passive-first constraint.
+[FINAL] CreatePermissions grants room-admin to any company-wide principal ID (80) — AUTH_HELPED, wire test needed
+[FINAL] Meeting-scoped bulk link creation binds caller-chosen permissionGroupId (64) — AUTH_HELPED, wire test needed
+class: IDOR
+asset: apis.alfaview.com
+confidence: 58
+testability: AUTH_HELPED
+reasoning: GET /v2/guest-links documents 403; GET /v2/group-links does not. DELETE /v2/users/{id} and PATCH /v2/guest-links/{id} also omit 403.
+verify_steps: minimal-privilege token -> GET /v2/group-links; PATCH /v2/guest-links/{id}; observe 403 vs 200/204.
+[HYP] OAuth2 introspection answers for opaque alfaview API tokens with zero valid client credentials
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 92
+testability: AUTH_HELPED
+reasoning: client auth enforced only for JWT-shaped tokens (3 segments, seg2 = base64 JSON object); alfaview tokens are opaque base64 and land on the unchecked path; reconfirmed structurally unchanged this cycle (spec, OIDC, JWKS all byte-stable).
+verify_steps: (1) token=<opaque>&client_id=fabricated -> expect 200 active:true. (2) same +token_type_hint=refresh_token -> expect 401. (3) Basic fabricated id+secret -> expect 200.
+[HYP] CreatePermissions grants room-admin to any company-wide principal ID
+class: IDOR
+asset: apis.alfaview.com
+confidence: 80
+testability: AUTH_HELPED
+reasoning: participantId polymorphic across user/guest-link/group-link with no discriminator; scope only in path; atomic full Permissions set on create; spec unchanged this cycle.
+verify_steps: companyId + guest-link harvest -> single POST /v2/rooms/{roomId}/permissions -> 204 vs 403 vs 409 vs 422.
+[HYP] Group-link and guest-link list endpoints may not enforce the same authorization as each other
+class: IDOR
+asset: apis.alfaview.com
+confidence: 58
+testability: AUTH_HELPED
+reasoning: GET /v2/guest-links documents 403; GET /v2/group-links does not; DELETE /v2/users/{id} and PATCH /v2/guest-links/{id} also omit it.
+verify_steps: minimal-privilege token -> GET /v2/group-links?limit=1; observe 403 vs 200 vs 401-tier md5.
+[NEXT] HUMAN: provide ONE self-owned low-privilege alfaview account in a tenant you control, ONE non-moderated room in that same tenant, and ONE opaque access token from a legitimate self-owned signup. With those three inputs I will run, all <=1 rps: (a) GET /v2/users/me/company and GET /v2/group-links?limit=1 (read-only) for the 403-asymmetry test; (b) exactly one POST /v2/rooms/{roomId}/permissions against the non-moderated room with a harvested participantId (single authorized write inside your own tenant); (c) exactly three POSTs to sso /oauth2/introspect with the real token — POST-body, HTTP Basic, and token_type_hint=refresh_token — expecting 200 active:true / 200 / 401. Exact status, headers and bodies recorded verbatim for every request.
+[LEARN] CHANGED @ client-diagnostics.alfaview.com: NXDOMAIN (previously /health 200/16B) — mapped host decommissioned between cycles; all other scoped hosts resolve and answer normally.
+[LEARN] NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5 3f8d456c, OIDC md5 f78a08fc (introspection_endpoint absent), introspect OPTIONS 405, users/me 401/107B md5 60ed2f29, audit-log 422/232 query.from+query.to binder, app graphql 400/406B, tools list 501/55B (staging identical) — surface byte-stable, no new unauthenticated exploit surface.
+[LEARN] PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs were recovered from inventory/alfaview.md:1096 before any claim was emitted. Delta claims now require a second method (DNS getent vs HTTP) before acceptance.
+[RISK] alfaview gmbh: 88 (unchanged). The retired client-diagnostics host removes a tiny amount of surface and no finding depended on it. Introspection bypass (92) remains the top unauthenticated-adjacent issue but cannot be proven without one real opaque token; CreatePermissions BOLA (80) stays the highest-impact item pending a single authorized write; 403 asymmetry (58) is the cheapest confirmation. No PII or customer data was read or modified: every probe this cycle was unauthenticated, returned 401/404/422/501, or targeted SSO discovery endpoints. Mass assignment, JWT alg-confusion, SSRF, logout redirect, accessKey oracle and device_authorize all remain closed.
+[LEARN] PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs were recovered from inventory/alfaview.md:1096 before any claim was emitted. Delta claims now require a second method (DNS getent vs HTTP) before acceptance.
+[RISK] alfaview gmbh: 88 (unchanged). The retired client-diagnostics host removes a tiny amount of surface and no finding depended on it. Introspection bypass (92) remains the top unauthenticated-adjacent issue but cannot be proven without one real opaque token; CreatePermissions BOLA (80) stays the highest-impact item pending a single authorized write; 403 asymmetry (58) is the cheapest confirmation. No PII or customer data was read or modified: every probe this cycle was unauthenticated, returned 401/404/422/501, or targeted SSO discovery endpoints. Mass assignment, JWT alg-confusion, SSRF, logout redirect, accessKey oracle and device_authorize all remain closed.
+======
+8443 leads/lead-bigpickle.md
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; ls recon-notes reposcan-raw triage 2>/dev/null; echo ===; grep -rln "securitySchemes" . 2>/dev/null | head; echo ===; grep -rn "PaginatedBodyListEvent\|\"Actor\"\|checksumValid" --include=*.json --include=*.yaml --include=*.md . 2>/dev/null | head
+recon-notes:
+CORPUS-ALFAVIEW.md
+DEDICATED-DEEP.md
+DEEPER-FINDINGS.md
+SCOPE-CONFIRMATION.md
+alfaview-openapi.yaml
+
+reposcan-raw:
+summary.txt
+
+triage:
+run-2026-09-03-11-41.md
+run-2026-09-03-15-37.md
+run-2026-09-03-18-51.md
+run-2026-09-03-21-32.md
+run-2026-09-03-23-30.md
+run-2026-09-04-01-20.md
+run-2026-09-04-06-01.md
+run-2026-09-04-11-23.md
+run-2026-09-04-15-05.md
+run-2026-09-04-18-27.md
+run-2026-09-04-21-00.md
+run-2026-09-04-23-04.md
+run-2026-09-05-01-01.md
+run-2026-09-05-05-48.md
+run-2026-09-05-09-49.md
+run-2026-09-05-13-11.md
+run-2026-09-05-16-10.md
+run-2026-09-05-18-21.md
+run-2026-09-05-20-41.md
+run-2026-09-05-22-34.md
+run-2026-09-06-00-11.md
+run-2026-09-06-04-44.md
+run-2026-09-06-09-06.md
+run-2026-09-06-12-54.md
+run-2026-09-06-15-56.md
+run-2026-09-06-18-00.md
+run-2026-09-06-20-17.md
+run-2026-09-06-22-09.md
+run-2026-09-06-23-58.md
+run-2026-09-07-03-29.md
+run-2026-09-07-08-37.md
+run-2026-09-07-14-28.md
+run-2026-09-07-18-50.md
+run-2026-09-07-21-51.md
+run-2026-09-07-23-53.md
+run-2026-09-08-02-33.md
+run-2026-09-08-07-26.md
+run-2026-09-08-12-16.md
+run-2026-09-08-16-42.md
+run-2026-09-08-19-41.md
+run-2026-09-08-22-16.md
+run-2026-09-09-00-20.md
+run-2026-09-09-04-53.md
+run-2026-09-09-09-21.md
+run-2026-09-09-13-52.md
+run-2026-09-09-17-28.md
+run-2026-09-09-19-59.md
+run-2026-09-09-22-24.md
+run-2026-09-10-00-33.md
+run-2026-09-10-05-12.md
+run-2026-09-10-09-49.md
+run-2026-09-10-14-00.md
+run-2026-09-10-17-37.md
+run-2026-09-10-20-00.md
+run-2026-09-10-22-37.md
+run-2026-09-11-00-32.md
+run-2026-09-11-05-11.md
+run-2026-09-11-09-46.md
+run-2026-09-11-13-59.md
+run-2026-09-11-17-42.md
+run-2026-09-11-20-01.md
+run-2026-09-11-22-38.md
+run-2026-09-12-00-36.md
+run-2026-09-12-04-58.md
+run-2026-09-12-09-06.md
+run-2026-09-12-12-59.md
+run-2026-09-12-15-57.md
+run-2026-09-12-18-08.md
+run-2026-09-12-20-36.md
+run-2026-09-12-22-36.md
+run-2026-09-13-00-15.md
+run-2026-09-13-04-55.md
+run-2026-09-13-09-55.md
+run-2026-09-13-14-02.md
+run-2026-09-13-17-25.md
+run-2026-09-13-19-43.md
+run-2026-09-13-22-00.md
+run-2026-09-14-00-14.md
+run-2026-09-14-05-02.md
+run-2026-09-14-10-44.md
+run-2026-09-14-16-44.md
+run-2026-09-14-20-42.md
+run-2026-09-14-23-39.md
+run-2026-09-15-01-53.md
+run-2026-09-15-07-03.md
+run-2026-09-15-12-42.md
+run-2026-09-15-17-26.md
+run-2026-09-15-20-25.md
+run-2026-09-15-23-09.md
+run-2026-09-16-01-28.md
+run-2026-09-16-06-41.md
+run-2026-09-16-12-22.md
+run-2026-09-16-17-15.md
+run-2026-09-16-20-12.md
+run-2026-09-16-23-00.md
+run-2026-09-17-01-12.md
+run-2026-09-17-06-10.md
+run-2026-09-17-11-47.md
+run-2026-09-17-16-07.md
+run-2026-09-17-19-44.md
+run-2026-09-17-22-35.md
+run-2026-09-18-00-45.md
+run-2026-09-18-05-28.md
+run-2026-09-18-10-01.md
+run-2026-09-18-14-32.md
+run-2026-09-18-17-50.md
+run-2026-09-18-20-16.md
+run-2026-09-18-22-38.md
+run-2026-09-19-00-36.md
+run-2026-09-19-05-00.md
+run-2026-09-19-09-19.md
+run-2026-09-19-13-13.md
+run-2026-09-19-16-32.md
+run-2026-09-19-18-50.md
+run-2026-09-19-21-13.md
+run-2026-09-19-23-10.md
+run-2026-09-20-01-13.md
+run-2026-09-20-06-21.md
+run-2026-09-20-11-46.md
+run-2026-09-20-15-15.md
+run-2026-09-20-18-13.md
+run-2026-09-20-20-52.md
+run-2026-09-20-22-55.md
+run-2026-09-21-00-45.md
+run-2026-09-21-05-46.md
+run-2026-09-21-11-43.md
+run-2026-09-21-17-39.md
+run-2026-09-21-21-14.md
+run-2026-09-22-00-09.md
+run-2026-09-22-05-03.md
+run-2026-09-22-10-01.md
+run-2026-09-22-14-58.md
+run-2026-09-22-18-35.md
+run-2026-09-22-21-38.md
+run-2026-09-22-23-48.md
+run-2026-09-23-02-50.md
+run-2026-09-23-08-11.md
+run-2026-09-23-13-40.md
+run-2026-09-23-18-09.md
+run-2026-09-23-21-32.md
+run-2026-09-23-23-55.md
+run-2026-09-24-02-49.md
+run-2026-09-24-08-02.md
+run-2026-09-24-13-35.md
+run-2026-09-24-17-56.md
+run-2026-09-24-21-06.md
+run-2026-09-24-23-53.md
+run-2026-09-25-02-58.md
+run-2026-09-25-08-36.md
+run-2026-09-25-14-08.md
+run-2026-09-25-18-40.md
+run-2026-09-25-21-49.md
+run-2026-09-26-00-19.md
+run-2026-09-26-05-09.md
+run-2026-09-26-09-55.md
+run-2026-09-26-13-59.md
+run-2026-09-26-17-41.md
+run-2026-09-26-20-31.md
+run-2026-09-26-23-07.md
+run-2026-09-27-01-30.md
+run-2026-09-27-07-03.md
+run-2026-09-27-13-05.md
+run-2026-09-27-17-47.md
+run-2026-09-27-20-42.md
+run-2026-09-27-23-32.md
+run-2026-09-28-01-57.md
+run-2026-09-28-08-16.md
+run-2026-09-28-16-48.md
+run-2026-09-28-22-22.md
+run-2026-09-29-02-16.md
+run-2026-09-29-08-38.md
+run-2026-09-29-15-04.md
+run-2026-09-29-20-01.md
+run-2026-09-29-23-45.md
+run-2026-09-30-03-30.md
+run-2026-09-30-09-58.md
+run-2026-09-30-16-18.md
+run-2026-09-30-20-52.md
+run-2026-10-01-00-18.md
+run-2026-10-01-06-08.md
+run-2026-10-01-13-23.md
+run-2026-10-01-19-00.md
+run-2026-10-01-23-14.md
+run-2026-10-02-02-18.md
+run-2026-10-02-08-38.md
+run-2026-10-02-14-58.md
+run-2026-10-02-19-48.md
+run-2026-10-02-23-29.md
+run-2026-10-03-02-17.md
+run-2026-10-03-08-15.md
+run-2026-10-03-13-27.md
+run-2026-10-03-17-34.md
+run-2026-10-03-20-10.md
+run-2026-10-03-23-06.md
+run-2026-10-04-02-42.md
+run-2026-10-04-09-15.md
+run-2026-10-04-14-48.md
+run-2026-10-04-18-30.md
+run-2026-10-04-21-53.md
+run-2026-10-05-00-22.md
+run-2026-10-05-06-10.md
+run-2026-10-05-14-47.md
+run-2026-10-05-21-46.md
+run-2026-10-06-02-00.md
+run-2026-10-06-09-02.md
+===
+./leads/lead-bigpickle.md
+./leads/lead-nemotron3.md
+./analyst-out.txt
+./reports/hypotheses.md
+./reports/analyst-nemotron3.log
+./reports/hypotheses-bigpickle.txt
+./reports/hypotheses-nemotron3.txt
+./reports/analyst-bigpickle.log
+./ctx.txt
+./knowledge/index.md
+===
+./leads/lead-bigpickle.md:7089:[NEW] Orphan schema family in the published contract: Event, Actor, Target, PaginatedBodyListEvent.
+./leads/lead-bigpickle.md:8065:[LEARN] Prior cycles chased path-parameter formats and found nothing; the spec's own **description prose** is the higher-yield surface. `ParticipantPermissions.participantId` naming three namespaces in one string is a stronger artifact than any enum or `pattern`. Also: distinguishing `Permissions` (create, all-required) from `PermissionsEdit` (patch, all-nullable) by tracing **which path `$ref`s which schema** — a schema can sit unreferenced-by-path yet be live, which is why the orphan-diff method alone produced a misleading 20-name list. Correct true-orphan set is `ErrorModel` (generic RFC7807) and `PaginatedBodyListEvent` (the `/v2/audit-log` envelope).
+./leads/lead-bigpickle.md:8123:[LEARN] Prior cycles chased path-parameter formats and found nothing; the spec's own **description prose** is the higher-yield surface. `ParticipantPermissions.participantId` naming three namespaces in one string is a stronger artifact than any enum or `pattern`. Also: distinguishing `Permissions` (create, all-required) from `PermissionsEdit` (patch, all-nullable) by tracing **which path `$ref`s which schema** — a schema can sit unreferenced-by-path yet be live, which is why the orphan-diff method alone produced a misleading 20-name list. Correct true-orphan set is `ErrorModel` (generic RFC7807) and `PaginatedBodyListEvent` (the `/v2/audit-log` envelope).
+./leads/lead-nemotron3.md:10083:[NEW] apis.alfaview.com GET /v2/audit-log — LIVE, UNDOCUMENTED 39th path absent from OpenAPI; pre-auth query binder complete (10 GET ops now validate pre-auth); orphan schema family Event/Actor/Target/PaginatedBodyListEvent in contract
+./leads/lead-nemotron3.md:10150:[NEW] apis.alfaview.com GET /v2/audit-log — LIVE, UNDOCUMENTED 39th path absent from OpenAPI; pre-auth query binder complete (10 GET ops now validate pre-auth); orphan schema family Event/Actor/Target/PaginatedBodyListEvent
+./knowledge/index.md:1123:- 2026-10-04 Prior cycles chased path-parameter formats and found nothing; the spec's own **description prose** is the higher-yield surface. `ParticipantPermissions.participantId` naming three namespaces in one string is a stronger artifact than any enum or `pattern`. Also: distinguishing `Permissions` (create, all-required) from `PermissionsEdit` (patch, all-nullable) by tracing **which path `$ref`s which schema** — a schema can sit unreferenced-by-path yet be live, which is why the orphan-diff method alone produced a misleading 20-name list. Correct true-orphan set is `ErrorModel` (generic RFC7807) and `PaginatedBodyListEvent` (the `/v2/audit-log` envelope).
+./inventory/alfaview.md:1218:- NEW Orphan schema family in the published contract: Event, Actor, Target, PaginatedBodyListEvent.
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "Expired tokens\|two-factor" . 2>/dev/null | head
+./leads/lead-bigpickle.md:6045:[NEW] @ support.alfaview.com — first-ever full mapping (31 cycles only ever recorded a 301). WordPress "alfaview Support Center" (server: myracloud, etag "myra-*", host: support/staging → *.ax4z.com), custom theme alfaview-support. GET /wp-json/ → 200/280078B, 272 routes, namespaces: alfaview/v1, a63f92/v1, otgs/installer/v1, redirection/v1, duplicate-post/v1, two-factor/1.0, wpml/{v1,st/v1,tm/v1,ate/v1}, wp-site-health/v1. Every state/sensitive route is 401-gated; only /alfaview/v1/search-index is public (200/32366B, 102 public KB articles).
+./leads/lead-bigpickle.md:7006:impact: If any non-desktop path issues a bearer to a 2FA-enabled user without a second factor, then two-factor
+./leads/lead-bigpickle.md:7031:[NEXT] HUMAN: enable two-factor authentication on a single self-owned alfaview test account (client-side toggle per the
+./leads/lead-bigpickle.md:7040:[NEW] alfaview's security-guide (200/105KB) lists "Activate the two-factor authentication" as a personal self-service
+./analyst-out.txt:674:  NEW: 'Retrieves details about the access token provided in the Authorization header. Expired tokens are accepted.'
+./analyst-out.txt:681:  NEW: 'Authenticates a user via username and password and returns an access token. The user must not have two-factor authentication enabled.'
+./analyst-out.txt:691:    NEW {"content": {"application/problem+json": {"example": {"title": "Forbidden", "status": 403, "detail": "The authentication did not succeed because of the account's status or permissions (e.g., account is inactive, user has two-factor authentication activated)."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The authentication did not succeed because of the account's statu
+./reports/hypotheses.md:3975:- NEXT(hypotheses-bigpickle.txt): HUMAN: enable two-factor authentication on a single self-owned alfaview test account (client-side toggle per the
+./ctx.txt:2481:- NEW alfaview's security-guide (200/105KB) lists "Activate the two-factor authentication" as a personal self-service
+./inventory/alfaview.md:1196:- NEW alfaview's security-guide (200/105KB) lists "Activate the two-factor authentication" as a personal self-service
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import json,yaml
+old=yaml.safe_load(open('old.yaml')); new=json.load(open('live2.json'))
+pairs=[('get','/v2/group-links'),('get','/v2/guest-links'),('delete','/v2/users/{id}'),('patch','/v2/guest-links/{id}'),('patch','/v2/group-links/{id}'),('get','/v2/meetings'),('get','/v2/stats'),('get','/v2/room-types')]
+for m,p in pairs:
+    o=sorted(old['paths'][p][m].get('responses',{})); n=sorted(new['paths'][p][m].get('responses',{}))
+    print(f'{m.upper()} {p}: old={o} new={n} {"SAME" if o==n else "DELTA"}')
+# 403 detail strings new
+for m,p in pairs:
+    r=new['paths'][p][m].get('responses',{}).get('403')
+    if r: print(p,'403 ->',json.dumps(r)[:300])
+EOF
+GET /v2/group-links: old=['200', '401'] new=['200', '401'] SAME
+GET /v2/guest-links: old=['200', '401', '403'] new=['200', '401', '403'] SAME
+DELETE /v2/users/{id}: old=['204', '401', '422'] new=['204', '401', '422'] SAME
+PATCH /v2/guest-links/{id}: old=['204', '400', '401', '404', '422'] new=['204', '400', '401', '404', '422'] SAME
+PATCH /v2/group-links/{id}: old=['204', '400', '401', '404', '422'] new=['204', '400', '401', '404', '422'] SAME
+GET /v2/meetings: old=['200', '401', '403'] new=['200', '401', '403'] SAME
+GET /v2/stats: old=['200', '401', '403', '422'] new=['200', '401', '403', '422'] SAME
+GET /v2/room-types: old=['200', '401'] new=['200', '401'] SAME
+/v2/guest-links 403 -> {"content": {"application/problem+json": {"example": {"title": "Forbidden", "status": 403, "detail": "The requesting user does not have the necessary permissions."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The requesting user does not have the necessary permissions."
+/v2/meetings 403 -> {"content": {"application/problem+json": {"example": {"title": "Forbidden", "status": 403, "detail": "The requesting user does not have the necessary permissions."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The requesting user does not have the necessary permissions."
+/v2/stats 403 -> {"content": {"application/problem+json": {"example": {"title": "Forbidden", "status": 403, "detail": "The requesting user does not have the necessary permissions."}, "schema": {"$ref": "#/components/schemas/ErrorModel"}}}, "description": "The requesting user does not have the necessary permissions."
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "403" leads/lead-bigpickle.md | grep -i "asymmetry\|group-links\|omission" | tail -6; echo ===; grep -rn "docs.alfaview\|/docs\b" inventory/alfaview.md | tail -5
+8415:verify_steps: minimal-privilege token -> GET /v2/group-links; PATCH /v2/guest-links/{id}; observe 403 vs 200/204.
+8435:reasoning: GET /v2/guest-links documents 403; GET /v2/group-links does not; DELETE /v2/users/{id} and PATCH /v2/guest-links/{id} also omit it.
+8436:verify_steps: minimal-privilege token -> GET /v2/group-links?limit=1; observe 403 vs 200 vs 401-tier md5.
+8437:[NEXT] HUMAN: provide ONE self-owned low-privilege alfaview account in a tenant you control, ONE non-moderated room in that same tenant, and ONE opaque access token from a legitimate self-owned signup. With those three inputs I will run, all <=1 rps: (a) GET /v2/users/me/company and GET /v2/group-links?limit=1 (read-only) for the 403-asymmetry test; (b) exactly one POST /v2/rooms/{roomId}/permissions against the non-moderated room with a harvested participantId (single authorized write inside your own tenant); (c) exactly three POSTs to sso /oauth2/introspect with the real token — POST-body, HTTP Basic, and token_type_hint=refresh_token — expecting 200 active:true / 200 / 401. Exact status, headers and bodies recorded verbatim for every request.
+8441:[RISK] alfaview gmbh: 88 (unchanged). The retired client-diagnostics host removes a tiny amount of surface and no finding depended on it. Introspection bypass (92) remains the top unauthenticated-adjacent issue but cannot be proven without one real opaque token; CreatePermissions BOLA (80) stays the highest-impact item pending a single authorized write; 403 asymmetry (58) is the cheapest confirmation. No PII or customer data was read or modified: every probe this cycle was unauthenticated, returned 401/404/422/501, or targeted SSO discovery endpoints. Mass assignment, JWT alg-confusion, SSRF, logout redirect, accessKey oracle and device_authorize all remain closed.
+8443:[RISK] alfaview gmbh: 88 (unchanged). The retired client-diagnostics host removes a tiny amount of surface and no finding depended on it. Introspection bypass (92) remains the top unauthenticated-adjacent issue but cannot be proven without one real opaque token; CreatePermissions BOLA (80) stays the highest-impact item pending a single authorized write; 403 asymmetry (58) is the cheapest confirmation. No PII or customer data was read or modified: every probe this cycle was unauthenticated, returned 401/404/422/501, or targeted SSO discovery endpoints. Mass assignment, JWT alg-confusion, SSRF, logout redirect, accessKey oracle and device_authorize all remain closed.
+===
+1340:- CHANGED OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` stable at MD5 `284a3383` (38 paths, 57 ops) for 3+ cycles; byte-identical on beta-apis.alfaview.com
+1349:- NEW apis.alfaview.com/v2/docs/openapi.yaml (YAML twin, 165360B, md5 6738669c92a893c56e157c3927044134) — different byte-stream from JSON (132100B, 284a3383c1ac3cfc9152ffcc631891f2) but semantically identic
+1350:- CHANGED apis.alfaview.com/v2/docs/openapi.json — OpenAPI 3.1.0, 38 paths, 57 operations, stable md5 284a3383c1ac3cfc9152ffcc631891f2 (prod=beta byte-identical). 1 path delta vs local 37-path snapshot (/v2/use
+1371:- CHANGED apis.alfaview.com /v2/docs/openapi.json — 200/132100B md5 284a3383c1ac3cfc9152ffcc631891f2 (38 paths, 57 operations), stable 3rd cycle. sso.alfaview.com OIDC — 200/2169B md5 f78a08fc, stable. No path 
+1461:- CHANGED apis.alfaview.com/v2/docs/openapi.yaml is a second spec publication, 165360B, 38 paths, 57 ops, parses to a document IDENTICAL to the JSON at /v2/docs/openapi.json. No additional surface; both formats
+[0m
+[0m$ [0mcd /tmp/opencode; python3 - <<'EOF'
+import re
+raw=open('live2.json').read()
+i=raw.find('Searchable metadata')
+print(raw[i-500:i+300])
+EOF
+e same request.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"details":{"additionalProperties":{},"description":"Details about the audited action, (e.g., 'before' and 'after' comparison).","type":"object"},"id":{"description":"The audit event ID.","examples":["00000000-0000-0000-0000-000000000000"],"type":"string"},"metadata":{"additionalProperties":{"type":"string"},"description":"The metadata attributes of the audit event. To get the available keys, refer to the 'List Searchable metadata attributes' endpoint.","type":"object"},"occurredAt":{"description":"The time at which the audited action happened.","examples":["2026-09-01T10:00:00Z"],"format":"date-time","type":"string"},"outcome":{"description":"The result of the audited action.","enum":["success","failure",
+[0m
+[0m$ [0mcd /tmp/opencode; curl -s -m 25 -o app.js -w 'appbundle %{http_code} %{size_download}\n' https://app.alfaview.com/assets/app.min.67e8a68d4318b34ca241.js; md5sum app.js | cut -c1-32; sleep 1.1; curl -s -m 15 -o wb.out -D wb.h -w 'whiteboard %{http_code} %{size_download}\n' -X OPTIONS https://tools.alfaview.com/whiteboard/; grep -i -E '^(HTTP|allow)' wb.h; md5sum wb.out | cut -c1-8
+appbundle 302 23
+19f1429ad5f6eb308725dc533ddbf8be
+whiteboard 404 47
+HTTP/2 404 
+ddd33510
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "app.min.67e8a68d" inventory/alfaview.md | tail -5; grep -rn "app.min" leads/lead-bigpickle.md | tail -3
+1342:- CHANGED `app.alfaview.com` public bundle stable at `app.min.67e8a68d4318b34ca241.js` (MD5 `2cb91283`) carrying `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K
+1384:- NEW NO_DELTA @ app.alfaview.com bundle: app.min.67e8a68d4318b34ca241.js (md5 `2cb91283`) stable — adminSwitchCompany mutation, hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB), pas
+1394:- NEW NO_DELTA @ app.alfaview.com bundle: app.min.67e8a68d4318b34ca241.js (md5 `2cb91283`) stable — adminSwitchCompany mutation, hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB), pas
+1418:- CHANGED app.alfaview.com public bundle stable at app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5) — adminSwitchCompany mutation mints cross-tenant admin tokens with no administration pro
+1446:- CHANGED `app.alfaview.com` public bundle stable at `app.min.67e8a68d4318b34ca241.js` (md5 `2cb9128353b1f7444e222b4f61e4ffa5`) carrying `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-inter
+6585:reasoning: The live asset app.min.67e8a68d4318b34ca241.js (1092529B, md5 2cb9128353b1f7444e222b4b61e4ffa5) contains `mutation AdminSwitchCompany($nextCompanyId: String!) { adminSwitchCompany(nextCompanyId: $nextCompanyId) { companyId accessToken permissions } }` and its call site `{query:AdminSwitchCompany,headers:{token:d},variables:{nextCompanyId:n}}`. The only credential transmitted is the caller's existing token; the target company is a bare String argument, so the server must decide administration of nextCompanyId itself and the client offers it no evidence either way. The reply is a fresh accessToken plus that company's permissions, i.e. the operation is a token-minting cross-tenant boundary crossing. The same bundle hardcodes AV_COMPANY_ID="alfatraining-internal" and the 26-character company identifier 01FDY0986YK1BJF2K0F9DXR8EB, which matches the companyId format the REST API documents (APICredentials.companyId example 0123456789ABCDEFGHIJKLMNOP), so the reconnaissance an attacker needs is already public. The admin surface is small and now fully mapped: adminTokenAuthenticate, adminSwitchCompany, adminReinvitePendingUser, getFinishSignupLinkAsAdmin(companyId, username) — two of the four take a caller-supplied companyId. adminAccessToken is persisted to localStorage at two write sites, so any XSS anywhere on the admin origin yields the highest-value token in the program; I found no XSS and claim none. No admin credential literal is baked into the asset. Anonymous reachability is untested and is the entire open question.
+6638:reasoning: The live asset app.min.67e8a68d4318b34ca241.js (1092529B, md5 2cb9128353b1f7444e222b4b61e4ffa5) contains `mutation AdminSwitchCompany($nextCompanyId: String!) { adminSwitchCompany(nextCompanyId: $nextCompanyId) { companyId accessToken permissions } }` with the call site `{query:AdminSwitchCompany,headers:{token:d},variables:{nextCompanyId:n}}`. The only credential transmitted is the caller's existing token; the target company is a bare String argument, so the server must decide administration of nextCompanyId alone and the client supplies it no evidence either way. The reply is a fresh accessToken plus that company's permissions, making the operation a token-minting cross-tenant boundary crossing. The same bundle hardcodes AV_COMPANY_ID="alfatraining-internal" and the 26-character identifier 01FDY0986YK1BJF2K0F9DXR8EB, matching the companyId format the REST API documents (APICredentials.companyId example 0123456789ABCDEFGHIJKLMNOP), so every input an attacker needs is already public. The admin surface is now completely mapped at four operations — adminTokenAuthenticate, adminSwitchCompany, adminReinvitePendingUser, getFinishSignupLinkAsAdmin(companyId, username) — two of which accept a caller-supplied companyId, which are precisely the two where the authorization check must be server-side. adminAccessToken is persisted to localStorage at two write sites, so any XSS on the admin origin yields the highest-value token in the program; I found no XSS and claim none. No admin credential literal is embedded, since the token is injected by the Apollo client. New this cycle: the uniform edge-proxy 401 carrying `www-authenticate: AccessToken` indicates the admin `token` header and the REST Authorization header sit behind the same coherent gateway, so a failure here would be an isolated application-layer gap rather than a systemic control weakness. Anonymous reachability is untested and is the entire open question.
+7630:asset: app.alfaview.com (public JS bundle app.min.67e8a68d4318b34ca241.js)
+[0m
+[0m$ [0mcd /tmp/opencode; curl -s -m 10 -D r.h -o r.b -w '%{http_code}\n' https://app.alfaview.com/assets/app.min.67e8a68d4318b34ca241.js; grep -i location r.h; sleep 1.1; curl -s -m 30 -L -o app2.js -w 'final %{http_code} %{size_download} %{url_effective}\n' https://app.alfaview.com/assets/app.min.67e8a68d4318b34ca241.js; md5sum app2.js | cut -c1-32
+302
+location: /
+final 200 1381 https://app.alfaview.com/
+7727e1383b81554c45cb05c149c17e4d
+[0m
+[0m$ [0mcd /tmp/opencode; curl -s -m 15 -o idx.html -w 'index %{http_code} %{size_download}\n' https://app.alfaview.com/; grep -o 'src="[^"]*"' idx.html | head; echo ===; grep -o 'app\.min\.[a-f0-9]*\.js' idx.html | head; echo ===; grep -o '/assets/[^"]*' idx.html | head
+index 200 1381
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js"
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js"
+src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js"
+===
+app.min.67e8a68d4318b34ca241.js
+===
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "alfaview-com-assets\|302" inventory/alfaview.md | tail -8; echo ===; grep -rn "app.alfaview.com" inventory/alfaview.md | tail -6
+987:- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 `/`; `/` = 386B "board deleted/access expired"); zero security head
+1007:- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 `/`; `/` = 386B "board deleted/access expired"); zero security head
+1028:- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 `/`; `/` = 386B "board deleted/access expired"); zero security head
+1038:- NEW whiteboard.alfaview.com: First structural map — Express/Node board renderer behind edge-proxy; strict single-route (unknown ID → 302 /; / = 386B "board deleted/access expired"); zero security headers,
+1054:- NEW whiteboard.alfaview.com: `/whiteboard/` absent from renderer host (302→`/`, strict single-route) ⇒ board renderer and board data RPC are separate systems; renderer's 200-vs-302 existence oracle not th
+1063:- NEW whiteboard.alfaview.com: `/whiteboard/` absent from renderer host (302→`/`, strict single-route) ⇒ board renderer and board data RPC are separate systems
+1081:- NEW `whiteboard.alfaview.com` — `/whiteboard/` absent from renderer host (302→`/`, strict single-route) ⇒ board renderer and board data RPC are separate systems; renderer's 200-vs-302 existence oracle not
+1262:- NEW whiteboard.alfaview.com — /whiteboard/ absent from renderer host (302→/, strict single-route) ⇒ board renderer and board data RPC are separate systems
+===
+1342:- CHANGED `app.alfaview.com` public bundle stable at `app.min.67e8a68d4318b34ca241.js` (MD5 `2cb91283`) carrying `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K
+1356:- CHANGED `app.alfaview.com/graphql` GET returns HTTP 400 (CSRF guidance) — signup mutation remains sole unauthenticated path to bearer token
+1384:- NEW NO_DELTA @ app.alfaview.com bundle: app.min.67e8a68d4318b34ca241.js (md5 `2cb91283`) stable — adminSwitchCompany mutation, hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB), pas
+1394:- NEW NO_DELTA @ app.alfaview.com bundle: app.min.67e8a68d4318b34ca241.js (md5 `2cb91283`) stable — adminSwitchCompany mutation, hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB), pas
+1418:- CHANGED app.alfaview.com public bundle stable at app.min.67e8a68d4318b34ca241.js (md5 2cb9128353b1f7444e222b4f61e4ffa5) — adminSwitchCompany mutation mints cross-tenant admin tokens with no administration pro
+1446:- CHANGED `app.alfaview.com` public bundle stable at `app.min.67e8a68d4318b34ca241.js` (md5 `2cb9128353b1f7444e222b4f61e4ffa5`) carrying `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-inter
+[0m
+[0m$ [0mcd /tmp/opencode; curl -s -m 40 -o cdn.js -w 'cdn %{http_code} %{size_download}\n' https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js; md5sum cdn.js | cut -c1-32; grep -c adminSwitchCompany cdn.js
+cdn 200 1092529
+2cb9128353b1f7444e222b4b61e4ffa5
+1
+[0m
+[0m$ [0mcd /tmp/opencode; grep -o '<title>[^<]*</title>' idx.html; grep -o 'href="[^"]*"' idx.html | head -12; wc -c idx.html
+<title>alfaview</title>
+href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/production_alfaview_icon_web_favicon_96px.png"
+href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/vendor-vue-vuetify.min.04d1ead8363afa7c651b.css"
+href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/app.min.d046c93e5071d179142f.css"
+1381 idx.html
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -rn "app.alfaview.com/" inventory/alfaview.md | grep -i "login\|index\|200\|title" | tail -8
+702:- NEW NO_DELTA: Surface fully stable since last cycle (2026-09-17 15:18). Probes identical: app.alfaview.com (SPA 200), sso.alfaview.com/oauth2/introspect (OPTIONS 405), app.alfaview.com/graphql (GET 400), 
+705:- NEW NO_DELTA: Surface fully stable since last cycle (2026-09-17 15:18). Probes identical: app.alfaview.com (SPA 200), sso.alfaview.com/oauth2/introspect (OPTIONS 405), app.alfaview.com/graphql (GET 400), 
+1096:- CHANGED `app.alfaview.com/graphql` 400/406B, `tools` poll 501/55B, `/whiteboard/` 404/47B, `/health/` 200/615B, `client-diagnostics /health` 200/16B — all byte-identical.
+1226:- NEW app.alfaview.com/graphql reachable pre-auth: 400 with CSRF guard, __typename → 200/32B
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; cp /tmp/opencode/live2.json recon-notes/alfaview-openapi-2026-10-06.json; md5sum recon-notes/alfaview-openapi-2026-10-06.json; python3 -c "
+import json;d=json.load(open('recon-notes/alfaview-openapi-2026-10-06.json'))
+ops=[(m,p) for p,v in d['paths'].items() for m in v if m in ('get','post','put','delete','patch')]
+sec=[(m,p) for m,p in ops if d['paths'][p][m].get('security')]
+print('ops',len(ops),'with_security',len(sec),'no_sec',[x for x in ops if x not in sec])
+"
+06231fadca0b36c314476322337976db  recon-notes/alfaview-openapi-2026-10-06.json
+ops 57 with_security 53 no_sec [('post', '/v2/auth/api-key'), ('post', '/v2/auth/group-link'), ('post', '/v2/auth/guest-link'), ('post', '/v2/auth/password')]
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; tail -5 inventory/alfaview.md; echo ====; sed -n '1090,1100p' inventory/alfaview.md
+- NEW POST /v2/auth/group-link enforces externalId minimum 32 chars, surfacing as 422 {"detail":"ACTION_INVALID: validation error: externalId: must be at least 32 characters"} — a distinct, more specific ti
+
+## 2026-10-06 00:20:09 UTC
+
+## 2026-10-06 06:30:59 UTC
+====
+- NEW apis.alfaview.com `PATCH /v2/guest-links/{id}` accepts `emailAddress` + `permissionGroupId` + `validFrom`/`validUntil` + `sendEmail:true` in one call — credential rebinding plus permission-group assig
+- CHANGED Queued SCAN closed: full 37-path `Allow:`-vs-spec diff run. Exactly **one** divergence in 37 paths (`/v2/users/invitation` spec=[POST] live=[DELETE, POST]). The undeclared-method class is a single rou
+- CHANGED `GET /v2/permission-groups` = 401/107B `application/problem+json` — **proves the spec under-declares auth codes**, invalidating response-code declarations as evidence of code behaviour.
+- CHANGED `sso.alfaview.com` byte-stable: OIDC 200/2169B (issuer=acme.com, `introspection_endpoint` null, `password`+`client_credentials` advertised), JWKS 200/16257B (7×RS256, RSA-only, zero symmetric/ECDSA vs
+- CHANGED `apis.alfaview.com` OpenAPI unchanged: md5 `357b94d367909a40b9299b543d23712b`, 127532B, 37 paths, `components.securitySchemes` absent, top-level `security` absent.
+- CHANGED `apis.alfaview.com/v2/users/invitations` reconfirmed `allow: DELETE`, 405/19B Go-native, `server: edge-proxy`.
+- CHANGED `app.alfaview.com/graphql` 400/406B, `tools` poll 501/55B, `/whiteboard/` 404/47B, `/health/` 200/615B, `client-diagnostics /health` 200/16B — all byte-identical.
+- CHANGED NO_DELTA @ sso/apis/app/tools: 33rd consecutive stable cycle on every standing probe; no new endpoints, no regressions.
+
+## 2026-09-27 20:38:21 UTC
+- NEW apis.alfaview.com GET /v2/guest-links + GET /v2/group-links: the two company-wide link lists accept NO scoping parameter — only pageToken + limit. Room-scoped siblings exist separately (/v2/rooms/{roo
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; sed -n '1455,1480p' inventory/alfaview.md; echo "=== total lines:"; wc -l inventory/alfaview.md; echo "=== first 30:"; sed -n '1,30p' inventory/alfaview.md
+## 2026-10-05 18:47:03 UTC
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+- CHANGED sso.alfaview.com/oauth2/introspect client-auth bypass is CONDITIONAL on token shape, not universal. client_id is validated ONLY when the token is a 3-segment dot-separated string whose SECOND segment 
+- CHANGED Consequence for exploitability: alfaview's own API access tokens are opaque base64 (AccessToken schema: "base64-encoded string"; GET /v2/auth/token-info enforces a base64 token and rejects all JWT for
+- CHANGED apis.alfaview.com/v2/docs/openapi.yaml is a second spec publication, 165360B, 38 paths, 57 ops, parses to a document IDENTICAL to the JSON at /v2/docs/openapi.json. No additional surface; both formats
+- NEW Full 403-discriminator audit of all 57 documented operations. 20 operations document NO 403, including reads of tenant-scoped data: GET /v2/rooms, GET /v2/rooms/{id}, GET /v2/rooms/{roomId}/features, 
+- NEW GET /v2/audit-log is confirmed a live 39th path ABSENT from the published spec (both JSON and YAML). Unauthenticated with no query params -> 422 requiring query.from/query.to; with both params -> 401 
+- NEW GET /v2/stats unauthenticated with no params -> 422/319B enumerating query.from, query.to, query.stepDurationHours. Same pre-auth validation-before-auth pattern already recorded for other query-bound 
+- NEW sso OIDC discovery: issuer="acme.com" (default/unconfigured FusionAuth value, not the deployment host), introspection_endpoint=null, revocation_endpoint=null, introspection_endpoint_auth_methods_suppo
+- NEW Authorization-header handling on apis.alfaview.com confirmed single-channel: query ?access_token= and Cookie access_token= both -> 401 "No access token was provided in the Authorization header"; HTTP 
+- NEW POST /v2/auth/group-link enforces externalId minimum 32 chars, surfacing as 422 {"detail":"ACTION_INVALID: validation error: externalId: must be at least 32 characters"} — a distinct, more specific ti
+
+## 2026-10-06 00:20:09 UTC
+
+## 2026-10-06 06:30:59 UTC
+=== total lines:
+1471 inventory/alfaview.md
+=== first 30:
+# alfaview gmbh inventory (discovery seed 2026-09-02)
+# NOTE: hosts below are discovery candidates from passive DNS/CT; confirm in-scope vs program scope before active testing.
+alfaview.com
+app.alfaview.com
+dev.alfaview.com
+sso.alfaview.com
+staging.alfaview.com
+support.alfaview.com
+test.alfaview.com
+www.alfaview.com
+
+## PASSIVE RECON 2026-09-02 (read-only, non-intrusive)
+
+> Recon observations only. These are NOT confirmed vulnerabilities; ownership/in-scope of each host must be confirmed against the program scope before any active testing. Hosts resolve + serve HTTP — investigation requires scoped authorization.
+
+**Probed:** 8 hosts | **Live HTTP:** 2
+
+| Host | Status | Server/Tech |
+|---|---|---|
+| `support.alfaview.com` | 301 | Server: myracloud -> https://support.alfaview.com/en/ |
+| `staging.alfaview.com` | 301 | Server: myracloud -> https://staging.alfaview.com/en |
+
+**CNAME review signals (2):**
+- `support.alfaview.com` -> `support-alfaview-com.ax4z.com`
+- `staging.alfaview.com` -> `staging-alfaview-com.ax4z.com`
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `staging.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; cat >> inventory/alfaview.md <<'EOF'
+
+## 2026-10-06 13:40 UTC
+- NEW apis.alfaview.com OpenAPI ROTATION — `/v2/docs/openapi.json` 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db` (fetch1 + fetch2 on prod, fetch3 on beta-apis: all three byte-identical); YAML twin `/v2/docs/openapi.yaml` 165360B / `6738669c` -> 228358B / `c65f6a507c01766ec6de4f16af17654f`. Path and operation counts UNCHANGED at 38 / 57 — no new endpoint published, and `GET /v2/audit-log` (live 39th path) is still absent from both formats.
+- NEW `components.securitySchemes.accessToken` now declared for the first time (type `http`, scheme `bearer`, `bearerFormat` `opaque`, description "Access tokens are returned by the authentication operations and are accepted without the 'Bearer ' prefix"); 53 of 57 operations now carry `security: [{accessToken: []}]` (the only four without it are the `/v2/auth/{api-key,group-link,guest-link,password}` POSTs); the explicit per-operation `Authorization` header `parameters` entry was removed from all 53 in favour of the security scheme. Top-level `security` remains absent.
+- NEW 401/400/403/422 responses enriched with `application/problem+json` content blocks, `ErrorModel` schema refs and worked examples; 401 responses additionally document a `WWW-Authenticate: Bearer` header — matching live behaviour re-observed this cycle (`GET /v2/users/me` -> 401/107B with `www-authenticate: Bearer`, md5 `60ed2f29`).
+- NEW doc-prose deltas: `GET /v2/auth/token-info` description now ends "Expired tokens are accepted."; `POST /v2/auth/password` now states "The user must not have two-factor authentication enabled." and its 403 example gained "user has two-factor authentication activated"; operation summaries re-cased (`Delete user` -> `Delete User`, `List users` -> `List Users`, `List own Meetings` -> `List Own Meetings`).
+- CHANGED per-operation response status SETS are identical across the rotation (verified op-by-op) — the 403 asymmetry (`GET /v2/guest-links` 200/401/403 vs `GET /v2/group-links` 200/401) survives the spec refresh, as do the 403 omissions on `DELETE /v2/users/{id}` and `PATCH /v2/guest-links/{id}`.
+- CHANGED `app.alfaview.com/assets/app.min.67e8a68d4318b34ca241.js` now answers 302 -> `/`; the identical bundle is served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js` (200 / 1092529B / md5 `2cb9128353b1f7444e222b4b61e4ffa5`, `adminSwitchCompany` present). Bytes unchanged, delivery host changed.
+- NEW dated spec snapshot stored at `recon-notes/alfaview-openapi-2026-10-06.json` (md5 `06231fad`) as the new baseline for cycle-over-cycle diffing; `recon-notes/alfaview-openapi.yaml` (37 paths) is retained only as the pre-2026-09-28 baseline.
+- NO_DELTA standing probes: OIDC `f78a08fc`/2169B, JWKS `/.well-known/jwks.json` 200/16257B `3f8d456c` (7xRS256), `/oauth2/introspect` OPTIONS 405, `users/me` 401/107B `60ed2f29`, `/v2/audit-log` 422/232B `query.from`+`query.to` binder, `app.alfaview.com/graphql` 400/406B, tools poll `list` 501/55B, tools `/whiteboard/` OPTIONS 404/47B.
+EOF
+echo appended; tail -3 inventory/alfaview.md
+appended
+- CHANGED `app.alfaview.com/assets/app.min.67e8a68d4318b34ca241.js` now answers 302 -> `/`; the identical bundle is served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js` (200 / 1092529B / md5 `2cb9128353b1f7444e222b4b61e4ffa5`, `adminSwitchCompany` present). Bytes unchanged, delivery host changed.
+- NEW dated spec snapshot stored at `recon-notes/alfaview-openapi-2026-10-06.json` (md5 `06231fad`) as the new baseline for cycle-over-cycle diffing; `recon-notes/alfaview-openapi.yaml` (37 paths) is retained only as the pre-2026-09-28 baseline.
+- NO_DELTA standing probes: OIDC `f78a08fc`/2169B, JWKS `/.well-known/jwks.json` 200/16257B `3f8d456c` (7xRS256), `/oauth2/introspect` OPTIONS 405, `users/me` 401/107B `60ed2f29`, `/v2/audit-log` 422/232B `query.from`+`query.to` binder, `app.alfaview.com/graphql` 400/406B, tools poll `list` 501/55B, tools `/whiteboard/` OPTIONS 404/47B.
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; cat >> leads/lead-bigpickle.md <<'EOF'
+
+## cycle 2026-10-06 13:40 UTC (phase POC, target api)
+[CHANGED] apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed by two consecutive prod fetches plus one beta-apis fetch (all three byte-identical); YAML twin 165360B / `6738669c` -> 228358B / `c65f6a50`. Path and operation counts UNCHANGED (38 / 57) — no new endpoint was published and `GET /v2/audit-log` is still absent from both formats while still live at 422/232B `query.from`+`query.to`. Material content change: `components.securitySchemes.accessToken` declared for the first time (http/bearer, `bearerFormat: opaque`, "accepted without the 'Bearer ' prefix"), 53/57 operations now declare `security: [{accessToken: []}]` (only the four `/v2/auth/*` POSTs do not), the explicit per-operation `Authorization` header parameter was removed, and 400/401/403/422 responses gained `application/problem+json` content, examples and a documented `WWW-Authenticate: Bearer` header (which the live 401 already sent). Prose deltas: `GET /v2/auth/token-info` now documents "Expired tokens are accepted."; `POST /v2/auth/password` now documents "The user must not have two-factor authentication enabled." and its 403 example adds "user has two-factor authentication activated". Per-operation response status SETS verified identical op-by-op, so the 403 asymmetry and all other declaration-based survivors are unaffected by the refresh.
+[CHANGED] app.alfaview.com bundle delivery: `/assets/app.min.67e8a68d4318b34ca241.js` now 302 -> `/`; identical bytes served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/...` (200 / 1092529B / md5 `2cb9128353b1f7444e222b4b61e4ffa5`, `adminSwitchCompany` still present).
+[PRIO] 1 introspect opaque-token client-auth bypass (92, sso) — cheapest high-impact proof, 3 POSTs with one self-issued token; 2 CreatePermissions BOLA (80, apis) — highest impact, one authorized write; 3 group-link/guest-link 403 asymmetry (58, apis) — cheapest read-only confirmation, now known to survive a spec refresh.
+[HYP] OAuth2 introspection answers for opaque alfaview API tokens with zero valid client credentials
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 92
+testability: AUTH_HELPED
+reasoning: client auth is enforced only for JWT-shaped tokens (3 segments, seg2 base64 JSON object); alfaview access tokens are opaque base64 and take the unchecked path. This cycle's spec rotation independently corroborates the token shape: the new `securitySchemes.accessToken` declares `bearerFormat: opaque` and says tokens are "accepted without the 'Bearer ' prefix", and the `AccessToken` schema remains base64 — so the token class that bypasses client auth is exactly the class the API issues. OIDC discovery `f78a08fc`, JWKS `3f8d456c` and OPTIONS 405 all byte-stable, so the endpoint's surface has not changed.
+verify_steps: (1) POST `token=<opaque>&client_id=fabricated` -> expect 200 `active:true`; (2) same body + `token_type_hint=refresh_token` -> expect 401; (3) HTTP Basic with fabricated id/secret -> expect 200. Record status, headers, body verbatim.
+[HYP] CreatePermissions grants room-admin to any company-wide principal ID
+class: IDOR
+asset: apis.alfaview.com
+confidence: 80
+testability: AUTH_HELPED
+reasoning: `participantId` is polymorphic across user / guest-link / group-link with no discriminator, scope is carried only in the path, and create takes the atomic full `Permissions` set; spec content relevant to this claim (schemas, parameters, responses, `additionalProperties:false`) is unchanged by the 2026-10-06 rotation.
+verify_steps: companyId + guest-link harvest -> single `POST /v2/rooms/{roomId}/permissions` -> 204 vs 403 vs 409 vs 422.
+[HYP] Group-link and guest-link list endpoints may not enforce the same authorization as each other
+class: IDOR
+asset: apis.alfaview.com
+confidence: 58
+testability: AUTH_HELPED
+reasoning: `GET /v2/guest-links` documents 403, `GET /v2/group-links` does not; `DELETE /v2/users/{id}` and `PATCH /v2/guest-links/{id}` also omit 403. Confirmed this cycle that the rotation did not touch any response status set, so the declaration evidence is unchanged rather than stale.
+verify_steps: minimal-privilege token -> `GET /v2/group-links?limit=1`; observe 403 vs 200 vs the 401 tier (md5 `60ed2f29`).
+[PARKED] `GET /v2/auth/token-info` returns 200 for expired access tokens — confidence 45. Grounding is new and documentary only (spec now states "Expired tokens are accepted."). Cannot be shown without an expired token the tester owns, so it is parked rather than advanced; it would be confirmed together with any other token-based test in the same HUMAN session.
+[PARKED] `sso.alfaview.com/oauth2/device_authorize` accepts unregistered `client_id` — confidence 44 < 40 threshold? no: 44, requires a form-encoded POST confirmation and the claim was already retracted once by own-probe (401 `invalid_client_id`); not advanced under passive-first constraints.
+[FINAL] CreatePermissions grants room-admin to any company-wide principal ID (80) — AUTH_HELPED, one authorized write needed
+[FINAL] OAuth2 introspection client-auth bypass for opaque tokens (92) — AUTH_HELPED, three POSTs with one self-issued token needed
+[FINAL] Meeting-scoped bulk link creation binds caller-chosen `permissionGroupId` (64) — AUTH_HELPED, wire test needed
+[FINAL] 403-declaration asymmetry between `GET /v2/group-links` and `GET /v2/guest-links` (58) — AUTH_HELPED, read-only confirmation
+[NEXT] HUMAN: provide ONE self-owned low-privilege alfaview account in a tenant you control, ONE non-moderated room in that same tenant, and ONE opaque access token from a legitimate self-owned signup (plus a second token captured after its stated expiry, if convenient, to also settle the parked token-info claim). With those inputs I will run, all <=1 rps: (a) `GET /v2/users/me/company` and `GET /v2/group-links?limit=1` (read-only) for the 403-asymmetry test; (b) exactly one `POST /v2/rooms/{roomId}/permissions` against the non-moderated room with a harvested `participantId`; (c) exactly three POSTs to `sso /oauth2/introspect` (POST-body, HTTP Basic, `token_type_hint=refresh_token`) expecting 200 `active:true` / 200 / 401; (d) `GET /v2/auth/token-info` once with a live and once with an expired self-owned token. Exact status, headers and bodies recorded verbatim for every request.
+[LEARN] CHANGED @ apis: first OpenAPI rotation since 2026-09-28 (md5 `284a3383` -> `06231fad`, 132100B -> 174787B) and the first time in program history that the contract declares an auth scheme at all — `components.securitySchemes.accessToken` with `bearerFormat: opaque` plus per-op `security` on 53/57 operations. Paths and operations did not move (38/57, audit-log still unpublished), so the delta is entirely declaration/annotation depth: security scheme, problem+json response bodies, `WWW-Authenticate` documentation, and three prose sentences.
+[LEARN] PROCEDURAL: schema-level attribution for this rotation is impossible from local data — the only pre-rotation baselines on disk are the 37-path `recon-notes/alfaview-openapi.yaml` (predates two rotations) and KB prose. Facts about the previous live doc were therefore taken only from KB statements that explicitly recorded them (`securitySchemes` absent, no `audit-log`, no top-level `security`); everything else is reported as a diff against the 37-path snapshot, not against the previous live doc. A dated snapshot `recon-notes/alfaview-openapi-2026-10-06.json` is now stored so the next rotation can be attributed exactly.
+[LEARN] NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7xRS256, path `/.well-known/jwks.json`), `/oauth2/introspect` OPTIONS 405, `users/me` 401/107B `60ed2f29` with `www-authenticate: Bearer`, `/v2/audit-log` 422/232B, `app.alfaview.com/graphql` 400/406B, tools poll `list` 501/55B, tools `/whiteboard/` OPTIONS 404/47B. No new unauthenticated exploit surface.
+[LEARN] PROCEDURAL: a guessed URL (`/oauth2/jwks`) produced a plausible 404/4955 mid-cycle; the canonical path `/.well-known/jwks.json` was recovered from `leads/lead-bigpickle.md` verify_steps before any delta was claimed, re-running the standing rule that guessed URLs never become findings.
+[RISK] alfaview gmbh: 88 (unchanged). The rotation adds documentation depth but no new path, no weakened declaration and no new pre-auth surface, so exposure is flat. Introspection bypass (92) stays the top unauthenticated-adjacent issue and now has independent corroboration of the opaque-token premise from the vendor's own contract; CreatePermissions BOLA (80) remains the highest-impact item pending a single authorized write; the 403 asymmetry (58) is still the cheapest confirmation and is provably unaffected by the refresh. Nothing was read or modified this cycle: every live probe was unauthenticated and returned 200 (public docs/discovery/CDN), 400, 401, 404, 405, 422 or 501. Mass assignment, JWT alg-confusion, SSRF, logout redirect, accessKey oracle and device_authorize remain closed.
+EOF
+echo ok; tail -4 leads/lead-bigpickle.md | head -2; wc -l leads/lead-bigpickle.md
+ok
+[LEARN] PROCEDURAL: schema-level attribution for this rotation is impossible from local data — the only pre-rotation baselines on disk are the 37-path `recon-notes/alfaview-openapi.yaml` (predates two rotations) and KB prose. Facts about the previous live doc were therefore taken only from KB statements that explicitly recorded them (`securitySchemes` absent, no `audit-log`, no top-level `security`); everything else is reported as a diff against the 37-path snapshot, not against the previous live doc. A dated snapshot `recon-notes/alfaview-openapi-2026-10-06.json` is now stored so the next rotation can be attributed exactly.
+[LEARN] NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7xRS256, path `/.well-known/jwks.json`), `/oauth2/introspect` OPTIONS 405, `users/me` 401/107B `60ed2f29` with `www-authenticate: Bearer`, `/v2/audit-log` 422/232B, `app.alfaview.com/graphql` 400/406B, tools poll `list` 501/55B, tools `/whiteboard/` OPTIONS 404/47B. No new unauthenticated exploit surface.
+8481 leads/lead-bigpickle.md
+[0m
+[0m← [0mEdit leads/lead-bigpickle.md
+Index: /home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-bigpickle.md
+===================================================================
+--- /home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-bigpickle.md
++++ /home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-bigpickle.md
+@@ -8467,9 +8467,9 @@
+ testability: AUTH_HELPED
+ reasoning: `GET /v2/guest-links` documents 403, `GET /v2/group-links` does not; `DELETE /v2/users/{id}` and `PATCH /v2/guest-links/{id}` also omit 403. Confirmed this cycle that the rotation did not touch any response status set, so the declaration evidence is unchanged rather than stale.
+ verify_steps: minimal-privilege token -> `GET /v2/group-links?limit=1`; observe 403 vs 200 vs the 401 tier (md5 `60ed2f29`).
+ [PARKED] `GET /v2/auth/token-info` returns 200 for expired access tokens — confidence 45. Grounding is new and documentary only (spec now states "Expired tokens are accepted."). Cannot be shown without an expired token the tester owns, so it is parked rather than advanced; it would be confirmed together with any other token-based test in the same HUMAN session.
+-[PARKED] `sso.alfaview.com/oauth2/device_authorize` accepts unregistered `client_id` — confidence 44 < 40 threshold? no: 44, requires a form-encoded POST confirmation and the claim was already retracted once by own-probe (401 `invalid_client_id`); not advanced under passive-first constraints.
++[PARKED] `sso.alfaview.com/oauth2/device_authorize` accepts unregistered `client_id` — confidence 44; requires a form-encoded POST confirmation, and the claim was already retracted by own-probe (401 `invalid_client_id`); not advanced under passive-first constraints.
+ [FINAL] CreatePermissions grants room-admin to any company-wide principal ID (80) — AUTH_HELPED, one authorized write needed
+ [FINAL] OAuth2 introspection client-auth bypass for opaque tokens (92) — AUTH_HELPED, three POSTs with one self-issued token needed
+ [FINAL] Meeting-scoped bulk link creation binds caller-chosen `permissionGroupId` (64) — AUTH_HELPED, wire test needed
+ [FINAL] 403-declaration asymmetry between `GET /v2/group-links` and `GET /v2/guest-links` (58) — AUTH_HELPED, read-only confirmation
+
+[0m
+Cycle 2026-10-06 13:40 UTC (phase POC, target api) — recorded in `leads/lead-bigpickle.md`, `inventory/alfaview.md`, snapshot `recon-notes/alfaview-openapi-2026-10-06.json`.
+
+[CHANGED] apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 228358B / `c65f6a50`. Paths/ops unchanged 38/57; `/v2/audit-log` still unpublished. First-ever `components.securitySchemes.accessToken` (`bearerFormat: opaque`, "accepted without the 'Bearer ' prefix"), `security` on 53/57 ops (only the 4 `/v2/auth/*` POSTs lack it), per-op `Authorization` header param removed, 400/401/403/422 bodies gained problem+json + examples + documented `WWW-Authenticate: Bearer`. Prose: token-info "Expired tokens are accepted."; password "must not have two-factor authentication enabled." Per-op response status sets verified identical → 403 asymmetry survives.
+[CHANGED] `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+[PRIO] 1 introspect bypass (92) · 2 CreatePermissions BOLA (80) · 3 403 asymmetry (58)
+[HYP] OAuth2 introspection answers for opaque alfaview tokens with zero valid client credentials — sso.alfaview.com/oauth2/introspect — 92 — AUTH_HELPED — client auth enforced only for JWT-shaped tokens; new spec independently corroborates `bearerFormat: opaque`, i.e. issued tokens take the unchecked path — verify: POST `token=<opaque>&client_id=fabricated` → 200 active:true; +`token_type_hint=refresh_token` → 401; Basic fabricated → 200.
+[HYP] CreatePermissions grants room-admin to any company-wide principal ID — apis.alfaview.com — 80 — AUTH_HELPED — polymorphic `participantId`, path-only scope, atomic full Permissions set; unaffected by rotation — verify: companyId + guest-link harvest → single POST `/v2/rooms/{roomId}/permissions` → 204/403/409/422.
+[HYP] Group-link vs guest-link list endpoints may not enforce equal authorization — apis.alfaview.com — 58 — AUTH_HELPED — guest-links documents 403, group-links does not; status sets confirmed unchanged this cycle — verify: minimal token → GET `/v2/group-links?limit=1` → 403 vs 200 vs 401 tier `60ed2f29`.
+[PARKED] token-info returns 200 for expired tokens (45) — documentary only, needs a self-owned expired token. device_authorize unregistered client_id (44) — POST confirmation, prior own-probe retraction stands.
+[FINAL] CreatePermissions BOLA (80) · introspection client-auth bypass (92) · meeting-scoped bulk link w/ caller-chosen permissionGroupId (64) · 403 asymmetry (58) — all AUTH_HELPED, wire confirmation pending.
+[NEXT] HUMAN: one self-owned low-privilege alfaview account in a tenant you control, one non-moderated room in that tenant, one opaque access token from a legitimate self-owned signup (plus a second token captured after expiry if convenient). Then, ≤1 rps: (a) GET `/v2/users/me/company`, GET `/v2/group-links?limit=1`; (b) exactly one POST `/v2/rooms/{roomId}/permissions`; (c) three POSTs to sso introspect (POST-body, Basic, refresh hint); (d) GET `/v2/auth/token-info` live vs expired. Status, headers, bodies recorded verbatim.
+[LEARN] CHANGED @ apis: first rotation since 2026-09-28 and first time the contract declares an auth scheme at all — delta is declaration depth only (scheme, problem+json bodies, `WWW-Authenticate`, three prose sentences); no path moved, audit-log still absent.
+[LEARN] PROCEDURAL: schema-level attribution for this rotation is impossible from local data (only baseline on disk is the 37-path YAML, which predates two rotations) — prior-doc facts taken solely from KB statements that explicitly recorded them; dated snapshot now stored for exact future attribution. Also: guessed URL `/oauth2/jwks` gave a plausible 404 before canonical `/.well-known/jwks.json` was recovered from verify_steps — guessed URLs never become findings.
+[LEARN] NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7×RS256), introspect OPTIONS 405, users/me 401/107B `60ed2f29` + `www-authenticate: Bearer`, audit-log 422/232B, graphql 400/406B, poll list 501/55B, whiteboard OPTIONS 404/47B.
+[RISK] alfaview gmbh: 88 (unchanged). Rotation adds documentation depth with no new path, no weakened declaration, no new pre-auth surface. Introspection bypass (92) now corroborated by the vendor's own `bearerFormat: opaque`; CreatePermissions (80) highest impact pending one authorized write; 403 asymmetry (58) cheapest and provably refresh-proof. Nothing read or modified — all probes unauthenticated, returning 200/400/401/404/405/422/501. Mass assignment, alg-confusion, SSRF, logout redirect, accessKey oracle, device_authorize remain closed.

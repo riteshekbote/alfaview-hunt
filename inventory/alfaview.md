@@ -1469,3 +1469,9 @@ www.alfaview.com
 ## 2026-10-06 00:20:09 UTC
 
 ## 2026-10-06 06:30:59 UTC
+
+## 2026-10-06 13:42:52 UTC
+- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+- CHANGED app.alfaview.com bundle delivery: `/assets/app.min.67e8a68d4318b34ca241.js` now 302 -> `/`; identical bytes served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/...` (200 
+- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+- CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
