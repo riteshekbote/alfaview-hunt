@@ -1682,3 +1682,10 @@ https://beta-apis.alfaview.com/v2/languages -> HTTP 401
 https://beta-apis.alfaview.com/v2/languages` -> HTTP 404
 https://apis.alfaview.com/v2/languages` -> HTTP 404
 https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+
+## 2026-10-06 00:20:16 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://apis.alfaview.com/v2/guest-links -> HTTP 401
+https://apis.alfaview.com/v2/group-links -> HTTP 401
+https://apis.alfaview.com/v2/auth/guest-link -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400

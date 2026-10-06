@@ -1465,3 +1465,5 @@ www.alfaview.com
 - NEW sso OIDC discovery: issuer="acme.com" (default/unconfigured FusionAuth value, not the deployment host), introspection_endpoint=null, revocation_endpoint=null, introspection_endpoint_auth_methods_suppo
 - NEW Authorization-header handling on apis.alfaview.com confirmed single-channel: query ?access_token= and Cookie access_token= both -> 401 "No access token was provided in the Authorization header"; HTTP 
 - NEW POST /v2/auth/group-link enforces externalId minimum 32 chars, surfacing as 422 {"detail":"ACTION_INVALID: validation error: externalId: must be at least 32 characters"} — a distinct, more specific ti
+
+## 2026-10-06 00:20:09 UTC

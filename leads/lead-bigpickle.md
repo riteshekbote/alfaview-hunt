@@ -8358,3 +8358,4 @@ confidence: 58
 testability: AUTH_HELPED
 reasoning: GET /v2/guest-links documents 403; GET /v2/group-links does not. DELETE /v2/users/{id} and PATCH /v2/guest-links/{id} also omit 403.
 verify_steps: minimal-privilege token -> GET /v2/group-links; PATCH /v2/guest-links/{id}; observe 403 vs 200/204.
+## 2026-10-06 00:19:42 UTC [target] (model bigpickle)

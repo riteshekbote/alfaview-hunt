@@ -79980,3 +79980,167 @@ seg2={} / {"a":1} / {"a":{}}   / seg1="" -> 401 (checked)
 **Retraction.** The parked `device_authorize` claim is false — re-probed, returns `401 invalid_client_id`. Prior reasoning was also wrong about the introspect *mechanism*, though not the bypass.
 
 **Blocker unchanged.** All three top chains need an authorized account plus an opaque token. Risk 88 (up 1). Details in `leads/lead-bigpickle.md`.
+===== ANALYST bigpickle 2026-10-06 00:20:09 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt && ls -la 2>/dev/null && echo "---" && ls leads/ recon-notes/ 2>/dev/null | head -40
+total 1124
+drwxr-xr-x 12 runner runner   4096 Oct  6 00:16 .
+drwxr-xr-x  3 runner runner   4096 Oct  6 00:16 ..
+drwxr-xr-x  7 runner runner   4096 Oct  6 00:16 .git
+drwxr-xr-x  3 runner runner   4096 Oct  6 00:16 .github
+-rw-r--r--  1 runner runner   1883 Oct  6 00:16 README.md
+-rw-r--r--  1 runner runner     32 Oct  6 00:16 analyst-out.txt
+-rw-r--r--  1 runner runner 484413 Oct  6 00:16 analyst-prompt.txt
+-rw-r--r--  1 runner runner 480503 Oct  6 00:16 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  6 00:16 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  6 00:16 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  6 00:16 leads
+-rw-r--r--  1 runner runner  83222 Oct  6 00:16 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  6 00:16 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  6 00:16 reports
+drwxr-xr-x  2 runner runner   4096 Oct  6 00:16 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct  6 00:16 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  6 00:16 scripts
+-rw-r--r--  1 runner runner     33 Oct  6 00:16 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  6 00:16 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  6 00:16 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  6 00:16 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  6 00:16 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  6 00:16 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  6 00:16 triage
+---
+leads/:
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-alfaview.md
+
+recon-notes/:
+CORPUS-ALFAVIEW.md
+DEDICATED-DEEP.md
+DEEPER-FINDINGS.md
+SCOPE-CONFIRMATION.md
+alfaview-openapi.yaml
+[0m
+[0m$ [0mcurl -s -o /tmp/oa1.json -w "HTTP:%{http_code} SIZE:%{size_download}\n" --max-time 20 https://apis.alfaview.com/v2/docs/openapi.json ; md5sum /tmp/oa1.json
+HTTP:200 SIZE:132100
+284a3383c1ac3cfc9152ffcc631891f2  /tmp/oa1.json
+[0m
+## Objective
+- Continue the authorized alfaview gmbh bug-bounty investigation in `phase=POC`, `target=api`, prioritizing high-value authentication, IDOR/BOLA, OAuth, GraphQL, and business-logic flaws.
+- Produce the required structured report for `bugs.olivermaicher.eu` without claiming unverified impact.
+
+## Important Details
+- Scope is limited to alfaview-owned infrastructure, applications, APIs, portals, support systems, websites, and domains; avoid rejected classes such as brute force/rate-limit policy, descriptive errors, scanners without manual POC, SSRF without a fetch primitive, clickjacking without exploit, and customer-data exposure.
+- Passive reconnaissance must remain `≤1 rps`; unrestricted live probing is GET/HEAD/OPTIONS only. POSTs and writes require explicit authorization, self-owned data, and the planned approval boundary.
+- Current API contract: `https://apis.alfaview.com/v2/docs/openapi.json`, `132100B`, MD5 `284a3383c1ac3cfc9152ffcc631891f2`, `38 paths`, `57 operations`; byte-identical on `beta-apis.alfaview.com`.
+- `https://apis.alfaview.com/v2/docs/openapi.yaml` is a semantically identical second publication.
+- `GET /v2/audit-log` is a live undocumented 39th path; it performs query validation before authentication. Query validation occurs on 9/26 documented GET operations plus this undocumented route; malformed path parameters generally return `401`.
+- Latest corrections supersede stale knowledge-base text:
+  - The live OpenAPI contains zero `uuid` tokens and zero `pattern` keys; path parameters are unconstrained strings. The prior UUID-pattern claim is withdrawn.
+  - `Permissions` (POST) and `PermissionsEdit` (PATCH) are distinct schemas; the richer `PermissionsEdit.admin` description must not be attributed to POST `Permissions`.
+  - Missing `403` declarations are contract signals only; `/v2/permission-groups` returns `401` despite omitting `401` in the spec.
+  - Query-binding output reproduces published schema constraints; do not present it as an independent disclosure.
+  - No `accessKey` existence oracle was demonstrated for guest/group-link authentication; synthetic values collapse to the same `422 ACTION_INVALID` tier.
+  - `/oauth2/device_authorize` does not accept unregistered clients; it returns `401 invalid_client_id`.
+- Alfaview API access tokens are opaque/base64, not JWTs. SSO introspection behavior is therefore materially different from JWT-shaped token behavior.
+
+## Work State
+### Completed
+- Inventory recon covered 55 dedicated hosts; all have HTTP verdicts, 31 are exhausted, and zero remain genuinely unprobed.
+- Confirmed live API additions and structure:
+  - `/v2/users/me/company` is the 38th OpenAPI path and sole documented `200` supplier of `companyId`.
+  - `/v2/audit-log` is undocumented but live.
+  - `/v2/auth/api-key` is a fourth unauthenticated credential-exchange endpoint; `HEAD`/`OPTIONS` show `POST`.
+  - `/v2/users/invitation` advertises `Allow: DELETE, POST` while documented as POST-only; plural `/v2/users/invitations` is an undocumented DELETE-only Go route.
+- Confirmed `GET /v2/guest-links` and `GET /v2/group-links` accept only `pageToken`/`limit`, with no room/company narrowing; payloads can contain `accessKey`, `joinUrl`, `dialInCode`, and guest `emailAddress`. Authorization remains unmeasured.
+- SSO testing established that `/oauth2/introspect` validates client credentials only for JWT-shaped tokens; non-JWT-shaped fabricated tokens receive `200 {"active":false}` on POST-body and HTTP Basic channels, while `token_type_hint=refresh_token` forces validation.
+- SSO negative results: forged JOSE variants at `/oauth2/userinfo` collapse to identical errors; logout redirect variants all return `302 → /`; `/oauth2/jwks.json` behavior oscillates but canonical JWKS currently exposes seven RSA keys.
+- Public app bundle is `app.min.67e8a68d4318b34ca241.js`, MD5 `2cb9128353b1f7444e222b4f61e4ffa5`; it maps `AdminTokenAuthenticate`, `AdminSwitchCompany(nextCompanyId)`, hardcoded tenant IDs, and the anonymous-but-email-gated signup flow. `CreateMagicToken` is auth-gated.
+- No PII/customer data was read or modified; unauthenticated probes stopped at `401`/`422`, and SSO tests used fabricated values.
+
+### Active
+- Current priorities:
+  - `apis.alfaview.com`: `9.5/10` — strongest attack surface and fresh API deltas.
+  - `sso.alfaview.com`: `8.7/10` — OAuth introspection lead.
+  - `app.alfaview.com`: `8.7/10` — public GraphQL/admin bundle surface.
+- `[HYP]` OAuth2 introspection may disclose state for leaked opaque tokens without valid client credentials.
+  - `class: AUTH`; `asset: sso.alfaview.com/oauth2/introspect`; `confidence: 92`; `testability: AUTH_HELPED`.
+  - Evidence needed: one legitimate opaque token must return `active:true` with fabricated `client_id` and no secret.
+  - Planned controls: body request, `token_type_hint=refresh_token`, and HTTP Basic with fabricated credentials.
+- `[HYP]` `CreatePermissions` may grant room-admin/promote rights across rooms through unscoped `participantId`.
+  - `class: IDOR`; `asset: apis.alfaview.com`; `confidence: 80`; `testability: AUTH_HELPED`.
+  - `POST /v2/rooms/{roomId}/permissions` takes a polymorphic `ParticipantPermissions` target (`user ID / guest-link ID / group-link ID`) and atomic nine-boolean `Permissions`.
+  - Evidence needed: authorized low-privilege write against a non-moderated self-owned room; `204` indicates escalation, `403` correct blocking, `409` existing row, `422` invalid/precondition failure.
+  - Target IDs may be harvested from the company-wide `GET /v2/guest-links` list.
+- `[HYP]` Group-link/guest-link authorization may be inconsistent.
+  - `class: IDOR`; `asset: apis.alfaview.com`; `confidence: 58`; `testability: AUTH_HELPED`.
+  - Contract signal: `GET /v2/guest-links` documents `403`, while `GET /v2/group-links` does not; `PATCH /v2/guest-links/{id}` and `DELETE /v2/users/{id}` also omit `403`.
+  - Requires minimal-privilege wire confirmation; absence of `403` alone is insufficient.
+- Supporting app lead: public `adminSwitchCompany` signature may mint cross-tenant admin tokens, but no authorization bypass or XSS has been demonstrated.
+- Program risk remains approximately `88/100`, driven by the SSO introspection and CreatePermissions chains.
+
+### Blocked
+- No self-owned low-privilege account, non-moderated room, or legitimate opaque access token is available.
+- Signup is anonymous but email activation is required; no email/account input is available to obtain a bearer token.
+- The CreatePermissions write and group-link mutation tests cannot run without explicit authorized self-owned credentials and target room.
+- The introspection hypothesis cannot be elevated beyond contract/format inference until a real opaque token is tested; fabricated tokens only return `active:false`.
+- No failing command or implementation blocker is recorded; remaining work is authorization/data-input bound.
+
+## Next Move
+1. `HUMAN`: obtain one self-owned low-privilege alfaview account in a controlled tenant, one room in that tenant the account does not moderate, and one legitimate opaque access token; provide only those inputs.
+2. After explicit authorization, run at `≤1 rps`: `GET /v2/users/me/company`; `GET /v2/guest-links?limit=1` and `GET /v2/group-links?limit=1`; exactly one authorized `POST /v2/rooms/{roomId}/permissions` using the documented `ParticipantPermissions` body; then exactly three SSO introspection POSTs covering body, `refresh_token` hint, and fabricated HTTP Basic credentials. Record exact status, headers, and bodies.
+
+## Relevant Files
+- `scope.yml` — program scope source.
+- `inventory/alfaview.md` — alfaview host inventory and recon seed.
+- `recon-notes/alfaview-openapi.yaml` — stored 37-path snapshot; stale after the live 38-path OpenAPI rotation.
+- `apis.alfaview.com/v2/docs/openapi.json` — current live REST contract, 38 paths/57 operations.
+- `apis.alfaview.com/v2/docs/openapi.yaml` — semantically identical YAML contract.
+- `app.alfaview.com/js/app.min.67e8a68d4318b34ca241.js` — current public GraphQL/admin bundle.
+- `art/lead_bigpickle.txt` — standing room-permission/IDOR lead artifact.
+- `leads/lead-bigpickle.md` — ranked hypothesis record.
+- `probe-results.md` — referenced historical probe results.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+No delta: OpenAPI is byte-identical to the last snapshot (`284a3383c1ac3cfc9152ffcc631891f2`, 132100B, 38 paths / 57 ops). All three standing hypotheses are `AUTH_HELPED` — none can advance without a self-owned credential. Stopping to request the inputs.
+
+**1) DELTA**
+- No change vs. 2026-10-05T18:47Z: `apis.alfaview.com/v2/docs/openapi.json` → `200`, `132100B`, MD5 `284a3383c1ac3cfc9152ffcc631891f2` (unchanged), 38 paths / 57 operations; `beta` byte-identical.
+- `GET /v2/audit-log` remains the live undocumented 39th path (pre-auth query validation, `422` missing `from`/`to` → `401` valid params).
+- Standing corrections hold: zero `uuid`/`pattern` keys; `Permissions` (POST, atomic 9 booleans) ≠ `PermissionsEdit` (PATCH, partial); `403` omission on `GET /v2/group-links` is contract-only, not authorization proof.
+- `apis` tokens remain opaque/base64; SSO introspection client auth is enforced only for JWT-shaped tokens.
+
+**2) PRIORITIZE**
+1. `apis.alfaview.com` — 9.5/10 — `POST /v2/rooms/{roomId}/permissions` BOLA (IDOR), 80%.
+2. `sso.alfaview.com` — 8.7/10 — `/oauth2/introspect` opaque-token `active:true` w/o client secret, 92%.
+3. `app.alfaview.com` — 8.7/10 — GraphQL `AdminSwitchCompany(nextCompanyId)` cross-tenant mint, unmapped reachability.
+
+**3) HYPOTHESES**
+- `H1` `AUTH` `sso.alfaview.com/oauth2/introspect` (92%): if a legitimate *opaque* token introspects `active:true` with fabricated `client_id` and no secret, any leaked alfaview API bearer is fully actionable. `AUTH_HELPED`.
+- `H2` `IDOR` `apis.alfaview.com` (80%): `participantId` in `POST /v2/rooms/{roomId}/permissions` is polymorphic (user / guest-link / group-link ID) and room-scoped only via path; a non-moderator with a foreign `participantId` gets `204` = room-admin/promote escalation. `AUTH_HELPED`.
+- `H3` `IDOR` `apis.alfaview.com` (58%): `GET /v2/group-links` documents no `403` while isomorphic `GET /v2/guest-links` does — possible cross-tenant list/read asymmetry. Contract signal only. `AUTH_HELPED`.
+
+**4) SELF-CRITIQUE**
+- H1's 92% is format-based inference. `200 {"active":false}` on fabricated tokens proves the *validator skips*, not that a *real* opaque token validates. Both remain consistent with correct behavior.
+- H2 is unfalsifiable without a write; every prior iteration produced zero wire evidence. Confidence is a floor, not a measurement.
+- H3 is a missing-spec-key argument. Already burned once by `GET /v2/permission-groups` (no `401` declared, returns `401`) — spec omissions here carry ~zero predictive weight.
+- All three would be rejected by triager as speculation on the current evidence. I am not filing.
+
+**5) NEXT ACTION**
+`[HUMAN]` Send me **only** these three items: (a) one self-owned low-privilege alfaview account, (b) one room in the same tenant that account does **not** moderate, (c) one opaque access token from a legitimate self-owned signup. Nothing else — I will run nothing against live customer data without explicit per-request approval.
+
+**6) LEARNING**
+- Contract-key asymmetry in this API has no predictive power for authorization gaps; two known counterexamples.
+- Absence of `403`/`401` in OpenAPI is publishing noise here, not evidence.
+- The SSO skip is **shape-dependent**: JWT-shaped tokens (3 segments, base64 JSON payload) enforce client auth; everything else returns `200 active:false`. `token_type_hint=refresh_token` forces validation on any shape. That boundary is a real finding *class*, not yet a vulnerability.
+
+**7) RISK**
+`alfaview gmbh` — **88/100**. Two chains (introspection, room-permission escalation) plausibly yield full tenant compromise or mass room-admin takeover; both `AUTH_HELPED`. No PII read, no customer data modified, no writes performed.
+
+**8) STATE**
+`phase=POC target=api`. Stalled on human input. Next agent: do not re-probe the OpenAPI — hash is pinned; spend the turn obtaining (a)/(b)/(c).
