@@ -4763,3 +4763,39 @@
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
 - LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
 - LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
+
+## RANKED HYPOTHESES 2026-10-06 06:30:59 UTC
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 token introspection client authentication fully bypassable on both channels with valid token (from art/lead_nemotron3.txt)
+- [92] sso.alfaview.com/oauth2/introspect: OAuth2 introspection answers for opaque alfaview API tokens with zero valid client credentials (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: provide ONE self-owned low-privilege alfaview account in a tenant you control, plus ONE room in that same tenant the account does not moderate, plus ONE 
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup) to obtain a valid bearer token; then test intros
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: client authentication is enforced only for JWT-shaped tokens (3 segments, seg2 = base64-decoded JSON object)
+- LEARN: ACCEPTED AUTH: alfaview API access tokens are opaque base64, not JWTs (AccessToken schema states "base64-encoded string"; /v2/auth/token-info rejects every JWT 
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: GET /v2/audit-log is a live 39th path absent from the published spec; it performs query-parameter validation before auth
+- LEARN: ACCEPTED IDOR (contract-level, unconfirmed) @ apis.alfaview.com: 20 of 57 operations document no 403. GET /v2/group-links omits 403 while the isomorphic GET /v2
+- LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/device_authorize: prior PARKED claim that it accepts unregistered client_id is FALSE. Re-probed: 401 invalid_client_id. 
+- LEARN: PROCEDURAL: every 403-omission and status-code claim in this cycle was enumerated mechanically from the live spec and then confirmed by direct probe; the intros
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder reproduces public contract only (numeric bounds, enum values, RFC-5322 email, Go time la
+- LEARN: PROCEDURAL: auditing prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted onl
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: BOLA write with polymorphic participantId (user ID / guest-link ID / group-link ID), scop
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live 132100B document contains "uuid" zero times, zero patte
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder reproduces public contract only (numeric bounds, enum values, RFC-5322 email, Go time la
+- LEARN: PROCEDURAL: auditing prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted onl
+- LEARN: CHANGED @ client-diagnostics.alfaview.com: NXDOMAIN (previously /health 200/16B) — mapped host decommissioned between cycles; all other scoped hosts resolve and
+- LEARN: NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5
+- LEARN: PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs 
+- LEARN: PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs 
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live 132100B document contains "uuid" zero times, zero `patt
+- LEARN: REJECTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: retracted Permissions.admin scope claim — "edit or delete rooms, manage guests" lives on 
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: two distinct permission schemas — Permissions (CREATE, all 9 booleans required = atomic full-set write) vs PermissionsEdit (P
+- LEARN: ACCEPTED INFO @ apis.alfaview.com GET /v2/permission-groups: returns PermissionGroup{id, name, permissions} for every group, name="Admin", permissions full 9-bo
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder as standalone finding — reproduces public spec only (numeric bounds, enum values, RFC-53
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: 403-declaration asymmetry not behaviorally load-bearing — /v2/permission-groups returns 401 while declaring no 401; whol
+- LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/userinfo: JOSE algorithm confusion tested (alg=none, HS256 with RSA pubkey, HS256 random, RS256 self-signed) — all byte-
+- LEARN: REJECTED OATH @ sso.alfaview.com/oauth2/logout: post_logout_redirect_uri and redirect_uri both ignored; every variant returns 302 → /
+- LEARN: REJECTED AUTH @ apis.alfaview.com/v2/auth/{guest,group}-link: NO accessKey existence oracle — well-formed synthetic triple returns 422/88B ACTION_INVALID byte-i
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI compon
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
+- LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
+- LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
