@@ -1478,3 +1478,9 @@ www.alfaview.com
 
 ## 2026-10-06 19:05:53 UTC
 - CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+
+## 2026-10-06 23:10:10 UTC
+- CHANGED apis.alfaview.com/v2/docs/openapi.json: rotated 132100B→174787B (MD5 284a3383→06231fad), first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64 JSON); alfaview tokens are opaque base64 (AccessToken schema, /v2/auth/
+- CHANGED app.alfaview.com/graphql: __typename now returns 200 (was 400 CSRF guidance); introspection remains disabled
+- CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll gateway's 45B compact jsonpb; distinct marshaller; no WWW-Authenticate/401; zero client referen
