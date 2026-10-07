@@ -1,17 +1,10 @@
-## 2026-10-07 16:33:56 UTC [target] (model nemotron3)
-[NEW] OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `security` on 53/57 ops); paths/ops unchanged (38/57), audit-log still absent from spec
-[NEW] `app.alfaview.com/graphql`: `__typename` now returns 200 (was 400 CSRF guidance); introspection remains disabled — behavioral change, not new exposure
-[NEW] `apis.alfaview.com/v2/auth/api-key` confirmed as 4th unauthenticated credential endpoint (HEAD→405 allow:POST, OPTIONS→405/19B text/plain); declares unique 403 account-status tier ("account is inactive") absent from other auth endpoints
-[NEW] `apis.alfaview.com GET /v2/audit-log` — live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth); mirrors GraphQL `ListAuditEvents(flag:companyId,pageToken,limit,from,to)`
-[NEW] `apis.alfaview.com POST /v2/rooms` — contract read reveals `RoomCreate.permissions` with `participantId` namespace collision (`RoomCreate.permissions.participantId` vs `RoomPermissions.participantId`)
-[NEW] `apis.alfaview.com PATCH /v2/rooms/{id}` — `RoomUpdate.quotas` description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
-[NEW] `apis.alfaview.com POST /v2/meetings` — second meeting-scoped bulk credential-minting path (`guestLinks`/`groupLinks` arrays with caller-supplied `permissionGroupId`); three distinct issuance routes with caller-chosen permission groups
-[NEW] `apis.alfaview.com POST /v2/rooms/{roomId}/permissions` (CreatePermissions) — BOLA write with polymorphic `participantId` (user ID / guest link ID / group link ID) granting `admin`+`promote`; scope only in path, no ID→room binding documented; target ID obtainable from un-narrowable GET `/v2/guest-links`
-[CHANGED] `sso.alfaview.com/oauth2/introspect`: 30+ consecutive stable cycles — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON object); alfaview API tokens are opaque base64 (AccessToken schema: "base64-encoded string"; `/v2/auth/token-info` rejects all JWT variants with 422). Introspect bypass applies to exactly the token type the product issues.
-[CHANGED] `tools.alfaview.com/whiteboard/`: second unmapped RPC backend confirmed by controlled differential (47B gRPC envelope vs poll's 45B jsonpb); distinct marshaller; no auth challenge; zero client references in bundle; staging mirror byte-identical
-[CHANGED] `apis.alfaview.com`: validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI `components.securitySchemes={}`, `security=null` (pre-rotation)
-[CHANGED] `app.alfaview.com` public bundle stable at `app.min.67e8a68d4318b34ca241.js` (md5 `2cb91283`) carrying `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`)
-[CHANGED] `test.alfaview.com`: alfacheck v483102 (4 platforms) unsigned; index page no sha256/signatures — supply-chain hardening absent across releases
+## 2026-10-07 21:33:52 UTC [target] (model nemotron3)
+[NEW] apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme: `components.securitySchemes.accessToken` (bearerFormat: opaque) + per-op `security` on 53/57 operations; paths/ops unchanged (38/57), audit-log still absent
+[NEW] app.alfaview.com/graphql: `__typename` now returns 200 (was 400 CSRF guidance) with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled
+[NEW] client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; `/health`=200/16B (md5 3a0386dd), `/`=404/39B (md5 d18415bd), uniform 404 across 6 paths + OPTIONS no Allow
+[NEW] equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
+[NEW] webclient.alfaview.com / product-webclient.alfaview.com: byte-identical root (md5 6825f39c) — deployment mirrors sharing one artifact (COOP/COEP same-origin+require-corp)
+[CHANGED] apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
 [PRIO] sso.alfaview.com/oauth2/introspect,9.25,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=8
 [PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.60,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
