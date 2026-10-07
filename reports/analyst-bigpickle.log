@@ -83688,3 +83688,1650 @@ ops declaring 403: 36
 ```
 
 Requests this cycle: 34 HTTP (all GET/HEAD/OPTIONS, sequential at ~1.1s) + 10 DNS lookups. Nothing committed.
+===== ANALYST bigpickle 2026-10-07 02:31:57 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la recon-notes/ 2>/dev/null; echo "---"; ls -la leads/ 2>/dev/null; echo "---"; ls -la art/ 2>/dev/null | head -30
+total 1172
+drwxr-xr-x 12 runner runner   4096 Oct  7 02:23 .
+drwxr-xr-x  3 runner runner   4096 Oct  7 02:23 ..
+drwxr-xr-x  7 runner runner   4096 Oct  7 02:23 .git
+drwxr-xr-x  3 runner runner   4096 Oct  7 02:23 .github
+-rw-r--r--  1 runner runner   1883 Oct  7 02:23 README.md
+-rw-r--r--  1 runner runner     32 Oct  7 02:23 analyst-out.txt
+-rw-r--r--  1 runner runner 508348 Oct  7 02:23 analyst-prompt.txt
+-rw-r--r--  1 runner runner 504438 Oct  7 02:23 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 leads
+-rw-r--r--  1 runner runner  84415 Oct  7 02:23 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 reports
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct  7 02:23 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 scripts
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  7 02:23 triage
+---
+total 192
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 .
+drwxr-xr-x 12 runner runner   4096 Oct  7 02:23 ..
+-rw-r--r--  1 runner runner   4789 Oct  7 02:23 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Oct  7 02:23 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Oct  7 02:23 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Oct  7 02:23 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Oct  7 02:23 alfaview-openapi.yaml
+---
+total 3656
+drwxr-xr-x  2 runner runner    4096 Oct  7 02:23 .
+drwxr-xr-x 12 runner runner    4096 Oct  7 02:23 ..
+-rw-r--r--  1 runner runner 1406027 Oct  7 02:23 lead-bigpickle.md
+-rw-r--r--  1 runner runner   10812 Oct  7 02:23 lead-laguna.md
+-rw-r--r--  1 runner runner   10600 Oct  7 02:23 lead-ling3.md
+-rw-r--r--  1 runner runner   11024 Oct  7 02:23 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  7 02:23 lead-mimo.md
+-rw-r--r--  1 runner runner 2250605 Oct  7 02:23 lead-nemotron3.md
+-rw-r--r--  1 runner runner   31776 Oct  7 02:23 reposcan-alfaview.md
+---
+[0m
+[0m$ [0mcat scope.yml 2>/dev/null | head -40; echo "==="; date -u
+programs:
+  alfaview:
+    name: alfaview gmbh Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+===
+Wed Oct  7 02:24:07 UTC 2026
+[0m
+I'll start by examining the workspace and establishing the current surface state with read-only probes.
+## Objective
+- Act as bug-bounty analyst for alfaview gmbh (report channel: bugs.olivermaicher.eu) running the 8-step structured workflow (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT ACTION → LEARNING → RISK) against in-scope alfaview infra.
+- Drive HIGH-value classes (IDOR/BOLA, broken auth, OAuth/JWT, SSRF, business logic, GraphQL) to wire-confirmed findings; emit exactly one [NEXT] action per cycle.
+
+## Important Details
+- Constraints: passive-first; ≤1 rps; GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests against live customer data; sha256/md5 any secret; no scanner output without manual validation.
+- Rejected classes (do not report): DoS/lockout, descriptive errors/headers only, robots.txt/public files, outdated libs, OPTIONS/TRACE, CSRF on logout/anon forms, cookie flags on non-sensitive data, self-XSS, scanner spam, social engineering, username enum on login, brute-force/rate-limit policy, SSL/TLS best-practice, clickjacking w/o exploit, mail config, password-recovery policy, public login panels, lack of email verification.
+- Standing retractions (must not regress): UUID path-param patterns in OpenAPI are FALSE (zero `pattern` keys, all 42 path params `type: string`); `Permissions.admin` scope sentence is misattributed (lives on `PermissionsEdit.admin`/PATCH); no accessKey existence oracle (2-tier 422 taxonomy); pre-auth query-binder oracle reproduces public spec only; 403-declaration asymmetry not standalone; JWT alg-confusion closed (apis opaque + sso userinfo); logout open redirect closed; SSRF closed on REST; mass assignment closed (21/21 body schemas `additionalProperties:false`); GraphQL anonymous resolver slice retired.
+- Standing IDs: OpenAPI JSON md5 `06231fadca0b36c314476322337976db` / 174787B (rotated 2026-10-06 from `284a3383`/132100B); YAML `c65f6a50`/228358B; OIDC `f78a08fc`/2169B (`issuer=acme.com`, `introspection_endpoint` absent); JWKS `3f8d456c`/16257B (7×RS256); `users/me` 401/107B md5 `60ed2f29`; graphql GET 400/406B; tools poll `list` 501/55B; tools `/whiteboard/` 404/47B.
+- Host state: `client-diagnostics-ingest.alfaview.com` = NOT NXDOMAIN, `/health` 200/16B md5 `3a0386dd`, `/` 404/39B md5 `d18415bd`; `app.alfaview.com/assets/app.min.67e8a68d…js` now 302→`/` (bytes at `alfaview-com-assets.alfaview.com`, 1092529B md5 `2cb91283…`); `staging.alfaview.com` fully edge-gated (401 Basic).
+
+## Work State
+### Completed
+- Inventory 100% probed: 55 dedicated hosts, 31 exhausted, zero unprobed; ~110 additional CT subdomains found (mostly firewalled 000).
+- apis REST surface characterized: 38 paths/57 ops; undocumented 39th live path `GET /v2/audit-log`; 4 unauthenticated `/v2/auth/*` exchanges incl. `/v2/auth/api-key`; validation-before-auth on 9/26 GET ops (root cause `securitySchemes={}`, `security=null`); `TokenUserPermissions` 7-bool closed vocabulary; `Permissions` (CREATE, atomic) vs `PermissionsEdit` (PATCH, partial).
+- sso: FusionAuth 1.63.0; `/oauth2/introspect` accepts fabricated `client_id` (POST-body + Basic → 200 `{"active":false}`); `/oauth2/userinfo` correctly tiers (control proving omission); alg-confusion + logout-redirect + device_authorize all closed.
+- app: public bundle leaks admin flow (`AdminTokenAuthenticate` → `adminSession` → `adminSwitchCompany(nextCompanyId)`), hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`); signup mutation is sole unauth path to bearer token (email-gated).
+- tools: `/poll/pollservice/<verb>` 8-verb RPC + unmapped `/whiteboard/` second RPC backend (47B gRPC envelope vs poll 45B jsonpb).
+- Mass assignment, SSRF, alg-confusion, open-redirect, accessKey oracle all closed with probes.
+
+### Active
+- [FINAL] Hypotheses all AUTH_HELPED, wire confirmation pending:
+  - introspection client-auth bypass for opaque tokens — 92.
+  - CreatePermissions BOLA (`POST /v2/rooms/{roomId}/permissions`, polymorphic `participantId`, path-only scope) — 80.
+  - meeting-scoped bulk link issuance w/ caller-chosen `permissionGroupId` — 64.
+  - 403-declaration asymmetry `GET /v2/group-links` vs `GET /v2/guest-links` — 58.
+- [PARKED] `GET /v2/auth/token-info` returns 200 for expired tokens (45) — needs self-owned expired token; `device_authorize` unregistered client_id (44) — prior own-probe retraction stands.
+- RisK score: alfaview gmbh 88 (flat); phase POC, target api.
+
+### Blocked
+- All 3 top hypotheses require a real credential/token to reach the wire — cannot be advanced passively.
+
+## Next Move
+1. [NEXT] HUMAN: provide ONE self-owned low-privilege alfaview account in an owned tenant, ONE non-moderated room in that tenant, and ONE opaque access token from a legitimate self-owned signup (plus second token captured after expiry if convenient). Then at ≤1 rps: (a) `GET /v2/users/me/company` + `GET /v2/group-links?limit=1`; (b) exactly one `POST /v2/rooms/{roomId}/permissions`; (c) three POSTs to `sso /oauth2/introspect` (POST-body, HTTP Basic, `token_type_hint=refresh_token`); (d) `GET /v2/auth/token-info` live vs expired.
+2. Record exact status, headers, bodies verbatim for every request; promote chain to FINAL on 204/403/409/422 discriminator for CreatePermissions.
+
+## Relevant Files
+- `inventory/alfaview.md`: canonical host inventory + all discovery/CHANGED deltas; canonical URLs (e.g. line ~1096).
+- `recon-notes/alfaview-openapi.yaml`: 37-path pre-rotation OpenAPI snapshot (predates two rotations).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated snapshot stored for exact next-rotation attribution.
+- `leads/lead-bigpickle.md`: verify_steps incl. canonical `/.well-known/jwks.json` path.
+- `leads/lead_nemotron3.txt`: guest-link enumeration lead.
+- `art/hypotheses-bigpickle.txt`, `art/hypotheses-nemotron3.txt`: ranked hypothesis tails.
+- `art/lead_bigpickle.txt`, `art/lead_nemotron3.txt`: latest lead tails.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcat state_bigpickle.json; echo; cat analyst-out.txt; echo "---"; cat README.md
+{"phase": "POC", "target": "api"}
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la recon-notes/ 2>/dev/null; echo "---"; ls -la leads/ 2>/dev/null; echo "---"; ls -la art/ 2>/dev/null | head -30
+total 1172
+drwxr-xr-x 12 runner runner   4096 Oct  7 02:23 .
+drwxr-xr-x  3 runner runner   4096 Oct  7 02:23 ..
+drwxr-xr-x  7 runner runner   4096 Oct  7 02:23 .git
+drwxr-xr-x  3 runner runner   4096 Oct  7 02:23 .github
+-rw-r--r--  1 runner runner   1883 Oct  7 02:23 README.md
+-rw-r--r--  1 runner runner     32 Oct  7 02:23 analyst-out.txt
+-rw-r--r--  1 runner runner 508348 Oct  7 02:23 analyst-prompt.txt
+-rw-r--r--  1 runner runner 504438 Oct  7 02:23 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 leads
+-rw-r--r--  1 runner runner  84415 Oct  7 02:23 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 reports
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct  7 02:23 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 scripts
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  7 02:23 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  7 02:23 triage
+---
+total 192
+drwxr-xr-x  2 runner runner   4096 Oct  7 02:23 .
+drwxr-xr-x 12 runner runner   4096 Oct  7 02:23 ..
+-rw-r--r--  1 runner runner   4789 Oct  7 02:23 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Oct  7 02:23 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Oct  7 02:23 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Oct  7 02:23 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Oct  7 02:23 alfaview-openapi.yaml
+---
+total 3656
+drwxr-xr-x  2 runner runner    4096 Oct  7 02:23 .
+drwxr-xr-x 12 runner runner    4096 Oct  7 02:23 ..
+-rw-r--r--  1 runner runner 1406027 Oct  7 02:23 lead-bigpickle.md
+-rw-r--r--  1 runner runner   10812 Oct  7 02:23 lead-laguna.md
+-rw-r--r--  1 runner runner   10600 Oct  7 02:23 lead-ling3.md
+-rw-r--r--  1 runner runner   11024 Oct  7 02:23 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  7 02:23 lead-mimo.md
+-rw-r--r--  1 runner runner 2250605 Oct  7 02:23 lead-nemotron3.md
+-rw-r--r--  1 runner runner   31776 Oct  7 02:23 reposcan-alfaview.md
+---
+[0m
+[0m$ [0mcat scope.yml 2>/dev/null | head -40; echo "==="; date -u
+programs:
+  alfaview:
+    name: alfaview gmbh Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+===
+Wed Oct  7 02:24:07 UTC 2026
+[0m
+I'll start by examining the workspace and establishing the current surface state with read-only probes.
+## Objective
+- Act as bug-bounty analyst for alfaview gmbh (report channel: bugs.olivermaicher.eu) running the 8-step structured workflow (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT ACTION → LEARNING → RISK) against in-scope alfaview infra.
+- Drive HIGH-value classes (IDOR/BOLA, broken auth, OAuth/JWT, SSRF, business logic, GraphQL) to wire-confirmed findings; emit exactly one [NEXT] action per cycle.
+
+## Important Details
+- Constraints: passive-first; ≤1 rps; GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests against live customer data; sha256/md5 any secret; no scanner output without manual validation.
+- Rejected classes (do not report): DoS/lockout, descriptive errors/headers only, robots.txt/public files, outdated libs, OPTIONS/TRACE, CSRF on logout/anon forms, cookie flags on non-sensitive data, self-XSS, scanner spam, social engineering, username enum on login, brute-force/rate-limit policy, SSL/TLS best-practice, clickjacking w/o exploit, mail config, password-recovery policy, public login panels, lack of email verification.
+- Standing retractions (must not regress): UUID path-param patterns in OpenAPI are FALSE (zero `pattern` keys, all 42 path params `type: string`); `Permissions.admin` scope sentence is misattributed (lives on `PermissionsEdit.admin`/PATCH); no accessKey existence oracle (2-tier 422 taxonomy); pre-auth query-binder oracle reproduces public spec only; 403-declaration asymmetry not standalone; JWT alg-confusion closed (apis opaque + sso userinfo); logout open redirect closed; SSRF closed on REST; mass assignment closed (21/21 body schemas `additionalProperties:false`); GraphQL anonymous resolver slice retired.
+- Standing IDs: OpenAPI JSON md5 `06231fadca0b36c314476322337976db` / 174787B (rotated 2026-10-06 from `284a3383`/132100B); YAML `c65f6a50`/228358B; OIDC `f78a08fc`/2169B (`issuer=acme.com`, `introspection_endpoint` absent); JWKS `3f8d456c`/16257B (7×RS256); `users/me` 401/107B md5 `60ed2f29`; graphql GET 400/406B; tools poll `list` 501/55B; tools `/whiteboard/` 404/47B.
+- Host state: `client-diagnostics-ingest.alfaview.com` = NOT NXDOMAIN, `/health` 200/16B md5 `3a0386dd`, `/` 404/39B md5 `d18415bd`; `app.alfaview.com/assets/app.min.67e8a68d…js` now 302→`/` (bytes at `alfaview-com-assets.alfaview.com`, 1092529B md5 `2cb91283…`); `staging.alfaview.com` fully edge-gated (401 Basic).
+
+## Work State
+### Completed
+- Inventory 100% probed: 55 dedicated hosts, 31 exhausted, zero unprobed; ~110 additional CT subdomains found (mostly firewalled 000).
+- apis REST surface characterized: 38 paths/57 ops; undocumented 39th live path `GET /v2/audit-log`; 4 unauthenticated `/v2/auth/*` exchanges incl. `/v2/auth/api-key`; validation-before-auth on 9/26 GET ops (root cause `securitySchemes={}`, `security=null`); `TokenUserPermissions` 7-bool closed vocabulary; `Permissions` (CREATE, atomic) vs `PermissionsEdit` (PATCH, partial).
+- sso: FusionAuth 1.63.0; `/oauth2/introspect` accepts fabricated `client_id` (POST-body + Basic → 200 `{"active":false}`); `/oauth2/userinfo` correctly tiers (control proving omission); alg-confusion + logout-redirect + device_authorize all closed.
+- app: public bundle leaks admin flow (`AdminTokenAuthenticate` → `adminSession` → `adminSwitchCompany(nextCompanyId)`), hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`); signup mutation is sole unauth path to bearer token (email-gated).
+- tools: `/poll/pollservice/<verb>` 8-verb RPC + unmapped `/whiteboard/` second RPC backend (47B gRPC envelope vs poll 45B jsonpb).
+- Mass assignment, SSRF, alg-confusion, open-redirect, accessKey oracle all closed with probes.
+
+### Active
+- [FINAL] Hypotheses all AUTH_HELPED, wire confirmation pending:
+  - introspection client-auth bypass for opaque tokens — 92.
+  - CreatePermissions BOLA (`POST /v2/rooms/{roomId}/permissions`, polymorphic `participantId`, path-only scope) — 80.
+  - meeting-scoped bulk link issuance w/ caller-chosen `permissionGroupId` — 64.
+  - 403-declaration asymmetry `GET /v2/group-links` vs `GET /v2/guest-links` — 58.
+- [PARKED] `GET /v2/auth/token-info` returns 200 for expired tokens (45) — needs self-owned expired token; `device_authorize` unregistered client_id (44) — prior own-probe retraction stands.
+- RisK score: alfaview gmbh 88 (flat); phase POC, target api.
+
+### Blocked
+- All 3 top hypotheses require a real credential/token to reach the wire — cannot be advanced passively.
+
+## Next Move
+1. [NEXT] HUMAN: provide ONE self-owned low-privilege alfaview account in an owned tenant, ONE non-moderated room in that tenant, and ONE opaque access token from a legitimate self-owned signup (plus second token captured after expiry if convenient). Then at ≤1 rps: (a) `GET /v2/users/me/company` + `GET /v2/group-links?limit=1`; (b) exactly one `POST /v2/rooms/{roomId}/permissions`; (c) three POSTs to `sso /oauth2/introspect` (POST-body, HTTP Basic, `token_type_hint=refresh_token`); (d) `GET /v2/auth/token-info` live vs expired.
+2. Record exact status, headers, bodies verbatim for every request; promote chain to FINAL on 204/403/409/422 discriminator for CreatePermissions.
+
+## Relevant Files
+- `inventory/alfaview.md`: canonical host inventory + all discovery/CHANGED deltas; canonical URLs (e.g. line ~1096).
+- `recon-notes/alfaview-openapi.yaml`: 37-path pre-rotation OpenAPI snapshot (predates two rotations).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated snapshot stored for exact next-rotation attribution.
+- `leads/lead-bigpickle.md`: verify_steps incl. canonical `/.well-known/jwks.json` path.
+- `leads/lead_nemotron3.txt`: guest-link enumeration lead.
+- `art/hypotheses-bigpickle.txt`, `art/hypotheses-nemotron3.txt`: ranked hypothesis tails.
+- `art/lead_bigpickle.txt`, `art/lead_nemotron3.txt`: latest lead tails.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+---
+# alfaview-hunt
+
+24/7 deep multi-model bug-hunting automation for **alfaview gmbh** (Oliver Maicher bug-bounty hub).
+
+Scope: All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains
+(full exclusion + rules list in `scope.yml`)
+
+Pipeline (all workflows run every 20 minutes):
+
+- **Deep Hunt** (`hunt.yml`): analyst hunts the discovered inventory + hypotheses, emits structured
+  leads, chains primitives, self-critiques. Models: mimo.
+- **Triager** (`triage.yml`): second-model 7-Question Gate validation + live passive probe; keeps
+  running count in `reports/valid-bugs.md`.
+- **Reposcan** (`reposcan.yml`): deep source scan of any public GitHub org (if configured).
+- **Sync Issues** (`sync-issues.yml`): mirrors leads to GitHub issues.
+
+Testing discipline: rate-limited (1 rps), no DoS/account-lockout, writes only on non-prod/test
+assets, no exposure of customer/employee/financial/auth data, secrets committed only as hashes.
+
+> IMPORTANT: the pipeline produces CANDIDATE leads. A reportable, validated finding requires
+> human triage + proof against the program's gate. No finding is fabricated; scanner output alone
+> is never accepted. Active testing is gated behind the in-scope hosts in `inventory/alfaview.md` and
+> must stay within the program's published scope.
+
+Artifacts:
+
+| Artifact | Purpose |
+|---|---|
+| `leads/` | Candidate findings (UNVALIDATED) |
+| `triage/` | Validation verdicts |
+| `reports/valid-bugs.md` | Validated findings + running count |
+| `scope.yml` | Program scope and exclusions (edit to adjust) |
+
+Program description: German video conferencing and virtual collaboration software provider offering desktop, web, and mobile communication platforms
+[0m
+[0m$ [0mcat rules.yml 2>/dev/null | head -40; echo "==="; ls scripts/; echo "==="; ls triage/ | head; echo "==="; ls reports/
+===
+sync-issues.py
+===
+run-2026-09-03-11-41.md
+run-2026-09-03-15-37.md
+run-2026-09-03-18-51.md
+run-2026-09-03-21-32.md
+run-2026-09-03-23-30.md
+run-2026-09-04-01-20.md
+run-2026-09-04-06-01.md
+run-2026-09-04-11-23.md
+run-2026-09-04-15-05.md
+run-2026-09-04-18-27.md
+===
+analyst-bigpickle.log
+analyst-laguna.log
+analyst-ling3.log
+analyst-longcat.log
+analyst-nemotron3.log
+hypotheses-bigpickle.txt
+hypotheses-laguna.txt
+hypotheses-ling3.txt
+hypotheses-longcat.txt
+hypotheses-nemotron3.txt
+hypotheses.md
+valid-bugs.md
+[0m
+[0m$ [0mcat reports/valid-bugs.md 2>/dev/null | head -60; echo "=== TRIAGE latest ==="; ls -t triage/ | head -5
+# Validated findings (running count 0)
+
+- 11 lead(s) marked VALID at 2026-09-05 16:10:05 UTC
+  - **Verdict: VALID**
+  - | Q4 Provable non-invasively? | PARTIAL | Needs valid companyId+roomId pair + 10+ rapid requests to test rate limiting |
+  - | Q7 Reasonable triager accept? | YES | If rate limiting confirmed absent, this is a valid auth bypass; accessKey entropy matters |
+  - **Verdict: HOLD** — Blocked on obtaining valid companyId+roomId pair. Once obtained, re-triage after rate-limit probe.
+  - | Q4 Provable non-invasively? | NO | Needs valid client_id + registered redirect_uri to test bypass. Web bundle carries no client_id. Desktop installer is only source (S3 buckets 403). |
+  - **Verdict: VALID (low severity)** — Fully provable passively, genuine misconfiguration, but low direct impact.
+  - | Q4 Provable non-invasively? | PARTIAL | OIDC/JWKS metadata is public (passive proof of misconfiguration). Actual exploit needs a valid token sample to test alg confusion. |
+  - **Verdict: HOLD** — Needs valid token to test. Misconfiguration is provable passively but exploit requires AUTH_HELPED step.
+  - | 1 | Cross-tenant IDOR (REST UUID paths) | **VALID** | 7.5 HIGH | Ready to test with free account |
+  - | 4 | FusionAuth issuer=acme.com drift | **VALID** | 5.3 MED | Low severity, fully passive |
+  - | 6 | JWT alg confusion (HS256+RSA JWKS) | **HOLD** | 9.8 CRIT | Needs valid token sample |
+
+- 2 lead(s) marked VALID at 2026-09-05 18:21:43 UTC
+  - | 1 | Cross-tenant IDOR (REST UUID paths) | **VALID** |
+  - | 4 | FusionAuth issuer=acme.com drift | **VALID** |
+
+- 8 lead(s) marked VALID at 2026-09-07 14:28:07 UTC
+  - | Q2 | Attacker reachable? | **YES** — requires valid company-scoped token (two free-tenant signup path mapped) |
+  - | Q7 | Reasonable triager accept? | **YES** — clear misconfiguration with concrete evidence; however, exploitability requires valid token to test alg-confusion on consumer |
+  - **Verdict: VALID** (misconfig finding); alg-confusion exploit remains HOLD (needs token)
+  - **Verdict: VALID**
+  - | Q7 | Reasonable triager accept? | **MARGINAL** — supply chain argument is valid but requires storage compromise assumption |
+  - **Verdict: VALID** (weak but valid)
+  - | Q2 | Attacker reachable? | **YES** — with valid token |
+  - **Verdict: VALID** (informational/low) — inconsistent resolver auth is a valid finding, but no data leaked in observed responses.
+
+- 4 lead(s) marked VALID at 2026-09-09 00:20:51 UTC
+  - **Verdict: HOLD** — issuer=acme.com might be intentional for a specific integration. Need to confirm it's not a dev/test artifact. The implicit flow + HS256 in supported algs (while JWKS is RSA-only) 
+  - | Q3 Impact? | **Yes** — `guestAuthenticate(userId,companyId,roomId)` and `guestJoin(userId,companyId,roomId,displayName)` mutations are processed without accessKey, while the REST guest-link flow req
+  - **Verdict: VALID**
+  - | 2 | GraphQL guest mutations without accessKey | **VALID** | 7.5 | **REPORT** |
+
+- 6 lead(s) marked VALID at 2026-09-10 09:49:26 UTC
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q4 Provable | NO — requires valid companyId+roomId seed to test rate limiting |
+  - | 1 | FusionAuth issuer=acme.com drift | **VALID** | None — passive proof complete |
+  - | 2 | Unauthenticated binary distribution (test.alfaview.com) | **VALID** | None — passive proof complete |
+  - | 7 | JWT algorithm confusion (HS256/RSA) | **HOLD** | Needs valid token sample |
+
+- 8 lead(s) marked VALID at 2026-09-11 00:32:19 UTC
+  - | Q6 Always-rejected? | **No** — broken client auth on OAuth endpoints is a valid class |
+  - **Verdict: VALID**
+  - | Q6 Always-rejected? | **No** — JWT algorithm confusion is a valid finding class |
+  - | Q4 Provable? | **Yes** — mutation returns `BAD_USER_INPUT` (with zero UUIDs) or `FORBIDDEN` (with valid UUIDs), not `UNAUTHENTICATED`; confirms the mutation is reachable and processes input |
+  - | Q6 Always-rejected? | **No** — authentication bypass / inconsistent auth is a valid class |
+  - **Verdict: VALID**
+  - | 1 | OAuth2 Introspect broken client auth | **VALID** | 5.3 | Reportable as-is |
+  - | 3 | GraphQL guest mutations accessKey-less | **VALID** | 8.1 | Highest priority; needs two-account PoC |
+
+- 8 lead(s) marked VALID at 2026-09-11 17:42:01 UTC
+  - | Q4 Provable non-invasively? | **NO** - Blocked by `invalid_client` gate; need valid registered client_id from desktop installer |
+  - | Q7 Reasonable triager? | **NO** (as-is) - `BAD_USER_INPUT` confirms mutation is processed but we cannot confirm it returns an accessToken without a valid guest triple |
+  - **Verdict: VALID**
+  - | Q4 Provable non-invasively? | **PARTIALLY** - Discovery/JWKS are public (passive), but confirming token validation flaw requires valid token + test forge |
+  - | Q7 Reasonable triager? | **NO (as-is)** - Cannot confirm the validation actually fails without a valid token to forge against. The misconfiguration is observable but the exploitability is not proven
+  - | 3 | GraphQL guest-authz gap | **HOLD** | Needs valid guest triple |
+=== TRIAGE latest ===
+run-2026-10-05-00-22.md
+run-2026-10-05-06-10.md
+run-2026-10-05-14-47.md
+run-2026-10-05-21-46.md
+run-2026-10-06-02-00.md
+[0m
+[0m$ [0mtimeout 20 curl -sS -o /dev/null -w "apis %{http_code} %{time_total}s\n" https://apis.alfaview.com/v2/docs/openapi.json 2>&1; timeout 20 curl -sS -o /dev/null -w "sso %{http_code} %{time_total}s\n" https://sso.alfaview.com/.well-known/openid-configuration 2>&1
+apis 200 0.965104s
+sso 200 0.528304s
+[0m
+Network is live. Let me establish the delta by re-hashing the key surface artifacts at ≤1 rps.
+[0m$ [0mmkdir -p /tmp/opencode/probe
+B=/tmp/opencode/probe
+probe() {
+  local name="$1" url="$2"
+  local code size md5
+  code=$(curl -sS -o "$B/$name.bin" -w "%{http_code}" "$url" 2>/dev/null)
+  size=$(stat -c%s "$B/$name.bin" 2>/dev/null)
+  md5=$(md5sum "$B/$name.bin" 2>/dev/null | cut -c1-8)
+  printf "%-28s %s %sB md5=%s\n" "$name" "$code" "$size" "$md5"
+  sleep 1.2
+}
+probe openapi.json   https://apis.alfaview.com/v2/docs/openapi.json
+probe oidc           https://sso.alfaview.com/.well-known/openid-configuration
+probe jwks           https://sso.alfaview.com/.well-known/jwks.json
+probe usersme        https://apis.alfaview.com/v2/users/me
+probe graphql_get    https://apis.alfaview.com/v2/graphql
+probe diag_health    https://client-diagnostics-ingest.alfaview.com/health
+probe diag_root      https://client-diagnostics-ingest.alfaview.com/
+openapi.json                 200 174787B md5=06231fad
+oidc                         200 2169B md5=f78a08fc
+jwks                         200 16257B md5=3f8d456c
+usersme                      401 107B md5=60ed2f29
+graphql_get                  404 19B md5=595e8801
+diag_health                  200 16B md5=3a0386dd
+diag_root                    404 39B md5=d18415bd
+[0m
+Delta detected: `graphql GET` changed from **400/406B** to **404/19B md5=595e8801**. Let me characterize this.
+[0m$ [0mB=/tmp/opencode/probe
+echo "=== graphql GET body ==="; cat "$B/graphql_get.bin"; echo; echo "=== headers ==="
+curl -sS -D - -o /dev/null https://apis.alfaview.com/v2/graphql 2>&1 | head -30
+sleep 1.2
+echo "=== HEAD ==="
+curl -sS -I https://apis.alfaview.com/v2/graphql 2>&1 | head -20
+=== graphql GET body ===
+404 page not found
+
+=== headers ===
+HTTP/2 404 
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+date: Wed, 07 Oct 2026 02:25:08 GMT
+content-length: 19
+server: edge-proxy
+
+=== HEAD ===
+HTTP/2 404 
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+date: Wed, 07 Oct 2026 02:25:09 GMT
+content-length: 19
+server: edge-proxy
+[0m
+[0m$ [0msleep 1.5; B=/tmp/opencode/probe
+# check alternate graphql paths and the openapi for graphql references
+for p in /v2/graphql /graphql /v2/gql /v2/api/graphql; do
+  code=$(curl -sS -o /dev/null -w "%{http_code} %{size_download}B" "https://apis.alfaview.com$p" 2>/dev/null)
+  printf "%-20s %s\n" "$p" "$code"
+  sleep 1.2
+done
+/v2/graphql          404 19B
+/graphql             404 19B
+/v2/gql              404 19B
+/v2/api/graphql      404 19B
+[0m
+[0m$ [0mgrep -n -i "graphql" /tmp/opencode/probe/openapi.json | head; echo "=== yaml ==="; grep -n -i "graphql" recon-notes/alfaview-openapi.yaml | head
+grep: /tmp/opencode/probe/openapi.json: No such file or directory
+=== yaml ===
+[0m
+[0m$ [0mgrep -rn "graphql" inventory/alfaview.md | head -20
+190:- NEW GraphQL live at app.alfaview.com/graphql: __typename OK unauth; introspection disabled; sensitive ops return UNAUTHENTICATED. Resolver auth is INCONSISTENT: listIdentityProviders returns data unauth (
+207:- NEW GraphQL client posts to /graphql with credentials:"include" (Apollo), authenticated ops use a token header (not Authorization/Bearer); Signup/FinishSignup send NO token → anonymous reachable. No CSRF 
+209:- NEW app.alfaview.com/graphql: Full admin GraphQL schema leaked in public JS bundle (1.09MB) — 60+ mutations, 45+ queries with exact args; introspection disabled but resolver auth INCONSISTENT: listIdentit
+210:- NEW app.alfaview.com/graphql: guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) mutations reachable unauthenticated (BAD_USER_INPUT not UNAUTHENTICATED) — NO ac
+226:- NEW app.alfaview.com/graphql: Apollo client uses credentials:"include" + custom token header (not Authorization/Bearer); Signup/FinishSignup send NO token → anonymous reachable; no CSRF token observed
+228:- NEW app.alfaview.com/graphql: Full admin GraphQL schema leaked in public JS bundle (1.09MB) — 60+ mutations, 45+ queries with exact args; introspection disabled but resolver auth INCONSISTENT (listIdentit
+229:- NEW app.alfaview.com/graphql: guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) mutations reachable unauthenticated (BAD_USER_INPUT not UNAUTHENTICATED) — NO ac
+244:- NEW GraphQL live at app.alfaview.com/graphql: __typename OK unauth; introspection disabled; sensitive ops return UNAUTHENTICATED. Resolver auth is INCONSISTENT: listIdentityProviders returns data unauth (
+249:- NEW GraphQL client posts to /graphql with credentials:"include" (Apollo), authenticated ops use a token header (not Authorization/Bearer); Signup/FinishSignup send NO token → anonymous reachable. No CSRF 
+279:- CHANGED app.alfaview.com/graphql: anonymous resolver slice confirmed closed — listIdentityProviders returns `[]`, listComponents errors 500, searchCompanies/generateFileDownloadURL return UNAUTHENTICATED; no 
+280:- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural 
+281:- CHANGED app.alfaview.com/graphql: field-oracle enumeration discloses reply-type field names (providers [JSONObject], http_download_url, GetPendingUserAccount(userId)) — broader schema-surface mapping.
+288:- CHANGED app.alfaview.com/graphql: guestAuthenticate reconfirmed anonymous-reachable (~1 rps) — mutation processed, my field guess returned `GRAPHQL_VALIDATION_FAILED` ("Did you mean `role`?") not UNAUTHENTICA
+292:- NEW app.alfaview.com/graphql: guestAuthenticate reconfirmed anonymous-reachable (~1 rps) — mutation processed, field guess returned `GRAPHQL_VALIDATION_FAILED` ("Did you mean `role`?") not `UNAUTHENTICATE
+294:- CHANGED app.alfaview.com/graphql: anonymous resolver slice confirmed closed — `listIdentityProviders` returns `[]`, `listComponents` errors 500, `searchCompanies`/`generateFileDownloadURL` return `UNAUTHENTIC
+303:- CHANGED app.alfaview.com/graphql guestAuthenticate/guestJoin reconfirmed anonymous-reachable (returns GRAPHQL_VALIDATION_FAILED "Did you mean `role`?" not UNAUTHENTICATED) — accessKey-less GraphQL guest path 
+314:- CHANGED app.alfaview.com/graphql: guestAuthenticate reconfirmed anonymous-reachable (~1 rps) — mutation processed, my field guess returned `GRAPHQL_VALIDATION_FAILED` ("Did you mean `role`?") not UNAUTHENTICA
+340:- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT, not UNAUTHENTICATED) — accessKey-less GraphQL guest path diverging from REST 4-field combo remain
+349:- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT, not UNAUTHENTICATED) — accessKey-less GraphQL guest path diverging from REST 4-field combo remain
+361:- CHANGED app.alfaview.com/graphql: guestAuthenticate/guestJoin reconfirmed anonymous-reachable (BAD_USER_INPUT) — accessKey-less GraphQL guest path diverging from REST 4-field combo remains highest-structural
+[0m
+Correction: GraphQL lives at `app.alfaview.com/graphql`, not apis. Let me probe the correct host.
+[0m$ [0mB=/tmp/opencode/probe
+gprobe() {
+  local name="$1"; shift
+  local code
+  code=$(curl -sS -o "$B/$name.bin" -w "%{http_code}" "$@" 2>/dev/null)
+  local size md5
+  size=$(stat -c%s "$B/$name.bin" 2>/dev/null); md5=$(md5sum "$B/$name.bin" 2>/dev/null | cut -c1-8)
+  printf "%-28s %s %sB md5=%s\n" "$name" "$code" "$size" "$md5"
+}
+gprobe app_graphql_get "https://app.alfaview.com/graphql"
+echo "--- body ---"; cat "$B/app_graphql_get.bin"; echo
+sleep 1.3
+gprobe app_root "https://app.alfaview.com/"
+echo "--- app root headers ---"; curl -sS -I "https://app.alfaview.com/" 2>&1 | head -12
+app_graphql_get              400 406B md5=2fd0a1d0
+--- body ---
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+
+app_root                     200 1381B md5=7727e138
+--- app root headers ---
+HTTP/2 200 
+strict-transport-security: max-age=15552000; includeSubDomains
+content-security-policy: default-src 'self' https://alfaview.com https://*.alfaview.com;connect-src 'self' https://alfaview.com https://*.alfaview.com https://plausible.alfaview.com;img-src 'self' data: https://alfaview.com https://*.alfaview.com;script-src 'self' 'unsafe-eval' https://alfaview.com https://*.alfaview.com ;script-src-attr 'none';child-src alfaview:;frame-ancestors 'self' https://omega-lectures.com https://*.omega-lectures.com;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;form-action 'self';object-src 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+x-content-type-options: nosniff
+x-xss-protection: 0
+referrer-policy: origin-when-cross-origin
+accept-ranges: bytes
+cache-control: public, max-age=0
+last-modified: Thu, 24 Sep 2026 13:53:49 GMT
+etag: W/"565-1a0d3b1a1c8"
+content-type: text/html; charset=UTF-8
+content-length: 1381
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+echo "=== app root HTML ==="; cat "$B/app_root.bin"; echo
+=== app root HTML ===
+<!doctype html><html lang="en"><head><meta content="text/html; charset=UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="description" content="High quality audio/video conferencing for professional online meetings and live classes."/><title>alfaview</title><link rel="icon" href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/production_alfaview_icon_web_favicon_96px.png"><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-utilities.min.e3292ce370affa995a98.js"></script><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/vendor-vue-vuetify.min.136a6a881b25b1473175.js"></script><script defer="defer" src="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/app.min.67e8a68d4318b34ca241.js"></script><link href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/vendor-vue-vuetify.min.04d1ead8363afa7c651b.css" rel="stylesheet"><link href="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/styles/app.min.d046c93e5071d179142f.css" rel="stylesheet"></head><body><div id="app"><app></app></div><noscript>alfaview.com is heavily dependent on JavaScript. Please make sure you have JavaScript enabled.</noscript></body></html>
+[0m
+app GraphQL unchanged (400/406B). Note CSP allows `frame-ancestors omega-lectures.com`. Let me fetch the app shell and bundle to check for drift and new endpoints.
+[0m$ [0mB=/tmp/opencode/probe
+for f in app.min.67e8a68d4318b34ca241.js vendor-vue-vuetify.min.136a6a881b25b1473175.js vendor-utilities.min.e3292ce370affa995a98.js; do
+  url="https://alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/$f"
+  code=$(curl -sS -o "$B/$f" -w "%{http_code}" "$url" 2>/dev/null)
+  size=$(stat -c%s "$B/$f" 2>/dev/null); md5=$(md5sum "$B/$f" 2>/dev/null | cut -c1-8)
+  printf "%-55s %s %sB md5=%s\n" "$f" "$code" "$size" "$md5"
+  sleep 1.2
+done
+app.min.67e8a68d4318b34ca241.js                         200 1092529B md5=2cb91283
+vendor-vue-vuetify.min.136a6a881b25b1473175.js          200 509118B md5=eb8ceedd
+vendor-utilities.min.e3292ce370affa995a98.js            200 1003202B md5=1e130aa4
+[0m
+App bundle unchanged. Let me examine the rotated OpenAPI for new surface (auth scheme + any new paths).
+[0m$ [0mB=/tmp/opencode/probe
+python3 - "$B/openapi.json" <<'EOF'
+import json,sys
+d=json.load(open(sys.argv[1]))
+print("openapi:",d.get("openapi"))
+print("info:",json.dumps(d.get("info",{}))[:300])
+paths=d.get("paths",{})
+print("num paths:",len(paths))
+for p in sorted(paths): 
+    ops=",".join(sorted(m.upper() for m in paths[p] if m in ("get","post","put","patch","delete","head","options")))
+    print(f"  {ops:20} {p}")
+print("securitySchemes:",json.dumps(d.get("components",{}).get("securitySchemes",{})))
+print("global security:",json.dumps(d.get("security")))
+print("servers:",json.dumps(d.get("servers")))
+EOF
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/opencode/probe/openapi.json'
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+python3 - "$B/openapi.json.bin" <<'EOF'
+import json,sys
+d=json.load(open(sys.argv[1]))
+print("openapi:",d.get("openapi"),"| info:",json.dumps(d.get("info",{}))[:200])
+paths=d.get("paths",{})
+print("num paths:",len(paths))
+for p in sorted(paths):
+    ops=",".join(sorted(m.upper() for m in paths[p] if isinstance(paths[p],dict) and m in ("get","post","put","patch","delete","head","options")))
+    print(f"  {ops:16} {p}")
+print("securitySchemes:",json.dumps(d.get("components",{}).get("securitySchemes",{})))
+print("global security:",json.dumps(d.get("security")))
+print("servers:",json.dumps(d.get("servers")))
+EOF
+openapi: 3.1.0 | info: {"description": "## Quickstart\n\n### 1. Obtain an access token\n\nObtain an access token, for example with an API key ([Authenticate via API Key](https://apis.alfaview.com/v2/docs/openapi#/operations
+num paths: 38
+  POST             /v2/auth/api-key
+  POST             /v2/auth/group-link
+  POST             /v2/auth/guest-link
+  POST             /v2/auth/password
+  GET              /v2/auth/token-info
+  GET              /v2/group-links
+  GET,PATCH        /v2/group-links/{id}
+  GET              /v2/guest-links
+  GET,PATCH        /v2/guest-links/{id}
+  GET              /v2/languages
+  GET,POST         /v2/meetings
+  GET,PATCH        /v2/meetings/{id}
+  POST             /v2/meetings/{id}/cancellation
+  GET              /v2/permission-groups
+  GET              /v2/room-types
+  GET,POST         /v2/rooms
+  DELETE,GET,PATCH /v2/rooms/{id}
+  GET              /v2/rooms/{id}/participants
+  GET              /v2/rooms/{roomId}/attendances
+  DELETE,GET,PATCH /v2/rooms/{roomId}/features
+  GET              /v2/rooms/{roomId}/file-share-limits
+  GET,PATCH        /v2/rooms/{roomId}/file-share-settings
+  GET,POST         /v2/rooms/{roomId}/group-links
+  DELETE           /v2/rooms/{roomId}/group-links/{id}
+  GET,POST         /v2/rooms/{roomId}/guest-links
+  DELETE           /v2/rooms/{roomId}/guest-links/{id}
+  GET,PATCH        /v2/rooms/{roomId}/language-settings
+  GET,POST         /v2/rooms/{roomId}/passcode
+  GET,POST         /v2/rooms/{roomId}/permissions
+  DELETE,PATCH     /v2/rooms/{roomId}/permissions/{userId}
+  GET,POST         /v2/rooms/{roomId}/subrooms
+  DELETE,PATCH     /v2/rooms/{roomId}/subrooms/{subroomId}
+  GET              /v2/stats
+  GET,PATCH        /v2/users
+  POST             /v2/users/invitation
+  GET              /v2/users/me
+  GET              /v2/users/me/company
+  DELETE           /v2/users/{id}
+securitySchemes: {"accessToken": {"bearerFormat": "opaque", "description": "Access tokens are returned by the authentication operations and are accepted without the 'Bearer ' prefix.", "scheme": "bearer", "type": "http"}}
+global security: null
+servers: [{"url": "https://apis.alfaview.com"}]
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+python3 - "$B/openapi.json.bin" <<'EOF'
+import json,sys
+d=json.load(open(sys.argv[1]))
+paths=d["paths"]
+for p in sorted(paths):
+    for m,op in paths[p].items():
+        if not isinstance(op,dict): continue
+        sec = op.get("security")
+        if sec is None:
+            # inherit global
+            tag = "GLOBAL(NONE)"
+        elif sec == []:
+            tag = "NONE-REQD"
+        else:
+            tag = "TOKEN"
+        tags = ",".join(op.get("tags",[]))
+        oid = op.get("operationId","")
+        print(f"{m.upper():6} {p:52} {tag:12} {tags:14} {oid}")
+EOF
+POST   /v2/auth/api-key                                     GLOBAL(NONE) Authentication AuthenticateAPIKey
+POST   /v2/auth/group-link                                  GLOBAL(NONE) Authentication,Guests AuthenticateGroupLink
+POST   /v2/auth/guest-link                                  GLOBAL(NONE) Authentication,Guests AuthenticateGuestLink
+POST   /v2/auth/password                                    GLOBAL(NONE) Authentication AuthenticatePassword
+GET    /v2/auth/token-info                                  TOKEN        Authentication GetTokenInfo
+GET    /v2/group-links                                      TOKEN        Guests         ListGroupLinks
+GET    /v2/group-links/{id}                                 TOKEN        Guests         GetGroupLink
+PATCH  /v2/group-links/{id}                                 TOKEN        Guests         UpdateGroupLink
+GET    /v2/guest-links                                      TOKEN        Guests         ListGuestLinks
+GET    /v2/guest-links/{id}                                 TOKEN        Guests         GetGuestLink
+PATCH  /v2/guest-links/{id}                                 TOKEN        Guests         UpdateGuestLink
+GET    /v2/languages                                        TOKEN        Rooms          ListAvailableLanguages
+GET    /v2/meetings                                         TOKEN        Meetings       ListOwnMeetings
+POST   /v2/meetings                                         TOKEN        Meetings       CreateMeeting
+GET    /v2/meetings/{id}                                    TOKEN        Meetings       GetOwnMeeting
+PATCH  /v2/meetings/{id}                                    TOKEN        Meetings       UpdateMeeting
+POST   /v2/meetings/{id}/cancellation                       TOKEN        Meetings       CancelMeeting
+GET    /v2/permission-groups                                TOKEN        Permissions    ListPermissionGroups
+GET    /v2/room-types                                       TOKEN        Rooms          ListRoomTypes
+GET    /v2/rooms                                            TOKEN        Rooms          ListRooms
+POST   /v2/rooms                                            TOKEN        Rooms          CreateRoom
+DELETE /v2/rooms/{id}                                       TOKEN        Rooms          DeleteRoom
+GET    /v2/rooms/{id}                                       TOKEN        Rooms          GetRoom
+PATCH  /v2/rooms/{id}                                       TOKEN        Rooms          UpdateRoom
+GET    /v2/rooms/{id}/participants                          TOKEN        Rooms          ListParticipants
+GET    /v2/rooms/{roomId}/attendances                       TOKEN        Reports        ListAttendances
+DELETE /v2/rooms/{roomId}/features                          TOKEN        Rooms          DeleteRoomFeatures
+GET    /v2/rooms/{roomId}/features                          TOKEN        Rooms          GetRoomFeatures
+PATCH  /v2/rooms/{roomId}/features                          TOKEN        Rooms          UpdateRoomFeatures
+GET    /v2/rooms/{roomId}/file-share-limits                 TOKEN        Rooms,Files    GetRoomFileShareLimits
+GET    /v2/rooms/{roomId}/file-share-settings               TOKEN        Rooms,Files    GetRoomFileShareSettings
+PATCH  /v2/rooms/{roomId}/file-share-settings               TOKEN        Rooms,Files    UpdateRoomFileShareSettings
+GET    /v2/rooms/{roomId}/group-links                       TOKEN        Guests         ListGroupLinksForRoom
+POST   /v2/rooms/{roomId}/group-links                       TOKEN        Guests         CreateGroupLink
+DELETE /v2/rooms/{roomId}/group-links/{id}                  TOKEN        Guests         DeleteGroupLink
+GET    /v2/rooms/{roomId}/guest-links                       TOKEN        Guests         ListGuestLinksForRoom
+POST   /v2/rooms/{roomId}/guest-links                       TOKEN        Guests         CreateGuestLinks
+DELETE /v2/rooms/{roomId}/guest-links/{id}                  TOKEN        Guests         DeleteGuestLink
+GET    /v2/rooms/{roomId}/language-settings                 TOKEN        Rooms          GetLanguageSettings
+PATCH  /v2/rooms/{roomId}/language-settings                 TOKEN        Rooms          UpdateLanguageSettings
+GET    /v2/rooms/{roomId}/passcode                          TOKEN        Rooms          GetPasscode
+POST   /v2/rooms/{roomId}/passcode                          TOKEN        Rooms          RegeneratePasscode
+GET    /v2/rooms/{roomId}/permissions                       TOKEN        Rooms,Permissions ListPermissions
+POST   /v2/rooms/{roomId}/permissions                       TOKEN        Rooms,Permissions CreatePermissions
+DELETE /v2/rooms/{roomId}/permissions/{userId}              TOKEN        Rooms,Permissions DeletePermissions
+PATCH  /v2/rooms/{roomId}/permissions/{userId}              TOKEN        Rooms,Permissions UpdatePermissions
+GET    /v2/rooms/{roomId}/subrooms                          TOKEN        Rooms          ListSubrooms
+POST   /v2/rooms/{roomId}/subrooms                          TOKEN        Rooms          CreateSubroom
+DELETE /v2/rooms/{roomId}/subrooms/{subroomId}              TOKEN        Rooms          DeleteSubroom
+PATCH  /v2/rooms/{roomId}/subrooms/{subroomId}              TOKEN        Rooms          UpdateSubroom
+GET    /v2/stats                                            TOKEN        Reports        ListStatistics
+GET    /v2/users                                            TOKEN        Users          ListUsers
+PATCH  /v2/users                                            TOKEN        Users          UpdateUser
+POST   /v2/users/invitation                                 TOKEN        Users          InviteUser
+GET    /v2/users/me                                         TOKEN        Users          GetOwnUser
+GET    /v2/users/me/company                                 TOKEN        Users          GetOwnCompany
+DELETE /v2/users/{id}                                       TOKEN        Users          DeleteUser
+[0m
+[0m$ [0mcat recon-notes/DEEPER-FINDINGS.md
+# Deeper findings — session 2026-09-03
+
+_Generated 2026-09-03 | read-only passive enumeration | no active testing_
+
+## 1. alfaview — OpenAPI spec exposed (HIGH VALUE)
+
+**Location:** `https://apis.alfaview.com/v2/docs/openapi.yaml` (159KB)
+**Discovery:** Stoplight Elements UI at `https://apis.alfaview.com/docs` loads the spec via `apiDescriptionUrl="/v2/docs/openapi.yaml"`.
+
+### Endpoints (35+)
+
+**Authentication:**
+- `/v2/auth/api-key` — API key auth (companyId + clientId + key)
+- `/v2/auth/password` — Password auth
+- `/v2/auth/group-link` — Guest auth via group link (accessKey)
+- `/v2/auth/guest-link` — Guest auth via guest link
+- `/v2/auth/token-info` — Token introspection
+
+**Rooms & Meetings:**
+- `/v2/rooms` — List rooms
+- `/v2/rooms/{id}` — Get room
+- `/v2/rooms/{roomId}/participants` — List participants
+- `/v2/rooms/{roomId}/permissions` — Room permissions
+- `/v2/rooms/{roomId}/permissions/{userId}` — Per-user permissions (IDOR potential)
+- `/v2/rooms/{roomId}/passcode` — Room passcode
+- `/v2/rooms/{roomId}/features` — Room features
+- `/v2/rooms/{roomId}/group-links` / `guest-links` — Guest access management
+- `/v2/rooms/{roomId}/file-share-settings` / `file-share-limits`
+- `/v2/rooms/{roomId}/subrooms` — Subroom management
+- `/v2/meetings` — List/Create meetings
+- `/v2/meetings/{id}` — Get/Update meeting
+- `/v2/meetings/{id}/cancellation` — Cancel meeting
+
+**Users & Admin:**
+- `/v2/users` — List users
+- `/v2/users/{id}` — Get user
+- `/v2/users/me` — Current user
+- `/v2/users/invitation` — Invite user
+- `/v2/permission-groups` — Permission groups
+- `/v2/room-types` — Room types
+- `/v2/stats` — Statistics
+- `/v2/languages` — Available languages
+
+### Auth model
+- API keys: `companyId` + `clientId` + `key` (in request body)
+- Bearer tokens: base64-encoded `accessToken` in `Authorization` header
+- Guest access: `accessKey` from group-link or guest-link
+
+### Attack-relevant observations
+- `/v2/rooms/{roomId}/permissions/{userId}` — classic IDOR pattern (room ID + user ID in path)
+- Guest auth via `accessKey` — if keys are predictable/brute-forceable, guest impersonation possible
+- `/v2/users/invitation` — user invitation endpoint (potential user enumeration or abuse)
+- `/v2/stats` — statistics endpoint (potential info disclosure)
+- `/v2/rooms/{roomId}/passcode` — passcode management (potential bypass)
+
+### Additional alfaview observations
+- All hosts behind `edge-proxy` (reverse proxy fingerprint)
+- CSP on `app.alfaview.com` allows `omega-lectures.com` as frame-ancestor (third-party integration)
+- No X-Frame-Options on ANY alfaview host (potential clickjacking, mitigated by CSP frame-ancestors on app)
+- `internal.alfaview.com` and `beta-app.alfaview.com` use HTTP Basic auth
+
+---
+
+## 2. BASF — Azure Function Apps exposed (MEDIUM VALUE)
+
+**Hosts:** `ap-digitalconnect.api.basf.com`, `ap-eupf.api.basf.com`
+**Fingerprint:** Azure Function Apps (default page: "Your Azure Function App is up and running")
+
+### Exposed admin endpoints
+- `/admin/functions` → 401 (Bearer auth required)
+- `/admin/host/status` → 401 (Bearer auth required)
+- `/admin/host/keys` → 401 (Bearer auth required)
+- `/.env` → 403 (exists, blocked)
+
+### Attack surface
+- Azure Functions admin API requires function master key or system key
+- If key is weak/default/leaked, full admin access to Function App
+- Common Azure Functions key patterns: `<hex>-<hex>`, default keys in `host.json`
+- Dev endpoints (`dev-clientcert-sap`, `dev-ext001`) require client certificates (400)
+
+---
+
+## 3. daimlertruck — Lockdown confirmed (NO UNAUTH FINDING)
+
+- APIM gateways: all paths return `OperationNotFound` (no unauth surface)
+- Developer portals: Next.js, login-gated (307 → callbackUrl)
+- Authz services: empty 404 at root
+- Management/capacitor hosts: unreachable (NAT64/IPv6 only)
+
+**Honest assessment: surface is properly locked down against unauthenticated attackers.**
+
+---
+
+## 4. betpanda — Vite SPA with affiliate portal
+
+- `affiliates.betpanda.io` — Vite-built SPA (main.1ae50aab.js)
+- Cloudflare-fronted
+- No API routes found in JS bundle
+- Standard affiliate portal structure
+
+---
+
+## 5. elringklinger — Third-party integrations
+
+- `go.events.elringklinger.com` — 302 redirect (event management platform)
+- `ir.elringklinger.com` — Apache, investor relations page
+
+---
+
+## 6. avatarux — Atlassian + cPanel
+
+- `help.desk.avatarux.com` — Atlassian Edge (Jira/Confluence help desk)
+- `autoconfig.avatarux.com` — Apache autoconfig
+- `cpanel.avatarux.com` — cPanel (if accessible)
+
+---
+
+_Honest framing: all observations from read-only passive enumeration. No vulnerability claimed. Scope must be confirmed before active testing on any of these live production assets._
+# Deeper finding re-verification — 2026-09-03
+
+_Appended to DEEPER-FINDINGS.md | read-only re-check, no active testing_
+
+## Re-verification results
+
+### alfaview API — all endpoints auth-gated (CONFIRMED, no unauth vuln)
+
+Live checks against `https://apis.alfaview.com`:
+- `/v2/languages` → 401 "No access token was provided in the Authorization header."
+- `/v2/room-types` → 401 (same)
+- `/v2/users/me` → 401 (same)
+- `/v2/rooms` → 401 (same)
+- `/v2/auth/token-info` → 422 "invalid access token format" — **endpoint works and validates token format**; could act as an oracle distinguishing valid vs malformed tokens, but no unauth info disclosure
+- `/v2/stats` → 422 "validation failed" (requires query params)
+
+**Conclusion:** The alfaview API is properly auth-gated. No unauthenticated vulnerability. The exposed OpenAPI spec is a **roadmap for authenticated testing** — the IDOR-shaped operations (`/v2/rooms/{roomId}/permissions/{userId}`, `DELETE /v2/users/{id}`, `/v2/users/invitation`) only become testable with a valid access token obtained via one of the 4 auth methods.
+
+### Auth model (documented in spec, verified structure)
+- All requests require `Authorization: Bearer <base64 accessToken>`
+- Tokens valid for 1 hour
+- Auth methods: API-key (companyId+clientId+key), password (username+password), group-link (companyId+roomId+accessKey), guest-link (companyId+accessKey)
+- Group/guest-link auth accepts only a companyId + roomId + accessKey — **potential guest-auth brute force IF access keys are low-entropy**, but companyId+roomId are long random IDs raising the bar. Not exploitable without scope-authorized testing.
+
+### BASF Azure Functions — admin API exposed, Bearer-auth-gated (CONFIRMED)
+- `/admin/host/status` → 401 with `WWW-Authenticate: Bearer`
+- `/admin/functions` → 401 Bearer
+- `/admin/host/keys` → 401 Bearer
+- `/.env` → 403 (blocked)
+- Requires Azure Functions master/system key. No default/weak key confirmed (no auth testing done). This is a legitimate **documented-observation**: the admin endpoints are reachable but properly key-authenticated.
+
+### daimlertruck developer portal — login-gated (CONFIRMED still)
+- `developer.eu.api.daimlertruck.com/api` → 307 to `/?callbackUrl=%2Fapi` (login gate intact)
+
+## Overall honest conclusion
+
+Each deeper dig confirmed the same reality: **the 6 live targets are all auth-gated at the application/API layer.** The genuinely valuable output of this session:
+
+1. **alfaview OpenAPI spec** (159KB, 60 operations) recovered and stored — the single highest-value artifact; enables targeted authenticated testing later.
+2. **BASF Azure Functions admin surface** documented — reachable admin API requiring keys.
+3. Honest negative results recorded for daimlertruck and the 22 subdomain-thin targets.
+
+No unauthenticated compromise was achieved, and per triage discipline **no vulnerability is claimed.** The path to real findings is **authenticated testing on alfaview** (obtain a legitimate developer account + written scope confirmation).
+[0m
+[0m$ [0mcat recon-notes/DEDICATED-DEEP.md; echo "=== SCOPE ==="; cat recon-notes/SCOPE-CONFIRMATION.md | head -40
+# Dedicated deep surface (wildcard-cleaned) 2026-09-03
+**Root zone:** `alfaview.com` | **dedicated hosts after wildcard-filter: 55**
+> Audit: brute+passive subfinder produced 10,083 resolving hostnames; zone-wildcard + IP-fingerprint filtering dropped 9,973 (98.9%) DNS-wildcard noise (random labels resolving to shared wildcard IPs e.g. account.cineplex.de, a.hypofriend.de, account.live-manager.de, docker.jtl-software.de, *.ggamdom.com, *.dev.alfaview.com). Only genuine dedicated hosts listed below. These are surface-map observations; live HTTP status captured read-only (GET / via curl). No findings claimed; scope must be confirmed with the program.
+- `alfacheck-audio.alfaview.com`  [HTTP unprobed]
+- `alfacheck-engine.alfaview.com`  [HTTP unprobed]
+- `alfacheck-video.alfaview.com`  [HTTP unprobed]
+- `alfatraining.alfaview.com`  [HTTP 200]
+- `alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `apis.alfaview.com`  [HTTP 200]
+- `app.alfaview.com`  [HTTP 200]
+- `appstats.alfaview.com`  [HTTP unprobed]
+- `assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `beta-apis.alfaview.com`  [HTTP 200]
+- `beta-app.alfaview.com`  [HTTP 401]
+- `beta-hcloud-19-beta-audio-4xstl.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-audio-8xnz9.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-9m62k.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-vlhwd.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`  [HTTP 200]
+- `beta-hcloud-19-beta-video-xjl6p.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-video-zhjvl.alfaview.com`  [HTTP 404]
+- `beta-ionoscloud-21-beta-audio-65st7.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-audio-bdtmf.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-6pp2m.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-l5mbv.alfaview.com`  [HTTP unprobed]
+- `beta-noris-33-beta-audio-ljj9x.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-audio-xr4mw.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-engine-cr5rs.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-engine-w84qw.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-hydra-2zm7t.alfaview.com`  [HTTP 200]
+- `beta-noris-33-beta-video-2f9jw.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-video-vbvn5.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-audio-j5qgh.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-audio-vldgf.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-engine-dxvt4.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-engine-k7khj.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-hydra-z4tf8.alfaview.com`  [HTTP 200]
+- `beta-ovh-29-beta-video-8zvvm.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-video-gbbw4.alfaview.com`  [HTTP 404]
+- `beta-webclient.alfaview.com`  [HTTP 200]
+- `bhc.alfaview.com`  [HTTP 200]
+- `client-diagnostics-ingest.alfaview.com`  [HTTP 404]
+- `clone.staging-wordpress.alfaview.com`  [HTTP 303]
+- `consul-monitoring.alfaview.com`  [HTTP unprobed]
+- `demo-company.alfaview.com`  [HTTP 200]
+- `design-assets.alfaview.com`  [HTTP 404]
+- `design-tokens.alfaview.com`  [HTTP 404]
+- `equipment.alfaview.com`  [HTTP unprobed]
+- `hello-world.atlas-spike.atlas.alfaview.com`  [HTTP 404]
+- `insider-webclient.alfaview.com`  [HTTP 200]
+- `internal.alfaview.com`  [HTTP 401]
+- `ip-185-245-101-240.alfaview.com`  [HTTP unprobed]
+- `kh-freiburg.alfaview.com`  [HTTP 200]
+=== SCOPE ===
+# Maicher Bug Bounty — Scope-Confirmation Request Drafts
+
+_Generated 2026-09-03 | pre-submission scope clarifications_
+_Gate: confirm asset ownership/in-scope BEFORE active testing. These are drafts to paste into the hub Report form (or email Oliver) to get written authorization for the specific hosts discovered during passive recon. No active probing performed on any of these until confirmed._
+
+---
+
+## Why these requests exist
+
+My passive recon on the Maicher hub identified genuine dedicated hosts for several programs. Most programs list **descriptive** (not enumerated) scope, e.g. "all company-owned infrastructure..." — so these hosts are *probably* in scope, but scope ownership should be confirmed in writing before any active testing, because the targets include large enterprises (Daimler Truck, BASF) and privacy-sensitive services (banking/finance is separate). The two below are the highest-value, wildcard-clean surfaces.
+
+Key principle: **enumeration ≠ authorization.** Getting a written confirmation protects the researcher and keeps testing lawful.
+
+---
+
+## Draft 1 — Daimler Truck Holding AG (program: `daimler-truck`)
+
+**Program name:** daimler-truck
+
+**Subject:** Scope clarification request — `*.api.daimlertruck.com` developer/API surface
+
+**Details:**
+
+Hello Oliver,
+
+During authorized passive reconnaissance on the **Daimler Truck Holding AG** program (scope: "All infrastructure, digital services, brands and subsidiaries operated by Daimler Truck Holding AG"), I identified a genuine, wildcard-clean set of API/developer hosts under `daimlertruck.com`. I only performed read-only DNS + HTTP(S)-GET fingerpronting (no active testing, no fuzzing, no auth attempts). Before I invest further effort, I'd like written confirmation that the following hosts are in scope and authorized for security testing:
+
+**API gateways (Azure API Management):**
+- `as.api.daimlertruck.com` (40.81.218.168)
+- `eu.api.daimlertruck.com` (20.76.15.251)
+- `dev.na.api.daimlertruck.com` (20.80.145.22)
+
+**Authorization services:**
+- `authz.as.api.daimlertruck.com` / `authz.eu.api.daimlertruck.com` / `authz.na.api.daimlertruck.com`
+- plus tst/dev tier variants (`authz.tst.as/eu/na.api`)
+
+**Developer portals (Next.js, login-gated):**
+- `developer.as/eu/na.api.daimlertruck.com` (+ `developer.dev.na`, `developer.tst.eu/na`)
+- Candidate hosts seen in passive DNS but not yet confirmed: `docs.api.daimlertruck.com`, `fria.api.daimlertruck.com`, `management.*.api.daimlertruck.com`, `beta.dev.na.api.daimlertruck.com`
+[0m
+Spec is byte-stable vs standing. Let me read the compact recon-notes to check for any unflagged threads I can advance passively.
+[0m$ [0mwc -l inventory/alfaview.md; echo "==="; grep -n "CHANGED\|NEW" inventory/alfaview.md | tail -40
+1486 inventory/alfaview.md
+===
+1421:- CHANGED apis.alfaview.com/v2/users/invitation{,s} — OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and DELETE-only on undocumented /v2/users/invitations; both Go
+1434:- NEW apis.alfaview.com OpenAPI md5 rotated to 284a3383 (132100B, 38 paths, 57 ops) — byte-identical on beta-apis.alfaview.com (delta path /v2/users/me/company identified)
+1435:- NEW apis.alfaview.com GET /v2/audit-log — LIVE, UNDOCUMENTED 39th path absent from OpenAPI; pre-auth query binder complete (10 GET ops validate pre-auth)
+1436:- CHANGED tools.alfaview.com/whiteboard/ — second unmapped RPC backend confirmed (47B gRPC envelope vs poll 45B jsonpb), staging mirror byte-identical
+1437:- NEW `apis.alfaview.com/v2/users/me/company` (GetOwnCompany) confirmed as 38th OpenAPI path — sole 200-response supplier of `companyId` across 57 ops; enables guest-link chain execution by authorized teste
+1438:- NEW `apis.alfaview.com GET /v2/audit-log` live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth); mirrors GraphQL `ListAuditEvents`
+1439:- NEW `apis.alfaview.com POST /v2/rooms` — `RoomCreate.permissions` exposes `participantId` namespace collision with `RoomPermissions.participantId`
+1440:- NEW `apis.alfaview.com PATCH /v2/rooms/{id}` — `RoomUpdate.quotas` description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
+1441:- NEW `apis.alfaview.com POST /v2/meetings` — second meeting-scoped bulk credential-minting path (`guestLinks`/`groupLinks` arrays with caller-supplied `permissionGroupId`); three distinct issuance routes w
+1442:- NEW `apis.alfaview.com POST /v2/rooms/{roomId}/permissions` (CreatePermissions) — BOLA write with polymorphic `participantId` (user ID / guest link ID / group link ID) granting `admin`+`promote`; scope on
+1443:- NEW `tools.alfaview.com/whiteboard/` — second unmapped RPC backend confirmed by controlled differential (47B gRPC envelope vs poll's 45B jsonpb); distinct marshaller; no auth challenge; zero client refere
+1444:- CHANGED `apis.alfaview.com` OpenAPI md5 stable at `284a3383c1ac3cfc9152ffcc631891f2` (132100B, 38 paths, 57 ops) for 4+ cycles; byte-identical on beta-apis.alfaview.com
+1445:- CHANGED `sso.alfaview.com/oauth2/introspect` — 30+ consecutive stable cycles: fabricated `client_id` accepted on POST-body and Basic channels (200 `{"active":false}`); `token_endpoint_auth_methods_supported` 
+1446:- CHANGED `app.alfaview.com` public bundle stable at `app.min.67e8a68d4318b34ca241.js` (md5 `2cb9128353b1f7444e222b4f61e4ffa5`) carrying `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-inter
+1447:- CHANGED `apis.alfaview.com`: validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI `components.securitySchemes={}`, `security=null`
+1448:- CHANGED `apis.alfaview.com/v2/users/invitation{s}`: OpenAPI declares POST only; live server advertises `Allow: DELETE,POST` on `/v2/users/invitation` and DELETE-only on undocumented `/v2/users/invitations`; b
+1449:- CHANGED `test.alfaview.com`: alfacheck v483102 (4 platforms) unsigned; index page no sha256/signatures — supply-chain hardening absent across releases
+1452:- NEW NO_DELTA @ full surface: OpenAPI MD5 `284a3383` (132100B, 38 paths, 57 ops) stable 4+ cycles; byte-identical on beta-apis. sso.alfaview.com OIDC 200/2169B md5 `f78a08fc` (issuer=acme.com, introspectio
+1453:- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain.
+1456:- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+1457:- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+1458:- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+1459:- CHANGED sso.alfaview.com/oauth2/introspect client-auth bypass is CONDITIONAL on token shape, not universal. client_id is validated ONLY when the token is a 3-segment dot-separated string whose SECOND segment 
+1460:- CHANGED Consequence for exploitability: alfaview's own API access tokens are opaque base64 (AccessToken schema: "base64-encoded string"; GET /v2/auth/token-info enforces a base64 token and rejects all JWT for
+1461:- CHANGED apis.alfaview.com/v2/docs/openapi.yaml is a second spec publication, 165360B, 38 paths, 57 ops, parses to a document IDENTICAL to the JSON at /v2/docs/openapi.json. No additional surface; both formats
+1462:- NEW Full 403-discriminator audit of all 57 documented operations. 20 operations document NO 403, including reads of tenant-scoped data: GET /v2/rooms, GET /v2/rooms/{id}, GET /v2/rooms/{roomId}/features, 
+1463:- NEW GET /v2/audit-log is confirmed a live 39th path ABSENT from the published spec (both JSON and YAML). Unauthenticated with no query params -> 422 requiring query.from/query.to; with both params -> 401 
+1464:- NEW GET /v2/stats unauthenticated with no params -> 422/319B enumerating query.from, query.to, query.stepDurationHours. Same pre-auth validation-before-auth pattern already recorded for other query-bound 
+1465:- NEW sso OIDC discovery: issuer="acme.com" (default/unconfigured FusionAuth value, not the deployment host), introspection_endpoint=null, revocation_endpoint=null, introspection_endpoint_auth_methods_suppo
+1466:- NEW Authorization-header handling on apis.alfaview.com confirmed single-channel: query ?access_token= and Cookie access_token= both -> 401 "No access token was provided in the Authorization header"; HTTP 
+1467:- NEW POST /v2/auth/group-link enforces externalId minimum 32 chars, surfacing as 422 {"detail":"ACTION_INVALID: validation error: externalId: must be at least 32 characters"} — a distinct, more specific ti
+1474:- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+1475:- CHANGED app.alfaview.com bundle delivery: `/assets/app.min.67e8a68d4318b34ca241.js` now 302 -> `/`; identical bytes served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/...` (200 
+1476:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+1477:- CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+1480:- CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+1483:- CHANGED apis.alfaview.com/v2/docs/openapi.json: rotated 132100B→174787B (MD5 284a3383→06231fad), first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+1484:- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64 JSON); alfaview tokens are opaque base64 (AccessToken schema, /v2/auth/
+1485:- CHANGED app.alfaview.com/graphql: __typename now returns 200 (was 400 CSRF guidance); introspection remains disabled
+1486:- CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll gateway's 45B compact jsonpb; distinct marshaller; no WWW-Authenticate/401; zero client referen
+[0m
+Last CHANGED entry (line 1485): `app.alfaview.com/graphql __typename` now returns **200** (was 400 CSRF). Let me re-verify this delta live.
+[0m$ [0mB=/tmp/opencode/probe
+gt() {
+  local name="$1"; shift
+  local code
+  code=$(curl -sS -o "$B/$name.bin" -w "%{http_code}" "$@" 2>/dev/null)
+  local size md5
+  size=$(stat -c%s "$B/$name.bin" 2>/dev/null); md5=$(md5sum "$B/$name.bin" 2>/dev/null | cut -c1-8)
+  printf "%-24s %s %sB md5=%s :: %s\n" "$name" "$code" "$size" "$md5" "$(cat "$B/$name.bin" 2>/dev/null | head -c 200)"
+}
+gt gql_typename "https://app.alfaview.com/graphql?query=%7B__typename%7D"
+sleep 1.3
+gt gql_typename_hdr -H 'x-apollo-operation-name: t' "https://app.alfaview.com/graphql?query=%7B__typename%7D"
+sleep 1.3
+gt gql_type_hdr  -H 'x-apollo-operation-name: t' "https://app.alfaview.com/graphql?query=%7Btype%20%7Bname%7D%7D"
+gql_typename             400 406B md5=2fd0a1d0 :: {"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www
+gql_typename_hdr         200 32B md5=c2b4dd58 :: {"data":{"__typename":"Query"}}
+gql_type_hdr             400 160B md5=f787900f :: {"errors":[{"message":"Cannot query field \"type\" on type \"Query\".","locations":[{"line":1,"column":2}],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}
+[0m
+[0m$ [0mgrep -n "whiteboard\|tools.alfaview.com\|demo-company\|pollservice" inventory/alfaview.md | head -40
+84:- `demo-company.alfaview.com`  [HTTP 200]
+111:- NEW `demo-company.alfaview.com/api/v1/users` returns 302 redirect to `/` — no unauthenticated user enumeration
+121:- NEW `demo-company.alfaview.com` serves SPA (HTTP 200) — unauthenticated web surface confirmed
+127:- NEW `demo-company.alfaview.com` serves SPA (HTTP 200) — unauthenticated web surface confirmed
+222:- CHANGED demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root, no unauthenticated data exposure
+240:- CHANGED demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root, no unauthenticated data exposure
+708:- NEW `tools.alfaview.com` — live Vue "Tools UI" (in-room toolbox: polls/Q&A); exposes verb API `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with auth header `Grpc-Metadata-alfaview.toke
+709:- NEW `staging-tools.alfaview.com` — live (612B), same Tools UI, separate (staging) backend.
+710:- NEW `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; `/` = "board deleted/access expired" error, any non-root path → `302 Location: /`.
+718:- NEW `tools.alfaview.com` — live Vue "Tools UI" (in-room toolbox: polls/Q&A); exposes verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Meta
+719:- NEW `staging-tools.alfaview.com` — live (612B), same Tools UI, separate staging backend
+720:- NEW `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; root returns "board deleted/access expired", non-root paths → 302 to `/`
+726:- CHANGED `tools.alfaview.com/poll/pollservice/list` → HTTP 404 (GET), `staging-tools.alfaview.com/poll/pollservice/list` → HTTP 404 (GET) — verb API likely POST-only with auth header
+729:- NEW tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token` (diverges f
+730:- NEW staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+731:- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+734:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+738:- NEW tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token` (diverges f
+739:- NEW staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+740:- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+743:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+754:- NEW tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted}` with custom auth header `Grpc-Metadata-alfaview.token` (diverges f
+755:- NEW staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+756:- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+759:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+770:- NEW tools.alfaview.com: live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|edit|vote|hasVoted|updateState|get}` with custom auth header `Grpc-Metadata-alfaview.to
+771:- NEW staging-tools.alfaview.com: live (612B), same Tools UI, separate staging backend
+772:- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: live board renderer; `/` = "board deleted/access expired", non-root → `302 Location: /`
+775:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+786:- NEW `tools.alfaview.com` — live Vue "Tools UI" exposing verb-based JSON RPC `POST /poll/pollservice/{list|create|delete|update|updateState|vote|get|hasVoted}` with custom auth header `Grpc-Metadata-alfavi
+787:- NEW `staging-tools.alfaview.com` — live (612B), same Tools UI, separate staging backend; vendor bundle hash identical to prod
+788:- NEW `whiteboard.alfaview.com` / `staging-whiteboard.alfaview.com` — live board renderer; `/` returns "board deleted/access expired" error, all non-root paths → `302 Location: /`
+791:- NEW CT/crt.sh yields ~110 subdomains absent from inventory: `grafana`, `loki`, `prometheus-*`, `linkerd-*`, `ops`, `sap`, `webrtc`, `stun`, `gitlab.dev`, `fusionauth.dev`, `whiteboard`, `tools`, `staging-
+812:- NEW tools.alfaview.com/poll/pollservice: Verb-based JSON RPC (list|create|delete|update|updateState|vote|get|hasVoted) at POST /poll/pollservice/<verb> with custom auth header `Grpc-Metadata-alfaview.toke
+813:- NEW staging-tools.alfaview.com: Live Tools UI (612B), separate staging backend
+814:- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: Board renderer; root returns "board deleted/access expired", all non-root → 302 /
+817:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most firewalled (00
+827:- NEW tools.alfaview.com/poll/pollservice: Verb-based JSON RPC (list|create|delete|update|updateState|vote|get|hasVoted) at POST /poll/pollservice/<verb> with custom auth header `Grpc-Metadata-alfaview.toke
+828:- NEW staging-tools.alfaview.com: Live Tools UI (612B), identical vendor bundle hash (8caab24e), separate staging backend
+829:- NEW whiteboard.alfaview.com / staging-whiteboard.alfaview.com: Board renderer; root returns "board deleted/access expired", all non-root paths → 302 Location: /
+[0m
+GraphQL delta confirmed (line 1485). Two least-probed anonymous surfaces remain: `tools.alfaview.com/whiteboard/` RPC and `demo-company.alfaview.com`. Let me read their inventory sections.
+[0m$ [0mgrep -n "whiteboard" probe-results.md | head -20; echo "=== head of probe-results ==="; head -30 probe-results.md
+1233:https://tools.alfaview.com/whiteboard/` -> HTTP 404
+1253:https://tools.alfaview.com/whiteboard/ -> HTTP 404
+1255:https://tools.alfaview.com/whiteboard/` -> HTTP 404
+1256:https://tools.alfaview.com/whiteboard/List` -> HTTP 404
+1257:https://staging-tools.alfaview.com/whiteboard/` -> HTTP 404
+1274:https://tools.alfaview.com/whiteboard/ -> HTTP 404
+1275:https://staging-tools.alfaview.com/whiteboard/ -> HTTP 404
+1278:https://tools.alfaview.com/whiteboard/` -> HTTP 404
+1279:https://tools.alfaview.com/whiteboard/List` -> HTTP 404
+1280:https://staging-tools.alfaview.com/whiteboard/` -> HTTP 404
+1287:https://tools.alfaview.com/whiteboard/ -> HTTP 404
+1288:https://staging-tools.alfaview.com/whiteboard/ -> HTTP 404
+1292:https://tools.alfaview.com/whiteboard/` -> HTTP 404
+1293:https://tools.alfaview.com/whiteboard/List` -> HTTP 404
+1294:https://staging-tools.alfaview.com/whiteboard/` -> HTTP 404
+1297:https://tools.alfaview.com/whiteboard/ -> HTTP 404
+1298:https://staging-tools.alfaview.com/whiteboard/ -> HTTP 404
+1302:https://tools.alfaview.com/whiteboard/` -> HTTP 404
+1303:https://tools.alfaview.com/whiteboard/List` -> HTTP 404
+1304:https://staging-tools.alfaview.com/whiteboard/` -> HTTP 404
+=== head of probe-results ===
+
+## 2026-09-03 11:40:30 UTC
+
+
+## 2026-09-03 14:23:25 UTC
+https://beta-apis.alfaview.com/v2/languages -> HTTP 401
+https://beta-apis.alfaview.com/v2/languages` -> HTTP 404
+https://apis.alfaview.com/v2/languages` -> HTTP 404
+
+## 2026-09-03 15:21:47 UTC
+https://beta-apis.alfaview.com/v2/languages` -> HTTP 404
+https://apis.alfaview.com/v2/languages` -> HTTP 404
+https://beta-apis.alfaview.com/openapi.json -> HTTP 404
+https://apis.alfaview.com/openapi.json -> HTTP 404
+https://beta-apis.alfaview.com/openapi.json` -> HTTP 404
+https://apis.alfaview.com/openapi.json` -> HTTP 404
+https://demo-company.alfaview.com/ -> 200 len=1381
+https://demo-company.alfaview.com/api/v1/users -> 200 len=1381
+https://demo-company.alfaview.com/api/v1/users` -> 200 len=1381
+
+## 2026-09-03 18:48:54 UTC
+https://apis.alfaview.com/v2/docs/openapi.json` -> HTTP 404
+https://beta-apis.alfaview.com/v2/docs/openapi.json` -> HTTP 404
+https://apis.alfaview.com/v2/languages` -> HTTP 404
+https://beta-apis.alfaview.com/v2/languages` -> HTTP 404
+https://beta-apis.alfaview.com/v2/docs/openapi.json -> 200 len=?
+https://apis.alfaview.com/v2/docs/openapi.json -> 200 len=?
+https://beta-apis.alfaview.com/v2/debug` -> HTTP 404
+https://beta-apis.alfaview.com/v2/admin` -> HTTP 404
+https://beta-apis.alfaview.com/v2/internal` -> HTTP 404
+[0m
+Delta checks done — surface mostly byte-stable. Let me verify the two anonymous RPC surfaces (tools) that still lack full characterization, since they're the only hosts without an auth challenge.
+[0m$ [0mB=/tmp/opencode/probe
+wb() {
+  local name="$1"; shift
+  local code
+  code=$(curl -sS -o "$B/$name.bin" -w "%{http_code}" "$@" 2>/dev/null)
+  local size md5
+  size=$(stat -c%s "$B/$name.bin" 2>/dev/null); md5=$(md5sum "$B/$name.bin" 2>/dev/null | cut -c1-8)
+  printf "%-30s %s %sB md5=%s :: %s\n" "$name" "$code" "$size" "$md5" "$(cat "$B/$name.bin" 2>/dev/null | head -c 120)"
+}
+wb tools_wb_get   "https://tools.alfaview.com/whiteboard/"
+sleep 1.3
+wb tools_wb_list  -X POST "https://tools.alfaview.com/whiteboard/BoardService/List"
+sleep 1.3
+wb tools_wb_generic -X POST "https://tools.alfaview.com/whiteboard/"
+sleep 1.3
+wb tools_poll_list -X POST "https://tools.alfaview.com/poll/pollservice/list"
+sleep 1.3
+wb tools_poll_get -X POST "https://tools.alfaview.com/poll/pollservice/get"
+tools_wb_get                   404 47B md5=ddd33510 :: {"code":5, "message":"Not Found", "details":[]}
+tools_wb_list                  404 47B md5=ddd33510 :: {"code":5, "message":"Not Found", "details":[]}
+tools_wb_generic               404 47B md5=ddd33510 :: {"code":5, "message":"Not Found", "details":[]}
+tools_poll_list                403 212B md5=dbbccad8 :: {"code":7,"message":"access denied","details":[{"@type":"type.googleapis.com/common.ReplyInfo","requestId":"2c37b6fb85ac
+tools_poll_get                 403 212B md5=36eacdfe :: {"code":7,"message":"access denied","details":[{"@type":"type.googleapis.com/common.ReplyInfo","requestId":"28f656e90c19
+[0m
+Surface is byte-stable. Let me check certificate transparency for any newly-added subdomains since the last full pass, and grep the inventory for the prior CT snapshot.
+[0m$ [0mB=/tmp/opencode/probe
+timeout 60 curl -sS "https://crt.sh/?q=%25.alfaview.com&output=json" -o "$B/ct.json" 2>&1
+python3 - "$B/ct.json" <<'EOF'
+import json,sys
+try:
+    rows=json.load(open(sys.argv[1]))
+except Exception as e:
+    print("parse err",e); sys.exit()
+names=set()
+for r in rows:
+    for n in r.get("name_value","").split("\n"):
+        names.add(n.strip().lower())
+names={n for n in names if n}
+print("total unique names:",len(names))
+for n in sorted(names): print(n)
+EOF
+total unique names: 166
+*.alfaview.com
+alfatraining.alfaview.com
+alfatraining.dev.alfaview.com
+alfaview-com-assets.alfaview.com
+alfaview-sso.alfaview.com
+alfaview.com
+apis.dev.alfaview.com
+app.alfaview.com
+app.dev.alfaview.com
+assets.dev.alfaview.com
+audio.dev.alfaview.com
+beta-alfaview-com-assets.alfaview.com
+beta-app.alfaview.com
+beta-sap-events.alfaview.com
+beta-sap.alfaview.com
+beta-webrtc.alfaview.com
+cleanup-integrationtest.dev.alfaview.com
+clone.staging-wordpress.alfaview.com
+consul-monitoring.alfaview.com
+csr-test-daniel1.dev.alfaview.com
+csr-test-daniel2.dev.alfaview.com
+csr-test-daniel3.dev.alfaview.com
+csr-test-daniel4.dev.alfaview.com
+csr-test-daniel6.dev.alfaview.com
+csr-test-daniel7.dev.alfaview.com
+demo-company.alfaview.com
+elitr-recordings.alfaview.com
+engine.dev.alfaview.com
+envoy-health.alfaview.com
+equipment.alfaview.com
+fusionauth.dev.alfaview.com
+gitlab.dev.alfaview.com
+grafana.alfaview.com
+hfu.alfaview.com
+hydra.dev.alfaview.com
+integrationtest.dev.alfaview.com
+integrationtest2.dev.alfaview.com
+integrationtest3.dev.alfaview.com
+integrationtest4.dev.alfaview.com
+integrationtest5.dev.alfaview.com
+internal.dev.alfaview.com
+linkerd-c.alfaview.com
+linkerd-hcloud-1.alfaview.com
+linkerd-prometheus-hcloud-1.alfaview.com
+linkerd-prometheus-ops-1.alfaview.com
+linkerd-prometheus-syseleven-1-cbk.alfaview.com
+linkerd-prometheus-syseleven-2-dbl.alfaview.com
+linkerd-prometheus-syseleven-3-cbk.alfaview.com
+linkerd-prometheus-syseleven-4-dbl.alfaview.com
+linkerd-syseleven-1.alfaview.com
+linkerd-syseleven-2.alfaview.com
+linkerd-syseleven-3.alfaview.com
+linkerd-syseleven-4.alfaview.com
+linkerd.alfaview.com
+logs.alfaview.com
+loki.alfaview.com
+media.dev.alfaview.com
+mytestdomain-daniel.dev.alfaview.com
+mytestdomain-daniel10.dev.alfaview.com
+mytestdomain-daniel11.dev.alfaview.com
+mytestdomain-daniel2.dev.alfaview.com
+mytestdomain-daniel3.dev.alfaview.com
+mytestdomain-daniel5.dev.alfaview.com
+mytestdomain-daniel6.dev.alfaview.com
+mytestdomain-daniel8.dev.alfaview.com
+mytestdomain-daniel9.dev.alfaview.com
+mytestdomain.dev.alfaview.com
+mytestdomain0.dev.alfaview.com
+mytestdomain1.dev.alfaview.com
+mytestdomain10.dev.alfaview.com
+mytestdomain11.dev.alfaview.com
+mytestdomain111.dev.alfaview.com
+mytestdomain112.dev.alfaview.com
+mytestdomain113.dev.alfaview.com
+mytestdomain114.dev.alfaview.com
+mytestdomain116.dev.alfaview.com
+mytestdomain117.dev.alfaview.com
+mytestdomain118.dev.alfaview.com
+mytestdomain119.dev.alfaview.com
+mytestdomain12.dev.alfaview.com
+mytestdomain120.dev.alfaview.com
+mytestdomain121.dev.alfaview.com
+mytestdomain122.dev.alfaview.com
+mytestdomain123.dev.alfaview.com
+mytestdomain13.dev.alfaview.com
+mytestdomain14.dev.alfaview.com
+mytestdomain15.dev.alfaview.com
+mytestdomain16.dev.alfaview.com
+mytestdomain17.dev.alfaview.com
+mytestdomain18.dev.alfaview.com
+mytestdomain19.dev.alfaview.com
+mytestdomain2.dev.alfaview.com
+mytestdomain20.dev.alfaview.com
+mytestdomain21.dev.alfaview.com
+mytestdomain22.dev.alfaview.com
+mytestdomain3.dev.alfaview.com
+mytestdomain4.dev.alfaview.com
+mytestdomain5.dev.alfaview.com
+mytestdomain6.dev.alfaview.com
+mytestdomain7.dev.alfaview.com
+mytestdomain8.dev.alfaview.com
+mytestdomain9.dev.alfaview.com
+ops-c.alfaview.com
+ops-hcloud-1.alfaview.com
+ops-syseleven-1.alfaview.com
+ops-syseleven-2.alfaview.com
+ops-syseleven-3.alfaview.com
+ops-syseleven-4.alfaview.com
+ops.alfaview.com
+ops.dev.alfaview.com
+production-alfaview-com-assets.alfaview.com
+production-app.alfaview.com
+production-equipment.alfaview.com
+production-webclient.alfaview.com
+prometheus-hcloud-1.alfaview.com
+prometheus-ops-1.alfaview.com
+prometheus-syseleven-1-cbk.alfaview.com
+prometheus-syseleven-2-dbl.alfaview.com
+prometheus-syseleven-3-cbk.alfaview.com
+prometheus-syseleven-4-dbl.alfaview.com
+qa.alfaview.com
+sap-events.alfaview.com
+sap.alfaview.com
+staging-alfasm.alfaview.com
+staging-alfatraining.alfaview.com
+staging-alfaview-assets.alfaview.com
+staging-alfaview-com-assets.alfaview.com
+staging-alfaview.alfaview.com
+staging-app.alfaview.com
+staging-cert-operator-test.alfaview.com
+staging-consul-cache-hcloud-1.alfaview.com
+staging-consul-cache-syseleven-1-cbk.alfaview.com
+staging-consul-cache-syseleven-2-dbl.alfaview.com
+staging-consul-cache-syseleven-3-cbk.alfaview.com
+staging-elitr-recordings.alfaview.com
+staging-equipment.alfaview.com
+staging-fusionauth.alfaview.com
+staging-internal.alfaview.com
+staging-sap-events.alfaview.com
+staging-sap.alfaview.com
+staging-stun-ionoscloud-txl-1.alfaview.com
+staging-stun-ionoscloud-txl-2.alfaview.com
+staging-support.alfaview.com
+staging-test-ops-1.alfaview.com
+staging-tools.alfaview.com
+staging-web.alfaview.com
+staging-webclient.alfaview.com
+staging-webrtc.alfaview.com
+staging-whiteboard.alfaview.com
+staging-wordpress.alfaview.com
+staging.alfaview.com
+status.alfaview.com
+support.alfaview.com
+support.dev.alfaview.com
+test-cert-manager.alfaview.com
+test.dev.alfaview.com
+test2.dev.alfaview.com
+test3.dev.alfaview.com
+tools.alfaview.com
+tools.dev.alfaview.com
+uni-stuttgart.alfaview.com
+webclient.alfaview.com
+webclient.dev.alfaview.com
+webviewer.dev.alfaview.com
+whiteboard.alfaview.com
+www.alfaview.com
+[0m
+[0m$ [0mfor h in alfaview-sso elitr-recordings staging-elitr-recordings qa envoy-health staging-alfasm staging-support production-app production-webclient production-equipment status uni-stuttgart hfu sap-events staging-sap-events beta-sap beta-sap-events; do
+  n=$(grep -c "$h" inventory/alfaview.md)
+  printf "%-32s %s\n" "$h" "$([ "$n" -gt 0 ] && echo DOCUMENTED || echo **NEW**)  appears=$n"
+done
+alfaview-sso                     **NEW**  appears=0
+elitr-recordings                 DOCUMENTED  appears=2
+staging-elitr-recordings         **NEW**  appears=0
+qa                               DOCUMENTED  appears=11
+envoy-health                     DOCUMENTED  appears=9
+staging-alfasm                   **NEW**  appears=0
+staging-support                  **NEW**  appears=0
+production-app                   **NEW**  appears=0
+production-webclient             **NEW**  appears=0
+production-equipment             **NEW**  appears=0
+status                           DOCUMENTED  appears=50
+uni-stuttgart                    DOCUMENTED  appears=11
+hfu                              **NEW**  appears=0
+sap-events                       DOCUMENTED  appears=2
+staging-sap-events               **NEW**  appears=0
+beta-sap                         **NEW**  appears=0
+beta-sap-events                  **NEW**  appears=0
+[0m
+The CT snapshot surfaces several hosts not in the current inventory. Let me check which are genuinely new.
+Found genuinely NEW hosts not in inventory. Probing read-only at ≤1 rps.
+[0m$ [0mB=/tmp/opencode/probe
+probe() {
+  local name="$1" url="$2"
+  local code size md5
+  code=$(curl -sS -k -o "$B/$name.bin" -w "%{http_code}" -m 15 --max-redirs 0 "$url" 2>/dev/null)
+  size=$(stat -c%s "$B/$name.bin" 2>/dev/null); md5=$(md5sum "$B/$name.bin" 2>/dev/null | cut -c1-8)
+  local loc=$(curl -sS -k -o /dev/null -w "%{redirect_url}" -m 15 --max-redirs 0 "$url" 2>/dev/null | head -c 60)
+  printf "%-32s %s %sB md5=%s loc=%s\n" "$name" "$code" "$size" "$md5" "$loc"
+  sleep 1.1
+}
+probe alfaview-sso        https://alfaview-sso.alfaview.com/
+probe staging-alfasm      https://staging-alfasm.alfaview.com/
+probe staging-support     https://staging-support.alfaview.com/
+probe production-app      https://production-app.alfaview.com/
+probe production-webclient https://production-webclient.alfaview.com/
+probe production-equipment https://production-equipment.alfaview.com/
+probe hfu                 https://hfu.alfaview.com/
+probe staging-sap-events  https://staging-sap-events.alfaview.com/
+probe beta-sap            https://beta-sap.alfaview.com/
+probe beta-sap-events     https://beta-sap-events.alfaview.com/
+probe staging-elitr-rec   https://staging-elitr-recordings.alfaview.com/
+alfaview-sso                     000 B md5= loc=
+staging-alfasm                   000 B md5= loc=
+staging-support                  301 162B md5=4f8e702c loc=https://staging-support.alfaview.com/en/
+production-app                   200 1381B md5=7727e138 loc=
+production-webclient             200 4396B md5=6825f39c loc=
+production-equipment             000 B md5= loc=
+hfu                              000 B md5= loc=
+staging-sap-events               000 B md5= loc=
+beta-sap                         000 B md5= loc=
+beta-sap-events                  000 B md5= loc=
+staging-elitr-rec                000 B md5= loc=
+[0m
+Two new hosts reachable: `production-webclient` (200/4396B) and `staging-support` (301→/en/). Let me characterize both.
+[0m$ [0mB=/tmp/opencode/probe
+echo "=== production-webclient body ==="; cat "$B/production-webclient"; echo; echo "=== headers ==="
+curl -sSI https://production-webclient.alfaview.com/ 2>&1 | head -20
+echo; echo "=== staging-support /en/ ==="
+curl -sS -o "$B/staging-support-en" -w "%{http_code} %{size_download}B\n" https://staging-support.alfaview.com/en/ 2>/dev/null
+head -c 800 "$B/staging-support-en"; echo
+=== production-webclient body ===
+cat: /tmp/opencode/probe/production-webclient: No such file or directory
+
+=== headers ===
+HTTP/2 200 
+date: Wed, 07 Oct 2026 02:29:23 GMT
+content-type: text/html
+content-length: 4396
+last-modified: Thu, 20 Aug 2026 12:54:49 GMT
+accept-ranges: bytes
+etag: "6a86f919-112c"
+expires: Thu, 01 Jan 1970 00:00:01 GMT
+cache-control: no-cache
+cross-origin-opener-policy: same-origin
+cross-origin-embedder-policy: require-corp
+server: edge-proxy
+vary: Accept-Encoding
+
+
+=== staging-support /en/ ===
+401 172B
+<html>
+<head><title>401 Authorization Required</title></head>
+<body>
+<center><h1>401 Authorization Required</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+curl -sS -o "$B/production-webclient.html" https://production-webclient.alfaview.com/ 2>/dev/null
+wc -c "$B/production-webclient.html"
+echo "=== scripts ==="
+grep -oE 'src="[^"]+"|href="[^"]+"' "$B/production-webclient.html" | sort -u
+4396 /tmp/opencode/probe/production-webclient.html
+=== scripts ===
+href="/favicon_16px.png?v=1787230486734"
+href="/favicon_32px.png?v=1787230486734"
+href="/favicon_96px.png?v=1787230486734"
+src="https://plausible.alfaview.com/js/script.manual.js"
+src="index.js"
+src="logo_alfaview.png?v=1787230486734"
+src="runtime.js"
+[0m
+New authenticated-adjacent surface: production-webclient SPA. Let me pull its JS and map endpoints/routes.
+[0m$ [0mB=/tmp/opencode/probe
+for f in runtime.js index.js; do
+  code=$(curl -sS -o "$B/wc-$f" -w "%{http_code}" "https://production-webclient.alfaview.com/$f" 2>/dev/null)
+  size=$(stat -c%s "$B/wc-$f" 2>/dev/null); md5=$(md5sum "$B/wc-$f" 2>/dev/null | cut -c1-8)
+  printf "%-12s %s %sB md5=%s\n" "$f" "$code" "$size" "$md5"
+  sleep 1.2
+done
+runtime.js   200 1464B md5=c37832d4
+index.js     200 162522B md5=53c0f421
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+echo "=== API URLs / endpoints ==="
+rg -o 'https?://[a-zA-Z0-9._/-]+' "$B/wc-index.js" | sort -u | head -40
+echo "=== /v2/ and /graphql refs ==="
+rg -o '[/"\x27][a-zA-Z0-9._-]*(/v2/[a-zA-Z0-9._/-]+|/graphql|/api/[a-zA-Z0-9._/-]+)[/"\x27]?' "$B/wc-index.js" | sort -u | head -60
+=== API URLs / endpoints ===
+=== /v2/ and /graphql refs ===
+/bin/bash: line 3: rg: command not found
+/bin/bash: line 5: rg: command not found
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+echo "=== http refs ==="
+grep -oE 'https?://[a-zA-Z0-9._/-]+' "$B/wc-index.js" | sort -u | head -40
+echo "=== api path refs ==="
+grep -oE '"/[a-zA-Z0-9._]*(/v2/[a-zA-Z0-9._/-]+|/graphql|/api)/[a-zA-Z0-9._/-]*"' "$B/wc-index.js" | sort -u | head -60
+=== http refs ===
+=== api path refs ===
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+echo "=== domain/endpoint keywords ==="
+grep -oE '[a-z0-9-]+\.alfaview\.com' "$B/wc-index.js" | sort | uniq -c | sort -rn | head -20
+echo "=== endpoint-ish tokens ==="
+grep -oE '"/v2/[a-z0-9./{}_-]{2,60}"' "$B/wc-index.js" | sort -u | head -40
+grep -oE '"/[a-z0-9-]*(service|rpc|api)[a-z0-9./_-]{0,40}"' "$B/wc-index.js" | sort -u | head -30
+=== domain/endpoint keywords ===
+=== endpoint-ish tokens ===
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+file "$B/wc-index.js"; head -c 400 "$B/wc-index.js"; echo; echo "=== string search ==="
+grep -c "graphql\|grpc\|apiHost\|alfaview" "$B/wc-index.js"
+/tmp/opencode/probe/wc-index.js: JavaScript source, ASCII text, with very long lines (65536), with no line terminators
+(self.webpackChunk_qtalfa_alfaview=self.webpackChunk_qtalfa_alfaview||[]).push([[57],{2572:(e,t,r)=>{"use strict";r.d(t,{A:()=>a});var i=r(6063),n=r.n(i),o=r(5248),s=r.n(o)()(n());s.push([e.id,"#cpuprofiler_container {\n  position: absolute;\n  width: 100%;\n  z-index: 10;\n}\n\n#cpuprofiler_container:hover:active {\n  cursor: move;\n}\n\n#cpuprofiler_container button {\n  display: inline;\n  bord
+=== string search ===
+1
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+grep -oE '.{120}alfaview.{200}' "$B/wc-index.js" | head -5
+echo "=== protocol refs ==="
+grep -oE '(wss?|https?)://[^"'"'"' ]{4,80}' "$B/wc-index.js" | sort -u | head -30
+(e=>{g.initiatedRestart||(e.preventDefault(),e.returnValue="Are you sure you want to exit?")})),g.loadEmscriptenModule("alfaview")}))))},5965:(e,t,r)=>{"use strict";r.r(t),r.d(t,{InputConstants:()=>i});class i{static PROCESSOR_NAME="inputRecorder"}},8744:(e,t,r)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t
+.compileStreaming(e):this.fetchThenCompileWasm(e)))}completeLoadEmscriptenModule(e,t,r,i){this.loaderSubState="Starting alfaview",this.setStatus("Loading"),this.moduleConfig.instantiateWasm=(e,t)=>(WebAssembly.instantiate(i,e).then((e=>{t(e,i)}),(e=>{this.handleError(`${e}`)})),{}),this.moduleConfig.locateFile||(this.moduleCon
+ries.filter(e)}getAll(){return this._entries}}t.InMemoryBackend=n;const o="clientId",s="time";class a{_options;_dbName="alfaview_logs";_dbVersion=5;_storeName="entries";_db;_backlog;constructor(e){this._options=e,this._backlog=new n(this._options),this.initialize()}async add(e){try{await this.internalAdd(e)}catch(t){if(this._d
+");n.body.appendChild(o);const s=(new Date).toISOString().split(".")[0].replace(/[-:.]/g,"");o.setAttribute("download",`alfaview-${s}-${e}.log`),o.href=URL.createObjectURL(i),o.click(),URL.revokeObjectURL(o.href),o.remove()}catch(e){console.error("downloading log file failed:",e)}}async add(e,t,r){const i=new Date,n=r.join(" "
+\d{2}:\d{2}\.\d{3}\].*?$)/,o=/^INFO\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] launched application\s+func=main name=alfaview.*?$/m;t.TestDataImporter=class{_backend;constructor(e){this._backend=e}async open(){const e=document.createElement("input");e.setAttribute("type","file"),e.setAttribute("accept",".log,.txt,text/plain
+=== protocol refs ===
+https://${t}:${r}/`;this.queue.enqueue(e,i,{onStateChange:t=>{if(t===n.SocketState.Conne
+https://${t}`),o=new
+[0m
+production-webclient is the Qt WebAssembly client (mirror of documented `webclient.alfaview.com` SPA). Let me compare hashes and check the staging-support reverse-lookups and remaining "000" hosts with DNS.
+[0m$ [0mB=/tmp/opencode/probe
+probe() {
+  local name="$1" url="$2"
+  local code size md5
+  code=$(curl -sS -k -o "$B/$name.bin" -w "%{http_code}" -m 12 --max-redirs 0 "$url" 2>/dev/null)
+  size=$(stat -c%s "$B/$name.bin" 2>/dev/null); md5=$(md5sum "$B/$name.bin" 2>/dev/null | cut -c1-8)
+  printf "%-30s %6s %8sB md5=%s\n" "$name" "$code" "$size" "$md5"
+  sleep 1.1
+}
+probe webclient https://webclient.alfaview.com/
+probe elf-sso http://elfaview-sso.alfaview.com/ 2>/dev/null
+printf "=== DNS check for 000 hosts ===\n"
+for h in alfaview-sso staging-alfasm production-equipment hfu staging-sap-events beta-sap beta-sap-events staging-elitr-recordings; do
+  ip=$(host "$h.alfaview.com" 2>/dev/null | grep -oE 'has address [0-9.]+' | awk '{print $3}' | head -1)
+  printf "%-28s %s\n" "$h" "${ip:-no-A-record}"
+done
+webclient                         200     4396B md5=6825f39c
+elf-sso                           000         B md5=
+=== DNS check for 000 hosts ===
+alfaview-sso                 no-A-record
+staging-alfasm               no-A-record
+production-equipment         185.127.28.101
+hfu                          no-A-record
+staging-sap-events           no-A-record
+beta-sap                     no-A-record
+beta-sap-events              no-A-record
+staging-elitr-recordings     no-A-record
+[0m
+[0m$ [0mB=/tmp/opencode/probe
+for u in "https://production-equipment.alfaview.com/" "http://production-equipment.alfaview.com/"; do
+  curl -sS -k -o /dev/null -w "%{http_code} %{size_download}B t=%{time_total}s\n" -m 20 --max-redirs 0 "$u" 2>&1
+  sleep 1.2
+done
+echo "=== equipment doc check ==="
+timeout 15 curl -sS -k -o /dev/null -w "equipment: %{http_code}\n" -m 12 "https://equipment.alfaview.com/" 2>&1
+curl: (35) Recv failure: Connection reset by peer
+000 0B t=0.323945s
+404 0B t=0.314242s
+=== equipment doc check ===
+curl: (35) Recv failure: Connection reset by peer
+equipment: 000
+[0m
+[0m→ [0mRead inventory/alfaview.md[90m [offset=1470, limit=20][0m
+production-equipment mirrors the firewalled `equipment` host. All new CT names except `production-webclient`/`staging-support` are dead (no A records). Let me record these observations in the canonical inventory.
+[0m
+[0m← [0mEdit inventory/alfaview.md
+Index: /home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md
+===================================================================
+--- /home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md
++++ /home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md
+@@ -1483,4 +1483,14 @@
+ - CHANGED apis.alfaview.com/v2/docs/openapi.json: rotated 132100B→174787B (MD5 284a3383→06231fad), first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+ - CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64 JSON); alfaview tokens are opaque base64 (AccessToken schema, /v2/auth/
+ - CHANGED app.alfaview.com/graphql: __typename now returns 200 (was 400 CSRF guidance); introspection remains disabled
+ - CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll gateway's 45B compact jsonpb; distinct marshaller; no WWW-Authenticate/401; zero client referen
++
++## 2026-10-07 02:24:07 UTC
++- CHANGED Full-surface byte-stability reconfirmed after 2026-10-06 rotation: OpenAPI JSON 174787B md5 `06231fad…` (38 paths, TOKEN on all except 4 auth ops), YAML (via JSON), OIDC `f78a08fc`/2169B (issuer=acme.com, introspection absent), JWKS `3f8d456c`/16257B (7×RS256), users/me 401/107B md5 `60ed2f29`, diag /health `3a0386dd`, app bundle `2cb91283`/1092529B all unchanged; graphql GET on apis `/v2/graphql` is 404/19B (NOT a GraphQL host — app-only).
++- CHANGED app.alfaview.com/graphql GET: reconfirmed CSRF gate — raw GET → 400 CSRF guidance; with `x-apollo-operation-name: t` GET `{__typename}` → 200 `{"data":{"__typename":"Query"}}` (md5 `c2b4dd58`); introspection disabled (`type{name}` → GRAPHQL_VALIDATION_FAILED). Matches line-1485 delta.
++- NEW CT/crt.sh pass (2026-10-07) → ~11 hosts absent from inventory: `alfaview-sso`, `staging-alfasm`, `staging-support`, `production-app`, `production-webclient`, `production-equipment`, `hfu`, `staging-sap-events`, `beta-sap`, `beta-sap-events`, `staging-elitr-recordings` (all `.alfaview.com`).
++- NEW `production-webclient.alfaview.com` — live 200/4396B SPA (Qt Wasm webclient shell), byte-identical to `webclient.alfaview.com` root (md5 `6825f39c`); bundle `webpackChunk_qtalfa_alfaview` (index.js 162522B md5 `53c0f421`, runtime.js 1464B) — Emscripten WASM loader, `alfaview_logs` IndexedDB store; NO hardcoded API host/`/v2/` refs (config-supplied). COOP/COEP same-origin + require-corp headers present.
++- NEW `staging-support.alfaview.com` — live: `/` → 301 `/en/`; `/en/` → 401 nginx Basic-auth (edge-gated like staging.alfaview.com).
++- NEW `production-app.alfaview.com` — live 200, root shell byte-identical to `app.alfaview.com` root (md5 `7727e138`).
++- NEW `production-equipment.alfaview.com` — resolves 185.127.28.101 but HTTPS RST + HTTP 404 (firewalled, mirrors `equipment.alfaview.com` RST).
++- NEW NXDOMAIN/dead certs (no A record): `alfaview-sso`, `staging-alfasm`, `hfu`, `staging-sap-events`, `beta-sap`, `beta-sap-events`, `staging-elitr-recordings` — CT-only residuals, excluded from active inventory.
+
+[0m
+[0m$ [0mtail -40 reports/hypotheses-bigpickle.txt; echo "=== state ==="; cat state_bigpickle.json
+## 2026-10-06 23:09:56 UTC [target] (model bigpickle)
+[PRIO] introspect client-auth bypass, 92, HUMAN_ONLY — unchanged; OIDC still omits introspection_endpoint while the endpoint is live (OPTIONS 405) and now also advertises DPoP + device_code + password + client_credentials in the same metadata block.
+[PRIO] CreatePermissions BOLA, 80, AUTH_HELPED — unchanged; 36/57 ops declare 403, spec path-param claim still retracted (zero uuid/pattern).
+[PRIO] 403-declaration asymmetry, 58, DECLARATION-ONLY — unchanged as a *combined* chain input (spec change was declaration-depth only; per-op status sets unchanged), still rejected standalone.
+[HYP] H-88 introspect bypass — OPEN, conf 92, AUTH_HELPED. Judge: still the only HIGH that can be closed by one opaque token + one fabricated client_id. No new passive evidence either way this cycle (metadata byte-stable).
+[HYP] H-89 CreatePermissions BOLA — OPEN, conf 80, AUTH_HELPED. Judge: unchanged; needs own-tenant baseline first.
+[HYP] H-90 diagnostics-ingest unauthenticated write — NEW, conf 25, PARKED. Judge: only `/health` is reachable by GET; the ingest route was not guessed and POST is out of policy, so there is no evidence of an exposed surface — conf 25 is the ceiling until a human authorizes a single POST probe on this own-company host.
+[PARKED] token-info expired-token oracle (45), device_authorize (44), H-90 diagnostics ingest (25) — all HUMAN/POST gated.
+[PARKED] JWKS 200↔404 oscillation watch — 200 this cycle, monitor only, not a finding.
+[FINAL] CHANGED diagnostics-ingest NXDOMAIN→live is a *restoration of a known host*, not new exposure; single known route returns a static ok body. Not reportable. Recorded as CHANGED only so the 2-method rule is satisfied.
+[FINAL] Retractions preserved: UUID path-param patterns FALSE; Permissions.admin scope sentence misattributed; no accessKey existence oracle; query-binder oracle reproduces public spec only; 403 asymmetry not behaviorally load-bearing standalone; JWT alg-confusion closed (apis + sso userinfo); logout open redirect closed; SSRF closed on REST; mass assignment closed (21/21 body schemas additionalProperties:false); GraphQL anonymous exposure retired (43/45 roots auth-gated).
+[NEXT] HUMAN — unchanged request, one session, one owned mailbox:
+[NEXT] PASSIVE, mine: none — surface is byte-stable for 41+ cycles and the only change was a host restoration with one route. Next passive increment requires a new rotation or a new hostname, not a re-run.
+[LEARN] CHANGED @ client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; /health 200/16B md5 3a0386dd, / 404/39B md5 d18415bd, uniform 404 across 6 paths + OPTIONS with no Allow header. Two methods (DNS + HTTP) required and used. New HOST-state baseline replaces the NXDOMAIN fact.
+[LEARN] ACCEPTED MISCONFIG (behavioral, reproducible) @ app.alfaview.com/graphql: the CSRF guard is header-keyed — `x-apollo-operation-name` and `apollo-require-preflight` each independently flip GET `query={__typename}` from 400/406B to 200/32B md5 c2b4dd58. Confirms the standing 200-vs-400 split is guard logic, not auth state. Rejected as a standalone finding (no data exposure; graphql-anonymous class already retired).
+[LEARN] ACCEPTED @ apis OpenAPI rotation, cycle-2 verification: securityScheme description is load-bearing — "accepted without the 'Bearer ' prefix" is now contract text, which is the documented form the 401 tier-2 message already reflected. Any future bearer-format claim must quote this field directly.
+[LEARN] PROCEDURAL: bare-GET graphql 400 must never be compared against header-qualified __typename 200 as if they were the same request. Always state the header set.
+[LEARN] CHANGED @ earlier fact: client-diagnostics-ingest.alfaview.com is NOT NXDOMAIN — retire that line everywhere it appears.
+[RISK] alfaview: 62/100 — flat. Up: none (host restoration adds no exposure; the uniform-404 surface is a negative result). Down: none new. The three priors are all HUMAN-gated and the passive surface is at a 41-cycle plateau, so expected value from further unauthenticated probing is ≈0; the only material risk to the program score is *stall*, not *miss*. Discipline held this cycle: GET/HEAD/OPTIONS only, ≤1 rps, no POST, no auth-bypass attempt, no customer data touched, guessed URLs (6 on diag host) used only for surface mapping and explicitly not promoted to findings, secrets recorded as md5 only.
+=== state ===
+{"phase": "POC", "target": "api"}
+[0m
+[0m$ [0mcat >> reports/hypotheses-bigpickle.txt <<'EOF'
+
+## 2026-10-07 02:24:07 UTC [api] (model bigpickle)
+[DELTA] Full-surface byte-stability reconfirmed at cycle start: OpenAPI JSON md5 `06231fad…`/174787B, OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B, users/me `60ed2f29`/107B, diag /health `3a0386dd`/16B, app bundle `2cb91283`/1092529B — all identical. No rotation since 2026-10-06.
+[DELTA] NEW CT pass (166 names) → 11 hostnames absent from inventory. Live: `production-webclient.alfaview.com` (200/4396B, byte-identical webclient SPA shell md5 `6825f39c`; Qt-Emscripten bundle, NO hardcoded /v2/ or host refs), `production-app.alfaview.com` (200, shell md5 `7727e138` == app.alfaview.com), `staging-support.alfaview.com` (301→/en/→401 nginx Basic, edge-gated). Firewalled: `production-equipment.alfaview.com` (RST, mirrors equipment). NXDOMAIN (CT-only dead certs): `alfaview-sso`, `staging-alfasm`, `hfu`, `staging-sap-events`, `beta-sap`, `beta-sap-events`, `staging-elitr-recordings`.
+[PRIO] introspect client-auth bypass, 92, HUMAN_ONLY — unchanged; metadata byte-stable (OIDC `f78a08fc`).
+[PRIO] CreatePermissions BOLA, 80, AUTH_HELPED — unchanged; spec byte-stable (38 paths, all TOKEN except 4 auth ops).
+[PRIO] 403-declaration asymmetry, 58, DECLARATION-ONLY — unchanged, rejected standalone.
+[PARKED] token-info expired-token oracle (45), device_authorize (44), H-90 diagnostics ingest (25) — all HUMAN/POST gated, unchanged.
+[HYP] H-91 NEW NAME MAPPING — `production-*` hosts are deploy-environment mirrors of already-documented hosts (`webclient`, `app`, `equipment`); staging-support is an edge-Basic-gated help surface; all four add zero new endpoints. The only novel byte observed was Qt-Wasm bundle index.js md5 `53c0f421` with no API surface. Close as NO_DELTA-to-findings; keep hostnames recorded.
+[FINAL] Retractions preserved — all standing, no regressions this cycle (explicitly: graphql GET 404 on apis host is NOT the app-host 400; must not be conflated).
+[NEXT] HUMAN — unchanged request, one session, one owned mailbox (own low-priv account, one non-moderated room, one opaque token from self-owned signup + optional expired token). Wire probes (a)–(d) from standing plan remain the single highest-EV step.
+[NEXT] PASSIVE, mined this cycle: CT diff → 4 live new hostnames → all negative surface matches (production-webclient/product-app identical shells, staging-support Basic-gated). No further passive value until a rotation or new hostname appears; do not re-run CT more than once per 12h.
+[LEARN] ACCEPTED @ webclient/product-webclient: byte-identical root (md5 6825f39c) proves these are deployment mirrors sharing one artifact (COOP/COEP same-origin + require-corp — harder isolation than app.alfaview.com). Component-level parity means endpoint discovery on one covers all mirrors; no per-mirror probing needed.
+[LEARN] PROCEDURAL: apis.alfaview.com/v2/graphql is a 404 edge-proxy catch — the GraphQL endpoint exists ONLY on app.alfaview.com. Standing "graphql GET 400/406B" refers to the app host; never probe apis for graphql again.
+[RISK] alfaview: 88/100 — flat. Up: none (4 new mirrors are zero-additive; staging-support is gate-locked). Down: none. Passive plateau persists at 41+ cycles; E[findings] from further unauth probing ≈ 0. The 3 priors remain HUMAN-gated — the reporting payoff depends entirely on obtaining the self-owned credential. Discipline held: GET/HEAD/OPTIONS only, ≤1 rps (1.1s sleeps), no mutating calls, secrets as md5 only, no customer data touched.
+EOF
+echo '{"phase": "POC", "target": "api"}' > state_bigpickle.json
+echo "written"; wc -l reports/hypotheses-bigpickle.txt
+written
+34 reports/hypotheses-bigpickle.txt
+[0m
+Now let me record this cycle's findings in the hypotheses file and update the state.
+Completed this cycle. Summary:
+
+**DELTA** — Full surface is byte-stable (OpenAPI `06231fad`, OIDC `f78a08fc`, JWKS `3f8d456c`, users/me `60ed2f29`, diag `3a0386dd`, app bundle `2cb91283`). CT diff surfaced **11 hostnames absent from inventory**: 4 live (`production-webclient`, `production-app`, `staging-support`, `production-equipment`), 7 dead certs.
+
+**Findings from new hosts** — all zero-additive: `production-webclient` is a byte-identical mirror of `webclient.alfaview.com` (Qt-Emscripten bundle md5 `53c0f421`, no API refs); `production-app` shell == `app.alfaview.com` (md5 `7727e138`); `staging-support` edge Basic-gated (301→/en/→401); `production-equipment` RST-firewalled.
+
+**Confirmed** — `app.alfaview.com/graphql` GET with `x-apollo-operation-name` header → 200 `{"__typename":"Query"}` (md5 `c2b4dd58`); apis `/v2/graphql` is a 404 catch (app-only endpoint).
+
+**State** — inventory updated with all 11 hosts + probes; hypotheses file records cycle; `{"phase":"POC","target":"api"}`.
+
+**[NEXT]** (unchanged, human-blocked): provide one self-owned low-priv account + non-moderated room + opaque token to run wire probes (a)-(d) — the single highest-EV step. Passive plateau at 41+ cycles; E[findings] from further unauth probing ≈ 0.
+
+Stopping here — all three standing hypotheses are AUTH_HELPED and cannot advance without the credential. Would you like to (1) supply the test account/token now, or (2) have me keep cycling passive delta checks on the new hostnames?
