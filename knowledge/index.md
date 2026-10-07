@@ -1218,3 +1218,4 @@
 - 2026-10-07 ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with RoomPermissions.participantId)
 - 2026-10-07 ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
 - 2026-10-07 PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted only after per-field lookup
+- 2026-10-07 NO_DELTA @ full standing probes: OpenAPI 200/127532B, authorize 200/6176B, clients/me 401, graphql GET 400/406B, client-diagnostics /health 200/16B — all byte-identical to prior cycle; no new unauthenticated exploit surface.

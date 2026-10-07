@@ -1,8 +1,4 @@
-## 2026-10-07 02:25:44 UTC [target] (model nemotron3)
-[NEW] apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security on 53/57 ops); no path count change (38 paths, 57 ops)
-[NEW] app.alfaview.com/graphql: __typename now returns 200 (was 400 CSRF guidance); introspection remains disabled — behavioral change, not new exposure
-[CHANGED] sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64 JSON); alfaview tokens are opaque base64 (AccessToken schema, /v2/auth/token-info rejects JWTs) — introspect bypass applies to exactly the issued token type
-[CHANGED] tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll gateway's 45B compact jsonpb; distinct marshaller; no WWW-Authenticate/401; zero client references in bundle (md5 b7f17c85)
+## 2026-10-07 09:13:12 UTC [target] (model nemotron3)
 [PRIO] sso.alfaview.com/oauth2/introspect,9.25,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=8
 [PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.60,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
