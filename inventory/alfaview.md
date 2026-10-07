@@ -1492,3 +1492,23 @@ www.alfaview.com
 - CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll gateway's 45B compact jsonpb; distinct marshaller; no WWW-Authenticate/401; zero client referen
 
 ## 2026-10-07 09:28:35 UTC
+
+## 2026-10-07 16:35:36 UTC
+- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+- CHANGED app.alfaview.com bundle delivery: `/assets/app.min.67e8a68d4318b34ca241.js` now 302 -> `/`; identical bytes served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/...` (200 
+- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+- CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+- CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+- NEW OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: op
+- NEW `app.alfaview.com/graphql`: `__typename` now returns 200 (was 400 CSRF guidance); introspection remains disabled — behavioral change, not new exposure
+- NEW `apis.alfaview.com/v2/auth/api-key` confirmed as 4th unauthenticated credential endpoint (HEAD→405 allow:POST, OPTIONS→405/19B text/plain); declares unique 403 account-status tier ("account is inactiv
+- NEW `apis.alfaview.com GET /v2/audit-log` — live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth); mirrors GraphQL `ListAuditEvents(flag:companyId,pageToken,limit,
+- NEW `apis.alfaview.com POST /v2/rooms` — contract read reveals `RoomCreate.permissions` with `participantId` namespace collision (`RoomCreate.permissions.participantId` vs `RoomPermissions.participantId`)
+- NEW `apis.alfaview.com PATCH /v2/rooms/{id}` — `RoomUpdate.quotas` description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
+- NEW `apis.alfaview.com POST /v2/meetings` — second meeting-scoped bulk credential-minting path (`guestLinks`/`groupLinks` arrays with caller-supplied `permissionGroupId`); three distinct issuance routes w
+- NEW `apis.alfaview.com POST /v2/rooms/{roomId}/permissions` (CreatePermissions) — BOLA write with polymorphic `participantId` (user ID / guest link ID / group link ID) granting `admin`+`promote`; scope on
+- CHANGED `sso.alfaview.com/oauth2/introspect`: 30+ consecutive stable cycles — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON object); alfaview API tokens are opaque base
+- CHANGED `tools.alfaview.com/whiteboard/`: second unmapped RPC backend confirmed by controlled differential (47B gRPC envelope vs poll's 45B jsonpb); distinct marshaller; no auth challenge; zero client referen
+- CHANGED `apis.alfaview.com`: validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI `components.securitySchemes={}`, `security=null` (pre-rotation)
+- CHANGED `app.alfaview.com` public bundle stable at `app.min.67e8a68d4318b34ca241.js` (md5 `2cb91283`) carrying `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K
+- CHANGED `test.alfaview.com`: alfacheck v483102 (4 platforms) unsigned; index page no sha256/signatures — supply-chain hardening absent across releases

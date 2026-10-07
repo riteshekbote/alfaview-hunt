@@ -4919,3 +4919,61 @@
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
 - LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
 - LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
+
+## RANKED HYPOTHESES 2026-10-07 16:35:36 UTC
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 introspection answers for opaque alfaview tokens with zero valid client credentials (from art/lead_nemotron3.txt)
+- [58] apis.alfaview.com: OAuth2 introspection answers for opaque alfaview API tokens with zero valid client credentials (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: provide ONE self-owned low-privilege alfaview account in a tenant you control, ONE non-moderated room in that same tenant, and ONE opaque access token fr
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup) to obtain a valid bearer token; then test intros
+- LEARN: PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs 
+- LEARN: PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs 
+- LEARN: PROCEDURAL: auditing prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted onl
+- LEARN: CHANGED @ client-diagnostics.alfaview.com: NXDOMAIN (previously /health 200/16B) — mapped host decommissioned between cycles; all other scoped hosts resolve and
+- LEARN: NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5
+- LEARN: PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs 
+- LEARN: PROCEDURAL: two standing probes were issued against guessed URLs and returned plausible-looking 404s that would have been misreported as deltas; canonical URLs 
+- LEARN: CHANGED @ apis: first OpenAPI rotation since 2026-09-28 (md5 `284a3383` -> `06231fad`, 132100B -> 174787B) and the first time in program history that the contra
+- LEARN: PROCEDURAL: schema-level attribution for this rotation is impossible from local data — the only pre-rotation baselines on disk are the 37-path `recon-notes/alfa
+- LEARN: NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7xRS256, path `/.well-known/jwks.json`), `/oauth2/introspect` OPTIONS 405, `users/me` 4
+- LEARN: PROCEDURAL: a guessed URL (`/oauth2/jwks`) produced a plausible 404/4955 mid-cycle; the canonical path `/.well-known/jwks.json` was recovered from `leads/lead-b
+- LEARN: PROCEDURAL: schema-level attribution for this rotation is impossible from local data — the only pre-rotation baselines on disk are the 37-path `recon-notes/alfa
+- LEARN: NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7xRS256, path `/.well-known/jwks.json`), `/oauth2/introspect` OPTIONS 405, `users/me` 4
+- LEARN: CHANGED @ apis: first rotation since 2026-09-28 and first time the contract declares an auth scheme at all — delta is declaration depth only (scheme, problem+js
+- LEARN: PROCEDURAL: schema-level attribution for this rotation is impossible from local data (only baseline on disk is the 37-path YAML, which predates two rotations) —
+- LEARN: NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7×RS256), introspect OPTIONS 405, users/me 401/107B `60ed2f29` + `www-authenticate: Bea
+- LEARN: CHANGED @ apis: first rotation since 2026-09-28 and first time the contract declares an auth scheme at all — delta is declaration depth only (scheme, problem+js
+- LEARN: PROCEDURAL: schema-level attribution for this rotation is impossible from local data (only baseline on disk is the 37-path YAML, which predates two rotations) —
+- LEARN: NO_DELTA @ sso/app/tools: OIDC `f78a08fc`/2169B, JWKS `3f8d456c`/16257B (7×RS256), introspect OPTIONS 405, users/me 401/107B `60ed2f29` + `www-authenticate: Bea
+- LEARN: CHANGED @ client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; /health 200/16B md5 3a0386dd, / 404/39B md5 d18415bd, uniform 404 across 6 paths + OPTIONS 
+- LEARN: ACCEPTED MISCONFIG (behavioral, reproducible) @ app.alfaview.com/graphql: the CSRF guard is header-keyed — `x-apollo-operation-name` and `apollo-require-preflig
+- LEARN: ACCEPTED @ apis OpenAPI rotation, cycle-2 verification: securityScheme description is load-bearing — "accepted without the 'Bearer ' prefix" is now contract tex
+- LEARN: PROCEDURAL: bare-GET graphql 400 must never be compared against header-qualified __typename 200 as if they were the same request. Always state the header set.
+- LEARN: CHANGED @ earlier fact: client-diagnostics-ingest.alfaview.com is NOT NXDOMAIN — retire that line everywhere it appears.
+- LEARN: CHANGED @ client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; /health 200/16B md5 3a0386dd, / 404/39B md5 d18415bd, uniform 404 across 6 paths + OPTIONS 
+- LEARN: ACCEPTED MISCONFIG (behavioral, reproducible) @ app.alfaview.com/graphql: the CSRF guard is header-keyed — `x-apollo-operation-name` and `apollo-require-preflig
+- LEARN: ACCEPTED @ apis OpenAPI rotation, cycle-2 verification: securityScheme description is load-bearing — "accepted without the 'Bearer ' prefix" is now contract tex
+- LEARN: PROCEDURAL: bare-GET graphql 400 must never be compared against header-qualified __typename 200 as if they were the same request. Always state the header set.
+- LEARN: CHANGED @ earlier fact: client-diagnostics-ingest.alfaview.com is NOT NXDOMAIN — retire that line everywhere it appears.
+- LEARN: ACCEPTED @ webclient/product-webclient: byte-identical root (md5 6825f39c) proves these are deployment mirrors sharing one artifact (COOP/COEP same-origin + req
+- LEARN: PROCEDURAL: apis.alfaview.com/v2/graphql is a 404 edge-proxy catch — the GraphQL endpoint exists ONLY on app.alfaview.com. Standing "graphql GET 400/406B" refer
+- LEARN: NO_DELTA @ full standing probes: OpenAPI 200/127532B, authorize 200/6176B, clients/me 401, graphql GET 400/406B, client-diagnostics /health 200/16B — all byte-i
+- LEARN: CHANGED @ equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" (2026-09-04) → resolves + 443 RST + 80 empty-404. Two methods (geten
+- LEARN: NO_DELTA @ apis/beta-apis/sso/app/tools/diagnostics: full hash set above unchanged; beta OpenAPI is byte-identical to prod (`06231fad`), so there is no beta/pro
+- LEARN: PROCEDURAL: every standing-probe line must carry size AND md5 together. The 09:28 cycle recorded a size with no hash and it silently matched a 20-day-old baseli
+- LEARN: ACCEPTED @ apis OpenAPI YAML twin: first op-count parity check between JSON and YAML (38 paths / 57 operationId / `securitySchemes.accessToken` in both) — the t
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI spec size grew 132100B→174787B (MD5 rotated) with identical 38 paths/57 ops/69 schemas — schema expansions only,
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: __typename now returns 200 (was 400 CSRF guidance); introspection remains disabled — behavioral change, not new e
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live document contains "uuid" zero times, zero `pattern` key
+- LEARN: REJECTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: retracted Permissions.admin scope claim — "edit or delete rooms, manage guests" lives on 
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: two distinct permission schemas — Permissions (CREATE, all 9 booleans required = atomic full-set write) vs PermissionsEdit (P
+- LEARN: ACCEPTED INFO @ apis.alfaview.com GET /v2/permission-groups: returns PermissionGroup{id, name, permissions} for every group, name="Admin", permissions full 9-bo
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder as standalone finding — reproduces public spec only (numeric bounds, enum values, RFC-53
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: 403-declaration asymmetry not behaviorally load-bearing — /v2/permission-groups returns 401 while declaring no 401; whol
+- LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/userinfo: JOSE algorithm confusion tested (alg=none, HS256 with RSA pubkey, HS256 random, RS256 self-signed) — all byte-
+- LEARN: REJECTED OATH @ sso.alfaview.com/oauth2/logout: post_logout_redirect_uri and redirect_uri both ignored; every variant returns 302 → /
+- LEARN: REJECTED AUTH @ apis.alfaview.com/v2/auth/{guest,group}-link: NO accessKey existence oracle — well-formed synthetic triple returns 422/88B ACTION_INVALID byte-i
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI compon
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
+- LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
+- LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted

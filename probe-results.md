@@ -1727,3 +1727,10 @@ https://apis.alfaview.com/v2/guest-links -> HTTP 401
 https://apis.alfaview.com/v2/group-links -> HTTP 401
 https://apis.alfaview.com/v2/auth/guest-link -> HTTP 405
 https://app.alfaview.com/graphql -> HTTP 400
+
+## 2026-10-07 16:35:43 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://apis.alfaview.com/v2/guest-links -> HTTP 401
+https://apis.alfaview.com/v2/group-links -> HTTP 401
+https://apis.alfaview.com/v2/auth/guest-link -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400
