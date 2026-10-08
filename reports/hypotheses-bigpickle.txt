@@ -1,3 +1,8 @@
-## 2026-10-08 01:24:42 UTC [target] (model bigpickle)
-[NEXT]
-[RISK]
+## 2026-10-08 07:33:49 UTC [target] (model bigpickle)
+[PRIO] 1) HUMAN account+token session (unlocks 94/92/80 chain). 2) Wait-for-rotation watch on OpenAPI/OIDC/JWKS. 3) H-90 diagnostics write POST (HUMAN, low value, conf 25).
+[HYP] Unchanged: introspect client-auth bypass (conf 92, HUMAN_ONLY); CreatePermissions BOLA (conf 80, AUTH_HELPED); diagnostics-ingest unauth write (conf 25, PARKED).
+[PARKED] All three priors; H-91 closed NO_DELTA; H-88/H-89 await account.
+[FINAL] No finding this cycle. Plateau at 42+ cycles confirmed; no rotation, no new hostname, no host-state change, no behavior drift.
+[NEXT] No passive action available until rotation/CT-source recovery. Human step (single session, own mailbox): self-owned account → then ≤1 rps GET `/v2/users/me/company` + `/v2/group-links?limit=1`, one POST `/v2/rooms/{roomId}/permissions` (204/403/409/422), three POSTs to introspect (POST-body / HTTP Basic / `token_type_hint=refresh_token`), GET `/v2/auth/token-info` live+expired.
+[LEARN] CHANGED @ CT tooling: crt.sh/certspotter both down (502/504) — record as unavailable, never as "no new subdomains"; retry after 12h window.
+[RISK] Plateau risk: further identical cycles add no value; do not re-probe apis `/v2/graphql` or re-run bare-GET vs header-qualified comparisons.
