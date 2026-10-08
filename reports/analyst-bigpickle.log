@@ -87956,3 +87956,137 @@ CT sources unavailable (crt.sh 502, certspotter 504) — tooling failure, not a 
 [LEARN] CHANGED @ CT tooling: crt.sh/certspotter both down (502/504) — record as unavailable, never as "no new subdomains"; retry after 12h window.
 
 [RISK] Plateau risk: further identical cycles add no value; do not re-probe apis `/v2/graphql` or re-run bare-GET vs header-qualified comparisons.
+===== ANALYST bigpickle 2026-10-08 14:56:34 UTC =====
+[0m
+> build · big-pickle
+[0m
+[DELTA]
+NEW: equipment.alfaview.com + production-equipment.alfaview.com — previously timeout/unreachable (2026-09-04) → now resolve + 443 RST + 80 returns 404/empty (CHANGED in KB 2026-10-07 21:35)
+CHANGED: apis.alfaview.com /v2/docs/openapi.json rotated 132100B→174787B (md5 284a3383→06231fad) with identical 38 paths/57 ops/69 schemas — schema/annotation depth only (securityScheme added), no new attack surface (2026-10-06/07)
+CHANGED: app.alfaview.com/graphql GET __typename — with headers x-apollo-operation-name or apollo-require-preflight returns 200/32B md5 c2b4dd58 (was 400 CSRF guidance) confirming header-keyed CSRF guard; introspection remains disabled (2026-10-07)
+CHANGED: client-diagnostics-ingest.alfaview.com NXDOMAIN reversed → /health 200/16B md5 3a0386dd, / 404/39B md5 d18415bd, uniform 404 across 6 paths + OPTIONS (2026-10-07)
+CHANGED: tools.alfaview.com/whiteboard/ second unmapped RPC backend confirmed (47B gRPC envelope vs poll’s 45B jsonpb), distinct marshaller, no auth challenge observed, zero client references in public bundle (md5 b7f17c85), staging mirror identical (2026-10-06/07)
+
+[PRIO]
+[PRIO] introspect_client_auth_bypass@sso.alfaview.com/oauth2/introspect, 92, HUMAN_ONLY (HUMAN_ONLY; gated on opaque token; passive evidence byte-stable)
+[PRIO] CreatePermissions_BOLA@apis.alfaview.com/POST/v2/rooms/{roomId}/permissions, 80, AUTH_HELPED (gated on own-tenant account+token; contract-proven polymorphic participantId, path-only scope; mass-assignment closed)
+[PRIO] diagnostics_ingest_unauth_write@client-diagnostics-ingest.alfaview.com, 25, HUMAN_ONLY (PARKED; only /health GET reachable, POST out of policy without human authorization; conf ceiling 25)
+
+[HYP]
+[HYP] sso introspect client-auth bypass
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 92
+reasoning: POST-body and HTTP Basic accept fabricated client_id + any secret returning 200 {"active":false} for non-JWT token shapes; token_endpoint_auth_methods_supported advertises client_secret_basic/post/none; endpoint live (OPTIONS 405), discovery oscillates introspection_endpoint presence; metadata byte-stable 30+ cycles. Applies to opaque tokens (alfaview tokens are opaque base64). No alg confusion oracle on userinfo.
+evidence_needed: With a valid self-owned opaque access token, one POST-body, one HTTP Basic, one token_type_hint=refresh_token — must observe whether active becomes true for that token when client auth bypassed.
+verify_steps:
+- GET/HEAD/OPTIONS https://sso.alfaview.com/.well-known/openid-configuration (PASSIVE)
+- GET/HEAD/OPTIONS https://sso.alfaview.com/.well-known/jwks.json (PASSIVE)
+- HEAD/OPTIONS https://sso.alfaview.com/oauth2/introspect (PASSIVE)
+- POST https://sso.alfaview.com/oauth2/introspect with form token=<valid_opaque_token>&client_id=fake (HUMAN_ONLY, one POST) — record status/body verbatim
+- POST https://sso.alfaview.com/oauth2/introspect with HTTP Basic (fake client_id:any secret) + token (HUMAN_ONLY)
+- POST https://sso.alfaview.com/oauth2/introspect with token_type_hint=refresh_token + token (HUMAN_ONLY)
+impact: If active:true returned for a valid opaque token with no valid client credentials, introspection client authentication is effectively bypassed for the product’s token type (HIGH). No customer data exfiltration claimed without further proof.
+testability: HUMAN_ONLY
+
+[HYP]
+[HYP] CreatePermissions BOLA (path-only scope, polymorphic participantId)
+class: IDOR
+asset: apis.alfaview.com/POST/v2/rooms/{roomId}/permissions
+confidence: 80
+reasoning: Contract shows Permissions (CREATE, all 9 booleans required, atomic full-set write) distinct from PermissionsEdit (PATCH). participantId is unconstrained string naming user/guest-link/group-link; scope is only roomId in path (no ID→room binding documented). Target IDs obtainable from company-wide un-narrowable GET /v2/guest-links; mass assignment closed (all request-body schemas additionalProperties:false). RoomPermissions proves links are permission-bearing principals; TokenUserPermissions lacks link axis.
+evidence_needed: In own tenant: own low-priv account + non-moderated room; obtain a target principal ID from the same company (guest-link/group-link or another user in same tenant). POST CreatePermissions to own room with that participantId granting admin/promote — record 204/403/409/422 exactly.
+verify_steps:
+- GET/HEAD https://apis.alfaview.com/v2/users/me/company (AUTH_HELPED, own token)
+- GET/HEAD https://apis.alfaview.com/v2/guest-links?limit=1 (AUTH_HELPED, own token; read-only)
+- POST https://apis.alfaview.com/v2/rooms/{roomId}/permissions with JSON Permissions for target participantId (AUTH_HELPED, own token, non-moderated room) — one POST, record exact status/headers/body
+impact: Potential privilege grant across principals in same tenant if authorization checks missing; escalation to room admin/privileged actions. Severity downgraded from earlier 82→80 after schema retraction (Permissions.admin scope misattributed). Zero wire evidence.
+testability: AUTH_HELPED
+
+[HYP]
+[HYP] diagnostics-ingest unauthenticated write surface
+class: MISCONFIG
+asset: client-diagnostics-ingest.alfaview.com
+confidence: 25
+reasoning: Host restored (NXDOMAIN→live). /health 200/16B md5 3a0386dd; all other GET paths return 404/39B; OPTIONS with no Allow header; CSP strict (default-src 'none', frame-ancestors 'none'); JSON-only; edge-proxy. Ingest route not observed via GET/HEAD/OPTIONS. No evidence of exposed unauthenticated write.
+evidence_needed: One POST to a plausible ingest path (e.g. /, /health, /v1/ingest, /events) with minimal JSON — must see whether server accepts unauthenticated POST or returns 401/403/405. Policy requires HUMAN authorization for POST.
+verify_steps:
+- HEAD/OPTIONS https://client-diagnostics-ingest.alfaview.com/ (PASSIVE)
+- HEAD/OPTIONS https://client-diagnostics-ingest.alfaview.com/health (PASSIVE)
+- POST https://client-diagnostics-ingest.alfaview.com/ with {"ping":1} (HUMAN_ONLY, single POST if authorized) — record status/body
+impact: Unclear without surface discovery; no data exposure demonstrated. Ceiling conf 25.
+testability: HUMAN_ONLY
+
+[SELF-CRITIQUE]
+[PARKED] diagnostics_ingest_unauth_write@client-diagnostics-ingest.alfaview.com: conf 25 < 40 and POST out of policy without human authorization; no read-only evidence of write surface.
+[FINAL] Survivors ranked by confidence: sso introspect (92, HUMAN_ONLY), CreatePermissions BOLA (80, AUTH_HELPED). diagnostics-ingest parked.
+
+[NEXT]
+[NEXT] HUMAN: one session, one owned mailbox, self-owned low-priv account in own tenant, one non-moderated room in same tenant, one valid opaque access token from self-owned signup (and optionally expired). Then ≤1 rps:
+1. GET https://apis.alfaview.com/v2/users/me/company (own token)
+2. GET https://apis.alfaview.com/v2/guest-links?limit=1 (own token)
+3. POST https://apis.alfaview.com/v2/rooms/{roomId}/permissions with JSON Permissions for a target participantId from step 2 (own token, non-moderated room) — record 204/403/409/422 verbatim
+4. POST https://sso.alfaview.com/oauth2/introspect (form: token=<valid_opaque_token>&client_id=fake) — record status/body
+5. POST https://sso.alfaview.com/oauth2/introspect with HTTP Basic (fake_client:any_secret) and token — record status/body
+6. POST https://sso.alfaview.com/oauth2/introspect with token_type_hint=refresh_token and token — record status/body
+Do not POST to client-diagnostics-ingest unless explicitly authorized; do not attempt auth-bypass beyond introspect; no customer data touched. Record headers, status, md5 of body.
+
+[LEARNING]
+[LEARNING] REJECTED IDOR premise @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" is FALSE — live 132100B/174787B document contains "uuid" zero times and zero pattern keys; all path params unconstrained type:string. Retracted.
+[LEARNING] REJECTED scope claim @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: Permissions.admin scope sentence misattributed (belongs to PermissionsEdit.admin/PATCH). Permissions (CREATE) is atomic full-set; confidence 82→80.
+[LEARNING] ACCEPTED behavioral change @ app.alfaview.com/graphql: __typename returns 200/32B with x-apollo-operation-name or apollo-require-preflight (header-keyed CSRF guard), introspection remains disabled.
+[LEARNING] CHANGED surface facts: equipment.alfaview.com + production-equipment.alfaview.com restored (timeout→80 empty-404/443 RST); apis OpenAPI rotated (annotation depth only); diagnostics-ingest live with strict CSP; tools/whiteboard second RPC backend confirmed (surface discovery only).
+[LEARNING] PROCEDURAL: UUID/path-format claims require per-field pattern verification; md5+size must both be recorded; guessed URLs never promoted to findings; bare-GET vs header-qualified graphql comparisons must state header set.
+
+[RISK]
+[RISK] alfaview gmbh: 88/100 — flat. Passive surface plateau (42+ cycles), no new unauthenticated exploit surface. Top risks are HUMAN-gated: introspect client-auth bypass (conf 92) and CreatePermissions BOLA (conf 80). Equipment restoration and diagnostics-ingest restoration add zero exposure (negative surface). No rotation/drift producing new unauth endpoints. E[findings] from further passive-only probing ≈ 0; value is in the single human session above.
+## Objective
+- Continue a read-only, passive-first bug bounty recon of the alfaview gmbh in-scope attack surface while strictly adhering to the program's out-of-scope classes.
+- Prioritize HIGH-value logic flaws (IDOR/BOLA, broken auth/OAuth, JWT/alg confusion, SSRF, GraphQL, business logic) and remain GET/HEAD/OPTIONS only at ≤1 rps.
+
+## Important Details
+- **Scope:** alfaview.com and all company-operated subdomains (web, API, backend, support, customer portals) as defined by the program. Inventory: 55 dedicated hosts (100% probed). Known mirror pairs: `webclient`/`product-webclient`, `equipment`/`production-equipment`, and app variants.
+- **Constraints:** GET/HEAD/OPTIONS only, ≤1 rps, no POST/mutating/auth-bypass against live customer data, no DoS/brute-force/rate-limit tests, sha256/md5 only for secrets, guessed URLs are never promoted to findings, and host-state deltas require a second method (DNS + HTTP).
+- **Critical Contract State:** `apis.alfaview.com/v2/docs/openapi.json` is OpenAPI 3.1.0 (38 paths/57 ops, 132100B, md5 `284a3383c1ac3cfc9152ffcc631891f2`) byte-identical to `beta-apis.alfaview.com`; YAML twin (165360B, md5 `6738669c`). First declaration of `components.securitySchemes.accessToken` (bearerFormat: opaque) with per-op `security`. No `uuid` pattern keys and all 42 path params are unconstrained `type: string` (a prior "UUID pattern" claim was retracted).
+- **SSO (FusionAuth 1.63.0):** `sso.alfaview.com` issuer=`acme.com`, JWKS 200/16257B (7×RS256, md5 `3f8d456c`), `/.well-known/openid-configuration` omits or oscillates `introspection_endpoint` while `/oauth2/introspect` is live (OPTIONS 405). Client authentication is enforced only for JWT-shaped tokens (3 dot segments with JSON middle) — opaque base64 alfaview tokens return `200 {"active":false}` with an arbitrary `client_id` on POST-body and HTTP Basic (boundary case pinned). `token_endpoint_auth_methods_supported` advertises `client_secret_basic`/`client_secret_post`/`none`.
+- **App/GraphQL:** `app.alfaview.com/graphql` CSRF is header-gated (`__typename` returns 200 only with `x-apollo-operation-name` or `apollo-require-preflight`, 400 bare). `guestAuthenticate`/`guestJoin` are anonymous-reachable (`BAD_USER_INPUT`, not `UNAUTHENTICATED`) with no `accessKey` (divergent from REST 3-field). `adminSwitchCompany` in the public bundle returns `{companyId, accessToken, permissions}` from the caller's token with hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`). Signup remains the sole unauthenticated path to a legitimate bearer token (email-gated). 
+- **Tools/RPC:** `tools.alfaview.com` exposes `POST /poll/pollservice/<verb>` (8 verbs) with `Grpc-Metadata-alfaview.token` (b64url→b64, opaque). A second, unmapped RPC backend exists at `tools.alfaview.com/whiteboard/*` returning a 47B gRPC status envelope (distinct marshaller from poll 45B jsonpb), mirrored to `staging-tools.alfaview.com/whiteboard/*`. `whiteboard.alfaview.com` is a separate renderer host (strict single-route, 302→`/` on unknown IDs).
+- **API surface:** Validation-before-auth on 9–10 GET ops (query-param routes); path-param routes return 401. `/v2/users/me/company` (GetOwnCompany) is the sole 200-response supplier of `companyId`. `/v2/audit-log` is a live, undocumented 39th path. 4 credential-exchange POSTs (`/v2/auth/api-key`, `/v2/auth/group-link`, `/v2/auth/guest-link`, `/v2/auth/password`). Mass assignment closed across all 21 write-body schemas (`additionalProperties: false`). `/v2/users/invitation` advertises `Allow: DELETE, POST` (undocumented DELETE), `/v2/users/invitations` is DELETE-only (undocumented).
+- **Top Open Hypotheses:** [H-88] `sso.alfaview.com/oauth2/introspect` client-auth bypass for opaque alfaview tokens (conf 92, HUMAN_ONLY). [H-89] `apis.alfaview.com POST /v2/rooms/{roomId}/permissions` (CreatePermissions) BOLA with polymorphic `participantId` and path-only scope (conf 80, AUTH_HELPED). [H-90] `client-diagnostics-ingest.alfaview.com` unauthenticated write (conf 25, PARKED, POST out of policy). 
+- **Retractions (procedural):** Removed claims that OpenAPI "confirms path-param UUID patterns", the Permissions.admin scope misattribution (CreatePermissions vs PermissionsEdit), an accessKey existence oracle on guest/group-link auth, and any global "uniform 401" assertion (two 401 tiers by header presence). Pre-auth query-binder is not a standalone finding (reproduces public contract only).
+
+## Work State
+### Completed
+- **Inventory:** 55 dedicated hosts mapped and 100% probed; mirror hosts recorded; `client-diagnostics-ingest.alfaview.com` restored to live state (`/health` 200/16B md5 `3a0386dd`), `equipment`/`production-equipment` moved from "unreachable/timeout" to 443 RST/80 empty-404.
+- **Contract audit:** Full OpenAPI diff (37→38 paths), identification of `/v2/users/me/company` (GetOwnCompany) and `/v2/audit-log` (undocumented live path), `Allow:`-vs-spec scan, 403-declaration map across 57 ops, and distinction between `Permissions` (CREATE, atomic full-set) and `PermissionsEdit` (PATCH, partial delta).
+- **Auth surface:** OIDC discovery/JWKS behavior pinned, introspect boundary cases (JWT-shape gated) repeated and recorded, guest-link REST confirmed 3-field (`accessKey,companyId,roomId`), GraphQL guest and header-gated `__typename` behavior verified.
+- **RPC mapping:** Poll verbs (8) and second `whiteboard/*` RPC backend proven by controlled differential (separate marshaller, staging mirror), renderer vs RPC separation established.
+- **Procedural hardening:** Guessed URLs never promoted to findings, 2-method host checks enforced, size+md5 recorded together for standing probes, schema text quoted only after per-field lookup, bare-GET graphql never conflated with header-qualified `__typename`.
+
+### Active
+- **Passive plateau:** 40+ consecutive byte-stable cycles on standing probes (OpenAPI `284a3383`, OIDC `f78a08fc`, JWKS `3f8d456c` md5s stable). CT tooling intermittently unavailable (502/504) — not treated as a delta.
+- **H-88 / H-89 readiness:** Preconditions enumerated (need self-owned low-priv account in a controlled tenant, non-moderated room in same tenant, and a legitimate opaque bearer token from self-owned signup) but no live POST/mutating probes executed this cycle.
+
+### Blocked
+- **HUMAN_ONLY gates:** Obtaining an owned mailbox/account + a valid opaque access token is required to execute (a) `/v2/users/me/company` + `/v2/group-links?limit=1`, (b) exactly one `POST /v2/rooms/{roomId}/permissions` (CreatePermissions), (c) three `POST` calls to `sso.alfaview.com/oauth2/introspect` (POST-body, HTTP Basic, `token_type_hint=refresh_token`), and (d) `GET /v2/auth/token-info` (live + expired) to decisively test H-88 and H-89. 
+- **POST-gated:** `client-diagnostics-ingest.alfaview.com` ingest route is unknown and requires human authorization before any POST (H-90, conf 25). 
+- **CT source recovery:** `crt.sh`/`certspotter` both returning 502/504; retry after ≥12h before re-running full CT diff.
+
+## Next Move
+1. **Immediate (HUMAN):** Establish a self-owned alfaview account in a controlled tenant and capture at least one opaque bearer access token (and an expired token if convenient). Do **not** attempt to brute-force or enumerate other accounts. 
+2. **Subsequent (PROBE, read-only where possible, then minimal POST with authorization):** Using ≤1 rps and only the owned tokens/tenant/room, execute the bounded set: `GET /v2/users/me/company`, `GET /v2/group-links?limit=1`, exactly one `POST /v2/rooms/{roomId}/permissions` (CreatePermissions) against the non-moderated room recording 204/403/409/422, three `POST` calls to `sso.alfaview.com/oauth2/introspect` (POST-body, HTTP Basic, `token_type_hint=refresh_token`), and `GET /v2/auth/token-info` (live + expired). Record verbatim status, headers, and bodies. Only after this, consider a single authorized POST to `client-diagnostics-ingest.alfaview.com` if an ingest path is identified (or explicitly PARK it).
+
+## Relevant Files
+- `inventory/alfaview.md` — canonical host inventory, verdicts, mirror mapping and probe history.
+- `recon-notes/alfaview-openapi.yaml` — 37-path pre-rotation baseline (note: live moved to 38 paths; dated snapshots exist for attribution).
+- `recon-notes/alfaview-openapi-2026-10-06.json` — dated snapshot of live OpenAPI (174787B, md5 `06231fad`) to attribute future rotations exactly.
+- `leads/lead-bigpickle.md` — most recent analyst lead (canonical JWKS path `/.well-known/jwks.json`, verify_steps, HYPs 88–91 state).
+- `leads/lead_nemotron3.txt` — historical context for introspect (H-88) and standing hypotheses.
+- `probe-results.md` — running md5/size ledger for standing probes (must keep size+md5 together).
+- `art/afces-core.md` — compact core surface map (OpenAPI, OIDC, JWKS, users/me, graphql, tools, whiteboard).
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+HUMAN: create self-owned alfaview account (own tenant), obtain valid opaque bearer token (optional expired). Then ≤1 rps:
+1. GET apis.alfaview.com/v2/users/me/company
+2. GET apis.alfaview.com/v2/guest-links?limit=1
+3. POST apis.alfaview.com/v2/rooms/{roomId}/permissions (target from 2, non-moderated room) record 204/403/409/422
+4–6. POST sso.alfaview.com/oauth2/introspect 3× (form token+client_id=fake; HTTP Basic fake:any_secret; token_type_hint=refresh_token) record status/body. Do not POST client-diagnostics-ingest unless authorized.

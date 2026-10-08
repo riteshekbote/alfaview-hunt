@@ -8777,3 +8777,44 @@ verify_steps: minimal-privilege token -> `GET /v2/group-links?limit=1`; observe 
 [NEXT] No passive action available until rotation/CT-source recovery. Human step (single session, own mailbox): self-owned account → then ≤1 rps GET `/v2/users/me/company` + `/v2/group-links?limit=1`, one POST `/v2/rooms/{roomId}/permissions` (204/403/409/422), three POSTs to introspect (POST-body / HTTP Basic / `token_type_hint=refresh_token`), GET `/v2/auth/token-info` live+expired.
 [LEARN] CHANGED @ CT tooling: crt.sh/certspotter both down (502/504) — record as unavailable, never as "no new subdomains"; retry after 12h window.
 [RISK] Plateau risk: further identical cycles add no value; do not re-probe apis `/v2/graphql` or re-run bare-GET vs header-qualified comparisons.
+## 2026-10-08 14:56:24 UTC [target] (model bigpickle)
+[PRIO]
+[PRIO] introspect_client_auth_bypass@sso.alfaview.com/oauth2/introspect, 92, HUMAN_ONLY (HUMAN_ONLY; gated on opaque token; passive evidence byte-stable)
+[PRIO] CreatePermissions_BOLA@apis.alfaview.com/POST/v2/rooms/{roomId}/permissions, 80, AUTH_HELPED (gated on own-tenant account+token; contract-proven polymorphic participantId, path-only scope; mass-assignment closed)
+[PRIO] diagnostics_ingest_unauth_write@client-diagnostics-ingest.alfaview.com, 25, HUMAN_ONLY (PARKED; only /health GET reachable, POST out of policy without human authorization; conf ceiling 25)
+[HYP]
+[HYP] sso introspect client-auth bypass
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 92
+reasoning: POST-body and HTTP Basic accept fabricated client_id + any secret returning 200 {"active":false} for non-JWT token shapes; token_endpoint_auth_methods_supported advertises client_secret_basic/post/none; endpoint live (OPTIONS 405), discovery oscillates introspection_endpoint presence; metadata byte-stable 30+ cycles. Applies to opaque tokens (alfaview tokens are opaque base64). No alg confusion oracle on userinfo.
+evidence_needed: With a valid self-owned opaque access token, one POST-body, one HTTP Basic, one token_type_hint=refresh_token — must observe whether active becomes true for that token when client auth bypassed.
+verify_steps:
+impact: If active:true returned for a valid opaque token with no valid client credentials, introspection client authentication is effectively bypassed for the product’s token type (HIGH). No customer data exfiltration claimed without further proof.
+testability: HUMAN_ONLY
+[HYP]
+[HYP] CreatePermissions BOLA (path-only scope, polymorphic participantId)
+class: IDOR
+asset: apis.alfaview.com/POST/v2/rooms/{roomId}/permissions
+confidence: 80
+reasoning: Contract shows Permissions (CREATE, all 9 booleans required, atomic full-set write) distinct from PermissionsEdit (PATCH). participantId is unconstrained string naming user/guest-link/group-link; scope is only roomId in path (no ID→room binding documented). Target IDs obtainable from company-wide un-narrowable GET /v2/guest-links; mass assignment closed (all request-body schemas additionalProperties:false). RoomPermissions proves links are permission-bearing principals; TokenUserPermissions lacks link axis.
+evidence_needed: In own tenant: own low-priv account + non-moderated room; obtain a target principal ID from the same company (guest-link/group-link or another user in same tenant). POST CreatePermissions to own room with that participantId granting admin/promote — record 204/403/409/422 exactly.
+verify_steps:
+impact: Potential privilege grant across principals in same tenant if authorization checks missing; escalation to room admin/privileged actions. Severity downgraded from earlier 82→80 after schema retraction (Permissions.admin scope misattributed). Zero wire evidence.
+testability: AUTH_HELPED
+[HYP]
+[HYP] diagnostics-ingest unauthenticated write surface
+class: MISCONFIG
+asset: client-diagnostics-ingest.alfaview.com
+confidence: 25
+reasoning: Host restored (NXDOMAIN→live). /health 200/16B md5 3a0386dd; all other GET paths return 404/39B; OPTIONS with no Allow header; CSP strict (default-src 'none', frame-ancestors 'none'); JSON-only; edge-proxy. Ingest route not observed via GET/HEAD/OPTIONS. No evidence of exposed unauthenticated write.
+evidence_needed: One POST to a plausible ingest path (e.g. /, /health, /v1/ingest, /events) with minimal JSON — must see whether server accepts unauthenticated POST or returns 401/403/405. Policy requires HUMAN authorization for POST.
+verify_steps:
+impact: Unclear without surface discovery; no data exposure demonstrated. Ceiling conf 25.
+testability: HUMAN_ONLY
+[PARKED] diagnostics_ingest_unauth_write@client-diagnostics-ingest.alfaview.com: conf 25 < 40 and POST out of policy without human authorization; no read-only evidence of write surface.
+[FINAL] Survivors ranked by confidence: sso introspect (92, HUMAN_ONLY), CreatePermissions BOLA (80, AUTH_HELPED). diagnostics-ingest parked.
+[NEXT]
+[NEXT] HUMAN: one session, one owned mailbox, self-owned low-priv account in own tenant, one non-moderated room in same tenant, one valid opaque access token from self-owned signup (and optionally expired). Then ≤1 rps:
+[RISK]
+[RISK] alfaview gmbh: 88/100 — flat. Passive surface plateau (42+ cycles), no new unauthenticated exploit surface. Top risks are HUMAN-gated: introspect client-auth bypass (conf 92) and CreatePermissions BOLA (conf 80). Equipment restoration and diagnostics-ingest restoration add zero exposure (negative surface). No rotation/drift producing new unauth endpoints. E[findings] from further passive-only probing ≈ 0; value is in the single human session above.

@@ -1,17 +1,23 @@
-## 2026-10-08 07:28:11 UTC [target] (model nemotron3)
-[PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
+## 2026-10-08 14:54:16 UTC [target] (model nemotron3)
+[NEW] apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `security` on 53/57 ops); paths/ops unchanged (38/57)
+[NEW] app.alfaview.com/graphql: `__typename` now returns 200/32B (was 400 CSRF guidance) with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled
+[NEW] sso.alfaview.com/oauth2/introspect: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both POST-body and HTTP Basic channels
+[NEW] client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; `/health`=200/16B (md5 3a0386dd), `/`=404/39B (md5 d18415bd), uniform 404 across 6 paths + OPTIONS no Allow
+[NEW] equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
+[NEW] webclient.alfaview.com / product-webclient.alfaview.com: byte-identical root (md5 6825f39c) — deployment mirrors sharing one artifact (COOP/COEP same-origin+require-corp)
+[CHANGED] apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
 [PRIO] sso.alfaview.com/oauth2/introspect,9.25,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=8
+[PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.60,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions),8.05,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=5,freshness=3
 [PRIO] apis.alfaview.com/v2/meetings,6.95,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=1,cloud_surface=5,freshness=3
 [PRIO] apis.alfaview.com/v2/audit-log,6.20,attack_surface=6,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=8
 [PRIO] tools.alfaview.com/whiteboard/,6.65,attack_surface=6,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=4,freshness=5
-[PRIO] apis.alfaview.com/v2/auth/api-key,5.40,attack_surface=5,business_value=6,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=8
-[HYP] OAuth2 introspection answers for opaque alfaview tokens with zero valid client credentials
+[HYP] OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
 confidence: 94
-reasoning: 30+ consecutive cycles confirm POST-body and HTTP Basic auth accept ANY fabricated client_id → 200 {"active":false}; token_endpoint_auth_methods_supported advertises client_secret_basic, client_secret_post, none — runtime secret verification absent; only residual check is Basic-vs-body client_id_mismatch (401); same-deployment /oauth2/userinfo correctly tiers and enforces token validation, proving introspect omission not architectural; alfaview API tokens are opaque base64 (not JWTs), so the introspect bypass applies to exactly the token type the product issues; new OpenAPI declares bearerFormat: opaque confirming token format
+reasoning: 30+ consecutive cycles confirm POST-body and HTTP Basic auth accept ANY fabricated client_id → 200 {"active":false} for invalid tokens; token_endpoint_auth_methods_supported advertises client_secret_basic, client_secret_post, none — runtime secret verification absent; only residual check is Basic-vs-body client_id_mismatch (401); same-deployment /oauth2/userinfo correctly tiers and enforces token validation, proving introspect omission not architectural; alfaview API tokens are opaque base64 (AccessToken schema: "base64-encoded string"; /v2/auth/token-info rejects all JWT variants with 422), so the introspect bypass applies to exactly the token type the product issues; new OpenAPI declares bearerFormat: opaque confirming token format
 evidence_needed: Valid access token from signup→finishSignup flow; POST to introspect with token=<valid>&client_id=fake-123 → observe active:true + token metadata (scope, exp, sub, client_id)
 verify_steps: POST https://sso.alfaview.com/oauth2/introspect with token=<valid-access-token>&client_id=fake-123 → 200 {"active":true, "scope":"...", "exp":..., "sub":..., "client_id":...}; repeat with HTTP Basic auth: Authorization: Basic <base64(fake-123:any)> → 200 same metadata; add token_type_hint=refresh_token → 401 (forces validation on any token shape)
 impact: OAuth token metadata disclosure (scope, exp, sub, client_id) for any leaked opaque token
