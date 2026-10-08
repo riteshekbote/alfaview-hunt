@@ -1520,3 +1520,11 @@ www.alfaview.com
 - NEW equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
 - NEW webclient.alfaview.com / product-webclient.alfaview.com: byte-identical root (md5 6825f39c) — deployment mirrors sharing one artifact (COOP/COEP same-origin+require-corp)
 - CHANGED apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
+
+## 2026-10-08 01:24:54 UTC
+- NEW apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme: `components.securitySchemes.accessToken` (bearerFormat: opaque) + per-op `sec
+- NEW app.alfaview.com/graphql: `__typename` now returns 200/32B (was 400 CSRF guidance) with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled — behavioral cha
+- NEW client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; `/health`=200/16B (md5 3a0386dd), `/`=404/39B (md5 d18415bd), uniform 404 across 6 paths + OPTIONS no Allow
+- NEW equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
+- NEW webclient.alfaview.com / product-webclient.alfaview.com: byte-identical root (md5 6825f39c) — deployment mirrors sharing one artifact (COOP/COEP same-origin+require-corp)
+- CHANGED apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
