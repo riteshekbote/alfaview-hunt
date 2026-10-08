@@ -1259,3 +1259,6 @@
 - 2026-10-08 ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
 - 2026-10-08 PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted only after per-field lookup
 - 2026-10-08 CHANGED @ CT tooling: crt.sh/certspotter both down (502/504) — record as unavailable, never as "no new subdomains"; retry after 12h window.
+- 2026-10-08 certspotter API works WITHOUT `include_subdomains` (3 names only, apex+wildcard); WITH the flag it 504s on >10s query — use flagless query for cert-renewal watch, crt.sh for subdomain diffs.
+- 2026-10-08 bare-path `apis.alfaview.com/users/me` = 404/19B Go edge catch — probe typo; standing probe is `/v2/users/me` (401/107B md5 60ed2f29). Never record typo paths as state changes.
+- 2026-10-08 44th consecutive NO_DELTA across full standing set (all values logged with size+md5 in inventory 2026-10-08 20:24 UTC entry).

@@ -1,12 +1,6 @@
-## 2026-10-08 14:54:16 UTC [target] (model nemotron3)
-[NEW] apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `security` on 53/57 ops); paths/ops unchanged (38/57)
-[NEW] app.alfaview.com/graphql: `__typename` now returns 200/32B (was 400 CSRF guidance) with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled
-[NEW] sso.alfaview.com/oauth2/introspect: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both POST-body and HTTP Basic channels
-[NEW] client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; `/health`=200/16B (md5 3a0386dd), `/`=404/39B (md5 d18415bd), uniform 404 across 6 paths + OPTIONS no Allow
-[NEW] equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
-[NEW] webclient.alfaview.com / product-webclient.alfaview.com: byte-identical root (md5 6825f39c) — deployment mirrors sharing one artifact (COOP/COEP same-origin+require-corp)
-[CHANGED] apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
-[PRIO] sso.alfaview.com/oauth2/introspect,9.25,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=8
+## 2026-10-08 20:20:23 UTC [target] (model nemotron3)
+[NEW] NO_DELTA — all standing probes byte-identical to 2026-10-08 14:56 knowledge base: OpenAPI 174787B md5 06231fad (38 paths, 57 ops, securitySchemes.accessToken declared), sso OIDC 200/0B (introspection_endpoint absent), introspect OPTIONS 405, authorize 200, app graphql 405/110B Allow:GET POST, tools whiteboard 404/47B gRPC envelope, audit-log 422/232B pre-auth. Zero regressions, zero new endpoints.
+[PRIO] sso.alfaview.com/oauth2/introspect,9.40,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
 [PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.60,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions),8.05,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=5,freshness=3
