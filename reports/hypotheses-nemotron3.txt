@@ -1,5 +1,4 @@
-## 2026-10-09 00:28:50 UTC [target] (model nemotron3)
-[NEW] NO_DELTA — 45th consecutive cycle: all standing probes byte-identical to 2026-10-08 20:24 knowledge base. OpenAPI 174787B md5 06231fad (38 paths, 57 ops, securitySchemes.accessToken declared), sso OIDC 200/2169B md5 f78a08fc (introspection_endpoint absent), JWKS 200/16257B md5 3f8d456c (7 RSA), introspect OPTIONS 405, authorize 200, app graphql 400/406B, tools whiteboard 404/47B gRPC envelope, audit-log 422/232B pre-auth, users/me/company 401/107B. Zero regressions, zero new endpoints, zero surface change.
+## 2026-10-09 06:38:02 UTC [target] (model nemotron3)
 [PRIO] sso.alfaview.com/oauth2/introspect,9.40,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
 [PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.60,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
