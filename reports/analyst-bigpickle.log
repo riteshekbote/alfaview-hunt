@@ -90769,3 +90769,124 @@ for q in "from=2026-01-01&to=2026-01-02" "from=2026-01-01T00:00:00Z&to=2026-01-0
   sleep 1
 done failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
+===== ANALYST bigpickle 2026-10-09 19:10:47 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mset -e
+echo "=== 1. OpenAPI JSON ==="
+curl -sS -o /tmp/oapi.json -w "HTTP %{http_code} size=%{size_download}\n" https://apis.alfaview.com/v2/docs/openapi.json
+md5sum /tmp/oapi.json
+python3 -c "import json;d=json.load(open('/tmp/oapi.json'));print('paths',len(d['paths']));print('secSchemes',d.get('components',{}).get('securitySchemes'));print('topsec',d.get('security'))"
+sleep 1
+echo "=== 2. SSO OIDC + JWKS ==="
+curl -sS -o /tmp/oidc.json -w "oidc HTTP %{http_code} size=%{size_download}\n" https://sso.alfaview.com/.well-known/openid-configuration
+python3 -c "import json;d=json.load(open('/tmp/oidc.json'));print('issuer',d.get('issuer'));print('introspection_endpoint',d.get('introspection_endpoint'));print('introspection_auth_methods',d.get('introspection_endpoint_auth_methods_supported'));print('token_auth',d.get('token_endpoint_auth_methods_supported'));print('grants',d.get('grant_types_supported'))"
+curl -sS -o /tmp/jwks.json -w "jwks HTTP %{http_code} size=%{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json
+python3 -c "import json;d=json.load(open('/tmp/jwks.json'));print('keys',len(d.get('keys',[])),[k.get('alg') for k in d.get('keys',[])])" 2>/dev/null || echo "jwks parse fail"
+sleep 1
+echo "=== 3. app.alfaview.com shell + bundle ==="
+curl -sS https://app.alfaview.com/ -o /tmp/app.html -w "app HTTP %{http_code} size=%{size_download}\n"
+grep -oE 'app\.min\.[a-f0-9]+\.js' /tmp/app.html | sort -u
+
+=== 1. OpenAPI JSON ===
+HTTP 200 size=174787
+06231fadca0b36c314476322337976db  /tmp/oapi.json
+paths 38
+secSchemes {'accessToken': {'bearerFormat': 'opaque', 'description': "Access tokens are returned by the authentication operations and are accepted without the 'Bearer ' prefix.", 'scheme': 'bearer', 'type': 'http'}}
+topsec None
+=== 2. SSO OIDC + JWKS ===
+oidc HTTP 200 size=2169
+issuer acme.com
+introspection_endpoint None
+introspection_auth_methods None
+token_auth ['client_secret_basic', 'client_secret_post', 'none']
+grants ['authorization_code', 'password', 'implicit', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'client_credentials']
+jwks HTTP 200 size=16257
+keys 7 ['RS256', 'RS256', 'RS256', 'RS256', 'RS256', 'RS256', 'RS256']
+=== 3. app.alfaview.com shell + bundle ===
+app HTTP 200 size=1381
+app.min.26f05bcb3f94dc9a764b.js
+[0m
+## Objective
+- Hunt high-value vulns (IDOR/BOLA, broken auth, OAuth/JWT flaws, SSRF, business logic) in the alfaview gmbh bug bounty program (report channel: bugs.olivermaicher.eu), currently in POC phase targeting `api`.
+- Produce structured DELTA/PRIO/HYP/NEXT/LEARN/RISK blocks each cycle; prioritize breadth over full inventory then depth on top anomalies.
+
+## Important Details
+- Scope: all alfaview gmbh-operated infra — `alfaview.com` + company subdomains, web/desktop/mobile apps, APIs, backend/support systems, customer portals.
+- Constraints: passive-first; ≤1 rps; live probes GET/HEAD/OPTIONS only; no auth-bypass/mutating tests against live customer data; no POST to live services without human sign-off; sha256 any secret.
+- REJECTED classes (never claim): DoS/lockout, descriptive errors/headers only, public login panels (Plesk, HTTP Basic), rate-limit/brute-force policy, SSL/TLS, mail config, scanner output w/o POC, username enumeration, clickjacking w/o exploit, public files, outdated libs, exposure of customer/employee/auth data during testing.
+- Standing top chains (all HUMAN-gated): `introspect_client_auth_bypass@sso.alfaview.com/oauth2/introspect` (conf 92, HUMAN_ONLY), `CreatePermissions_BOLA@apis.alfaview.com/POST/v2/rooms/{roomId}/permissions` (conf 80, AUTH_HELPED), `diagnostics_ingest_unauth_write@client-diagnostics-ingest.alfaview.com` (conf 25, PARKED).
+- `POST /v2/auth/guest-link` requires only 3 fields (`accessKey`,`companyId`,`roomId`); `displayName` NOT required (corrects earlier 4-field claim).
+- Key stable baselines: OpenAPI `/v2/docs/openapi.json` 174787B md5 `06231fadca0b36c314476322337976db` (38 paths/57 ops; `securitySchemes.accessToken` bearerFormat opaque declared per-op on 53/57) — rotated from 284a3383 2026-10-06; OIDC `f78a08fc`/2169B (issuer=acme.com, introspection_endpoint absent); JWKS `3f8d456c`/16257B (7×RS256); `users/me` 401/107B md5 `60ed2f29`.
+- Alfaview access tokens are opaque base64, NOT JWT (`/v2/auth/token-info` rejects JWT variants with 422) → JWT alg-confusion vs API gateway closed; introspect bypass applies to exactly the product's token type.
+- Signup mutation `app.alfaview.com/graphql` (sends no token header) is the sole unauthenticated path to a legit bearer token — email-gated, HUMAN_ONLY; all HIGH-value chains gate on executing it.
+- Method rules: delta claims need second method (DNS getent vs HTTP); guessed URLs never become findings (canonical from inventory/leads); record size AND md5 together; 401 md5 is reliable discriminator (byte lengths 107/115/122 not stable).
+
+## Work State
+### Completed
+- Full inventory recon: 55 dedicated hosts, 100% HTTP-verdict, 31 exhausted, zero unprobed. Exhausted: `alfacheck-*`, beta-hydra fleet ("Hi Client" media servers), grafana/loki/prometheus/linkerd/ops/gitlab.dev/fusionauth.dev (timeout 000), multi-tenant SPA shells, insider/beta-webclient, demo-company, design-assets/tokens/ops.
+- Confirmed surface: `apis.alfaview.com` (37→38 paths, audit-log undocumented 39th), `sso.alfaview.com` FusionAuth 1.63.0, `app.alfaview.com/graphql`, `tools.alfaview.com` (poll RPC + `whiteboard/` second RPC backend), `client-diagnostics-ingest`, `test.alfaview.com` (alfacheck v483102 unsigned), `support.alfaview.com` WordPress.
+- Validation-before-auth defect characterized: 9/26 GET ops validate query params pre-auth (`stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, `users?emailAddress`, etc.); path-param routes correctly 401; root cause OpenAPI `components.securitySchemes={}`, `security=null`.
+- Mass assignment closed across all 21 request-body schemas (`additionalProperties:false`).
+- Multiple prior claims retracted/corrected and recorded (UUID `pattern` premise false; `Permissions.admin` scope misattributed; 403-asymmetry not load-bearing; guest-link existence oracle disproven).
+- 45+ consecutive NO_DELTA cycles on standing probes; equipment/diagnostics-ingest restoration adds zero exposure.
+
+### Active
+- POC phase on `api`; maintaining standing-probe hash watch and waiting for the single HUMAN session to unlock the two HIGH chains.
+- Contract-proven (zero wire evidence, AUTH_HELPED) hypotheses staged for one authorized test cycle.
+
+### Blocked
+- All top chains gated on a valid self-owned opaque access token + own-tenant low-priv account + non-moderated room (HUMAN_ONLY).
+- POST out of policy without human authorization (`diagnostics_ingest_unauth_write`, parked conf 25).
+- crt.sh 429/502; certspotter `include_subdomains` times out >10s (use flagless apex-only query).
+
+## Next Move
+1. `[NEXT] HUMAN`: one session, one owned mailbox — self-owned low-priv account in own tenant, one non-moderated room, one valid opaque access token. Then ≤1 rps: (a) `GET /v2/users/me/company` + `GET /v2/group-links?limit=1`; (b) exactly one `POST /v2/rooms/{roomId}/permissions` (record 204/403/409/422); (c) three `POST`s to `sso.alfaview.com/oauth2/introspect` (POST-body / HTTP Basic / token_type_hint=refresh_token, watch `active`); (d) `GET /v2/auth/token-info` live + expired — record status/headers/bodies verbatim.
+2. `[NEXT] RETRY` crt.sh after its 429/502 clears for subdomain delta (certspotter apex-only yields no delta).
+
+## Relevant Files
+- `inventory/alfaview.md`: host inventory + per-cycle recon deltas (canonical URLs; line ~1096 referenced for URL recovery).
+- `recon-notes/alfaview-openapi.yaml`: 37-path pre-rotation snapshot baseline.
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated snapshot for exact future rotation attribution.
+- `leads/lead-bigpickle.md`: lead detail + verify_steps (canonical JWKS path source).
+- `art/lead_nemotron3.txt`: source of the [94] introspect hypothesis + signup-to-token NEXT.
+- `art/hypotheses-nemotron3.txt`: aggregated ranked hypotheses.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mecho "=== app bundle ==="
+curl -sS -o /tmp/app.min.js -w "bundle HTTP %{http_code} size=%{size_download}\n" https://app.alfaview.com/js/app.min.26f05bcb3f94dc9a764b.js
+md5sum /tmp/app.min.js 2>/dev/null
+wc -c /tmp/app.min.js 2>/dev/null
+sleep 1
+echo "=== graphql CSRF flip ==="
+curl -sS -X OPTIONS https://app.alfaview.com/graphql -o /tmp/gh.options -w "gqlOPTIONS %{http_code} size=%{size_download}\n" -D /tmp/gh.h
+grep -iE 'access-control|allow' /tmp/gh.h || true
+sleep 1
+echo "=== introspect OPTIONS ==="
+curl -sS -X OPTIONS https://sso.alfaview.com/oauth2/introspect -o /tmp/int.options -w "intOPTIONS %{http_code} size=%{size_download}\n" -D /tmp/int.h
+grep -iE 'access-control|allow' /tmp/int.h || true
+
+=== app bundle ===
+bundle HTTP 200 size=1093744
+dc502e508ef5aac544de8e0668e8095c  /tmp/app.min.js
+1093744 /tmp/app.min.js
+=== graphql CSRF flip ===
+gqlOPTIONS 204 size=0
+access-control-allow-origin: *
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+vary: Access-Control-Request-Headers, Accept-Encoding
+=== introspect OPTIONS ===
+intOPTIONS 405 size=0
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcd /tmp
+echo "=== endpoints/paths ==="
+grep -oE '"/[a-zA-Z0-9_./{}:-]{3,80}"' app.min.js | sort -u | head -80
+echo "=== oauth/client ids ==="
+grep -oE '(client[_]?[Ii]d|clientId|client_id)["\x27:= ]+[A-Za-z0-9_.:-]{6,60}' app.min.js | sort -u | head -30
+echo "=== graphql ops ==="
+grep -oE '(query|mutation) [A-Za-z0-9_]+' app.min.js | sort -u | head -60
+echo "=== admin-ish ==="
+grep -oE '[A-Za-z]*[Aa]dmin[A-Za-z]*' app.min.js | sort -u | head -40
+ failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
