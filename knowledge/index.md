@@ -1278,3 +1278,5 @@
 - 2026-10-09 ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with RoomPermissions.participantId)
 - 2026-10-09 ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
 - 2026-10-09 PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted only after per-field lookup
+- 2026-10-09 ACCEPTED MISCONFIG @ CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most are edge-firewal
+- 2026-10-09 CHANGED @ CT tooling: crt.sh/certspotter both down (502/504) — record as unavailable, never as "no new subdomains"; retry after 12h window.
