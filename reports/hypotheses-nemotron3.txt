@@ -1,6 +1,14 @@
-## 2026-10-09 06:38:02 UTC [target] (model nemotron3)
-[PRIO] sso.alfaview.com/oauth2/introspect,9.40,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
+## 2026-10-09 13:45:59 UTC [target] (model nemotron3)
+[NEW] app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB)
+[NEW] apis.alfaview.com/v2/docs/openapi.json rotated to 174787B (MD5 06231fad), now declares components.securitySchemes.accessToken (bearerFormat: opaque) and per-op security on 53/57 operations — first auth declaration in contract history
+[NEW] apis.alfaview.com/v2/users/me/company (GetOwnCompany) confirmed as 38th path, sole 200-response supplier of companyId across 57 ops, token-gated (401)
+[NEW] apis.alfaview.com/v2/audit-log live undocumented 39th path, pre-auth query validation (422 without from/to, 401 with valid params)
+[CHANGED] sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic/post/none with no runtime verification
+[CHANGED] tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll's 45B jsonpb; distinct marshaller; no auth challenge; zero client references in bundle
+[CHANGED] Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+[CHANGED] NO_DELTA on all other standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics)
 [PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
+[PRIO] sso.alfaview.com/oauth2/introspect,9.40,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.60,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions),8.05,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=5,freshness=3
 [PRIO] apis.alfaview.com/v2/meetings,6.95,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=1,cloud_surface=5,freshness=3

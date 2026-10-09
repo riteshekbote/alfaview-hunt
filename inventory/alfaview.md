@@ -1547,3 +1547,13 @@ www.alfaview.com
 - NEW NO_DELTA — 45th consecutive cycle: all standing probes byte-identical to 2026-10-08 20:24 knowledge base. OpenAPI 174787B md5 06231fad (38 paths, 57 ops, securitySchemes.accessToken declared), sso OID
 
 ## 2026-10-09 06:38:50 UTC
+
+## 2026-10-09 13:46:10 UTC
+- NEW app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8
+- NEW apis.alfaview.com/v2/docs/openapi.json rotated to 174787B (MD5 06231fad), now declares components.securitySchemes.accessToken (bearerFormat: opaque) and per-op security on 53/57 operations — first aut
+- NEW apis.alfaview.com/v2/users/me/company (GetOwnCompany) confirmed as 38th path, sole 200-response supplier of companyId across 57 ops, token-gated (401)
+- NEW apis.alfaview.com/v2/audit-log live undocumented 39th path, pre-auth query validation (422 without from/to, 401 with valid params)
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic
+- CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll's 45B jsonpb; distinct marshaller; no auth challenge; zero client references in bundle
+- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+- CHANGED NO_DELTA on all other standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics)
