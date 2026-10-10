@@ -1641,3 +1641,11 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/docs/openapi.json stable at 174787B (MD5 06231fad), declares components.securitySchemes.accessToken (bearerFormat: opaque) + per-op security on 53/57 ops
 - CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic
 - CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+
+## 2026-10-10 22:16:31 UTC
+- NEW app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8
+- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.
+- CHANGED apis.alfaview.com/v2/docs/openapi.json stable at 174787B (MD5 06231fad), declares components.securitySchemes.accessToken (bearerFormat: opaque) + per-op security on 53/57 ops — first auth declaration 
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic
+- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+- CHANGED NO_DELTA on all standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics) for 45th+ consecutive cycle

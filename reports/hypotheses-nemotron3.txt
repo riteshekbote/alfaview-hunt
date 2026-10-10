@@ -1,9 +1,10 @@
-## 2026-10-10 19:01:50 UTC [target] (model nemotron3)
+## 2026-10-10 22:16:21 UTC [target] (model nemotron3)
 [NEW] app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB)
-[NEW] CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-* (most firewalled 000)
-[CHANGED] apis.alfaview.com/v2/docs/openapi.json stable at 174787B (MD5 06231fad), declares components.securitySchemes.accessToken (bearerFormat: opaque) + per-op security on 53/57 ops
+[NEW] CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.dev, fusionauth.dev
+[CHANGED] apis.alfaview.com/v2/docs/openapi.json stable at 174787B (MD5 06231fad), declares components.securitySchemes.accessToken (bearerFormat: opaque) + per-op security on 53/57 ops — first auth declaration in spec history
 [CHANGED] sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic/post/none with no runtime verification
 [CHANGED] Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+[CHANGED] NO_DELTA on all standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics) for 45th+ consecutive cycle
 [PRIO] sso.alfaview.com/oauth2/introspect,9.40,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
 [PRIO] apis.alfaview.com/v2/guest-links,8.85,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.60,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=5,freshness=5

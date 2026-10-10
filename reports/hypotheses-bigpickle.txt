@@ -1,10 +1,1 @@
-## 2026-10-10 19:01:46 UTC [target] (model bigpickle)
-[HYP] <title>
-class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
-asset: <host/endpoint>
-confidence: <0-100>
-reasoning: <facts only>
-evidence_needed: <what proves it>
-verify_steps: <passive-first concrete HTTP requests>
-impact: <what attacker gets + severity>
-testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+## 2026-10-10 22:15:59 UTC [target] (model bigpickle)
