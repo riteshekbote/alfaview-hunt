@@ -8930,3 +8930,13 @@ testability: PASSIVE only until authorized
 [NEXT] (all gated on a human-provided session)
 [LEARN] Procedural: triage pipeline is failing — 91/223 runs contain `UnknownError` (server errors); last successful verdict was triage/run-2026-09-24-17-56.md. Validation has not run for ~2 weeks.
 [RISK] alfaview: 88/100 (latest hypotheses artifact) — unchanged; complexity flat, production APIs token-gated.
+## 2026-10-10 19:01:46 UTC [target] (model bigpickle)
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
