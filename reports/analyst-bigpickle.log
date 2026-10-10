@@ -93629,3 +93629,102 @@ Cycle complete — re-verified the standing surface and persisted the result to 
 - [RISK] alfaview: 42/100 — flat; passive E[findings] ≈ 0 until a token is available.
 
 One note: the last two scheduled runs (`2026-10-09-02-41`, `2026-10-09-09-53`) failed with harness `UnknownError`, not probe failures — worth checking the runner if you expect automated cycles to keep firing.
+===== ANALYST bigpickle 2026-10-10 08:55:21 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/oidc.json -w "%{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/openid-configuration; md5sum /tmp/oidc.json 2>/dev/null
+200 2169
+f78a08fced8b042093396383b74d8458  /tmp/oidc.json
+[0m
+[0m$ [0mcurl -s -o /tmp/oc.json -w "%{http_code} %{size_download}\n" https://apis.alfaview.com/v2/docs/openapi.json; md5sum /tmp/oc.json 2>/dev/null
+200 174787
+06231fadca0b36c314476322337976db  /tmp/oc.json
+[0m
+I'll run the standing read-only probes to establish this cycle's delta.
+[0m$ [0mcurl -s -o /tmp/jwks.json -w "%{http_code} %{size_download}\n" https://sso.alfaview.com/.well-known/jwks.json; md5sum /tmp/jwks.json 2>/dev/null
+200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/jwks.json
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "introspect OPTIONS: %{http_code} %{size_download}\n" -X OPTIONS https://sso.alfaview.com/oauth2/introspect
+introspect OPTIONS: 405 0
+[0m
+## Objective
+- Hunt for high-value vulnerabilities (BOLA/IDOR, broken auth, OAuth flaws, SSRF, GraphQL, business logic) across alfaview gmbh in-scope assets; report channel bugs.olivermaicher.eu.
+- Output only structured blocks (DELTA, PRIO, HYP, critique, NEXT, LEARN, RISK) per the 8-step methodology.
+
+## Important Details
+- In-scope: all alfaview gmbh-operated infra, web/desktop/mobile apps, APIs, backend, support, portals, websites, alfaview.com + company subdomains.
+- REJECTED classes (never report): DoS/lockout, descriptive errors/headers, robots.txt, outdated libs, OPTIONS/TRACE, CSRF on logout/anon forms, self-XSS, scanner output w/o POC, username enumeration, brute-force/rate-limit policy, SSL/TLS, clickjacking w/o exploit, mail config, public login panels, password-recovery policy, email-verification absence, exposure of customer/employee/financial/auth data during testing.
+- Constraints: facts vs hypotheses strictly separate; passive-first, ≤1 rps; GET/HEAD/OPTIONS only live; no auth-bypass or mutating tests vs live customer data; sha256 any secret; no endpoint-map-only output.
+- State: phase=POC, target=api.
+- Procedural rules (hard-won): guessed URLs never become findings (recover canonical from inventory/leads verify_steps); delta claims require a 2nd method (DNS `getent` vs HTTP); the md5 is the reliable discriminator, NOT byte-length (107/115/122B unstable); contract text quoted only after per-field lookup (two fabrications caught: false "UUID path params" premise; misattributed `Permissions.admin` scope sentence).
+- Standing md5 baselines: OpenAPI `06231fadca0b36c314476322337976db` (174787B, 38 paths/57 ops, securitySchemes.accessToken declared); OIDC `f78a08fc` (2169B, issuer=acme.com, introspection_endpoint absent); JWKS `3f8d456c` (16257B, 7×RS256); users/me 401/107B `60ed2f29`; graphql GET 400/406B; tools poll list 501/55B; whiteboard OPTIONS 404/47B.
+- `apis.alfaview.com/v2/graphql` = 404 edge catch; GraphQL endpoint exists ONLY on app.alfaview.com.
+
+## Work State
+### Completed
+- 45+ consecutive NO_DELTA cycles on a fully-enumerated 55-host inventory (0 unprobed, 31 exhausted).
+- OpenAPI rotation 2026-10-06: 132100B `284a3383` → 174787B `06231fad`, first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security 53/57); paths/ops unchanged; `/v2/audit-log` still unpublished.
+- Key mapped facts: `/v2/users/me/company` (GetOwnCompany, 38th path, sole 200-supplier of companyId, 401-gated); `/v2/audit-log` (live undocumented 39th path, 422 pre-auth query binder); `/v2/auth/api-key` (4th unauth credential endpoint, unique 403 tier); `/v2/users/invitation{,s}` (Allow: DELETE,POST vs spec POST-only).
+- Closed/retracted: v1 API gone (404); OpenAPI 3.0.3/3.1 twins semantically identical; access tokens opaque/base64 (JWT alg-confusion closed at apis + sso userinfo); no accessKey existence oracle on guest/group-link; 403-declaration asymmetry not behaviorally load-bearing; mass assignment closed (all body schemas additionalProperties:false); no SSRF primitive (only format:uri = ErrorModel docs).
+- Standing findings retained: company-wide un-narrowable credential-bearing link lists (GET /v2/guest-links, /v2/group-links; max 500/page; return accessKey/joinUrl/dialInCode/emailAddress; TokenUserPermissions has no link axis); app.alfaview.com public bundle adminSwitchCompany cross-tenant token mint + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`); tools.alfaview.com/whiteboard/ second unmapped RPC backend (47B gRPC envelope).
+
+### Active
+- [HYP] sso introspect client-auth bypass — conf 94, OATH, HUMAN_ONLY. client_id validated ONLY for JWT-shaped tokens (3 segs, seg2=base64 JSON); opaque base64 accepted on POST-body + HTTP Basic; token_type_hint=refresh_token forces validation. Needs a valid leaked opaque token.
+- [HYP] CreatePermissions BOLA — conf 80, IDOR, AUTH_HELPED. POST /v2/rooms/{roomId}/permissions; polymorphic participantId (user/guest-link/group-link ID), scope only in path; 4-way discriminator 204=success/403=blocked/409=exists/422=invalid.
+- [PARKED] client-diagnostics-ingest.alfaview.com unauth diagnostics ingest — conf 25 (<40), POST needs human sign-off.
+- Bundle now at app.min.26f05bcb3f94dc9a764b.js (rotated; still carries adminSwitchCompany + hardcoded tenant IDs).
+
+### Blocked
+- All HIGH-value chains (introspect 94, CreatePermissions 80) are HUMAN-gated on a self-owned account + valid opaque token — untestable passively.
+- crt.sh/certspotter down (502/504/429); certspotter apex-only yields no subdomain delta; `include_subdomains` flag times out >10s.
+- Passive E[findings] ≈ 0; residual risk concentrated in introspect bypass if a token leaks, and the credential-bearing link lists behind a single token.
+
+## Next Move
+1. [NEXT] HUMAN: one session, one owned mailbox — Signup/FinishSignup at app.alfaview.com/graphql → self-owned low-priv tenant account + non-moderated room + valid opaque token; then ≤1 rps: (a) GET /v2/users/me/company + GET /v2/group-links?limit=1; (b) exactly one POST /v2/rooms/{roomId}/permissions (record 204/403/409/422); (c) three POSTs to sso.alfaview.com/oauth2/introspect (POST-body / HTTP Basic / token_type_hint=refresh_token, watch `active`); (d) GET /v2/auth/token-info live + expired — record status/headers/bodies verbatim.
+2. [NEXT] RETRY crt.sh after 429/502 clears (certspotter flagless is apex-only, no subdomain delta).
+
+## Relevant Files
+- inventory/alfaview.md: canonical host inventory + all dated delta entries (line ~1096 holds canonical URLs).
+- leads/lead-bigpickle.md: primary leads + verify_steps (source of canonical JWKS path).
+- leads/lead_nemotron3.txt: introspect bypass lead + next human session.
+- art/lead_nemotron3.txt: ranked introspect-94 finding source.
+- recon-notes/alfaview-openapi.yaml: 37-path pre-rotation baseline (use only for set-diff).
+- recon-notes/alfaview-openapi-2026-10-06.json: dated post-rotation snapshot for exact future attribution.
+- hypotheses-bigpickle.txt, hypotheses-nemotron3.txt: aggregated standing hypotheses + NEXT lines.
+- probe-results.md: live probe outputs.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcurl -s -o /tmp/u.json -w "users/me: %{http_code} %{size_download}\n" https://apis.alfaview.com/v2/users/me; md5sum /tmp/u.json
+users/me: 401 107
+60ed2f29d492ec872c598cc7d36aa37e  /tmp/u.json
+[0m
+[0m$ [0mcurl -s -o /tmp/g.json -w "graphql GET: %{http_code} %{size_download}\n" https://app.alfaview.com/graphql; md5sum /tmp/g.json
+graphql GET: 400 406
+2fd0a1d014e411aeea2d5dc41ceba835  /tmp/g.json
+[0m
+[0m$ [0mcurl -s -o /tmp/w.json -w "whiteboard OPTIONS: %{http_code} %{size_download}\n" -X OPTIONS https://tools.alfaview.com/whiteboard/; md5sum /tmp/w.json
+whiteboard OPTIONS: 404 47
+ddd3351079af6bea6c6e808972a737ad  /tmp/w.json
+[0m
+[0m$ [0mcurl -s -o /tmp/ti.json -w "token-info: %{http_code} %{size_download}\n" https://apis.alfaview.com/v2/auth/token-info; md5sum /tmp/ti.json
+token-info: 422 85
+3f81e81e6dd61fb46997f6a4acb9e564  /tmp/ti.json
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mRead /tmp/ti.json failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[0m
+[0m$ [0mcurl -s -o /tmp/t.json -w "tools poll list: %{http_code} %{size_download}\n" https://tools.alfaview.com/api/tools/poll/list; md5sum /tmp/t.json; echo "---"; curl -s -o /tmp/cd.json -w "cd-ingest /health: %{http_code} %{size_download}\n" https://client-diagnostics-ingest.alfaview.com/health; md5sum /tmp/cd.json
+tools poll list: 200 615
+f53b3c2688a73940c337d37cc6da35c3  /tmp/t.json
+---
+cd-ingest /health: 200 16
+3a0386dd403566b954d2c0610133f6c8  /tmp/cd.json
+[0m
+[0m$ [0mfor u in "https://apis.alfaview.com/v2/guest-links?limit=1" "https://apis.alfaview.com/v2/group-links?limit=1" "https://apis.alfaview.com/v2/users/me/company" "https://apis.alfaview.com/v2/audit-log"; do printf "%s -> " "$u"; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" "$u"; done
+https://apis.alfaview.com/v2/guest-links?limit=1 -> 401 107
+https://apis.alfaview.com/v2/group-links?limit=1 -> 401 107
+https://apis.alfaview.com/v2/users/me/company -> 401 107
+https://apis.alfaview.com/v2/audit-log -> 422 232
+[0m
