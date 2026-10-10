@@ -1296,3 +1296,4 @@
 - 2026-10-10 ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with RoomPermissions.participantId)
 - 2026-10-10 ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
 - 2026-10-10 PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted only after per-field lookup
+- 2026-10-10 Procedural: triage pipeline is failing — 91/223 runs contain `UnknownError` (server errors); last successful verdict was triage/run-2026-09-24-17-56.md. Validation has not run for ~2 weeks.

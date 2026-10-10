@@ -1603,3 +1603,34 @@ www.alfaview.com
 - CHANGED apis.alfaview.com POST /v2/rooms/{roomId}/permissions (CreatePermissions) — BOLA write with polymorphic participantId (user ID / guest link ID / group link ID) granting admin+promote; scope only in pa
 - CHANGED apis.alfaview.com/v2/auth/api-key — 4th unauthenticated credential endpoint (HEAD→405 allow:POST, OPTIONS→405/19B text/plain); declares unique 403 account-status tier
 - CHANGED test.alfaview.com: alfacheck v483102 (4 platforms) unsigned; index page no sha256/signatures — supply-chain hardening absent across releases
+
+## 2026-10-10 14:55:26 UTC
+- CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll's 45B jsonpb; distinct marshaller; no auth challenge; zero client references in bundle; staging
+- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+- CHANGED NO_DELTA on all other standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics)
+- NEW app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8
+- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.
+- CHANGED apis.alfaview.com/v2/docs/openapi.json rotated to 174787B (MD5 06231fad), now declares components.securitySchemes.accessToken (bearerFormat: opaque) and per-op security on 53/57 operations — first aut
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic
+- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+- NEW app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8
+- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.
+- CHANGED apis.alfaview.com/v2/docs/openapi.json rotated to 174787B (MD5 06231fad), now declares components.securitySchemes.accessToken (bearerFormat: opaque) and per-op security on 53/57 operations — first aut
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic
+- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+- CHANGED apis.alfaview.com/v2/users/me/company (GetOwnCompany) confirmed as 38th path, sole 200-response supplier of companyId across 57 ops, token-gated (401)
+- CHANGED apis.alfaview.com/v2/audit-log live undocumented 39th path, pre-auth query validation (422 without from/to, 401 with valid params)
+- CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll's 45B jsonpb; distinct marshaller; no auth challenge; zero client references in bundle; staging
+- CHANGED apis.alfaview.com: validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI components.securitySchemes={}, security=null (pre-rotation)
+- CHANGED apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and DELETE-only on undocumented /v2/users/invitations; both Go r
+- CHANGED apis.alfaview.com POST /v2/rooms — RoomCreate.permissions exposes participantId namespace collision with RoomPermissions.participantId
+- CHANGED apis.alfaview.com PATCH /v2/rooms/{id} — RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
+- CHANGED apis.alfaview.com POST /v2/meetings — second meeting-scoped bulk credential-minting path (guestLinks/groupLinks arrays with caller-supplied permissionGroupId); three distinct issuance routes with call
+- CHANGED apis.alfaview.com POST /v2/rooms/{roomId}/permissions (CreatePermissions) — BOLA write with polymorphic participantId (user ID / guest link ID / group link ID) granting admin+promote; scope only in pa
+- CHANGED apis.alfaview.com/v2/auth/api-key — 4th unauthenticated credential endpoint (HEAD→405 allow:POST, OPTIONS→405/19B text/plain); declares unique 403 account-status tier
+- CHANGED test.alfaview.com: alfacheck v483102 (4 platforms) unsigned; index page no sha256/signatures — supply-chain hardening absent across releases
+- CHANGED app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8
+- CHANGED apis.alfaview.com/v2/docs/openapi.json stable at 174787B (MD5 06231fad), declares components.securitySchemes.accessToken (bearerFormat: opaque) + per-op security on 53/57 ops — first auth declaration 
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — fabricated client_id accepted on POST-body and Basic channels (200 {"active":false}); token_endpoint_auth_methods advertises client_secret_basic
+- CHANGED CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.
+- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain

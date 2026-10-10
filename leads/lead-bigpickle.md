@@ -8925,3 +8925,8 @@ testability: PASSIVE only until authorized
 [RISK] alfaview: 42. No delta in 45+ cycles across a fully-enumerated 55-host inventory; two high-trust chains (introspect 94, CreatePermissions 80) persist but remain HUMAN-gated on a self-owned token; passive-only E[findings]≈0. Residual program risk concentrated in (a) the sso introspect opaque-token client-auth bypass if a token leaks, and (b) the company-wide credential-bearing link lists (`/v2/group-links`, max 500) behind a single token — both unconfirmed on live data until the authorized session is run.
 ## 2026-10-10 02:31:35 UTC [target] (model bigpickle)
 ## 2026-10-10 08:55:09 UTC [target] (model bigpickle)
+## 2026-10-10 14:54:13 UTC [target] (model bigpickle)
+[PRIO] unchanged. Top: sso /oauth2/introspect 9.40 > /v2/guest-links 8.85 > GraphQL adminSwitchCompany 8.60 > CreatePermissions 8.05.
+[NEXT] (all gated on a human-provided session)
+[LEARN] Procedural: triage pipeline is failing — 91/223 runs contain `UnknownError` (server errors); last successful verdict was triage/run-2026-09-24-17-56.md. Validation has not run for ~2 weeks.
+[RISK] alfaview: 88/100 (latest hypotheses artifact) — unchanged; complexity flat, production APIs token-gated.

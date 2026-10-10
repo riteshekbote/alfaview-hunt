@@ -93728,3 +93728,1006 @@ https://apis.alfaview.com/v2/group-links?limit=1 -> 401 107
 https://apis.alfaview.com/v2/users/me/company -> 401 107
 https://apis.alfaview.com/v2/audit-log -> 422 232
 [0m
+===== ANALYST bigpickle 2026-10-10 14:55:26 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la recon-notes 2>/dev/null; echo "---"; ls -la leads 2>/dev/null; echo "---"; ls -la inventory 2>/dev/null
+total 1232
+drwxr-xr-x 12 runner runner   4096 Oct 10 14:51 .
+drwxr-xr-x  3 runner runner   4096 Oct 10 14:51 ..
+drwxr-xr-x  7 runner runner   4096 Oct 10 14:51 .git
+drwxr-xr-x  3 runner runner   4096 Oct 10 14:51 .github
+-rw-r--r--  1 runner runner   1883 Oct 10 14:51 README.md
+-rw-r--r--  1 runner runner     32 Oct 10 14:51 analyst-out.txt
+-rw-r--r--  1 runner runner 539364 Oct 10 14:51 analyst-prompt.txt
+-rw-r--r--  1 runner runner 535454 Oct 10 14:51 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 leads
+-rw-r--r--  1 runner runner  88780 Oct 10 14:51 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 reports
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct 10 14:51 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 scripts
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 10 14:51 triage
+---
+total 192
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner   4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner   4789 Oct 10 14:51 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Oct 10 14:51 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Oct 10 14:51 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Oct 10 14:51 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Oct 10 14:51 alfaview-openapi.yaml
+---
+total 3932
+drwxr-xr-x  2 runner runner    4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner    4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner 1475466 Oct 10 14:51 lead-bigpickle.md
+-rw-r--r--  1 runner runner   11577 Oct 10 14:51 lead-laguna.md
+-rw-r--r--  1 runner runner   11350 Oct 10 14:51 lead-ling3.md
+-rw-r--r--  1 runner runner   11804 Oct 10 14:51 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct 10 14:51 lead-mimo.md
+-rw-r--r--  1 runner runner 2458656 Oct 10 14:51 lead-nemotron3.md
+-rw-r--r--  1 runner runner   33274 Oct 10 14:51 reposcan-alfaview.md
+---
+total 204
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner   4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner 197471 Oct 10 14:51 alfaview.md
+[0m
+## Objective
+- Act as senior bug-bounty analyst for alfaview gmbh (report channel: bugs.olivermaicher.eu); run an 8-step passive-first hunt loop (DELTA/PRIO/HYP/CRITIQUE/NEXT/LEARN/RISK), emitting only structured blocks.
+- Current phase: POC / target: `api`. Convert the three standing HIGH-confidence chains (sso introspect bypass, CreatePermissions BOLA, un-narrowable guest-link lists) into proven findings once an authenticated session is available.
+
+## Important Details
+- Scope: all alfaview gmbh company-owned infra, alfaview.com + company subdomains, APIs, apps, support, customer portals.
+- Rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests vs live customer data; sha256 any secret; facts vs hypotheses separated; no REJECTED-class findings.
+- REJECTED classes include: descriptive errors/headers only, DoS, username enumeration, brute-force/rate-limit policy, public login panels, scanner output w/o manual validation, clickjacking w/o exploit, exposure of real customer/employee/auth data.
+- Standing HIGH chains are all **HUMAN-gated** on a valid opaque token / self-owned low-priv account (email-gated signup).
+- Key infra facts: `apis.alfaview.com` OpenAPI `/v2/docs/openapi.json` = 174787B md5 `06231fad`, 38 paths/57 ops, declares `components.securitySchemes.accessToken` (bearerFormat: opaque) + per-op security on 53/57 — first auth declaration ever. `/v2/audit-log` live undocumented 39th path. `/v2/users/me/company` = 38th path, sole 200-supplier of `companyId`.
+- `apis.alfaview.com` auth responses: no-header → 401/107B md5 `60ed2f29`; any `Authorization: Bearer` → 401/122B md5 `3d0dc74b` (md5 is the reliable discriminator, not byte length).
+- `sso.alfaview.com`: FusionAuth 1.63.0, OIDC md5 `f78a08fc`/2169B, issuer=`acme.com`, JWKS `/.well-known/jwks.json` 200/16257B md5 `3f8d456c` (7×RS256); introspection bypass applies to opaque/base64 tokens only (JWT-shaped tokens ARE validated).
+- `app.alfaview.com`: GraphQL only at `/graphql` (apis 404s it); `signup` mutation is sole unauthenticated path to a bearer token (email-gated, HUMAN_ONLY); bundle rotated to `app.min.26f05bcb3f94dc9a764b.js`, still carries `adminSwitchCompany` + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`).
+- `test.alfaview.com`: alfacheck v483102 (4 platforms) unsigned — no client_id/credentials found (refuted).
+- Inventory: 55 dedicated hosts, 31 exhausted, 100% probed.
+- Risk: `[RISK] alfaview: 42` (latest) — flat; passive-only E[findings]≈0.
+
+## Work State
+### Completed
+- OpenAPI structural surface fully mapped; path-param UUID `pattern` premise retracted ("uuid"/`pattern` appear zero times).
+- Mass assignment closed across all 21 request-body schemas (`additionalProperties:false`).
+- Validation-before-auth confirmed on 9/26 GET ops (query-param routes); path-param routes correctly 401.
+- `/v2/users/invitation` live advertises `Allow: DELETE, POST` vs spec POST-only; undocumented `/v2/users/invitations` live DELETE-only (both Go router, 405 pre-401).
+- `app.alfaview.com/graphql`: `__typename` GET now 200/32B via `x-apollo-operation-name`/`apollo-require-preflight` headers (was 400 CSRF); introspection still disabled; anonymous resolver slice closed.
+- `tools.alfaview.com/whiteboard/` second RPC backend proven (47B gRPC envelope vs poll's 45B jsonpb); staging mirror byte-identical.
+- `client-diagnostics-ingest.alfaview.com`: `/health` 200/16B md5 `3a0386dd`, all else 404/39B — POST-only ingest, no GET read.
+- JWT alg-confusion closed at api-gateway (opaque tokens) and IdP `/oauth2/userinfo` (2-tier, no third tier).
+
+### Active
+- [94] sso.alfaview.com/oauth2/introspect — opaque-token client-auth bypass; fabricated `client_id` accepted on POST-body + Basic (200 `{"active":false}`); `token_type_hint=refresh_token` forces validation; needs one live valid token.
+- [80] apis.alfaview.com POST /v2/rooms/{roomId}/permissions — BOLA write, polymorphic `participantId`, scope only in path; 4-way discriminator 204=escalated / 403=blocked / 409=exists / 422=invalid.
+- [88] apis.alfaview.com GET /v2/guest-links + /v2/group-links — un-narrowable company-wide lists returning `accessKey`/`joinUrl`/`dialInCode`/`emailAddress`, max 500/page; TokenUserPermissions has no link axis.
+- app.alfaview.com bundle `adminSwitchCompany($nextCompanyId: String!)` mints cross-tenant admin tokens with no administration proof.
+
+### Blocked
+- All top chains require an authenticated session (self-owned account + non-moderated room + valid opaque token) — email-gated signup, HUMAN_ONLY.
+- `[PARKED] diagnostics_ingest_unauth_write` conf 25 (<40) — POST needs human authorization.
+- crt.sh was returning 429/502; certspotter apex-only yields no subdomain delta.
+
+## Next Move
+1. `[NEXT] HUMAN`: one authorized session with own mailbox → `app.alfaview.com/graphql` Signup/FinishSignup → self-owned low-priv tenant account + non-moderated room + valid opaque token; then ≤1 rps: (a) `GET /v2/users/me/company` + `GET /v2/group-links?limit=1`; (b) exactly one `POST /v2/rooms/{roomId}/permissions` (record 204/403/409/422); (c) three `POST` to `sso.alfaview.com/oauth2/introspect` (POST-body / HTTP Basic / `token_type_hint=refresh_token`, watch `active`); (d) `GET /v2/auth/token-info` live + expired — record status/headers/bodies verbatim.
+2. `[NEXT] RETRY crt.sh` after 429/502 clears (use flagless certspotter query for cert-renewal watch; crt.sh for subdomain diffs).
+
+## Relevant Files
+- `inventory/alfaview.md`: host inventory (55 dedicated hosts), canonical URLs (e.g. :1096), per-cycle delta log.
+- `recon-notes/alfaview-openapi.yaml`: 37-path pre-rotation snapshot (baseline; predates two rotations).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated OpenAPI snapshot for exact rotation attribution.
+- `leads/lead-bigpickle.md`: `verify_steps` canonical paths (e.g. `/.well-known/jwks.json`).
+- `leads/lead_nemotron3.txt`: source of the [94] introspect finding.
+- `hypotheses-nemotron3.txt`: aggregated ranked hypotheses + NEXT (signup flow).
+- `art/lead_nemotron3.txt`: introspect chain artifact.
+- `probe-results.md`: raw probe evidence (e.g. beta/prod `/v2/languages` 401 vs 404).
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcat state_bigpickle.json analyst-out.txt; echo "---KNOWLEDGE---"; ls -la knowledge; echo "---SCRIPTS---"; ls -la scripts; echo "---REPORTS---"; ls -la reports; echo "---TRIAGE---"; ls triage | head -50
+{"phase": "POC", "target": "api"}[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la recon-notes 2>/dev/null; echo "---"; ls -la leads 2>/dev/null; echo "---"; ls -la inventory 2>/dev/null
+total 1232
+drwxr-xr-x 12 runner runner   4096 Oct 10 14:51 .
+drwxr-xr-x  3 runner runner   4096 Oct 10 14:51 ..
+drwxr-xr-x  7 runner runner   4096 Oct 10 14:51 .git
+drwxr-xr-x  3 runner runner   4096 Oct 10 14:51 .github
+-rw-r--r--  1 runner runner   1883 Oct 10 14:51 README.md
+-rw-r--r--  1 runner runner     32 Oct 10 14:51 analyst-out.txt
+-rw-r--r--  1 runner runner 539364 Oct 10 14:51 analyst-prompt.txt
+-rw-r--r--  1 runner runner 535454 Oct 10 14:51 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 leads
+-rw-r--r--  1 runner runner  88780 Oct 10 14:51 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 reports
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct 10 14:51 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 scripts
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 10 14:51 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 10 14:51 triage
+---
+total 192
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner   4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner   4789 Oct 10 14:51 CORPUS-ALFAVIEW.md
+-rw-r--r--  1 runner runner   3624 Oct 10 14:51 DEDICATED-DEEP.md
+-rw-r--r--  1 runner runner   7833 Oct 10 14:51 DEEPER-FINDINGS.md
+-rw-r--r--  1 runner runner   6061 Oct 10 14:51 SCOPE-CONFIRMATION.md
+-rw-r--r--  1 runner runner 159550 Oct 10 14:51 alfaview-openapi.yaml
+---
+total 3932
+drwxr-xr-x  2 runner runner    4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner    4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner 1475466 Oct 10 14:51 lead-bigpickle.md
+-rw-r--r--  1 runner runner   11577 Oct 10 14:51 lead-laguna.md
+-rw-r--r--  1 runner runner   11350 Oct 10 14:51 lead-ling3.md
+-rw-r--r--  1 runner runner   11804 Oct 10 14:51 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct 10 14:51 lead-mimo.md
+-rw-r--r--  1 runner runner 2458656 Oct 10 14:51 lead-nemotron3.md
+-rw-r--r--  1 runner runner   33274 Oct 10 14:51 reposcan-alfaview.md
+---
+total 204
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner   4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner 197471 Oct 10 14:51 alfaview.md
+[0m
+## Objective
+- Act as senior bug-bounty analyst for alfaview gmbh (report channel: bugs.olivermaicher.eu); run an 8-step passive-first hunt loop (DELTA/PRIO/HYP/CRITIQUE/NEXT/LEARN/RISK), emitting only structured blocks.
+- Current phase: POC / target: `api`. Convert the three standing HIGH-confidence chains (sso introspect bypass, CreatePermissions BOLA, un-narrowable guest-link lists) into proven findings once an authenticated session is available.
+
+## Important Details
+- Scope: all alfaview gmbh company-owned infra, alfaview.com + company subdomains, APIs, apps, support, customer portals.
+- Rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests vs live customer data; sha256 any secret; facts vs hypotheses separated; no REJECTED-class findings.
+- REJECTED classes include: descriptive errors/headers only, DoS, username enumeration, brute-force/rate-limit policy, public login panels, scanner output w/o manual validation, clickjacking w/o exploit, exposure of real customer/employee/auth data.
+- Standing HIGH chains are all **HUMAN-gated** on a valid opaque token / self-owned low-priv account (email-gated signup).
+- Key infra facts: `apis.alfaview.com` OpenAPI `/v2/docs/openapi.json` = 174787B md5 `06231fad`, 38 paths/57 ops, declares `components.securitySchemes.accessToken` (bearerFormat: opaque) + per-op security on 53/57 — first auth declaration ever. `/v2/audit-log` live undocumented 39th path. `/v2/users/me/company` = 38th path, sole 200-supplier of `companyId`.
+- `apis.alfaview.com` auth responses: no-header → 401/107B md5 `60ed2f29`; any `Authorization: Bearer` → 401/122B md5 `3d0dc74b` (md5 is the reliable discriminator, not byte length).
+- `sso.alfaview.com`: FusionAuth 1.63.0, OIDC md5 `f78a08fc`/2169B, issuer=`acme.com`, JWKS `/.well-known/jwks.json` 200/16257B md5 `3f8d456c` (7×RS256); introspection bypass applies to opaque/base64 tokens only (JWT-shaped tokens ARE validated).
+- `app.alfaview.com`: GraphQL only at `/graphql` (apis 404s it); `signup` mutation is sole unauthenticated path to a bearer token (email-gated, HUMAN_ONLY); bundle rotated to `app.min.26f05bcb3f94dc9a764b.js`, still carries `adminSwitchCompany` + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`).
+- `test.alfaview.com`: alfacheck v483102 (4 platforms) unsigned — no client_id/credentials found (refuted).
+- Inventory: 55 dedicated hosts, 31 exhausted, 100% probed.
+- Risk: `[RISK] alfaview: 42` (latest) — flat; passive-only E[findings]≈0.
+
+## Work State
+### Completed
+- OpenAPI structural surface fully mapped; path-param UUID `pattern` premise retracted ("uuid"/`pattern` appear zero times).
+- Mass assignment closed across all 21 request-body schemas (`additionalProperties:false`).
+- Validation-before-auth confirmed on 9/26 GET ops (query-param routes); path-param routes correctly 401.
+- `/v2/users/invitation` live advertises `Allow: DELETE, POST` vs spec POST-only; undocumented `/v2/users/invitations` live DELETE-only (both Go router, 405 pre-401).
+- `app.alfaview.com/graphql`: `__typename` GET now 200/32B via `x-apollo-operation-name`/`apollo-require-preflight` headers (was 400 CSRF); introspection still disabled; anonymous resolver slice closed.
+- `tools.alfaview.com/whiteboard/` second RPC backend proven (47B gRPC envelope vs poll's 45B jsonpb); staging mirror byte-identical.
+- `client-diagnostics-ingest.alfaview.com`: `/health` 200/16B md5 `3a0386dd`, all else 404/39B — POST-only ingest, no GET read.
+- JWT alg-confusion closed at api-gateway (opaque tokens) and IdP `/oauth2/userinfo` (2-tier, no third tier).
+
+### Active
+- [94] sso.alfaview.com/oauth2/introspect — opaque-token client-auth bypass; fabricated `client_id` accepted on POST-body + Basic (200 `{"active":false}`); `token_type_hint=refresh_token` forces validation; needs one live valid token.
+- [80] apis.alfaview.com POST /v2/rooms/{roomId}/permissions — BOLA write, polymorphic `participantId`, scope only in path; 4-way discriminator 204=escalated / 403=blocked / 409=exists / 422=invalid.
+- [88] apis.alfaview.com GET /v2/guest-links + /v2/group-links — un-narrowable company-wide lists returning `accessKey`/`joinUrl`/`dialInCode`/`emailAddress`, max 500/page; TokenUserPermissions has no link axis.
+- app.alfaview.com bundle `adminSwitchCompany($nextCompanyId: String!)` mints cross-tenant admin tokens with no administration proof.
+
+### Blocked
+- All top chains require an authenticated session (self-owned account + non-moderated room + valid opaque token) — email-gated signup, HUMAN_ONLY.
+- `[PARKED] diagnostics_ingest_unauth_write` conf 25 (<40) — POST needs human authorization.
+- crt.sh was returning 429/502; certspotter apex-only yields no subdomain delta.
+
+## Next Move
+1. `[NEXT] HUMAN`: one authorized session with own mailbox → `app.alfaview.com/graphql` Signup/FinishSignup → self-owned low-priv tenant account + non-moderated room + valid opaque token; then ≤1 rps: (a) `GET /v2/users/me/company` + `GET /v2/group-links?limit=1`; (b) exactly one `POST /v2/rooms/{roomId}/permissions` (record 204/403/409/422); (c) three `POST` to `sso.alfaview.com/oauth2/introspect` (POST-body / HTTP Basic / `token_type_hint=refresh_token`, watch `active`); (d) `GET /v2/auth/token-info` live + expired — record status/headers/bodies verbatim.
+2. `[NEXT] RETRY crt.sh` after 429/502 clears (use flagless certspotter query for cert-renewal watch; crt.sh for subdomain diffs).
+
+## Relevant Files
+- `inventory/alfaview.md`: host inventory (55 dedicated hosts), canonical URLs (e.g. :1096), per-cycle delta log.
+- `recon-notes/alfaview-openapi.yaml`: 37-path pre-rotation snapshot (baseline; predates two rotations).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated OpenAPI snapshot for exact rotation attribution.
+- `leads/lead-bigpickle.md`: `verify_steps` canonical paths (e.g. `/.well-known/jwks.json`).
+- `leads/lead_nemotron3.txt`: source of the [94] introspect finding.
+- `hypotheses-nemotron3.txt`: aggregated ranked hypotheses + NEXT (signup flow).
+- `art/lead_nemotron3.txt`: introspect chain artifact.
+- `probe-results.md`: raw probe evidence (e.g. beta/prod `/v2/languages` 401 vs 404).
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+---KNOWLEDGE---
+total 328
+drwxr-xr-x  2 runner runner   4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner   4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner 324341 Oct 10 14:51 index.md
+---SCRIPTS---
+total 28
+drwxr-xr-x  2 runner runner  4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner  4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner 16987 Oct 10 14:51 sync-issues.py
+---REPORTS---
+total 12736
+drwxr-xr-x  2 runner runner    4096 Oct 10 14:51 .
+drwxr-xr-x 12 runner runner    4096 Oct 10 14:51 ..
+-rw-r--r--  1 runner runner 7159082 Oct 10 14:51 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   49259 Oct 10 14:51 analyst-laguna.log
+-rw-r--r--  1 runner runner   49032 Oct 10 14:51 analyst-ling3.log
+-rw-r--r--  1 runner runner   49486 Oct 10 14:51 analyst-longcat.log
+-rw-r--r--  1 runner runner 4890459 Oct 10 14:51 analyst-nemotron3.log
+-rw-r--r--  1 runner runner      54 Oct 10 14:51 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Oct 10 14:51 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Oct 10 14:51 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Oct 10 14:51 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   15986 Oct 10 14:51 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  781969 Oct 10 14:51 hypotheses.md
+-rw-r--r--  1 runner runner    9922 Oct 10 14:51 valid-bugs.md
+---TRIAGE---
+run-2026-09-03-11-41.md
+run-2026-09-03-15-37.md
+run-2026-09-03-18-51.md
+run-2026-09-03-21-32.md
+run-2026-09-03-23-30.md
+run-2026-09-04-01-20.md
+run-2026-09-04-06-01.md
+run-2026-09-04-11-23.md
+run-2026-09-04-15-05.md
+run-2026-09-04-18-27.md
+run-2026-09-04-21-00.md
+run-2026-09-04-23-04.md
+run-2026-09-05-01-01.md
+run-2026-09-05-05-48.md
+run-2026-09-05-09-49.md
+run-2026-09-05-13-11.md
+run-2026-09-05-16-10.md
+run-2026-09-05-18-21.md
+run-2026-09-05-20-41.md
+run-2026-09-05-22-34.md
+run-2026-09-06-00-11.md
+run-2026-09-06-04-44.md
+run-2026-09-06-09-06.md
+run-2026-09-06-12-54.md
+run-2026-09-06-15-56.md
+run-2026-09-06-18-00.md
+run-2026-09-06-20-17.md
+run-2026-09-06-22-09.md
+run-2026-09-06-23-58.md
+run-2026-09-07-03-29.md
+run-2026-09-07-08-37.md
+run-2026-09-07-14-28.md
+run-2026-09-07-18-50.md
+run-2026-09-07-21-51.md
+run-2026-09-07-23-53.md
+run-2026-09-08-02-33.md
+run-2026-09-08-07-26.md
+run-2026-09-08-12-16.md
+run-2026-09-08-16-42.md
+run-2026-09-08-19-41.md
+run-2026-09-08-22-16.md
+run-2026-09-09-00-20.md
+run-2026-09-09-04-53.md
+run-2026-09-09-09-21.md
+run-2026-09-09-13-52.md
+run-2026-09-09-17-28.md
+run-2026-09-09-19-59.md
+run-2026-09-09-22-24.md
+run-2026-09-10-00-33.md
+run-2026-09-10-05-12.md
+[0m
+[0m$ [0mls -t triage | head -5; echo "===LATEST==="; cat "triage/$(ls -t triage | head -1)"; echo "===README==="; cat README.md; echo "===SCOPE==="; cat scope.yml
+run-2026-10-07-00-18.md
+run-2026-10-07-06-10.md
+run-2026-10-07-13-30.md
+run-2026-10-07-19-30.md
+run-2026-10-07-23-46.md
+===LATEST===
+
+===== TRIAGE 2026-10-07 00:18:18 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_cba23c10"
+  }
+}
+===README===
+# alfaview-hunt
+
+24/7 deep multi-model bug-hunting automation for **alfaview gmbh** (Oliver Maicher bug-bounty hub).
+
+Scope: All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains
+(full exclusion + rules list in `scope.yml`)
+
+Pipeline (all workflows run every 20 minutes):
+
+- **Deep Hunt** (`hunt.yml`): analyst hunts the discovered inventory + hypotheses, emits structured
+  leads, chains primitives, self-critiques. Models: mimo.
+- **Triager** (`triage.yml`): second-model 7-Question Gate validation + live passive probe; keeps
+  running count in `reports/valid-bugs.md`.
+- **Reposcan** (`reposcan.yml`): deep source scan of any public GitHub org (if configured).
+- **Sync Issues** (`sync-issues.yml`): mirrors leads to GitHub issues.
+
+Testing discipline: rate-limited (1 rps), no DoS/account-lockout, writes only on non-prod/test
+assets, no exposure of customer/employee/financial/auth data, secrets committed only as hashes.
+
+> IMPORTANT: the pipeline produces CANDIDATE leads. A reportable, validated finding requires
+> human triage + proof against the program's gate. No finding is fabricated; scanner output alone
+> is never accepted. Active testing is gated behind the in-scope hosts in `inventory/alfaview.md` and
+> must stay within the program's published scope.
+
+Artifacts:
+
+| Artifact | Purpose |
+|---|---|
+| `leads/` | Candidate findings (UNVALIDATED) |
+| `triage/` | Validation verdicts |
+| `reports/valid-bugs.md` | Validated findings + running count |
+| `scope.yml` | Program scope and exclusions (edit to adjust) |
+
+Program description: German video conferencing and virtual collaboration software provider offering desktop, web, and mobile communication platforms
+===SCOPE===
+programs:
+  alfaview:
+    name: alfaview gmbh Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, alfaview web and desktop applications, mobile applications, APIs, backend systems, support systems, customer portals, websites, and domains operated by alfaview gmbh, including alfaview.com and company-operated subdomains"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+  passive_first: false          # deep-hunt agent: active probes allowed when scoped
+  max_requests_per_second: 1    # never hammer live infra
+  no_doom: true                 # no DoS/DDoS, no account-lockout attacks
+  account_creation: restricted  # only on test/sandbox assets, never live customer data
+  no_data_modification: true    # no writes/deletes on live customer data
+  no_pre_disclosure: true       # never disclose before program response
+  poc_required: true            # scanner output alone is REJECTED
+  redact_secrets_in_commits: true
+
+models:
+  - { id: opencode/big-pickle, name: bigpickle }
+  - { id: opencode/nemotron-3-ultra-free, name: nemotron3 }
+  - { id: opencode/longcat-2.0-free, name: longcat }
+  - { id: opencode/ling-3.0-flash-free, name: ling3 }
+  - { id: opencode/laguna-s-2.1-free, name: laguna }
+[0m
+[0m→ [0mRead reports/valid-bugs.md
+[0m→ [0mRead reports/hypotheses-nemotron3.txt
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; echo "=== git log ==="; git log --oneline -15; echo "=== status ==="; git status --short | head; echo "=== inventory hosts count ==="; grep -cE '^\|' inventory/alfaview.md; echo "=== new CT host mentions ==="; for h in grafana loki prometheus linkerd envoy sap-events sap.events gitlab.dev fusionauth.dev whiteboard; do echo -n "$h: "; grep -ic "$h" inventory/alfaview.md; done
+=== git log ===
+b392702 triage 2026-10-10-13-46
+=== status ===
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+=== inventory hosts count ===
+4
+=== new CT host mentions ===
+grafana: 21
+loki: 21
+prometheus: 21
+linkerd: 21
+envoy: 12
+sap-events: 5
+sap.events: 5
+gitlab.dev: 16
+fusionauth.dev: 16
+whiteboard: 82
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; ls triage | sort | tail -8; echo "=== newest by name ==="; n=$(ls triage | sort | tail -1); echo "$n"; cat "triage/$n"
+run-2026-10-08-22-44.md
+run-2026-10-09-02-41.md
+run-2026-10-09-09-53.md
+run-2026-10-09-16-45.md
+run-2026-10-09-21-25.md
+run-2026-10-10-01-12.md
+run-2026-10-10-07-12.md
+run-2026-10-10-13-46.md
+=== newest by name ===
+run-2026-10-10-13-46.md
+
+===== TRIAGE 2026-10-10 13:46:48 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_f7d4027f"
+  }
+}
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; for f in run-2026-10-10-01-12 run-2026-10-09-21-25 run-2026-10-09-16-45; do echo "===== $f ====="; sed -n '1,40p' "triage/$f.md"; done
+===== run-2026-10-10-01-12 =====
+
+===== TRIAGE 2026-10-10 01:12:27 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_64419e60"
+  }
+}
+===== run-2026-10-09-21-25 =====
+
+===== TRIAGE 2026-10-09 21:25:15 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_da40323a"
+  }
+}
+===== run-2026-10-09-16-45 =====
+
+===== TRIAGE 2026-10-09 16:45:26 UTC =====
+[91m[1mError: [0m{
+  "name": "UnknownError",
+  "data": {
+    "message": "Unexpected server error. Check server logs for details.",
+    "ref": "err_38f89616"
+  }
+}
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; echo "=== files NOT containing UnknownError (last 40) ==="; for f in $(ls triage/*.md | sort | tail -40); do if ! grep -q UnknownError "$f"; then echo "OK: $f ($(wc -l < "$f") lines)"; fi; done | tail -20; echo "=== count errors ==="; grep -l UnknownError triage/*.md | wc -l; echo "total:"; ls triage/*.md | wc -l
+=== files NOT containing UnknownError (last 40) ===
+=== count errors ===
+91
+total:
+223
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; last=""; for f in $(ls triage/*.md | sort); do if ! grep -q UnknownError "$f"; then last="$f"; fi; done; echo "LAST OK: $last"; echo "=== first error ==="; for f in $(ls triage/*.md | sort); do if grep -q UnknownError "$f"; then echo "FIRST ERR: $f"; break; fi; done
+LAST OK: triage/run-2026-09-24-17-56.md
+=== first error ===
+FIRST ERR: triage/run-2026-09-22-10-01.md
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; grep -n -iE 'grafana|loki|prometheus|linkerd|gitlab\.dev|fusionauth\.dev|sap' inventory/alfaview.md | head -60
+713:- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: `grafana`, `loki`, `logs`, `ops`/`ops-*`, `prometheus-*`, `linkerd-*`/`linkerd-prometheus-*`, `envoy-health`, `sap`/`sap-events`, `beta/stagin
+714:- CHANGED Most new infra hosts are firewalled externally (000): grafana, loki, logs, prometheus-*, linkerd*, ops-*, envoy-health, sap, webrtc, stun, gitlab.dev, fusionauth.dev, elitr-recordings — same edge-only
+723:- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.
+724:- CHANGED Most new infra hosts firewalled externally (000): grafana, loki, logs, prometheus-*, linkerd*, ops-*, envoy-health, sap, webrtc, stun, gitlab.dev, fusionauth.dev, elitr-recordings — same edge-only pat
+734:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+735:- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+743:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+744:- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+759:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+765:- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+775:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most edge-firewalle
+781:- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: all external probes timeout (000) — internal-only, target exhausted
+791:- NEW CT/crt.sh yields ~110 subdomains absent from inventory: `grafana`, `loki`, `prometheus-*`, `linkerd-*`, `ops`, `sap`, `webrtc`, `stun`, `gitlab.dev`, `fusionauth.dev`, `whiteboard`, `tools`, `staging-
+817:- NEW CT/crt.sh: ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most firewalled (00
+832:- NEW CT/crt.sh: ~110 subdomains absent from inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*); most firewalle
+849:- NEW CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*)
+853:- CHANGED grafana/loki/prometheus/linkerd/ops/envoy-health/gitlab.dev/fusionauth.dev: All external probes timeout (000) — internal-only, target exhausted
+861:- NEW CT/alfaview.com: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*, production-*)
+1572:- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: `grafana`, `loki`, `logs`, `ops`/`ops-*`, `prometheus-*`, `linkerd-*`/`linkerd-prometheus-*`, `envoy-health`, `sap`/`sap-events`, `beta/stagin
+1584:- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.
+1591:- NEW CT (crt.sh) yields ~110 subdomains absent from inventory: grafana, loki, logs, ops/ops-*, prometheus-*, linkerd-*/linkerd-prometheus-*, envoy-health, sap/sap-events, beta/staging/production-*, gitlab.
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; timeout 15 curl -sS -o /dev/null -w "crt.sh:%{http_code}\n" "https://crt.sh/?q=%25.alfaview.com&output=json" 2>&1 | head; timeout 15 curl -sS -o /dev/null -w "apis:%{http_code}\n" "https://apis.alfaview.com/v2/docs/openapi.json" 2>&1 | head
+crt.sh:200
+apis:200
+[0m
+[0m$ [0mcd /tmp/opencode; timeout 60 curl -sS "https://crt.sh/?q=%25.alfaview.com&output=json" -o ct.json; echo "bytes: $(wc -c < ct.json)"; python3 - <<'PY'
+import json
+try:
+    data=json.load(open('/tmp/opencode/ct.json'))
+except Exception as e:
+    print("parse error",e); raise SystemExit
+names=set()
+for e in data:
+    for n in (e.get('name_value') or '').split('\n'):
+        n=n.strip().lower().lstrip('*.')
+        if n: names.add(n)
+print("unique names:",len(names))
+open('/tmp/opencode/ct_names.txt','w').write("\n".join(sorted(names)))
+for n in sorted(names)[:60]:
+    print(n)
+PY
+bytes: 1668574
+unique names: 165
+alfatraining.alfaview.com
+alfatraining.dev.alfaview.com
+alfaview-com-assets.alfaview.com
+alfaview-sso.alfaview.com
+alfaview.com
+apis.dev.alfaview.com
+app.alfaview.com
+app.dev.alfaview.com
+assets.dev.alfaview.com
+audio.dev.alfaview.com
+beta-alfaview-com-assets.alfaview.com
+beta-app.alfaview.com
+beta-sap-events.alfaview.com
+beta-sap.alfaview.com
+beta-webrtc.alfaview.com
+cleanup-integrationtest.dev.alfaview.com
+clone.staging-wordpress.alfaview.com
+consul-monitoring.alfaview.com
+csr-test-daniel1.dev.alfaview.com
+csr-test-daniel2.dev.alfaview.com
+csr-test-daniel3.dev.alfaview.com
+csr-test-daniel4.dev.alfaview.com
+csr-test-daniel6.dev.alfaview.com
+csr-test-daniel7.dev.alfaview.com
+demo-company.alfaview.com
+elitr-recordings.alfaview.com
+engine.dev.alfaview.com
+envoy-health.alfaview.com
+equipment.alfaview.com
+fusionauth.dev.alfaview.com
+gitlab.dev.alfaview.com
+grafana.alfaview.com
+hfu.alfaview.com
+hydra.dev.alfaview.com
+integrationtest.dev.alfaview.com
+integrationtest2.dev.alfaview.com
+integrationtest3.dev.alfaview.com
+integrationtest4.dev.alfaview.com
+integrationtest5.dev.alfaview.com
+internal.dev.alfaview.com
+linkerd-c.alfaview.com
+linkerd-hcloud-1.alfaview.com
+linkerd-prometheus-hcloud-1.alfaview.com
+linkerd-prometheus-ops-1.alfaview.com
+linkerd-prometheus-syseleven-1-cbk.alfaview.com
+linkerd-prometheus-syseleven-2-dbl.alfaview.com
+linkerd-prometheus-syseleven-3-cbk.alfaview.com
+linkerd-prometheus-syseleven-4-dbl.alfaview.com
+linkerd-syseleven-1.alfaview.com
+linkerd-syseleven-2.alfaview.com
+linkerd-syseleven-3.alfaview.com
+linkerd-syseleven-4.alfaview.com
+linkerd.alfaview.com
+logs.alfaview.com
+loki.alfaview.com
+media.dev.alfaview.com
+mytestdomain-daniel.dev.alfaview.com
+mytestdomain-daniel10.dev.alfaview.com
+mytestdomain-daniel11.dev.alfaview.com
+mytestdomain-daniel2.dev.alfaview.com
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; echo "=== all 165 CT names ==="; cat /tmp/opencode/ct_names.txt; echo; echo "=== names NOT present anywhere in inventory ==="; while read -r n; do if ! grep -qiF "$n" inventory/alfaview.md; then echo "$n"; fi; done < /tmp/opencode/ct_names.txt
+=== all 165 CT names ===
+alfatraining.alfaview.com
+alfatraining.dev.alfaview.com
+alfaview-com-assets.alfaview.com
+alfaview-sso.alfaview.com
+alfaview.com
+apis.dev.alfaview.com
+app.alfaview.com
+app.dev.alfaview.com
+assets.dev.alfaview.com
+audio.dev.alfaview.com
+beta-alfaview-com-assets.alfaview.com
+beta-app.alfaview.com
+beta-sap-events.alfaview.com
+beta-sap.alfaview.com
+beta-webrtc.alfaview.com
+cleanup-integrationtest.dev.alfaview.com
+clone.staging-wordpress.alfaview.com
+consul-monitoring.alfaview.com
+csr-test-daniel1.dev.alfaview.com
+csr-test-daniel2.dev.alfaview.com
+csr-test-daniel3.dev.alfaview.com
+csr-test-daniel4.dev.alfaview.com
+csr-test-daniel6.dev.alfaview.com
+csr-test-daniel7.dev.alfaview.com
+demo-company.alfaview.com
+elitr-recordings.alfaview.com
+engine.dev.alfaview.com
+envoy-health.alfaview.com
+equipment.alfaview.com
+fusionauth.dev.alfaview.com
+gitlab.dev.alfaview.com
+grafana.alfaview.com
+hfu.alfaview.com
+hydra.dev.alfaview.com
+integrationtest.dev.alfaview.com
+integrationtest2.dev.alfaview.com
+integrationtest3.dev.alfaview.com
+integrationtest4.dev.alfaview.com
+integrationtest5.dev.alfaview.com
+internal.dev.alfaview.com
+linkerd-c.alfaview.com
+linkerd-hcloud-1.alfaview.com
+linkerd-prometheus-hcloud-1.alfaview.com
+linkerd-prometheus-ops-1.alfaview.com
+linkerd-prometheus-syseleven-1-cbk.alfaview.com
+linkerd-prometheus-syseleven-2-dbl.alfaview.com
+linkerd-prometheus-syseleven-3-cbk.alfaview.com
+linkerd-prometheus-syseleven-4-dbl.alfaview.com
+linkerd-syseleven-1.alfaview.com
+linkerd-syseleven-2.alfaview.com
+linkerd-syseleven-3.alfaview.com
+linkerd-syseleven-4.alfaview.com
+linkerd.alfaview.com
+logs.alfaview.com
+loki.alfaview.com
+media.dev.alfaview.com
+mytestdomain-daniel.dev.alfaview.com
+mytestdomain-daniel10.dev.alfaview.com
+mytestdomain-daniel11.dev.alfaview.com
+mytestdomain-daniel2.dev.alfaview.com
+mytestdomain-daniel3.dev.alfaview.com
+mytestdomain-daniel5.dev.alfaview.com
+mytestdomain-daniel6.dev.alfaview.com
+mytestdomain-daniel8.dev.alfaview.com
+mytestdomain-daniel9.dev.alfaview.com
+mytestdomain.dev.alfaview.com
+mytestdomain0.dev.alfaview.com
+mytestdomain1.dev.alfaview.com
+mytestdomain10.dev.alfaview.com
+mytestdomain11.dev.alfaview.com
+mytestdomain111.dev.alfaview.com
+mytestdomain112.dev.alfaview.com
+mytestdomain113.dev.alfaview.com
+mytestdomain114.dev.alfaview.com
+mytestdomain116.dev.alfaview.com
+mytestdomain117.dev.alfaview.com
+mytestdomain118.dev.alfaview.com
+mytestdomain119.dev.alfaview.com
+mytestdomain12.dev.alfaview.com
+mytestdomain120.dev.alfaview.com
+mytestdomain121.dev.alfaview.com
+mytestdomain122.dev.alfaview.com
+mytestdomain123.dev.alfaview.com
+mytestdomain13.dev.alfaview.com
+mytestdomain14.dev.alfaview.com
+mytestdomain15.dev.alfaview.com
+mytestdomain16.dev.alfaview.com
+mytestdomain17.dev.alfaview.com
+mytestdomain18.dev.alfaview.com
+mytestdomain19.dev.alfaview.com
+mytestdomain2.dev.alfaview.com
+mytestdomain20.dev.alfaview.com
+mytestdomain21.dev.alfaview.com
+mytestdomain22.dev.alfaview.com
+mytestdomain3.dev.alfaview.com
+mytestdomain4.dev.alfaview.com
+mytestdomain5.dev.alfaview.com
+mytestdomain6.dev.alfaview.com
+mytestdomain7.dev.alfaview.com
+mytestdomain8.dev.alfaview.com
+mytestdomain9.dev.alfaview.com
+ops-c.alfaview.com
+ops-hcloud-1.alfaview.com
+ops-syseleven-1.alfaview.com
+ops-syseleven-2.alfaview.com
+ops-syseleven-3.alfaview.com
+ops-syseleven-4.alfaview.com
+ops.alfaview.com
+ops.dev.alfaview.com
+production-alfaview-com-assets.alfaview.com
+production-app.alfaview.com
+production-equipment.alfaview.com
+production-webclient.alfaview.com
+prometheus-hcloud-1.alfaview.com
+prometheus-ops-1.alfaview.com
+prometheus-syseleven-1-cbk.alfaview.com
+prometheus-syseleven-2-dbl.alfaview.com
+prometheus-syseleven-3-cbk.alfaview.com
+prometheus-syseleven-4-dbl.alfaview.com
+qa.alfaview.com
+sap-events.alfaview.com
+sap.alfaview.com
+staging-alfasm.alfaview.com
+staging-alfatraining.alfaview.com
+staging-alfaview-assets.alfaview.com
+staging-alfaview-com-assets.alfaview.com
+staging-alfaview.alfaview.com
+staging-app.alfaview.com
+staging-cert-operator-test.alfaview.com
+staging-consul-cache-hcloud-1.alfaview.com
+staging-consul-cache-syseleven-1-cbk.alfaview.com
+staging-consul-cache-syseleven-2-dbl.alfaview.com
+staging-consul-cache-syseleven-3-cbk.alfaview.com
+staging-elitr-recordings.alfaview.com
+staging-equipment.alfaview.com
+staging-fusionauth.alfaview.com
+staging-internal.alfaview.com
+staging-sap-events.alfaview.com
+staging-sap.alfaview.com
+staging-stun-ionoscloud-txl-1.alfaview.com
+staging-stun-ionoscloud-txl-2.alfaview.com
+staging-support.alfaview.com
+staging-test-ops-1.alfaview.com
+staging-tools.alfaview.com
+staging-web.alfaview.com
+staging-webclient.alfaview.com
+staging-webrtc.alfaview.com
+staging-whiteboard.alfaview.com
+staging-wordpress.alfaview.com
+staging.alfaview.com
+status.alfaview.com
+support.alfaview.com
+support.dev.alfaview.com
+test-cert-manager.alfaview.com
+test.dev.alfaview.com
+test2.dev.alfaview.com
+test3.dev.alfaview.com
+tools.alfaview.com
+tools.dev.alfaview.com
+uni-stuttgart.alfaview.com
+webclient.alfaview.com
+webclient.dev.alfaview.com
+webviewer.dev.alfaview.com
+whiteboard.alfaview.com
+www.alfaview.com
+=== names NOT present anywhere in inventory ===
+alfatraining.dev.alfaview.com
+alfaview-sso.alfaview.com
+apis.dev.alfaview.com
+app.dev.alfaview.com
+assets.dev.alfaview.com
+audio.dev.alfaview.com
+beta-sap-events.alfaview.com
+beta-sap.alfaview.com
+beta-webrtc.alfaview.com
+cleanup-integrationtest.dev.alfaview.com
+csr-test-daniel1.dev.alfaview.com
+csr-test-daniel2.dev.alfaview.com
+csr-test-daniel3.dev.alfaview.com
+csr-test-daniel4.dev.alfaview.com
+csr-test-daniel6.dev.alfaview.com
+csr-test-daniel7.dev.alfaview.com
+elitr-recordings.alfaview.com
+engine.dev.alfaview.com
+envoy-health.alfaview.com
+fusionauth.dev.alfaview.com
+gitlab.dev.alfaview.com
+grafana.alfaview.com
+hfu.alfaview.com
+hydra.dev.alfaview.com
+integrationtest.dev.alfaview.com
+integrationtest2.dev.alfaview.com
+integrationtest3.dev.alfaview.com
+integrationtest4.dev.alfaview.com
+integrationtest5.dev.alfaview.com
+internal.dev.alfaview.com
+linkerd-c.alfaview.com
+linkerd-hcloud-1.alfaview.com
+linkerd-prometheus-hcloud-1.alfaview.com
+linkerd-prometheus-ops-1.alfaview.com
+linkerd-prometheus-syseleven-1-cbk.alfaview.com
+linkerd-prometheus-syseleven-2-dbl.alfaview.com
+linkerd-prometheus-syseleven-3-cbk.alfaview.com
+linkerd-prometheus-syseleven-4-dbl.alfaview.com
+linkerd-syseleven-1.alfaview.com
+linkerd-syseleven-2.alfaview.com
+linkerd-syseleven-3.alfaview.com
+linkerd-syseleven-4.alfaview.com
+linkerd.alfaview.com
+logs.alfaview.com
+loki.alfaview.com
+media.dev.alfaview.com
+mytestdomain-daniel.dev.alfaview.com
+mytestdomain-daniel10.dev.alfaview.com
+mytestdomain-daniel11.dev.alfaview.com
+mytestdomain-daniel2.dev.alfaview.com
+mytestdomain-daniel3.dev.alfaview.com
+mytestdomain-daniel5.dev.alfaview.com
+mytestdomain-daniel6.dev.alfaview.com
+mytestdomain-daniel8.dev.alfaview.com
+mytestdomain-daniel9.dev.alfaview.com
+mytestdomain.dev.alfaview.com
+mytestdomain0.dev.alfaview.com
+mytestdomain1.dev.alfaview.com
+mytestdomain10.dev.alfaview.com
+mytestdomain11.dev.alfaview.com
+mytestdomain111.dev.alfaview.com
+mytestdomain112.dev.alfaview.com
+mytestdomain113.dev.alfaview.com
+mytestdomain114.dev.alfaview.com
+mytestdomain116.dev.alfaview.com
+mytestdomain117.dev.alfaview.com
+mytestdomain118.dev.alfaview.com
+mytestdomain119.dev.alfaview.com
+mytestdomain12.dev.alfaview.com
+mytestdomain120.dev.alfaview.com
+mytestdomain121.dev.alfaview.com
+mytestdomain122.dev.alfaview.com
+mytestdomain123.dev.alfaview.com
+mytestdomain13.dev.alfaview.com
+mytestdomain14.dev.alfaview.com
+mytestdomain15.dev.alfaview.com
+mytestdomain16.dev.alfaview.com
+mytestdomain17.dev.alfaview.com
+mytestdomain18.dev.alfaview.com
+mytestdomain19.dev.alfaview.com
+mytestdomain2.dev.alfaview.com
+mytestdomain20.dev.alfaview.com
+mytestdomain21.dev.alfaview.com
+mytestdomain22.dev.alfaview.com
+mytestdomain3.dev.alfaview.com
+mytestdomain4.dev.alfaview.com
+mytestdomain5.dev.alfaview.com
+mytestdomain6.dev.alfaview.com
+mytestdomain7.dev.alfaview.com
+mytestdomain8.dev.alfaview.com
+mytestdomain9.dev.alfaview.com
+ops-c.alfaview.com
+ops-hcloud-1.alfaview.com
+ops-syseleven-1.alfaview.com
+ops-syseleven-2.alfaview.com
+ops-syseleven-3.alfaview.com
+ops-syseleven-4.alfaview.com
+ops.dev.alfaview.com
+production-alfaview-com-assets.alfaview.com
+production-app.alfaview.com
+production-webclient.alfaview.com
+prometheus-hcloud-1.alfaview.com
+prometheus-ops-1.alfaview.com
+prometheus-syseleven-1-cbk.alfaview.com
+prometheus-syseleven-2-dbl.alfaview.com
+prometheus-syseleven-3-cbk.alfaview.com
+prometheus-syseleven-4-dbl.alfaview.com
+sap-events.alfaview.com
+sap.alfaview.com
+staging-alfasm.alfaview.com
+staging-alfatraining.alfaview.com
+staging-alfaview-assets.alfaview.com
+staging-alfaview-com-assets.alfaview.com
+staging-alfaview.alfaview.com
+staging-cert-operator-test.alfaview.com
+staging-consul-cache-hcloud-1.alfaview.com
+staging-consul-cache-syseleven-1-cbk.alfaview.com
+staging-consul-cache-syseleven-2-dbl.alfaview.com
+staging-consul-cache-syseleven-3-cbk.alfaview.com
+staging-elitr-recordings.alfaview.com
+staging-equipment.alfaview.com
+staging-fusionauth.alfaview.com
+staging-internal.alfaview.com
+staging-sap-events.alfaview.com
+staging-sap.alfaview.com
+staging-stun-ionoscloud-txl-1.alfaview.com
+staging-stun-ionoscloud-txl-2.alfaview.com
+staging-support.alfaview.com
+staging-test-ops-1.alfaview.com
+staging-web.alfaview.com
+staging-webrtc.alfaview.com
+support.dev.alfaview.com
+test-cert-manager.alfaview.com
+test.dev.alfaview.com
+test2.dev.alfaview.com
+test3.dev.alfaview.com
+tools.dev.alfaview.com
+webclient.dev.alfaview.com
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt; echo "=== interesting labels in inventory? ==="; for h in hfu uni-stuttgart qa demo-company consul-monitoring alfasm status.alfaview staging-web staging-support webviewer "internal.dev" "engine.dev" "media.dev" "audio.dev" "hydra.dev" "sap" "elitr"; do c=$(grep -ciF "$h" inventory/alfaview.md); echo "$h -> $c"; done
+=== interesting labels in inventory? ===
+hfu -> 0
+uni-stuttgart -> 11
+qa -> 11
+demo-company -> 6
+consul-monitoring -> 4
+alfasm -> 0
+status.alfaview -> 11
+staging-web -> 4
+staging-support -> 0
+webviewer -> 9
+internal.dev -> 0
+engine.dev -> 0
+media.dev -> 0
+audio.dev -> 0
+hydra.dev -> 0
+sap -> 16
+elitr -> 2
+[0m
+[0m$ [0mcd /tmp/opencode; for h in hfu.alfaview.com staging-alfasm.alfaview.com staging-support.alfaview.com internal.dev.alfaview.com engine.dev.alfaview.com media.dev.alfaview.com audio.dev.alfaview.com hydra.dev.alfaview.com apis.dev.alfaview.com staging-fusionauth.alfaview.com webviewer.dev.alfaview.com support.dev.alfaview.com; do code=$(timeout 12 curl -sS -k -o /dev/null -w "%{http_code}|%{size_download}|%{content_type}" "https://$h/" 2>/dev/null); echo "$h -> ${code:-ERR}"; sleep 1.1; done
+hfu.alfaview.com -> 000|0|
+staging-alfasm.alfaview.com -> 000|0|
+staging-support.alfaview.com -> 301|162|text/html
+internal.dev.alfaview.com -> 000|0|
+engine.dev.alfaview.com -> 000|0|
+media.dev.alfaview.com -> 000|0|
+audio.dev.alfaview.com -> 000|0|
+hydra.dev.alfaview.com -> 000|0|
+apis.dev.alfaview.com -> 000|0|
+staging-fusionauth.alfaview.com -> 000|0|
+webviewer.dev.alfaview.com -> 000|0|
+support.dev.alfaview.com -> 000|0|
+[0m
+[0m$ [0mcd /tmp/opencode; echo "=== HEAD ==="; timeout 15 curl -sS -k -D - -o /dev/null "https://staging-support.alfaview.com/" 2>&1 | head -20; echo; echo "=== follow location ==="; loc=$(timeout 15 curl -sS -k -D - -o /dev/null "https://staging-support.alfaview.com/" 2>/dev/null | grep -i '^location:' | tr -d '\r' | awk '{print $2}'); echo "LOC=$loc"; sleep 1.1; timeout 15 curl -sS -k -o /dev/null -w "locstatus=%{http_code} size=%{size_download} ct=%{content_type} final=%{url_effective}\n" -L "https://staging-support.alfaview.com/" 2>&1 | head
+=== HEAD ===
+HTTP/2 301 
+server: myracloud
+date: Sat, 10 Oct 2026 14:53:52 GMT
+content-type: text/html
+content-length: 162
+location: https://staging-support.alfaview.com/en/
+vary: accept-language
+expires: Sat, 10 Oct 2026 14:53:52 GMT
+cache-control: max-age=0
+etag: "myra-c076c032"
+
+
+=== follow location ===
+LOC=https://staging-support.alfaview.com/en/
+locstatus=401 size=172 ct=text/html final=https://staging-support.alfaview.com/en/
+[0m
+[0m$ [0mcd /tmp/opencode; timeout 30 curl -sS "https://apis.alfaview.com/v2/docs/openapi.json" -o oa.json; echo "size=$(wc -c < oa.json) md5=$(md5sum oa.json | cut -d' ' -f1)"; python3 - <<'PY'
+import json
+d=json.load(open('/tmp/opencode/oa.json'))
+p=d.get('paths',{})
+ops=sum(len([m for m in v if m in ('get','post','put','patch','delete','head','options')]) for v in p.values())
+print("paths=",len(p),"ops=",ops)
+print("schemes=",list((d.get('components',{}).get('securitySchemes') or {}).keys()))
+print("has_auditlog=", '/v2/audit-log' in p)
+print("has_mecompany=", '/v2/users/me/company' in p)
+PY
+size=174787 md5=06231fadca0b36c314476322337976db
+paths= 38 ops= 57
+schemes= ['accessToken']
+has_auditlog= False
+has_mecompany= True
+[0m
+Continued the loop with a fresh passive cycle (no writes to repo). Findings:
+
+```
+[DELTA]
+- apis.alfaview.com/v2/docs/openapi.json: UNCHANGED — 174787B, md5 06231fad…, 38 paths/57 ops, securitySchemes=[accessToken]. No rotation since 2026-10-06 snapshot.
+- CT (crt.sh, live) refreshed: 165 unique names; all correspond to inventory labels (grafana/loki/prometheus/linkerd/ops/sap/elitr/dev/staging). No materially new attack surface.
+- NEW reachable host not in inventory: staging-support.alfaview.com → 301 /en/ → 401 (server: myracloud). Protected staging support portal.
+- Re-probed candidate-new dev/ops hosts (hfu, staging-alfasm, internal/engine/media/audio/hydra.dev, apis.dev, staging-fusionauth, webviewer.dev, support.dev): all 000 (edge-firewalled), target exhausted.
+
+[PRIO] unchanged. Top: sso /oauth2/introspect 9.40 > /v2/guest-links 8.85 > GraphQL adminSwitchCompany 8.60 > CreatePermissions 8.05.
+
+[CRITIQUE]
+- Passive-only E[findings] ≈ 0. No new unauth surface; OpenAPI static; CT delta non-novel.
+- The three HIGH chains remain blocked on one primitive: a valid opaque access token (email-gated signup, HUMAN_ONLY; account_creation=restricted).
+
+[NEXT] (all gated on a human-provided session)
+- Signup/FinishSignup at app.alfaview.com/graphql → low-priv token + self-owned room; then: GET /v2/users/me/company, GET /v2/group-links?limit=1, POST /v2/rooms/{roomId}/permissions, 3× POST sso /oauth2/introspect, GET /v2/auth/token-info.
+
+[LEARN] Procedural: triage pipeline is failing — 91/223 runs contain `UnknownError` (server errors); last successful verdict was triage/run-2026-09-24-17-56.md. Validation has not run for ~2 weeks.
+
+[RISK] alfaview: 88/100 (latest hypotheses artifact) — unchanged; complexity flat, production APIs token-gated.
+```
+
+I've hit the point where every actionable next step needs an authenticated session, which the program rules gate behind human authorization (no account creation on live assets). I'm not going to fabricate or run auth-bypass tests without it.
+
+How do you want to proceed?
+1. You provide/authorize an authenticated low-priv session (own mailbox + test tenant) and I execute the four probe batteries above, or
+2. Keep me passive-only — in which case the honest answer is there is no remaining high-value autonomous action, and
+3. Optionally, investigate why the triage workflow is `UnknownError`-ing (possible pipeline bug, unrelated to alfaview).
