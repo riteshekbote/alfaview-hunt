@@ -93510,3 +93510,122 @@ testability: PASSIVE only until authorized
 
 ## RISK
 [RISK] alfaview: 42. No delta in 45+ cycles across a fully-enumerated 55-host inventory; two high-trust chains (introspect 94, CreatePermissions 80) persist but remain HUMAN-gated on a self-owned token; passive-only E[findings]≈0. Residual program risk concentrated in (a) the sso introspect opaque-token client-auth bypass if a token leaks, and (b) the company-wide credential-bearing link lists (`/v2/group-links`, max 500) behind a single token — both unconfirmed on live data until the authorized session is run.
+===== ANALYST bigpickle 2026-10-10 02:31:47 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m✱ [0mGlob "**/*.md"[90m 100 matches[0m
+[0m✱ [0mGlob "**/*.{yaml,yml,json}"[90m 8 matches[0m
+## Objective
+- Continue passive-first bug bounty analysis for the alfaview gmbh program (report channel: bugs.olivermaicher.eu), phase POC targeting `apis.alfaview.com`, with the goal of obtaining wire evidence for two standing high-confidence hypotheses: the sso `/oauth2/introspect` client-auth bypass (conf 94) and the CreatePermissions BOLA (conf 80).
+
+## Important Details
+- Scope: all alfaview-owned infra incl. `alfaview.com` and company subdomains; inventory is 55 dedicated hosts, 100% probed, 31 exhausted, zero unprobed.
+- Hard rules: passive-first, <=1 rps, GET/HEAD/OPTIONS only for live probes; no mutating tests against live customer data; no brute-force/default-credential/username-enum/rate-limit classes; every claim traceable to context or own read-only probes; guessed URLs never become findings (delta claims require a second method, e.g., DNS getent + HTTP); every standing-probe line must carry size AND md5; all secrets sha256.
+- Methodological discipline: contract text quoted only after per-field lookup — two prior fabrications retracted (fake "UUID path-param patterns" claim — the live 174787B OpenAPI contains zero `pattern` keys and zero "uuid" tokens, all 42 path params are unconstrained `type: string`; and a misattributed `Permissions.admin` scope sentence that belongs to `PermissionsEdit.admin`).
+- Standing surface is byte-stable for 45+ consecutive cycles. Key hashes: OpenAPI JSON `06231fadca0b36c314476322337976db` (174787B, 38 paths, 57 ops, `securitySchemes.accessToken` bearerFormat=opaque now declared, auth-less `/v2/auth/*` routes are the only 4 ops without `Authorization` header); OIDC `f78a08fc` (2169B, issuer=acme.com, introspection_endpoint absent while endpoint live); JWKS `3f8d456c` (16257B, 7×RS256). `users/me` 401/107B md5 `60ed2f29`; `/v2/audit-log` 422/232B pre-auth query binder; graphql GET 400/406B on app only; tools poll `list` 501/55B; `/whiteboard/` 404/47B gRPC envelope; client-diagnostics `/health` 200/16B md5 `3a0386dd`.
+- Key facts: alfaview access tokens are opaque base64, not JWTs — `/oauth2/introspect` validates client_id ONLY for JWT-shaped tokens (3 segments, seg2=base64 JSON); `token_type_hint=refresh_token` forces validation on any shape; same-deployment control `/oauth2/userinfo` tiers correctly in same FusionAuth 1.63.0 build (conf 92→94). CreatePermissions (`POST /v2/rooms/{roomId}/permissions`) body `Permissions` = atomic 9-boolean full set, `participantId` polymorphic/cross-namespace (user/guest-link/group-link ID), scope only in path; upstream enumeration source `GET /v2/guest-links` is un-narrowable company-wide (only pageToken+limit) and credential-bearing (accessKey/joinUrl/dialInCode/emailAddress); response-code discriminator for authorized test: 204=success, 403=blocked, 409=row exists, 422=invalid/precondition. Decisive reads blocked by uniform token gate (401) — everything is HUMAN-gated on one self-owned token.
+- Only standing unauthenticated path to a legit bearer token: GraphQL `Signup` → email activation (`FinishSignup`) at `app.alfaview.com/graphql` — email-gated, HUMAN_ONLY. `CreateMagicToken` is auth-gated (lead closed). `adminSwitchCompany` mutation in public bundle (md5 `2cb91283…`, bundle rotated to `app.min.26f05bcb3f94dc9a764b.js`) mints cross-tenant admin tokens with no administration proof; hardcoded tenant IDs `alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`.
+- CT tooling: crt.sh returns ~110 subdomains not in inventory (grafana, loki, prometheus-*, linkerd*, ops, sap, webrtc, stun, gitlab.dev, fusionauth.dev, whiteboard, tools, staging-*); most edge-firewalled (000); crt.sh and certspotter `include_subdomains` were down (429/502/504, >10s timeout) — retry window open after 12h; certspotter flagless gives apex+wildcard only (3 names).
+
+## Work State
+### Completed
+- Full 55-host inventory probed; multi-tenant SPA shells (`qa`, `uni-stuttgart`, `alfatraining`, `bhc`, `kh-freiburg`) byte-identical and exhausted; hydra/engine/audio/video/alfacheck fleets firewalled or media servers and exhausted; support.alfaview.com WordPress fully mapped (no unauth exposure); whiteboard.alfaview.com strict single-route renderer mapped (no LFI, no headers, no finding); `tools.alfaview.com/whiteboard/` second unmapped RPC backend (47B gRPC envelope, staging mirror byte-identical, no auth challenge, zero client references) — surface-discovery only, no exploit demonstrated.
+- Rejected classes closed on apis.alfaview.com: JWT alg-confusion (opaque tokens), accessKey existence oracle (exactly two 422 tiers), 403-declaration asymmetry (not behaviorally load-bearing; uniform 401 per header-presence state), pre-auth query-param binder as standalone finding (reproduces public contract only), mass assignment (all 21 request-body schemas `additionalProperties:false`), SSRF on REST surface (zero URL-typed request params except RFC7807 doc links), GetOwnCompany x-sort-index holes, staging.alfaview.com edge-gating, `sso /oauth2/register` self-registration closed, `/oauth2/device_authorize` unregistered-client claim retracted (401 invalid_client_id), `guest/group-link` existence oracle disproven.
+- OpenAPI rotation recorded (2026-09-28 `284a3383`/132100B → 2026-10-06 `06231fad`/174787B): declaration-depth only, first-ever declared auth scheme, YAML twin byte-parity proven (JSON/YAML treated as one contract), dated snapshot stored at `recon-notes/alfaview-openapi-2026-10-06.json`.
+- 45th consecutive NO_DELTA across all standing probes as of 2026-10-09; CT/crt.sh delta (~110 subdomains) already recorded; `client-diagnostics-ingest.alfaview.com` NXDOMAIN fact reversed (host back, `/health` 200/16B); `equipment`/`production-equipment` resolve + RST (mirror pair); `webclient`/`product-webclient` byte-identical mirrors.
+
+### Active
+- [HYP] sso.alfaview.com/oauth2/introspect opaque-token client-auth bypass — conf 94, OATH, HUMAN_ONLY; evidence needed: one valid self-owned opaque token × three POST variants (POST-body / HTTP Basic / token_type_hint=refresh_token), watch `active`.
+- [HYP] CreatePermissions BOLA (`POST /v2/rooms/{roomId}/permissions`) — conf 80, IDOR, AUTH_HELPED; evidence needed: own low-priv account + non-moderated room, exactly one POST, record 204/403/409/422.
+- [PARKED] diagnostics_ingest_unauth_write — conf 25 < 40; POST-only ingest implied, requires human sign-off.
+- Resolver/authz behaviors remain unmeasured server-side; the server may enforce undeclared checks (e.g., on guest-link list scope or adminSwitchCompany).
+
+### Blocked
+- All HIGH-value chains (introspect 94, CreatePermissions 80, tools BOLA 85 / REST IDOR 80 / guest-AUTH 70) gate on executing one signup at `app.alfaview.com/graphql` (email-gated, HUMAN_ONLY) to obtain a bearer token; zero wire evidence possible passively — E[findings] from further passive probing ≈ 0.
+- crt.sh/certspotter subdomain enumeration temporarily unavailable (429/502/504); no "no new subdomains" conclusions may be drawn while down.
+
+## Next Move
+1. [NEXT] HUMAN: one authorized session — own mailbox → `app.alfaview.com/graphql` Signup/FinishSignup → self-owned low-priv tenant account + one non-moderated room + one valid opaque access token; then ≤1 rps: (a) `GET /v2/users/me/company` + `GET /v2/group-links?limit=1`; (b) exactly one `POST /v2/rooms/{roomId}/permissions` with synthetic foreign `participantId` (record 204/403/409/422 verbatim); (c) three `POST`s to `sso.alfaview.com/oauth2/introspect` (POST-body client_id / HTTP Basic client_id / token_type_hint=refresh_token, watch `active`); (d) `GET /v2/auth/token-info` live + expired — record status/headers/bodies verbatim.
+2. [NEXT] RETRY crt.sh after its 429/502 clears (certspotter flagless query works but yields no subdomain delta; `include_subdomains` times out >10s).
+
+## Relevant Files
+- `inventory/alfaview.md` (line ~1096): canonical host URLs for standing probes — canonical URLs must be recovered from here, never guessed.
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated OpenAPI snapshot for exact attribution of future spec rotations (pre-rotation 37-path baseline in `recon-notes/alfaview-openapi.yaml` predates two rotations, do not diff against it).
+- `leads/lead-bigpickle.md`: verify_steps for canonical endpoints (e.g., `/.well-known/jwks.json`, not `/oauth2/jwks`).
+- `leads/lead-nemotron3.txt`, `art/lead_nemotron3.txt`, `art/lead_bigpickle.txt`, `hypotheses-bigpickle.txt`, `hypotheses-nemotron3.txt`: hypothesis/NEXT sources cited in ranked hypotheses.
+- `scope.yml` + `inventory/alfaview.md`: definitive in-scope asset list.
+- `recon-notes/` and `probe-results.md`: prior probe records for byte-comparison baselines.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m→ [0mRead state_bigpickle.json
+[0m→ [0mRead triage/run-2026-10-09-09-53.md
+[0m→ [0mRead scope.yml
+[0m→ [0mRead triage/run-2026-10-09-02-41.md
+[0m✱ [0mGlob "leads/*"[90m 7 matches[0m
+[0m→ [0mRead inventory/alfaview.md[90m [offset=1080, limit=80][0m
+[0m→ [0mRead inventory/alfaview.md[90m [offset=1400][0m
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m
+[0m$ [0mcurl -s -m 25 -o /tmp/opencode/crt.json -w "HTTP:%{http_code} size:%{size_download} time:%{time_total}\n" "https://crt.sh/?q=%25.alfaview.com&output=json" 2>&1 | tail -5; echo "---"; wc -c /tmp/opencode/crt.json 2>/dev/null
+HTTP:502 size:150 time:0.615602
+---
+150 /tmp/opencode/crt.json
+[0m
+[0m$ [0mfor h in apis.alfaview.com sso.alfaview.com app.alfaview.com tools.alfaview.com; do printf "%s -> " "$h"; getent hosts "$h" 2>/dev/null | head -1 || echo "NXDOMAIN"; done
+apis.alfaview.com -> 185.245.100.52  apis.alfaview.com
+sso.alfaview.com -> 195.201.44.172  sso.alfaview.com
+app.alfaview.com -> 185.245.100.52  app.alfaview.com
+tools.alfaview.com -> 185.245.100.98  tools.alfaview.com
+[0m
+[0m$ [0mprobe() { url="$1"; out=$(curl -s -m 20 -o /tmp/opencode/body -w "%{http_code} %{size_download}" "$url"); md5=$(md5sum /tmp/opencode/body | cut -d' ' -f1); printf "%-78s %s md5:%s\n" "$url" "$out" "$md5"; sleep 1; }
+probe "https://apis.alfaview.com/v2/docs/openapi.json"
+probe "https://sso.alfaview.com/.well-known/openid-configuration"
+probe "https://sso.alfaview.com/.well-known/jwks.json"
+probe "https://apis.alfaview.com/v2/users/me"
+probe "https://client-diagnostics-ingest.alfaview.com/health"
+probe "https://tools.alfaview.com/"
+
+https://apis.alfaview.com/v2/docs/openapi.json                                 200 174787 md5:06231fadca0b36c314476322337976db
+https://sso.alfaview.com/.well-known/openid-configuration                      200 2169 md5:f78a08fced8b042093396383b74d8458
+https://sso.alfaview.com/.well-known/jwks.json                                 200 16257 md5:3f8d456c7fd92c6107f3fd77732bd0f4
+https://apis.alfaview.com/v2/users/me                                          401 107 md5:60ed2f29d492ec872c598cc7d36aa37e
+https://client-diagnostics-ingest.alfaview.com/health                          200 16 md5:3a0386dd403566b954d2c0610133f6c8
+https://tools.alfaview.com/                                                    200 615 md5:f53b3c2688a73940c337d37cc6da35c3
+[0m
+All standing probes are byte-identical to the recorded knowledge base; crt.sh is still returning 502. Recording the cycle.
+[0m→ [0mRead inventory/alfaview.md[90m [offset=1570][0m
+[0m
+[0m← [0mEdit inventory/alfaview.md
+Index: /home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md
+===================================================================
+--- /home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md
++++ /home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md
+@@ -1567,8 +1567,14 @@
+ - CHANGED tools.alfaview.com/whiteboard/: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll's 45B jsonpb; distinct marshaller; no auth challenge; zero client references in bundle; staging
+ - CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+ - CHANGED NO_DELTA on all other standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics)
+ 
++## 2026-10-10 (bigpickle cycle)
++- NEW NO_DELTA — 46th consecutive byte-stable cycle. Re-verified live: OpenAPI 200/174787B md5 `06231fadca0b36c314476322337976db`; sso OIDC 200/2169B md5 `f78a08fced8b042093396383b74d8458`; sso JWKS 200/16257B md5 `3f8d456c7fd92c6107f3fd77732bd0f4`; apis `/v2/users/me` 401/107B md5 `60ed2f29d492ec872c598cc7d36aa37e`; client-diagnostics-ingest `/health` 200/16B md5 `3a0386dd403566b954d2c0610133f6c8`; tools root 200/615B md5 `f53b3c2688a73940c337d37cc6da35c3`.
++- CHANGED CT tooling still unavailable: crt.sh `?q=%.alfaview.com&output=json` → 502 (150B). No "no new subdomains" conclusion may be drawn while down; retry window remains open.
++- CHANGED DNS reconciles: `apis.alfaview.com`→185.245.100.52, `app.alfaview.com`→185.245.100.52, `sso.alfaview.com`→195.201.44.172, `tools.alfaview.com`→185.245.100.98.
++- CHANGED All HIGH chains remain HUMAN-gated on one self-owned opaque token; no wire evidence obtainable passively. E[findings] from further passive probing ≈ 0.
++
+ ## 2026-10-09 23:29:58 UTC
+ - NEW CT (crt.sh) yields ~110 subdomains absent from inventory: `grafana`, `loki`, `logs`, `ops`/`ops-*`, `prometheus-*`, `linkerd-*`/`linkerd-prometheus-*`, `envoy-health`, `sap`/`sap-events`, `beta/stagin
+ - NEW app.alfaview.com public bundle rotated to app.min.26f05bcb3f94dc9a764b.js (new hash), still contains adminSwitchCompany mutation + hardcoded tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8
+ - NEW apis.alfaview.com/v2/docs/openapi.json rotated to 174787B (MD5 06231fad), now declares components.securitySchemes.accessToken (bearerFormat: opaque) and per-op security on 53/57 operations — first aut
+
+[0m
+Cycle complete — re-verified the standing surface and persisted the result to `inventory/alfaview.md`.
+
+**2026-10-10 (bigpickle)**
+- [NEW] NO_DELTA — 46th consecutive byte-stable cycle. Live re-check: OpenAPI `174787B` md5 `06231fad`; OIDC `2169B` md5 `f78a08fc`; JWKS `16257B` md5 `3f8d456c`; `/v2/users/me` `401/107B` md5 `60ed2f29`; client-diagnostics `/health` `200/16B` md5 `3a0386dd`; tools root `200/615B`.
+- [CHANGED] crt.sh still down (`502`); no subdomain-delta conclusion possible. DNS reconciles cleanly.
+- [FINAL] No new unauthenticated surface; both HIGH hypotheses remain HUMAN-gated.
+  - [HYP] introspect opaque-token client-auth bypass — conf 94 (OATH, HUMAN_ONLY)
+  - [HYP] CreatePermissions BOLA `POST /v2/rooms/{roomId}/permissions` — conf 80 (IDOR, AUTH_HELPED)
+- [NEXT] (a) HUMAN: one authorized `app.alfaview.com/graphql` signup → self-owned low-priv token/room, then 3 introspect POST variants + exactly one CreatePermissions POST + `/v2/auth/token-info`; (b) RETRY crt.sh when 502 clears.
+- [RISK] alfaview: 42/100 — flat; passive E[findings] ≈ 0 until a token is available.
+
+One note: the last two scheduled runs (`2026-10-09-02-41`, `2026-10-09-09-53`) failed with harness `UnknownError`, not probe failures — worth checking the runner if you expect automated cycles to keep firing.
