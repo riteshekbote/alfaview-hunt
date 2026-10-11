@@ -5362,3 +5362,27 @@
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
 - LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
 - LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
+
+## RANKED HYPOTHESES 2026-10-11 07:15:04 UTC
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 introspection validates client identity only for JWT-shaped tokens; opaque alfaview tokens introspect under any fabricated client_id (from art/lead_bigpickle.txt)
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: acquire one self-owned bearer token via email-gated signup at app.alfaview.com/graphql (mutation Signup → email verification → FinishSignup) on a self-ow
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup) to obtain a valid bearer token; then test intros
+- LEARN: PROCEDURAL @ tools.alfaview.com: GET on any path (/client-diagnostics/health, /poll, /health/) returns the 615B Tools UI SPA index shell (md5 f53b3c26) — a 200/
+- LEARN: NO_DELTA @ standing set: OpenAPI/OIDC/JWKS/users-me/audit-log/graphql/tools/health all byte-identical — 46th consecutive stable cycle; probe-by-probe MISSION de
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI spec size grew 132100B→174787B (MD5 rotated) with identical 38 paths/57 ops/69 schemas — schema expansions only,
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com/graphql: __typename now returns 200 (was 400 CSRF guidance); introspection remains disabled — behavioral change, not new e
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live document contains "uuid" zero times, zero `pattern` key
+- LEARN: REJECTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: retracted Permissions.admin scope claim — "edit or delete rooms, manage guests" lives on 
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: two distinct permission schemas — Permissions (CREATE, all 9 booleans required = atomic full-set write) vs PermissionsEdit (P
+- LEARN: ACCEPTED INFO @ apis.alfaview.com GET /v2/permission-groups: returns PermissionGroup{id, name, permissions} for every group, name="Admin", permissions full 9-bo
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder as standalone finding — reproduces public spec only (numeric bounds, enum values, RFC-53
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: 403-declaration asymmetry not behaviorally load-bearing — /v2/permission-groups returns 401 while declaring no 401; whol
+- LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/userinfo: JOSE algorithm confusion tested (alg=none, HS256 with RSA pubkey, HS256 random, RS256 self-signed) — all byte-
+- LEARN: REJECTED OATH @ sso.alfaview.com/oauth2/logout: post_logout_redirect_uri and redirect_uri both ignored; every variant returns 302 → /
+- LEARN: REJECTED AUTH @ apis.alfaview.com/v2/auth/{guest,group}-link: NO accessKey existence oracle — well-formed synthetic triple returns 422/88B ACTION_INVALID byte-i
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI compon
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
+- LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
+- LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
