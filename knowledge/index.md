@@ -1315,3 +1315,17 @@
 - 2026-10-11 PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted only after per-field lookup
 - 2026-10-11 PROCEDURAL @ tools.alfaview.com: GET on any path (/client-diagnostics/health, /poll, /health/) returns the 615B Tools UI SPA index shell (md5 f53b3c26) — a 200/615B here is the SPA catch-all, NOT a health endpoint; the standing 16B health baseline belongs to client-diagnostics-ingest.alfaview.com only. Host-attributed baselines must be probed per-host, never by path suffix.
 - 2026-10-11 NO_DELTA @ standing set: OpenAPI/OIDC/JWKS/users-me/audit-log/graphql/tools/health all byte-identical — 46th consecutive stable cycle; probe-by-probe MISSION delta surface remains zero.
+- 2026-10-11 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- 2026-10-11 ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- 2026-10-11 REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected class).
+- 2026-10-11 REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+- 2026-10-11 ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- 2026-10-11 ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- 2026-10-11 ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+- 2026-10-11 REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+- 2026-10-11 ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- 2026-10-11 ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- 2026-10-11 ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift confirmed — beta has /v2/languages absent in production.
+- 2026-10-11 ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 46 cycles — not flaky, genuinely unenforced.
+- 2026-10-11 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing is exhausted — every standing endpoint is byte-identical; further cycles yield no new surface.
+- 2026-10-11 ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck.

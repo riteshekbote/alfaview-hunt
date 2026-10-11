@@ -1679,3 +1679,24 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
 - CHANGED sso.alfaview.com/oauth2/introspect: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both P
 - CHANGED apis.alfaview.com/v2/docs/openapi.yaml byte-identical to JSON (174787B) — parity confirmed
+
+## 2026-10-11 18:57:01 UTC
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+- NEW NO_DELTA — 46th consecutive stable cycle
+- CHANGED apis.alfaview.com/v2/docs/openapi.json 200/174787B md5=06231fad (unchanged)
+- CHANGED apis.alfaview.com/v2/users/me 401/107B md5=60ed2f29 (unchanged)
+- CHANGED sso OIDC 200/2169B md5=f78a08fc; JWKS 200/16257B md5=3f8d456c (unchanged)
+- CHANGED app.alfaview.com/graphql GET 400/406B md5=2fd0a1d0 (CSRF header-keyed, unchanged)
+- CHANGED client-diagnostics /health 200/16B md5=3a0386dd (unchanged)
+- CHANGED tools poll 404/45B md5=c5ad5139; whiteboard 404/47B md5=ddd33510 (unchanged)
+- CHANGED sso /oauth2/introspect OPTIONS 405 (unchanged)
+- NEW apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `sec
+- NEW app.alfaview.com/graphql: `__typename` now returns 200/32B (was 400 CSRF guidance) with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled
+- NEW client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; `/health`=200/16B (md5 3a0386dd), `/`=404/39B (md5 d18415bd), uniform 404 across 6 paths + OPTIONS no Allow
+- NEW equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
+- NEW webclient.alfaview.com / product-webclient.alfaview.com: byte-identical root (md5 6825f39c) — deployment mirrors sharing one artifact (COOP/COEP same-origin+require-corp)
+- CHANGED sso.alfaview.com/oauth2/introspect: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both P
+- CHANGED apis.alfaview.com/v2/docs/openapi.yaml byte-identical to JSON (174787B) — parity confirmed
+- CHANGED apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
