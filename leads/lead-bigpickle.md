@@ -9458,3 +9458,40 @@ testability: AUTH_HELPED
 [LEARN] REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing is exhausted — every standing endpoint is byte-identical; further cycles yield no new surface.
 [LEARN] ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck.
 [RISK] alfaview: 88/100. Recon is complete (55 hosts probed, 31 exhausted); three CRITICAL-tier chains are fully mapped but all gate on one account. Nothing further is extractable read-only.
+## 2026-10-11 22:34:47 UTC [target] (model bigpickle)
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[HYP] introspect accepts attacker-supplied client_id → token metadata disclosure
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 94
+reasoning: POST-body and Basic-channel client_id are not validated for opaque base64 tokens (client-auth only enforced for JWT-shaped tokens, 3-seg seg2-JSON); fabricated client_id returns 200 {"active":false}. The product's own tokens are opaque base64, so the guard does not cover the real token format. Residual unknown: Basic-vs-body client_id_mismatch → 401.
+evidence_needed: a real opaque token + arbitrary client_id returning 200 {"active":true, exp, sub, scope, client_id}.
+verify_steps: `POST https://sso.alfaview.com/oauth2/introspect` body `token=<valid opaque>&client_id=fake-123` → expect 200 {"active":true,...}; control: same with `Authorization: Basic <fake>:<fake>`.
+impact: any holder of a leaked/observed opaque token can introspect it with no registered client, confirming liveness + exp/sub/scope → credential-stuffing/replay oracle. MED-HIGH.
+testability: AUTH_HELPED
+[HYP] adminSwitchCompany mints cross-tenant admin bearer without administration proof
+class: BUSLOGIC
+asset: app.alfaview.com/graphql
+confidence: 85
+reasoning: `adminSwitchCompany($nextCompanyId:String!)` returns {companyId, accessToken, permissions}; no proof-of-admin argument or precondition is in the schema from the public bundle. Hardcoded prod tenant IDs exist (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB). Introspection disabled, so resolver-side check is unobservable passively.
+evidence_needed: a low-privilege bearer + `adminSwitchCompany(nextCompanyId:"<foreign-tenant>")` returning a token bound to that tenant.
+verify_steps: `POST https://app.alfaview.com/graphql` headers `Content-Type: application/json`,`x-apollo-operation-name: adminSwitchCompany`,`apollo-require-preflight: true`,`Authorization: Bearer <low-priv>`; body `{"query":"mutation{adminSwitchCompany(nextCompanyId:\"alfatraining-internal\"){companyId accessToken permissions}}"}`.
+impact: full tenant takeover / cross-tenant admin ATO. CRITICAL.
+testability: AUTH_HELPED
+[HYP] company-wide guest/group-link enumeration leaks live join credentials
+class: IDOR
+asset: apis.alfaview.com/v2/guest-links, /v2/group-links
+confidence: 82
+reasoning: `GET /v2/guest-links` + `/v2/group-links` are list ops with only pageToken+limit (max 500) — no room/tenant narrowing in spec; responses include accessKey/joinUrl/dialInCode/emailAddress. `TokenUserPermissions` is a closed 7-bool vocabulary with no link axis, so the authorization filter is resolver-side and unobservable passively.
+evidence_needed: any low-priv bearer paging the collection returns links belonging to rooms/tenants outside its own.
+verify_steps: `GET https://apis.alfaview.com/v2/guest-links?limit=500` header `Authorization: Bearer <low-priv>` → check whether results are scoped to the caller's company.
+impact: mass harvest of live guest accessKeys/dial-in codes → unauthenticated room join + PII (emailAddress). CRITICAL.
+testability: AUTH_HELPED

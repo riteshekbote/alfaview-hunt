@@ -1874,3 +1874,13 @@ https://demo-company.alfaview.com/ -> 200 len=1381
 https://demo-company.alfaview.com/api/v1/users -> 200 len=1381
 https://demo-company.alfaview.com/api/v1/users` -> 200 len=1381
 https://insider-webclient.alfaview.com/ -> 200 len=4396
+
+## 2026-10-11 22:35:33 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://apis.alfaview.com/v2/guest-links -> HTTP 401
+https://apis.alfaview.com/v2/group-links -> HTTP 401
+https://apis.alfaview.com/v2/auth/guest-link -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400
+https://sso.alfaview.com/oauth2/introspect` -> HTTP 404
+https://app.alfaview.com/graphql` -> 200 len=1381
+https://apis.alfaview.com/v2/guest-links?limit=500` -> HTTP 422
