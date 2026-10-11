@@ -1,5 +1,5 @@
-## 2026-10-11 07:14:48 UTC [target] (model nemotron3)
-[NEW] apis.alfaview.com: OpenAPI spec rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `security` on 53/57 ops); paths/ops unchanged (38/57), audit-log still unpublished
+## 2026-10-11 14:07:51 UTC [target] (model nemotron3)
+[NEW] apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `security` on 53/57 ops)
 [NEW] app.alfaview.com/graphql: `__typename` now returns 200/32B (was 400 CSRF guidance) with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled
 [NEW] client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; `/health`=200/16B (md5 3a0386dd), `/`=404/39B (md5 d18415bd), uniform 404 across 6 paths + OPTIONS no Allow
 [NEW] equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
@@ -13,6 +13,8 @@
 [PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions),8.05,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=5,freshness=3
 [PRIO] tools.alfaview.com/whiteboard/,6.65,attack_surface=6,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=4,freshness=5
 [PRIO] apis.alfaview.com/v2/audit-log,6.20,attack_surface=6,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=8
+[PRIO] client-diagnostics-ingest.alfaview.com,3.50,attack_surface=3,business_value=2,tech_exposure=4,gate_ease=10,cloud_surface=2,freshness=5
+[PRIO] equipment.alfaview.com / production-equipment.alfaview.com,3.00,attack_surface=3,business_value=2,tech_exposure=3,gate_ease=10,cloud_surface=2,freshness=5
 [HYP] OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
