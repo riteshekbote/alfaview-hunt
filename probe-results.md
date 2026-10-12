@@ -1884,3 +1884,10 @@ https://app.alfaview.com/graphql -> HTTP 400
 https://sso.alfaview.com/oauth2/introspect` -> HTTP 404
 https://app.alfaview.com/graphql` -> 200 len=1381
 https://apis.alfaview.com/v2/guest-links?limit=500` -> HTTP 422
+
+## 2026-10-12 01:43:44 UTC
+https://sso.alfaview.com/oauth2/introspect -> HTTP 405
+https://apis.alfaview.com/v2/guest-links -> HTTP 401
+https://apis.alfaview.com/v2/group-links -> HTTP 401
+https://apis.alfaview.com/v2/auth/guest-link -> HTTP 405
+https://app.alfaview.com/graphql -> HTTP 400
