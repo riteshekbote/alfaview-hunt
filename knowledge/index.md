@@ -1348,3 +1348,7 @@
 - 2026-10-12 ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 46 cycles — not flaky, genuinely unenforced.
 - 2026-10-12 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing is exhausted — every standing endpoint is byte-identical; further cycles yield no new surface.
 - 2026-10-12 ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck.
+- 2026-10-12 ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication operations; this is the first full enumeration of the spec's own auth boundary
+- 2026-10-12 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list — no disclosure beyond published contract, same rejection as the prior query-param binder finding
+- 2026-10-12 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT cleanly corroborate a "first declaration of securitySchemes" claim; the live JSON is the only authoritative comparator
+- 2026-10-12 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle

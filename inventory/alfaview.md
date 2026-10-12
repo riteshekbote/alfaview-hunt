@@ -1722,3 +1722,17 @@ www.alfaview.com
 - CHANGED apis.alfaview.com/v2/docs/openapi.yaml byte-identical to JSON (174787B) — parity confirmed
 - CHANGED apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
 - CHANGED NO_DELTA — 46th consecutive stable cycle on all standing probes
+
+## 2026-10-12 08:25:34 UTC
+- NEW apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `sec
+- NEW app.alfaview.com/graphql: `__typename` now returns 200/32B (was 400 CSRF guidance) with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled
+- NEW client-diagnostics-ingest.alfaview.com: NXDOMAIN reversed; `/health`=200/16B (md5 3a0386dd), `/`=404/39B (md5 d18415bd), uniform 404 across 6 paths + OPTIONS no Allow
+- NEW equipment.alfaview.com + production-equipment.alfaview.com: "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
+- NEW webclient.alfaview.com / product-webclient.alfaview.com: byte-identical root (md5 6825f39c) — deployment mirrors sharing one artifact (COOP/COEP same-origin+require-corp)
+- CHANGED sso.alfaview.com/oauth2/introspect: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both P
+- CHANGED apis.alfaview.com/v2/docs/openapi.yaml byte-identical to JSON (174787B) — parity confirmed
+- CHANGED apis.alfaview.com/v2/graphql confirmed 404 edge-proxy catch — GraphQL endpoint exists ONLY on app.alfaview.com
+- CHANGED NO_DELTA — 46th consecutive stable cycle on all standing probes
+- NEW apis.alfaview.com OpenAPI security model fully enumerated: 53/57 operations declare security:[{accessToken:[]}]; exactly 4 declare none — POST /v2/auth/{api-key,group-link,guest-link,password} (operat
+- NEW Wire-divergence on the new annotation: POST /v2/rooms (CreateRoom, declares accessToken) returns 422/341B body-schema validation BEFORE any 401, unauthenticated — so per-op security is descriptive-onl
+- CHANGED 47th consecutive byte-stable cycle on standing probes: OpenAPI 06231fadca0b36c314476322337976db/174787B, OIDC f78a08fced8b042093396383b74d8458/2169B, JWKS 3f8d456c7fd92c6107f3fd77732bd0f4/16257B
