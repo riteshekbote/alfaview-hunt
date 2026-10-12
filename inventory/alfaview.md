@@ -1736,3 +1736,5 @@ www.alfaview.com
 - NEW apis.alfaview.com OpenAPI security model fully enumerated: 53/57 operations declare security:[{accessToken:[]}]; exactly 4 declare none — POST /v2/auth/{api-key,group-link,guest-link,password} (operat
 - NEW Wire-divergence on the new annotation: POST /v2/rooms (CreateRoom, declares accessToken) returns 422/341B body-schema validation BEFORE any 401, unauthenticated — so per-op security is descriptive-onl
 - CHANGED 47th consecutive byte-stable cycle on standing probes: OpenAPI 06231fadca0b36c314476322337976db/174787B, OIDC f78a08fced8b042093396383b74d8458/2169B, JWKS 3f8d456c7fd92c6107f3fd77732bd0f4/16257B
+
+## 2026-10-12 17:59:41 UTC

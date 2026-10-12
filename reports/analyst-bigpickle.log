@@ -103038,3 +103038,576 @@ testability: AUTH_HELPED
 [LEARN] REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
 [RISK] alfaview: 88/100. Broad 100%-probed inventory; APIs auth-gated by opaque tokens behind a uniform 401/107B gateway; per-op security annotation now published but not enforcement-ordered (validation precedes auth on body routes). Critical contract-proven chains: company-wide guest-link credential harvesting, polymorphic participantId CreatePermissions BOLA, introspect client-auth bypass, adminSwitchCompany cross-tenant minting. Validation/triage loop remains broken (132/231 runs good, latest UnknownError); realistic unlock is a single HUMAN-acquired dev token.
 ```
+===== ANALYST bigpickle 2026-10-12 17:59:41 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run fresh read-only probes against the standing surface to establish this cycle's delta.
+[0m$ [0mfor u in \
+ "https://apis.alfaview.com/v2/docs/openapi.json" \
+ "https://sso.alfaview.com/.well-known/openid-configuration" \
+ "https://sso.alfaview.com/.well-known/jwks.json" \
+ ; do
+  echo "=== $u ==="
+  curl -s -o /tmp/body.$$ -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 20 "$u"
+  md5sum /tmp/body.$$ | cut -d' ' -f1
+done
+=== https://apis.alfaview.com/v2/docs/openapi.json ===
+HTTP 200 size=176350 md5=25522f8571f589c5cfba211ad2982b66
+=== https://sso.alfaview.com/.well-known/openid-configuration ===
+HTTP 200 size=2169 md5=f78a08fced8b042093396383b74d8458
+=== https://sso.alfaview.com/.well-known/jwks.json ===
+HTTP 200 size=16257 md5=3f8d456c7fd92c6107f3fd77732bd0f4
+[0m
+[0m$ [0mecho "=== users/me ==="; curl -s -o /tmp/b1 -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 20 "https://apis.alfaview.com/v2/users/me"; md5sum /tmp/b1|cut -d' ' -f1
+echo "=== graphql GET ==="; curl -s -o /tmp/b2 -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 20 "https://app.alfaview.com/graphql"; md5sum /tmp/b2|cut -d' ' -f1
+echo "=== introspect OPTIONS ==="; curl -s -o /tmp/b3 -w "HTTP %{http_code} size=%{size_download} allow=%{header_json}" --max-time 20 -X OPTIONS "https://sso.alfaview.com/oauth2/introspect"; echo; 
+echo "=== authorize ==="; curl -s -o /tmp/b4 -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 20 "https://sso.alfaview.com/oauth2/authorize?client_id=x"; md5sum /tmp/b4|cut -d' ' -f1
+echo "=== diag health ==="; curl -s -o /tmp/b5 -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 20 "https://client-diagnostics-ingest.alfaview.com/health"; md5sum /tmp/b5|cut -d' ' -f1
+echo "=== tools poll list GET ==="; curl -s -o /tmp/b6 -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 20 "https://tools.alfaview.com/poll/pollservice/list"; md5sum /tmp/b6|cut -d' ' -f1
+echo "=== tools whiteboard OPTIONS ==="; curl -s -o /tmp/b7 -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 20 -X OPTIONS "https://tools.alfaview.com/whiteboard/"; md5sum /tmp/b7|cut -d' ' -f1
+=== users/me ===
+HTTP 401 size=107 md5=60ed2f29d492ec872c598cc7d36aa37e
+=== graphql GET ===
+HTTP 400 size=406 md5=2fd0a1d014e411aeea2d5dc41ceba835
+=== introspect OPTIONS ===
+HTTP 405 size=0 allow={"cache-control":["no-cache"],
+"date":["Mon, 12 Oct 2026 17:55:30 GMT"],
+"content-length":["0"],
+"server":["edge-proxy"]
+}
+=== authorize ===
+HTTP 200 size=6176 md5=fdadbb12b4528be1cb43777fbe7349fb
+=== diag health ===
+HTTP 200 size=16 md5=3a0386dd403566b954d2c0610133f6c8
+=== tools poll list GET ===
+HTTP 501 size=55 md5=ace9390a1364de4ae25de9a2631e9bcd
+=== tools whiteboard OPTIONS ===
+HTTP 404 size=47 md5=ddd3351079af6bea6c6e808972a737ad
+[0m
+## Objective
+- Hunt real vulnerabilities on alfaview gmbh (report channel bugs.olivermaicher.eu), currently in POC phase targeting `api`. Verify and (where permitted) exercise the standing contract-proven chains: OAuth2 introspection client-auth bypass, company-wide guest-link credential harvesting, and cross-tenant `adminSwitchCompany` token minting.
+
+## Important Details
+- Scope: only company-owned alfaview gmbh infra, `alfaview.com` + company subdomains/APIs/apps/support/portals.
+- Probe rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only; no auth-bypass/mutating tests on live customer data; no REJECTED classes (DoS, descriptive errors, public login panels, brute-force/rate-limit, TLS, mail config, etc.).
+- Standing surface is 47th consecutive byte-stable cycle; passive-only re-probing is exhausted.
+- Key stable hashes: OpenAPI `/v2/docs/openapi.json` = `06231fadca0b36c314476322337976db` / 174787B (38 paths, 57 ops; `components.securitySchemes.accessToken`, `bearerFormat: opaque`); OIDC = `f78a08fced8b042093396383b74d8458` / 2169B (issuer=acme.com, `introspection_endpoint` absent); JWKS = `3f8d456c7fd92c6107f3fd77732bd0f4` / 16257B (7×RS256).
+- Auth boundary: 53/57 ops declare `security:[{accessToken:[]}]`; exactly 4 declare none — `POST /v2/auth/{api-key,group-link,guest-link,password}`. Per-op security is descriptive-only: `POST /v2/rooms` returns 422/341B body-schema validation pre-auth.
+- alfaview API access tokens are opaque base64 (not JWT) — JWT alg-confusion closed at both apis and sso.
+- `POST /v2/auth/guest-link` needs only `{accessKey, companyId, roomId}` (displayName NOT required); group-link additionally requires displayName.
+- `GET /v2/users/me/company` (GetOwnCompany) = sole 200-supplier of `companyId`; `GET /v2/audit-log` = live undocumented 39th path.
+- GraphQL exists ONLY on `app.alfaview.com` (apis `/v2/graphql` = 404 catch).
+
+## Work State
+### Completed
+- Inventory 100% probed: 55 dedicated hosts, 31 exhausted, zero unprobed.
+- Confirmed chains (contract-proven, AUTH_HELPED, zero wire evidence of defect):
+  - `sso.alfaview.com/oauth2/introspect` client-auth bypass; fabricated `client_id` → 200 `{"active":false}` on POST-body + Basic; `token_endpoint_auth_methods_supported=[client_secret_basic,client_secret_post,none]` with no runtime verification; same-build `oauth2/userinfo` correctly tiers (omission, not architecture). Conf 94.
+  - `GET /v2/guest-links` + `/v2/group-links` un-narrowable (no roomId/companyId bound), returns `accessKey`/`joinUrl`/`dialInCode`/`emailAddress`; `TokenUserPermissions` (closed 7-bool) has no link axis. Conf 88.
+  - `app.alfaview.com/graphql` `adminSwitchCompany(nextCompanyId)` mints `{companyId,accessToken,permissions}` with no administration proof; hardcoded tenant IDs `alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`. Conf 85.
+- Secondary: `POST /v2/rooms/{roomId}/permissions` BOLA (polymorphic `participantId`); `/v2/auth/api-key` 4th unauth credential endpoint; `tools.alfaview.com/whiteboard/*` 2nd unmapped RPC (47B envelope vs poll 45B); `test.alfaview.com` unsigned alfacheck v483102.
+- Superseded/retracted: "OpenAPI UUID path patterns" FALSE; `Permissions.admin` scope sentence belongs to `PermissionsEdit` (PATCH) not `Permissions` (CREATE).
+
+### Active
+- POC on `api`: three HIGH chains all gated on one valid bearer token.
+
+### Blocked
+- All HIGH-value chains (introspect 94, guest-links 88, adminSwitchCompany 85) are AUTH_HELPED/HUMAN_ONLY — require a valid token from the email-gated signup flow.
+- Triage/validation pipeline failing: `UnknownError` in 91/223 runs; last good verdict `triage/run-2026-09-24-17-56.md`.
+
+## Next Move
+1. HUMAN: execute unauthenticated signup at `app.alfaview.com/graphql` (`Signup` → email → `FinishSignup(companyId, username, activationToken, password)`) to obtain one valid bearer token.
+2. With token: `POST https://sso.alfaview.com/oauth2/introspect` `token=<valid>&client_id=fake-123`; `GET https://apis.alfaview.com/v2/guest-links` with `Authorization: <token>`; `adminSwitchCompany(nextCompanyId:"01FDY0986YK1BJF2K0F9DXR8EB")` at `app.alfaview.com/graphql`.
+
+## Relevant Files
+- `inventory/alfaview.md`: host inventory + per-cycle observations (canonical URLs ~line 1096).
+- `recon-notes/alfaview-openapi.yaml`: 37-path stripped snapshot (schema-only; NOT authoritative comparator).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: dated live snapshot for exact rotation attribution.
+- `leads/lead-bigpickle.md`: verify_steps source (JWKS canonical path `/.well-known/jwks.json`).
+- `triage/run-2026-09-24-17-56.md`: last successful triage verdict.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Delta detected: OpenAPI changed (`06231fad…`/174787B → `25522f85…`/176350B, +1563B). First delta in 47 cycles. Attributing it.
+[0m✱ [0mGlob "recon-notes/*openapi*"[90m 1 match[0m
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://apis.alfaview.com/v2/docs/openapi.json" -o /tmp/openapi-new.json
+ls -l recon-notes/ 2>/dev/null
+ls -l /tmp/openapi-new.json
+total 184
+-rw-r--r-- 1 runner runner   4789 Oct 12 17:55 CORPUS-ALFAVIEW.md
+-rw-r--r-- 1 runner runner   3624 Oct 12 17:55 DEDICATED-DEEP.md
+-rw-r--r-- 1 runner runner   7833 Oct 12 17:55 DEEPER-FINDINGS.md
+-rw-r--r-- 1 runner runner   6061 Oct 12 17:55 SCOPE-CONFIRMATION.md
+-rw-r--r-- 1 runner runner 159550 Oct 12 17:55 alfaview-openapi.yaml
+-rw-r--r-- 1 runner runner 176350 Oct 12 17:55 /tmp/openapi-new.json
+[0m
+[0m$ [0mgit -C /home/runner/work/alfaview-hunt/alfaview-hunt log --oneline -10; echo ---; ls -la /home/runner/work/alfaview-hunt/alfaview-hunt; echo ---; find /home/runner/work/alfaview-hunt/alfaview-hunt -maxdepth 2 -type d | sort
+480b873 reposcan 2026-10-12-09-43
+---
+total 1316
+drwxr-xr-x 12 runner runner   4096 Oct 12 17:55 .
+drwxr-xr-x  3 runner runner   4096 Oct 12 17:55 ..
+drwxr-xr-x  7 runner runner   4096 Oct 12 17:55 .git
+drwxr-xr-x  3 runner runner   4096 Oct 12 17:55 .github
+-rw-r--r--  1 runner runner   1883 Oct 12 17:55 README.md
+-rw-r--r--  1 runner runner   8338 Oct 12 17:55 analyst-out.txt
+-rw-r--r--  1 runner runner 574389 Oct 12 17:55 analyst-prompt.txt
+-rw-r--r--  1 runner runner 570479 Oct 12 17:55 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 leads
+-rw-r--r--  1 runner runner  92259 Oct 12 17:55 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 reports
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct 12 17:55 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 scripts
+-rw-r--r--  1 runner runner     33 Oct 12 17:55 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 12 17:55 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 12 17:55 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 12 17:55 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 12 17:55 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 12 17:55 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 12 17:55 triage
+---
+/home/runner/work/alfaview-hunt/alfaview-hunt
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/hooks
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/info
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/logs
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/objects
+/home/runner/work/alfaview-hunt/alfaview-hunt/.git/refs
+/home/runner/work/alfaview-hunt/alfaview-hunt/.github
+/home/runner/work/alfaview-hunt/alfaview-hunt/.github/workflows
+/home/runner/work/alfaview-hunt/alfaview-hunt/inventory
+/home/runner/work/alfaview-hunt/alfaview-hunt/knowledge
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports
+/home/runner/work/alfaview-hunt/alfaview-hunt/reposcan-raw
+/home/runner/work/alfaview-hunt/alfaview-hunt/scripts
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage
+[0m
+The dated snapshot referenced in prior notes isn't present. Let me see the actual repo contents.
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/openapi-new.json'))
+print('openapi',d.get('openapi'),'title',d['info'].get('title'),'version',d['info'].get('version'))
+p=d.get('paths',{})
+print('paths',len(p))
+ops=sum(len([m for m in v if m in ('get','post','put','patch','delete','head','options')]) for v in p.values())
+print('ops',ops)
+for k in sorted(p): print(' ',k)
+"
+openapi 3.1.0 title alfaview version 2
+paths 38
+ops 57
+  /v2/auth/api-key
+  /v2/auth/group-link
+  /v2/auth/guest-link
+  /v2/auth/password
+  /v2/auth/token-info
+  /v2/group-links
+  /v2/group-links/{id}
+  /v2/guest-links
+  /v2/guest-links/{id}
+  /v2/languages
+  /v2/meetings
+  /v2/meetings/{id}
+  /v2/meetings/{id}/cancellation
+  /v2/permission-groups
+  /v2/room-types
+  /v2/rooms
+  /v2/rooms/{id}
+  /v2/rooms/{id}/participants
+  /v2/rooms/{roomId}/attendances
+  /v2/rooms/{roomId}/features
+  /v2/rooms/{roomId}/file-share-limits
+  /v2/rooms/{roomId}/file-share-settings
+  /v2/rooms/{roomId}/group-links
+  /v2/rooms/{roomId}/group-links/{id}
+  /v2/rooms/{roomId}/guest-links
+  /v2/rooms/{roomId}/guest-links/{id}
+  /v2/rooms/{roomId}/language-settings
+  /v2/rooms/{roomId}/passcode
+  /v2/rooms/{roomId}/permissions
+  /v2/rooms/{roomId}/permissions/{userId}
+  /v2/rooms/{roomId}/subrooms
+  /v2/rooms/{roomId}/subrooms/{subroomId}
+  /v2/stats
+  /v2/users
+  /v2/users/invitation
+  /v2/users/me
+  /v2/users/me/company
+  /v2/users/{id}
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+echo "== state files =="; for f in state_*.json; do echo -n "$f: "; cat "$f"; echo; done
+echo "== grep old md5 06231fad =="; grep -rl "06231fadca0b36c314476322337976db" . 2>/dev/null
+echo "== grep 174787 =="; grep -rl "174787" . 2>/dev/null
+echo "== grep 25522f85 =="; grep -rl "25522f85" . 2>/dev/null
+echo "== knowledge ls =="; ls -la knowledge leads reports scripts inventory
+== state files ==
+state_bigpickle.json: {"phase": "POC", "target": "api"}
+state_laguna.json: {"phase": "POC", "target": "api"}
+state_ling3.json: {"phase": "POC", "target": "api"}
+state_longcat.json: {"phase": "POC", "target": "api"}
+state_mimo.json: {"phase": "POC", "target": "api"}
+state_nemotron3.json: {"phase": "POC", "target": "api"}
+== grep old md5 06231fad ==
+./leads/lead-bigpickle.md
+./analyst-out.txt
+./reports/analyst-nemotron3.log
+./reports/hypotheses-bigpickle.txt
+./reports/analyst-bigpickle.log
+./ctx.txt
+./inventory/alfaview.md
+./analyst-prompt.txt
+== grep 174787 ==
+./leads/lead-bigpickle.md
+./leads/lead-nemotron3.md
+./analyst-out.txt
+./reports/hypotheses.md
+./reports/analyst-nemotron3.log
+./reports/hypotheses-bigpickle.txt
+./reports/hypotheses-nemotron3.txt
+./reports/analyst-bigpickle.log
+./ctx.txt
+./knowledge/index.md
+./inventory/alfaview.md
+./analyst-prompt.txt
+== grep 25522f85 ==
+./analyst-out.txt
+== knowledge ls ==
+inventory:
+total 220
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 .
+drwxr-xr-x 12 runner runner   4096 Oct 12 17:55 ..
+-rw-r--r--  1 runner runner 216298 Oct 12 17:55 alfaview.md
+
+knowledge:
+total 336
+drwxr-xr-x  2 runner runner   4096 Oct 12 17:55 .
+drwxr-xr-x 12 runner runner   4096 Oct 12 17:55 ..
+-rw-r--r--  1 runner runner 335820 Oct 12 17:55 index.md
+
+leads:
+total 4208
+drwxr-xr-x  2 runner runner    4096 Oct 12 17:55 .
+drwxr-xr-x 12 runner runner    4096 Oct 12 17:55 ..
+-rw-r--r--  1 runner runner 1591899 Oct 12 17:55 lead-bigpickle.md
+-rw-r--r--  1 runner runner   12087 Oct 12 17:55 lead-laguna.md
+-rw-r--r--  1 runner runner   11850 Oct 12 17:55 lead-ling3.md
+-rw-r--r--  1 runner runner   12324 Oct 12 17:55 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct 12 17:55 lead-mimo.md
+-rw-r--r--  1 runner runner 2625011 Oct 12 17:55 lead-nemotron3.md
+-rw-r--r--  1 runner runner   34344 Oct 12 17:55 reposcan-alfaview.md
+
+reports:
+total 13896
+drwxr-xr-x  2 runner runner    4096 Oct 12 17:55 .
+drwxr-xr-x 12 runner runner    4096 Oct 12 17:55 ..
+-rw-r--r--  1 runner runner 8015021 Oct 12 17:55 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   51429 Oct 12 17:55 analyst-laguna.log
+-rw-r--r--  1 runner runner   51192 Oct 12 17:55 analyst-ling3.log
+-rw-r--r--  1 runner runner   51666 Oct 12 17:55 analyst-longcat.log
+-rw-r--r--  1 runner runner 5138515 Oct 12 17:55 analyst-nemotron3.log
+-rw-r--r--  1 runner runner   21465 Oct 12 17:55 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Oct 12 17:55 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Oct 12 17:55 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Oct 12 17:55 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   12975 Oct 12 17:55 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  839241 Oct 12 17:55 hypotheses.md
+-rw-r--r--  1 runner runner    9922 Oct 12 17:55 valid-bugs.md
+
+scripts:
+total 28
+drwxr-xr-x  2 runner runner  4096 Oct 12 17:55 .
+drwxr-xr-x 12 runner runner  4096 Oct 12 17:55 ..
+-rw-r--r--  1 runner runner 16987 Oct 12 17:55 sync-issues.py
+[0m
+Same path/op counts (38/57) — the +1563B is a content rotation, not new endpoints. I need the authoritative prior comparator. Searching the repo for prior baseline records.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+echo "== yaml head =="; head -50 recon-notes/alfaview-openapi.yaml
+echo "== yaml path count =="; grep -c "^  /v2" recon-notes/alfaview-openapi.yaml
+== yaml head ==
+components:
+  schemas:
+    APICredentials:
+      additionalProperties: false
+      properties:
+        clientId:
+          description: The alias of the API key.
+          type: string
+        companyId:
+          description: The company ID.
+          type: string
+        key:
+          description: The API key to authenticate.
+          type: string
+      required:
+        - companyId
+        - clientId
+        - key
+      type: object
+    AccessToken:
+      additionalProperties: false
+      properties:
+        accessToken:
+          description: Access tokens are returned after successful authentication as a base64-encoded string. Use the token in the 'Authorization' header in order to access the API.
+          type: string
+      required:
+        - accessToken
+      type: object
+    Attendance:
+      additionalProperties: false
+      properties:
+        displayName:
+          description: The name of the user that was displayed in UIs at the time of the attendance.
+          type: string
+        from:
+          description: The start time.
+          examples:
+            - "2024-09-22T11:00:00Z"
+          format: date-time
+          type: string
+        to:
+          description: The end time.
+          examples:
+            - "2024-09-22T12:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - displayName
+        - from
+        - to
+== yaml path count ==
+37
+[0m
+[0m→ [0mRead analyst-out.txt
+`25522f85` already appears in `analyst-out.txt`. Reading it plus comparing path sets.
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+python3 - <<'EOF'
+import re,json
+y=open('recon-notes/alfaview-openapi.yaml').read()
+yp=set(re.findall(r'^  (/v2\S*):', y, re.M))
+n=json.load(open('/tmp/openapi-new.json'))
+np=set(n['paths'])
+print("yaml-only:", sorted(yp-np))
+print("new-only:", sorted(np-yp))
+print("counts yaml",len(yp),"new",len(np))
+EOF
+yaml-only: []
+new-only: ['/v2/users/me/company']
+counts yaml 37 new 38
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+echo "== git tracked openapi =="; git ls-files | grep -iE "openapi|swagger"
+echo "== new spec headers =="; curl -sI --max-time 20 "https://apis.alfaview.com/v2/docs/openapi.json"
+echo "== search corpus for embedded openapi json =="
+grep -c '"openapi"' ctx.txt analyst-prompt.txt knowledge/index.md inventory/alfaview.md leads/lead-bigpickle.md 2>/dev/null
+== git tracked openapi ==
+recon-notes/alfaview-openapi.yaml
+== new spec headers ==
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+cache-control: public, max-age=3600
+content-length: 176350
+content-type: application/openapi+json
+etag: "5c990ef90d1f0c044478e99129c928ff"
+date: Mon, 12 Oct 2026 17:56:17 GMT
+server: edge-proxy
+
+== search corpus for embedded openapi json ==
+ctx.txt:0
+analyst-prompt.txt:0
+knowledge/index.md:0
+inventory/alfaview.md:0
+leads/lead-bigpickle.md:0
+[0m
+This is a harness replay: `analyst-out.txt` is the log of the prior run, and the dated snapshot was never committed. I need an authoritative old copy to diff. Checking git and whether the corpus embeds it.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+echo "== context around 06231fad in ctx.txt =="; grep -n "06231fad" ctx.txt | head
+echo "== context around 06231fad in analyst-prompt.txt =="; grep -n "06231fad" analyst-prompt.txt | head
+echo "== look for 2026-10-06 snapshot mention =="; grep -rn "2026-10-06" . 2>/dev/null | head
+== context around 06231fad in ctx.txt ==
+1182:- 2026-10-06 CHANGED @ apis: first OpenAPI rotation since 2026-09-28 (md5 `284a3383` -> `06231fad`, 132100B -> 174787B) and the first time in program history that the contract declares an auth scheme at all — `components.securitySchemes.accessToken` with `bearerFormat: opaque` plus per-op `security` on 53/57 operations. Paths and operations did not move (38/57, audit-log still unpublished), so the delta is entirely declaration/annotation depth: security scheme, problem+json response bodies, `WWW-Authenticate` documentation, and three prose sentences.
+1230:- 2026-10-07 CHANGED @ apis: first OpenAPI rotation since 2026-09-28 (md5 `284a3383` -> `06231fad`, 132100B -> 174787B) and the first time in program history that the contract declares an auth scheme at all — `components.securitySchemes.accessToken` with `bearerFormat: opaque` plus per-op `security` on 53/57 operations. Paths and operations did not move (38/57, audit-log still unpublished), so the delta is entirely declaration/annotation depth: security scheme, problem+json response bodies, `WWW-Authenticate` documentation, and three prose sentences.
+1243:- 2026-10-07 NO_DELTA @ apis/beta-apis/sso/app/tools/diagnostics: full hash set above unchanged; beta OpenAPI is byte-identical to prod (`06231fad`), so there is no beta/prod contract drift to exploit; the graphql header-flip guard behaves exactly as recorded (`x-apollo-operation-name` alone flips 400/406B → 200/32B `c2b4dd58`).
+1376:[CHANGED] 47th consecutive byte-stable cycle on standing probes: OpenAPI 06231fadca0b36c314476322337976db/174787B, OIDC f78a08fced8b042093396383b74d8458/2169B, JWKS 3f8d456c7fd92c6107f3fd77732bd0f4/16257B
+2933:- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+2935:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+2942:- CHANGED apis.alfaview.com/v2/docs/openapi.json: rotated 132100B→174787B (MD5 284a3383→06231fad), first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+2948:- NEW apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+2956:- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+2958:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+== context around 06231fad in analyst-prompt.txt ==
+1182:- 2026-10-06 CHANGED @ apis: first OpenAPI rotation since 2026-09-28 (md5 `284a3383` -> `06231fad`, 132100B -> 174787B) and the first time in program history that the contract declares an auth scheme at all — `components.securitySchemes.accessToken` with `bearerFormat: opaque` plus per-op `security` on 53/57 operations. Paths and operations did not move (38/57, audit-log still unpublished), so the delta is entirely declaration/annotation depth: security scheme, problem+json response bodies, `WWW-Authenticate` documentation, and three prose sentences.
+1230:- 2026-10-07 CHANGED @ apis: first OpenAPI rotation since 2026-09-28 (md5 `284a3383` -> `06231fad`, 132100B -> 174787B) and the first time in program history that the contract declares an auth scheme at all — `components.securitySchemes.accessToken` with `bearerFormat: opaque` plus per-op `security` on 53/57 operations. Paths and operations did not move (38/57, audit-log still unpublished), so the delta is entirely declaration/annotation depth: security scheme, problem+json response bodies, `WWW-Authenticate` documentation, and three prose sentences.
+1243:- 2026-10-07 NO_DELTA @ apis/beta-apis/sso/app/tools/diagnostics: full hash set above unchanged; beta OpenAPI is byte-identical to prod (`06231fad`), so there is no beta/prod contract drift to exploit; the graphql header-flip guard behaves exactly as recorded (`x-apollo-operation-name` alone flips 400/406B → 200/32B `c2b4dd58`).
+1376:[CHANGED] 47th consecutive byte-stable cycle on standing probes: OpenAPI 06231fadca0b36c314476322337976db/174787B, OIDC f78a08fced8b042093396383b74d8458/2169B, JWKS 3f8d456c7fd92c6107f3fd77732bd0f4/16257B
+2933:- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+2935:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+2942:- CHANGED apis.alfaview.com/v2/docs/openapi.json: rotated 132100B→174787B (MD5 284a3383→06231fad), first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+2948:- NEW apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+2956:- CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+2958:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+== look for 2026-10-06 snapshot mention ==
+./leads/reposcan-alfaview.md:506:## REPOSCAN 2026-10-06 02:04:49 UTC
+./leads/reposcan-alfaview.md:508:## REPOSCAN 2026-10-06 09:05:38 UTC
+./leads/reposcan-alfaview.md:510:## REPOSCAN 2026-10-06 16:00:57 UTC
+./leads/reposcan-alfaview.md:512:## REPOSCAN 2026-10-06 21:02:35 UTC
+./leads/lead-laguna.md:208:## 2026-10-06 00:16:54 UTC [target] (model laguna)
+./leads/lead-laguna.md:209:## 2026-10-06 06:24:55 UTC [target] (model laguna)
+./leads/lead-laguna.md:210:## 2026-10-06 13:33:38 UTC [target] (model laguna)
+./leads/lead-laguna.md:211:## 2026-10-06 19:01:08 UTC [target] (model laguna)
+./leads/lead-laguna.md:212:## 2026-10-06 23:04:10 UTC [target] (model laguna)
+./leads/lead-ling3.md:208:## 2026-10-06 00:16:55 UTC [target] (model ling3)
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+python3 - <<'EOF'
+for ln in [2933,2934,2935,2936,2937,2942,2943,2948,2949,2956,2957,2958,2959,2960]:
+    try:
+        print(ln, open('ctx.txt').read().splitlines()[ln-1])
+    except Exception as e: print(ln,e)
+EOF
+2933 - CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+2934 - CHANGED app.alfaview.com bundle delivery: `/assets/app.min.67e8a68d4318b34ca241.js` now 302 -> `/`; identical bytes served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/...` (200 
+2935 - CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+2936 - CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+2937 
+2942 - CHANGED apis.alfaview.com/v2/docs/openapi.json: rotated 132100B→174787B (MD5 284a3383→06231fad), first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+2943 - CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64 JSON); alfaview tokens are opaque base64 (AccessToken schema, /v2/auth/
+2948 - NEW apis.alfaview.com/v2/docs/openapi.json rotated 132100B→174787B (MD5 284a3383→06231fad) — first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat: opaque, per-op security
+2949 - NEW app.alfaview.com/graphql: __typename now returns 200 (was 400 CSRF guidance); introspection remains disabled — behavioral change, not new exposure
+2956 - CHANGED apis.alfaview.com `/v2/docs/openapi.json` rotated for the first time since 2026-09-28: 132100B / md5 `284a3383c1ac3cfc9152ffcc631891f2` -> 174787B / md5 `06231fadca0b36c314476322337976db`, confirmed b
+2957 - CHANGED app.alfaview.com bundle delivery: `/assets/app.min.67e8a68d4318b34ca241.js` now 302 -> `/`; identical bytes served from `alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/...` (200 
+2958 - CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+2959 - CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+2960 - CHANGED `app.alfaview.com/assets/app.min.67e8a68d…js` → 302 `/`; identical bytes from `alfaview-com-assets.alfaview.com` (1092529B, md5 `2cb91283…`, `adminSwitchCompany` present).
+[0m
+Genuine second rotation confirmed: `284a3383`(132100B) → `06231fad`(174787B) → now `25522f85`(176350B). I need an old copy to attribute the +1563B. The corpus mentions a byte-identical beta. Let me find it and read the rotation records.
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+echo "== beta hostnames =="; grep -oiE "beta[-a-z0-9]*\.alfaview\.com" ctx.txt | sort -u
+echo "== yaml md5/size =="; md5sum recon-notes/alfaview-openapi.yaml; wc -c recon-notes/alfaview-openapi.yaml
+echo "== yaml mentions of 159550 / 2283 / 6738669c =="; grep -nE "159550|2283[0-9]{2}|6738669c" ctx.txt | head
+== beta hostnames ==
+beta-alfaview-assets.alfaview.com
+beta-alfaview-com-assets.alfaview.com
+beta-apis.alfaview.com
+beta-app.alfaview.com
+beta-hcloud-19-beta-audio-4xstl.alfaview.com
+beta-hcloud-19-beta-audio-8xnz9.alfaview.com
+beta-hcloud-19-beta-engine-9m62k.alfaview.com
+beta-hcloud-19-beta-engine-vlhwd.alfaview.com
+beta-hcloud-19-beta-hydra-dzwx8.alfaview.com
+beta-hcloud-19-beta-video-xjl6p.alfaview.com
+beta-hcloud-19-beta-video-zhjvl.alfaview.com
+beta-ionoscloud-21-beta-audio-65st7.alfaview.com
+beta-ionoscloud-21-beta-audio-bdtmf.alfaview.com
+beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com
+beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com
+beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com
+beta-ionoscloud-21-beta-video-6pp2m.alfaview.com
+beta-ionoscloud-21-beta-video-l5mbv.alfaview.com
+beta-noris-33-beta-audio-ljj9x.alfaview.com
+beta-noris-33-beta-audio-xr4mw.alfaview.com
+beta-noris-33-beta-engine-cr5rs.alfaview.com
+beta-noris-33-beta-engine-w84qw.alfaview.com
+beta-noris-33-beta-hydra-2zm7t.alfaview.com
+beta-noris-33-beta-video-2f9jw.alfaview.com
+beta-noris-33-beta-video-vbvn5.alfaview.com
+beta-ovh-29-beta-audio-j5qgh.alfaview.com
+beta-ovh-29-beta-audio-vldgf.alfaview.com
+beta-ovh-29-beta-engine-dxvt4.alfaview.com
+beta-ovh-29-beta-engine-k7khj.alfaview.com
+beta-ovh-29-beta-hydra-z4tf8.alfaview.com
+beta-ovh-29-beta-video-8zvvm.alfaview.com
+beta-ovh-29-beta-video-gbbw4.alfaview.com
+beta-webclient.alfaview.com
+== yaml md5/size ==
+082e2ba8fa493f8634ecd87328ebf1fa  recon-notes/alfaview-openapi.yaml
+159550 recon-notes/alfaview-openapi.yaml
+== yaml mentions of 159550 / 2283 / 6738669c ==
+1179:- 2026-10-06 NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5 3f8d456c, OIDC md5 f78a08fc (introspection_endpoint absent), introspect OPTIONS 405, users/me 401/107B md5 60ed2f29, audit-log 422/232 query.from+query.to binder, app graphql 400/406B, tools list 501/55B (staging identical) — surface byte-stable, no new unauthenticated exploit surface.
+1227:- 2026-10-07 NO_DELTA @ apis/sso/app/tools: OpenAPI JSON md5 284a3383 (38 paths/57 ops, no securitySchemes, no top-level security, no audit-log), YAML md5 6738669c, JWKS md5 3f8d456c, OIDC md5 f78a08fc (introspection_endpoint absent), introspect OPTIONS 405, users/me 401/107B md5 60ed2f29, audit-log 422/232 query.from+query.to binder, app graphql 400/406B, tools list 501/55B (staging identical) — surface byte-stable, no new unauthenticated exploit surface.
+2808:- NEW apis.alfaview.com/v2/docs/openapi.yaml (YAML twin, 165360B, md5 6738669c92a893c56e157c3927044134) — different byte-stream from JSON (132100B, 284a3383c1ac3cfc9152ffcc631891f2) but semantically identic
+2935:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+2958:- CHANGED apis.alfaview.com `/v2/docs/openapi.json`: 132100B / md5 `284a3383` → 174787B / md5 `06231fadca0b36c314476322337976db` (2 prod fetches + 1 beta fetch, byte-identical); YAML 165360B / `6738669c` → 2283
+[0m
+YAML twin provenance found. Now fetching the beta twin (historically byte-identical) and the live YAML to cross-check, plus checking for an archived old copy.
+[0m$ [0mfor u in \
+ "https://beta-apis.alfaview.com/v2/docs/openapi.json" \
+ "https://apis.alfaview.com/v2/docs/openapi.yaml" \
+ ; do
+  echo "=== $u ==="
+  curl -s -o /tmp/x.$$ -w "HTTP %{http_code} size=%{size_download} md5=" --max-time 25 "$u"
+  md5sum /tmp/x.$$ | cut -d' ' -f1
+  cp /tmp/x.$$ "/tmp/$(echo $u|md5sum|cut -c1-8).out"
+done
+ls -l /tmp/*.out
+=== https://beta-apis.alfaview.com/v2/docs/openapi.json ===
+HTTP 200 size=176350 md5=25522f8571f589c5cfba211ad2982b66
+=== https://apis.alfaview.com/v2/docs/openapi.yaml ===
+HTTP 200 size=230245 md5=b42bfa3ab78fb6e67dd71bd115724793
+-rw-r--r-- 1 runner runner 176350 Oct 12 17:56 /tmp/0274efcd.out
+-rw-r--r-- 1 runner runner 230245 Oct 12 17:56 /tmp/b20ca97d.out
+[0m
+[0m$ [0mecho "== wayback availability =="
+curl -s --max-time 25 "http://archive.org/wayback/available?url=apis.alfaview.com/v2/docs/openapi.json" ; echo
+curl -s --max-time 25 "https://web.archive.org/cdx/search/cdx?url=apis.alfaview.com/v2/docs/openapi.json&output=json&limit=20" ; echo
+== wayback availability ==
+{"url": "apis.alfaview.com/v2/docs/openapi.json", "archived_snapshots": {"closest": {"status": "200", "available": true, "url": "http://web.archive.org/web/20260712154700/https://apis.alfaview.com/v2/docs/openapi.json", "timestamp": "20260712154700"}}}
+[["urlkey","timestamp","original","mimetype","statuscode","digest","length"],
+["com,alfaview,apis)/v2/docs/openapi.json","20260419183057","https://apis.alfaview.com/v2/docs/openapi.json","application/openapi+json","200","MSQ4HBQ4CABXT7BGZUGOHFC6BM4IBPDC","13583"],
+["com,alfaview,apis)/v2/docs/openapi.json","20260712154700","https://apis.alfaview.com/v2/docs/openapi.json","application/openapi+json","200","3UYHEXQHW4H6NZNR3MFWVSZKKQV45UJ4","13678"]]
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcd /tmp
+curl -sL --max-time 40 "https://web.archive.org/web/20260712154700id_/https://apis.alfaview.com/v2/docs/openapi.json" -o /tmp/wb-jul.json
+ls -l /tmp/wb-jul.json; head -c 200 /tmp/wb-jul.json; echo
+python3 - <<'EOF'
+import json
+try:
+    d=json.load(open('/tmp/wb-jul.json'))
+    print("OK paths",len(d.get('paths',{})),"openapi",d.get('openapi'))
+except Exception as e:
+    print("parse err",e)
+EOF failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+Wayback has two older snapshots (Apr/Jul 2026). Fetching the raw July snapshot as a distant baseline and running a full schema/path diff against the local stripped YAML and the new live JSON.
+[0m
+[0m$ [0mcd /home/runner/work/alfaview-hunt/alfaview-hunt
+python3 - <<'EOF'
+import yaml,json
+y=yaml.safe_load(open('recon-notes/alfaview-openapi.yaml'))
+n=json.load(open('/tmp/openapi-new.json'))
+ys=set(y.get('components',{}).get('schemas',{}))
+ns=set(n.get('components',{}).get('schemas',{}))
+print("yaml top keys:",list(y.keys()))
+print("yaml schemas:",len(ys),"new schemas:",len(ns))
+print("new-only schemas:",sorted(ns-ys))
+print("yaml-only schemas:",sorted(ys-ns))
+# operationIds
+def opids(d):
+    out={}
+    for p,item in d.get('paths',{}).items():
+        for m,op in item.items():
+            if isinstance(op,dict) and 'operationId' in op:
+                out[(p,m)]=op['operationId']
+    return out
+yo,no=opids(y),opids(n)
+print("yaml ops",len(yo),"new ops",len(no))
+print("new-only ops:",sorted(set(no)-set(yo)))
+print("yaml-only ops:",sorted(set(yo)-set(no)))
+EOF
+yaml top keys: ['components', 'info', 'openapi', 'paths', 'servers', 'tags']
+yaml schemas: 64 new schemas: 69
+new-only schemas: ['Actor', 'Company', 'Event', 'PaginatedBodyListEvent', 'Target']
+yaml-only schemas: []
+yaml ops 56 new ops 57
+new-only ops: [('/v2/users/me/company', 'get')]
+yaml-only ops: []
+[0m
