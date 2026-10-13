@@ -1357,3 +1357,24 @@
 - 2026-10-12 REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish `/v2/audit-log` (still the live-but-unpublished 39th path) and did not resolve the dang
 - 2026-10-12 ACCEPTED PROCEDURAL @ recon-notes: the promised `recon-notes/alfaview-openapi-2026-10-06.json` snapshot was never committed, so exact attribution of thi
 - 2026-10-12 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted besides the spec rotation — every standing endpoint byte-identical.
+- 2026-10-13 ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication operations; this is the first full enumeration of the spec's own auth boundary
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list — no disclosure beyond published contract, same rejection as the prior query-param binder finding
+- 2026-10-13 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT cleanly corroborate a "first declaration of securitySchemes" claim; the live JSON is the only authoritative comparator
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
+- 2026-10-13 ACCEPTED INFO @ apis.alfaview.com: first full read of `info.description` yields the auth contract — 1h token TTL, optional `Bearer ` prefix, RFC 9457
+- 2026-10-13 ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (`06231fad`→`25522f857`) with identical 38 paths/57 ops/69 schemas and iden
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish `/v2/audit-log` (still the live-but-unpublished 39th path) and did not resolve the dang
+- 2026-10-13 ACCEPTED PROCEDURAL @ recon-notes: the promised `recon-notes/alfaview-openapi-2026-10-06.json` snapshot was never committed, so exact attribution of thi
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted besides the spec rotation — every standing endpoint byte-identical.
+- 2026-10-13 ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI components.securitySchemes={}, security=null
+- 2026-10-13 ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and DELETE-only on undocumented /v2/users/invitations; both Go router (19B text/plain), both 405 before 401
+- 2026-10-13 ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with RoomPermissions.participantId)
+- 2026-10-13 ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment surface on quota fields undocumented
+- 2026-10-13 PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted only after per-field lookup
+- 2026-10-13 ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 46 cycles — not flaky, genuinely unenforced.
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing is exhausted — every standing endpoint is byte-identical; further cycles yield no new surface.
+- 2026-10-13 ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck.
+- 2026-10-13 ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication operations; this is the first full enumeration of the spec's own auth boundary
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list — no disclosure beyond published contract, same rejection as the prior query-param binder finding
+- 2026-10-13 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT cleanly corroborate a "first declaration of securitySchemes" claim; the live JSON is the only authoritative comparator
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle

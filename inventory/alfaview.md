@@ -1755,3 +1755,17 @@ www.alfaview.com
 - CHANGED spec evolution Apr->Jul->now isolated via the two Wayback comparators: +GET /v2/users/me/company (GetOwnCompany, the companyId supplier); +5 orphan audit schemas Actor/Company/Event/PaginatedBodyListE
 - NEW material contract facts now recorded for the first time (info.description Quickstart, previously not in KB): "Access tokens are valid for 1 hour" (TTL); Bearer prefix explicitly optional ("Authorizati
 - CHANGED NO_NEW_SURFACE — every standing endpoint besides the spec is byte-identical; the rotation is the only delta (first after 47 stable cycles).
+
+## 2026-10-13 04:10:32 UTC
+- NEW apis.alfaview.com GET /v2/audit-log — LIVE, UNDOCUMENTED 39th path. Absent from the 38-path
+- NEW apis.alfaview.com /v2/audit-log pre-auth query binder COMPLETE (per-operation, negative-controlled):
+- NEW Orphan schema family in the published contract: Event, Actor, Target, PaginatedBodyListEvent.
+- NEW Event.metadata description names an operation — "refer to the 'List Searchable metadata attributes' endpoint" —
+- CHANGED Pre-auth validation-before-auth class: 9 → 10 GET operations, the new member fully characterised.
+- CHANGED Whole-contract confirmation: grep for "audit|event|log" across all 132100B returns only
+- NEW apis.alfaview.com/v2/docs/openapi.json ROTATED after 47 stable cycles: 174787B / md5 06231fadca0b36c314476322337976db -> 176350B / md5 25522f8571f589c5cfba211ad2982b66 (+1563B), confirmed by 2 prod fe
+- NEW external historical comparators recovered via Wayback Machine (local dated snapshot was never committed): 2026-04-19 = 123887B / md5 28f4219d (36 paths / 63 schemas); 2026-07-12 = 125955B / md5 d98eee
+- CHANGED material invariants UNCHANGED across the rotation: securitySchemes.accessToken={type:http,scheme:bearer,bearerFormat:opaque}; 53/57 ops declare security, exactly 4 (/v2/auth/{api-key,group-link,guest-
+- CHANGED spec evolution Apr->Jul->now isolated via the two Wayback comparators: +GET /v2/users/me/company (GetOwnCompany, the companyId supplier); +5 orphan audit schemas Actor/Company/Event/PaginatedBodyListE
+- NEW material contract facts now recorded for the first time (info.description Quickstart, previously not in KB): "Access tokens are valid for 1 hour" (TTL); Bearer prefix explicitly optional ("Authorizati
+- CHANGED NO_NEW_SURFACE — every standing endpoint besides the spec is byte-identical; the rotation is the only delta (first after 47 stable cycles).
