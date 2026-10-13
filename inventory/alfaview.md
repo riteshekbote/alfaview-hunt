@@ -1773,3 +1773,7 @@ www.alfaview.com
 ## 2026-10-13 11:55:38 UTC
 
 ## 2026-10-13 18:41:30 UTC
+
+## 2026-10-13 23:07:02 UTC
+- NEW OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 174787B→176350B (md5 `06231fad`→`25522f857`, +1563B) after 47 stable cycles — first auth-scheme declaration (`components.securityScheme
+- CHANGED `apis.alfaview.com/v2/audit-log` confirmed live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: `stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, 

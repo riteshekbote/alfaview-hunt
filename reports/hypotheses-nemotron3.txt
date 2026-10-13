@@ -1,4 +1,6 @@
-## 2026-10-13 18:37:15 UTC [target] (model nemotron3)
+## 2026-10-13 23:06:51 UTC [target] (model nemotron3)
+[NEW] OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 174787B→176350B (md5 `06231fad`→`25522f857`, +1563B) after 47 stable cycles — first auth-scheme declaration (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `security` on 53/57 ops), +5 orphan audit schemas (Actor/Company/Event/PaginatedBodyListEvent/Target), `info.description` now documents 1h token TTL, optional `Bearer ` prefix, RFC 9457 problem+json
+[CHANGED] `apis.alfaview.com/v2/audit-log` confirmed live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: `stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, `users?emailAddress`, `guest-links?limit`, `group-links?limit`, `rooms?roomTypes`, `rooms/{id}/attendances`, `audit-log`)
 [PRIO] apis.alfaview.com/v2/guest-links, 8.15, attack_surface=9, business_value=9, tech_exposure=8, gate_ease=1, cloud_surface=7, freshness=6
 [PRIO] sso.alfaview.com/oauth2/introspect, 7.90, attack_surface=8, business_value=7, tech_exposure=9, gate_ease=1, cloud_surface=7, freshness=7
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany), 7.60, attack_surface=7, business_value=9, tech_exposure=8, gate_ease=1, cloud_surface=6, freshness=6
