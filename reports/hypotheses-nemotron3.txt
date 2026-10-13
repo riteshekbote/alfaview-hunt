@@ -1,4 +1,4 @@
-## 2026-10-13 04:10:20 UTC [target] (model nemotron3)
+## 2026-10-13 11:53:11 UTC [target] (model nemotron3)
 [PRIO] apis.alfaview.com/v2/guest-links, 8.15, attack_surface=9, business_value=9, tech_exposure=8, gate_ease=1, cloud_surface=7, freshness=6
 [PRIO] sso.alfaview.com/oauth2/introspect, 7.90, attack_surface=8, business_value=7, tech_exposure=9, gate_ease=1, cloud_surface=7, freshness=7
 [PRIO] app.alfaview.com/graphql (adminSwitchCompany), 7.60, attack_surface=7, business_value=9, tech_exposure=8, gate_ease=1, cloud_surface=6, freshness=6
@@ -37,7 +37,6 @@ testability: HUMAN_ONLY
 [PARKED] apis.alfaview.com/v2/auth/api-key: Declares unique 403 tier but no live test without credentials; opaque token format same as other auth endpoints
 [PARKED] apis.alfaview.com/v2/audit-log: Pre-auth validation confirmed (10th GET op), but undocumented path mirrors GraphQL ListAuditEvents(flag:companyId) — authorization behavior unmeasured without token; flag param may restrict to own company
 [FINAL] Ranked survivors:
-[NEXT] HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup) to obtain a valid bearer token; then test introspect with real token (POST /oauth2/introspect token=<token>&client_id=fake-123) and test guest-links enumeration (GET /v2/guest-links with Authorization header). All HIGH-value chains gate on this single token acquisition.
 [NEXT] HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup) to obtain a valid bearer token; then test introspect with real token (POST /oauth2/introspect token=<token>&client_id=fake-123) and test guest-links enumeration (GET /v2/guest-links with Authorization header). All HIGH-value chains gate on this single token acquisition.
 [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI components.securitySchemes={}, security=null
 [LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and DELETE-only on undocumented /v2/users/invitations; both Go router (19B text/plain), both 405 before 401

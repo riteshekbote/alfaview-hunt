@@ -1769,3 +1769,5 @@ www.alfaview.com
 - CHANGED spec evolution Apr->Jul->now isolated via the two Wayback comparators: +GET /v2/users/me/company (GetOwnCompany, the companyId supplier); +5 orphan audit schemas Actor/Company/Event/PaginatedBodyListE
 - NEW material contract facts now recorded for the first time (info.description Quickstart, previously not in KB): "Access tokens are valid for 1 hour" (TTL); Bearer prefix explicitly optional ("Authorizati
 - CHANGED NO_NEW_SURFACE — every standing endpoint besides the spec is byte-identical; the rotation is the only delta (first after 47 stable cycles).
+
+## 2026-10-13 11:55:38 UTC

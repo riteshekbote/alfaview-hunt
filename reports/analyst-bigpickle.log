@@ -106964,3 +106964,57 @@ grep -oE 'href="[^"]+\.js"' approot.html | head
 echo "--- app.min ref ---"
 grep -oE 'app\.min\.[a-f0-9]+\.js' approot.html | head failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
+===== ANALYST bigpickle 2026-10-13 11:55:38 UTC =====
+[0m
+> build · big-pickle
+[0m
+I see you have a comprehensive knowledge base. Let me analyze it and output the structured blocks as specified.
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/alfaview.md | tail -50
+cat: /home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/alfaview.md: No such file or directory
+[0m
+## Objective
+- Continue passive-first bug bounty reconnaissance and hypothesis tracking for the alfaview gmbh program, maintaining an auditable knowledge base while strictly adhering to read-only constraints (GET/HEAD/OPTIONS only, ≤1 rps, no mutating tests against live customer data).
+
+## Important Details
+- **Scope (only in-scope):** `alfaview.com` and all company-operated subdomains (inventory: 55 dedicated hosts, 100% probed; 31 exhausted).
+- **Constraints:** Passive-first. HUMAN_ONLY required for unauthenticated signup/token acquisition. Strict out-of-scope classes enforced (DoS, brute-force/rate-limit policy, username enumeration, scanner-only reports, etc.).
+- **Auth model:** APIs use opaque base64 access tokens (1h TTL). OpenAPI `components.securitySchemes.accessToken` declared (`bearerFormat: opaque`), 53/57 operations declare `security: [{accessToken:[]}]`, exactly 4 auth endpoints (`POST /v2/auth/{api-key,group-link,guest-link,password}`) declare `none`. Bearer prefix is explicitly optional per `info.description`. 
+- **Surface state (latest stable):** `apis.alfaview.com/v2/docs/openapi.json` 176350B (md5 `25522f8571f589c5cfba211ad2982b66`), `openapi.yaml` twin 230245B (md5 `b42bfa3ab78fb6e67dd71bd115724793`); 38 paths/57 ops/69 schemas. `/v2/audit-log` is a **live, undocumented 39th path** (mirrors GraphQL `ListAuditEvents`). First-time auth scheme declaration (rotation only, no new attack surface).
+- **Key behavioral facts:** `sso.alfaview.com/oauth2/introspect` enforces client authentication **only** for JWT-shaped tokens (3 segments, seg2 base64-decoded JSON); alfaview opaque base64 tokens bypass `client_id` validation on both POST-body and HTTP Basic (`200 {"active":false}"` with arbitrary `client_id`) — 30+ consecutive stable cycles. 
+- **Top survivors (all gated on one valid bearer token):** (1) OAuth2 introspection metadata disclosure — **confidence 94** (`sso.alfaview.com/oauth2/introspect`), (2) Company-wide guest-link enumeration — **confidence 88** (`apis.alfaview.com/v2/guest-links`), (3) Cross-tenant admin token minting via `adminSwitchCompany` — **confidence 85** (`app.alfaview.com/graphql`).
+- **Procedural:** All prior “UUID path pattern” claims were retracted (OpenAPI has zero `pattern` keys and zero `uuid` tokens). Contract text must be quoted only after per-field lookup. Delta claims require second method (DNS+HTTP). Guessed URLs never become findings.
+
+## Work State
+
+### Completed
+- **Inventory:** 55 dedicated hosts 100% probed; 31 exhausted. New hosts mapped (e.g., `tools.alfaview.com`, `staging-tools.alfaview.com`, `whiteboard.alfaview.com`, `staging-whiteboard.alfaview.com`, `status.alfaview.com`, `qa.alfaview.com`, `uni-stuttgart.alfaview.com`, `client-diagnostics-ingest.alfaview.com`, `equipment.alfaview.com`, `production-equipment.alfaview.com`, `webclient.alfaview.com`, `product-webclient.alfaview.com`, `support.alfaview.com`, `staging.alfaview.com`).
+- **OpenAPI tracking:** Baselines stored (`recon-notes/alfaview-openapi.yaml`, `recon-notes/alfaview-openapi-2026-10-06.json`). Historical comparators recovered via Wayback Machine (2026-04-19, 2026-07-12). JSON/YAML parity confirmed.
+- **Surface characterization:** Pre-auth query-parameter binder mapped (10 GET ops validate pre-auth; path-param routes correctly return 401). `/v2/users/invitation{,s}` Allow-header divergence recorded (single-route). Tools RPC surfaces mapped (`/poll/pollservice/*` 8 verbs + custom `Grpc-Metadata-alfaview.token`, and second unmapped `/whiteboard/*` RPC backend with distinct marshaller). 
+- **Hypothesis hardening:** Retractions/corrections applied (UUID-pattern, misattributed permission sentence). Three survivors locked with concrete verify_steps and testability flags (all `AUTH_HELPED`/`HUMAN_ONLY`).
+
+### Active
+- **Standing probes:** Full byte-stable set re-verified each cycle (OpenAPI/OIDC/JWKS/authorize/introspect/users/me/graphql/tools/health). Current state: **NO_DELTA** across all standing endpoints (47th+ consecutive stable cycle).
+- **Verification readiness:** Exact requests prepared for the three HIGH survivors; execution gated on obtaining a single valid bearer token via unauthenticated signup flow.
+
+### Blocked
+- **Triage pipeline:** Validation failing with `UnknownError`; last good verdict `triage/run-2026-09-24-17-56.md`. Validation loop (not recon) is the bottleneck.
+- **Token acquisition:** `app.alfaview.com/graphql` Signup → email → FinishSignup is `HUMAN_ONLY` (email-gated activation). No automated path to a legitimate bearer token exists. All HIGH-value chains depend on this single action.
+- **Attribution:** Exact per-field diff for the most recent OpenAPI rotation (+1563B) cannot be fully attributed against a committed pre-rotation snapshot beyond KB statements (dated snapshot exists but prior committed baseline was schema-only). Recorded as procedural limitation.
+
+## Next Move
+1. **[HUMAN]** Execute unauthenticated signup flow at `app.alfaview.com/graphql` (`mutation Signup` → email → `mutation FinishSignup(companyId,username,activationToken,password)`) to obtain one valid bearer access token. (Exact flow confirmed from public JS bundles; email-gated, HUMAN_ONLY.)
+2. **[PROBE]** Using that token, run the highest-priority verification: `POST https://sso.alfaview.com/oauth2/introspect` with `token=<valid-access-token>&client_id=fake-123` (and separately `Authorization: Basic base64(fake-123:any)`) expecting `200 {"active":true,...}` to validate hypothesis [HYP] OAuth2 introspection metadata disclosure (confidence 94). If positive, proceed to `GET https://apis.alfaview.com/v2/guest-links` with `Authorization: <valid-token>` (confidence 88), else do not proceed to mutating/write-chain tests.
+
+## Relevant Files
+- `inventory/alfaview.md`: Host inventory, HTTP verdicts, per-host state (authoritative surface map).
+- `recon-notes/alfaview-openapi.yaml`: 37-path schema-only baseline (historical reference; not full OpenAPI document).
+- `recon-notes/alfaview-openapi-2026-10-06.json`: Dated live snapshot for future rotation attribution.
+- `recon-notes/alfaview-openapi-*.json` (Wayback comparators): `2026-04-19` (36 paths/63 schemas, md5 `28f4219d`), `2026-07-12` (37 paths/64 schemas, md5 `d98eee79`).
+- `leads/lead-bigpickle.md`, `leads/lead_nemotron3.txt`, `art/lead_bigpickle.txt`, `art/lead_nemotron3.txt`: Lead artifacts and ranked hypotheses (source of top-3 survivors).
+- `hypotheses-bigpickle.txt`, `hypotheses-nemotron3.txt`: Current hypothesis sets and NEXT actions.
+- `probe-results.md`: Read-only probe history and byte/md5 baselines.
+- `knowledge-base/alfaview-kb.md` (and `knowledge-base/*`): Consolidated ACCEPTED/REJECTED/INFO/LEARN entries with full audit trail.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Blocked: need valid bearer token (HUMAN_ONLY).  
+Please complete signup at app.alfaview.com/graphql (Signup → email → FinishSignup) and share token.  
+Next: test sso.alfaview.com/oauth2/introspect with client_id=fake-123.
