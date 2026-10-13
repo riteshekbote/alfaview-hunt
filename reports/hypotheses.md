@@ -5715,3 +5715,25 @@
 - LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list 
 - LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT c
 - LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
+
+## RANKED HYPOTHESES 2026-10-13 18:41:30 UTC
+- [88] apis.alfaview.com/v2/guest-links,: Company-wide guest-link enumeration yields live join credentials without expressible authorization check (from art/lead_nemotron3.txt)
+- [88] apis.alfaview.com/v2/guest-links: Company-wide guest-link list yields live join credentials without expressible authorization check (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup(companyId,username,activationToken,password)) to 
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup) to obtain a valid bearer token; then test intros
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken; the 4 no-security ops are exactly the authentication 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation exposes only published required-property list, no disclosure beyond contract.
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for r
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI compon
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
+- LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
+- LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 46 cycles — not flaky, genuinely unenforced.
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing is exhausted — every standing endpoint is byte-identical; further cycles yield no new surface.
+- LEARN: ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck.
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list 
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT c
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle

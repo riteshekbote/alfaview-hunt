@@ -1378,3 +1378,7 @@
 - 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list — no disclosure beyond published contract, same rejection as the prior query-param binder finding
 - 2026-10-13 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT cleanly corroborate a "first declaration of securitySchemes" claim; the live JSON is the only authoritative comparator
 - 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
+- 2026-10-13 ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken; the 4 no-security ops are exactly the authentication operations.
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation exposes only published required-property list, no disclosure beyond contract.
+- 2026-10-13 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for rotations.
+- 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.
