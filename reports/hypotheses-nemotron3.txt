@@ -1,10 +1,10 @@
-## 2026-10-14 20:57:07 UTC [target] (model nemotron3)
-[PRIO] sso.alfaview.com/oauth2/introspect, 9.25, attack_surface=10, business_value=9, tech_exposure=10, gate_ease=10, cloud_surface=7, freshness=10
-[PRIO] apis.alfaview.com/v2/guest-links + /v2/group-links, 8.45, attack_surface=9, business_value=10, tech_exposure=9, gate_ease=1, cloud_surface=6, freshness=6
-[PRIO] app.alfaview.com/graphql (adminSwitchCompany), 8.20, attack_surface=9, business_value=9, tech_exposure=8, gate_ease=1, cloud_surface=6, freshness=6
-[PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions), 7.75, attack_surface=8, business_value=9, tech_exposure=8, gate_ease=1, cloud_surface=5, freshness=3
-[PRIO] apis.alfaview.com/v2/audit-log, 6.55, attack_surface=6, business_value=7, tech_exposure=7, gate_ease=10, cloud_surface=5, freshness=8
-[PRIO] tools.alfaview.com/whiteboard/, 6.50, attack_surface=6, business_value=6, tech_exposure=7, gate_ease=5, cloud_surface=4, freshness=6
+## 2026-10-14 23:33:39 UTC [target] (model nemotron3)
+[PRIO] sso.alfaview.com/oauth2/introspect,9.25,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=7,freshness=10
+[PRIO] apis.alfaview.com/v2/guest-links + /v2/group-links,8.45,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=6,freshness=6
+[PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.20,attack_surface=9,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=6,freshness=6
+[PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions),7.75,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=5,freshness=3
+[PRIO] apis.alfaview.com/v2/audit-log,6.55,attack_surface=6,business_value=7,tech_exposure=7,gate_ease=10,cloud_surface=5,freshness=8
+[PRIO] tools.alfaview.com/whiteboard/,6.50,attack_surface=6,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=4,freshness=6
 [HYP] OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials
 class: AUTH
 asset: sso.alfaview.com/oauth2/introspect

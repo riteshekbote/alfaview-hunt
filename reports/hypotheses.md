@@ -5839,3 +5839,67 @@
 - LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing exhausted — every standing endpoint byte-identical for 47th+ cycle
 - LEARN: ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck
 - LEARN: ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken, 4 no-security ops are exactly the authentication operati
+
+## RANKED HYPOTHESES 2026-10-14 23:39:14 UTC
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 introspection discloses token metadata for any leaked opaque token with zero client credentials (from art/lead_bigpickle.txt)
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: execute unauthenticated signup at app.alfaview.com/graphql (Signup -> email -> FinishSignup(companyId,username,activationToken,password)) to obtain one v
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup(companyId,username,activationToken,password)) to 
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 9/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI compon
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com POST /v2/rooms: public unauthenticated-to-read contract (RoomCreate.permissions exposes participantId namespace collision with
+- LEARN: ACCEPTED BUSLOGIC @ apis.alfaview.com PATCH /v2/rooms/{id}: RoomUpdate.quotas description bare ("The quotas for the room"), no enum/constraints; mass-assignment
+- LEARN: PROCEDURAL: auditing own prior output against spec caught two fabrications (UUID-pattern claim; misattributed permission sentence). Contract text must be quoted
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 46 cycles — not flaky, genuinely unenforced.
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing is exhausted — every standing endpoint is byte-identical; further cycles yield no new surface.
+- LEARN: ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck.
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list 
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT c
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: first full read of `info.description` yields the auth contract — 1h token TTL, optional `Bearer ` prefix, RFC 9457
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (`06231fad`→`25522f857`) with identical 38 paths/57 ops/69 schemas and iden
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish `/v2/audit-log` (still the live-but-unpublished 39th path) and did not resolve the dang
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes: the promised `recon-notes/alfaview-openapi-2026-10-06.json` snapshot was never committed, so exact attribution of thi
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted besides the spec rotation — every standing endpoint byte-identical.
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list 
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT c
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: first full read of `info.description` yields the auth contract — 1h token TTL, optional `Bearer ` prefix, RFC 9457
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (`06231fad`→`25522f857`) with identical 38 paths/57 ops/69 schemas and iden
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish `/v2/audit-log` (still the live-but-unpublished 39th path) and did not resolve the dang
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes: the promised `recon-notes/alfaview-openapi-2026-10-06.json` snapshot was never committed, so exact attribution of thi
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted besides the spec rotation — every standing endpoint byte-identical.
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken; the 4 no-security ops are exactly the authentication 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation exposes only published required-property list, no disclosure beyond contract.
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for r
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live 176350B document contains "uuid" zero times and zero pa
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken (bearerFormat:opaque); 4 no-security ops are exactly the 
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotated 174787B→176350B (MD5 06231fad→25522f857) after 47 stable cycles; +audit-log path live undocumented; +Get
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com: introspect client-auth bypass is shape-dependent — JWT-shaped tokens (3 segments, seg2 JSON) enforce client auth; alfaview opa
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com: second unmapped RPC backend /whiteboard/ (47B gRPC envelope) distinct from /poll/pollservice/* (45B jsonpb); staging mi
+- LEARN: ACCEPTED PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs (CreatePermissions vs PermissionsEdit d
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list 
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT c
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: first full read of `info.description` yields the auth contract — 1h token TTL, optional `Bearer ` prefix, RFC 9457
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (`06231fad`→`25522f857`) with identical 38 paths/57 ops/69 schemas and iden
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish `/v2/audit-log` (still the live-but-unpublished 39th path) and did not resolve the dang
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes: the promised `recon-notes/alfaview-openapi-2026-10-06.json` snapshot was never committed, so exact attribution of thi
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted besides the spec rotation — every standing endpoint byte-identical.
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken; the 4 no-security ops are exactly the authentication 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation exposes only published required-property list, no disclosure beyond contract.
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for r
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI spec size grew 132100B→174787B→176350B (MD5 rotated twice) with identical 38 paths/57 ops — schema expansions on
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 10/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI compo
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live document contains "uuid" zero times, zero `pattern` key
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder as standalone finding — reproduces public spec only (numeric bounds, enum values, RFC-53
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 30+ cycles — not flaky, genuinely unenforced
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing exhausted — every standing endpoint byte-identical for 47th+ cycle
+- LEARN: ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken, 4 no-security ops are exactly the authentication operati
