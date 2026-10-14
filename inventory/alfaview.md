@@ -1777,3 +1777,9 @@ www.alfaview.com
 ## 2026-10-13 23:07:02 UTC
 - NEW OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 174787B→176350B (md5 `06231fad`→`25522f857`, +1563B) after 47 stable cycles — first auth-scheme declaration (`components.securityScheme
 - CHANGED `apis.alfaview.com/v2/audit-log` confirmed live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: `stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, 
+
+## 2026-10-14 01:59:10 UTC
+- NEW OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 174787B→176350B (md5 `06231fad`→`25522f857`, +1563B) after 47 stable cycles — first auth-scheme declaration (`components.securityScheme
+- NEW `apis.alfaview.com/v2/audit-log` confirmed live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: `stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, 
+- CHANGED `app.alfaview.com/graphql`: `__typename` now returns 200/32B with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled — behavioral change
+- CHANGED `sso.alfaview.com/oauth2/introspect`: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both

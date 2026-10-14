@@ -1382,3 +1382,12 @@
 - 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation exposes only published required-property list, no disclosure beyond contract.
 - 2026-10-13 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for rotations.
 - 2026-10-13 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.
+- 2026-10-14 ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI spec size grew 132100B→174787B→176350B (MD5 rotated twice) with identical 38 paths/57 ops — schema expansions only, no new attack surface
+- 2026-10-14 ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 10/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI components.securitySchemes={}, security=null (pre-rotation)
+- 2026-10-14 ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and DELETE-only on undocumented /v2/users/invitations; both Go router (19B text/plain), both 405 before 401
+- 2026-10-14 REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live document contains "uuid" zero times, zero `pattern` keys; all 42 path params unconstrained `type: string`
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder as standalone finding — reproduces public spec only (numeric bounds, enum values, RFC-5322 email, Go time layout); no disclosure beyond published contract
+- 2026-10-14 ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 30+ cycles — not flaky, genuinely unenforced
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing exhausted — every standing endpoint byte-identical for 47th+ cycle
+- 2026-10-14 ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck
+- 2026-10-14 ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken, 4 no-security ops are exactly the authentication operations
