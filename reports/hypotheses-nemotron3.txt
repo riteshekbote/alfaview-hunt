@@ -1,4 +1,4 @@
-## 2026-10-14 06:51:47 UTC [target] (model nemotron3)
+## 2026-10-14 12:34:59 UTC [target] (model nemotron3)
 [NEW] OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 174787B→176350B (md5 `06231fad`→`25522f857`, +1563B) after 47 stable cycles — first auth-scheme declaration (`components.securitySchemes.accessToken`, `bearerFormat: opaque`, per-op `security` on 53/57 ops), +5 orphan audit schemas (Actor/Company/Event/PaginatedBodyListEvent/Target), `info.description` now documents 1h token TTL, optional `Bearer ` prefix, RFC 9457 problem+json
 [NEW] `apis.alfaview.com/v2/audit-log` confirmed live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: `stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, `users?emailAddress`, `guest-links?limit`, `group-links?limit`, `rooms?roomTypes`, `rooms/{id}/attendances`, `audit-log`)
 [CHANGED] `app.alfaview.com/graphql`: `__typename` now returns 200/32B with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled — behavioral change
