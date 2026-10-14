@@ -1824,3 +1824,5 @@ www.alfaview.com
 - CHANGED `app.alfaview.com` public bundle rotated to `app.min.26f05bcb3f94dc9a764b.js` (new hash), still contains `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF
 - CHANGED `tools.alfaview.com/whiteboard/`: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll's 45B jsonpb; distinct marshaller; no auth challenge; zero client references in bundle; stagi
 - CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
+
+## 2026-10-14 20:57:19 UTC

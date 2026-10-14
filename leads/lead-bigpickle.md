@@ -10028,3 +10028,4 @@ testability: AUTH_HELPED
 [LEARN] ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for rotations.
 [LEARN] REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.
 [RISK] alfaview gmbh: 88/100. Broad 100%-probed inventory; APIs auth-gated by opaque 1h tokens behind uniform 401 gateway; auth scheme now declared in contract. Three contract-proven chains (introspect metadata disclosure 94, guest-links enumeration 88, adminSwitchCompany minting 85) all gate on obtaining a single valid token; triage validation loop remains broken but recon surface is fully mapped and byte-stable.
+## 2026-10-14 20:56:18 UTC [target] (model bigpickle)
