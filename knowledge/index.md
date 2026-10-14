@@ -1391,3 +1391,22 @@
 - 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing exhausted — every standing endpoint byte-identical for 47th+ cycle
 - 2026-10-14 ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck
 - 2026-10-14 ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken, 4 no-security ops are exactly the authentication operations
+- 2026-10-14 REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live 176350B document contains "uuid" zero times and zero pattern keys; all path params unconstrained type:string
+- 2026-10-14 ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken (bearerFormat:opaque); 4 no-security ops are exactly the authentication operations (/v2/auth/*)
+- 2026-10-14 ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotated 174787B→176350B (MD5 06231fad→25522f857) after 47 stable cycles; +audit-log path live undocumented; +GetOwnCompany identified as 38th path
+- 2026-10-14 ACCEPTED AUTH @ sso.alfaview.com: introspect client-auth bypass is shape-dependent — JWT-shaped tokens (3 segments, seg2 JSON) enforce client auth; alfaview opaque base64 tokens bypass client_id validation on both POST-body and HTTP Basic channels (30+ cycles stable)
+- 2026-10-14 ACCEPTED MISCONFIG @ tools.alfaview.com: second unmapped RPC backend /whiteboard/ (47B gRPC envelope) distinct from /poll/pollservice/* (45B jsonpb); staging mirror identical; zero client references in bundle
+- 2026-10-14 ACCEPTED PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs (CreatePermissions vs PermissionsEdit distinct); guessed URLs never become findings; delta claims require DNS+HTTP
+- 2026-10-14 ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken, the 4 no-security ops are exactly the authentication operations; this is the first full enumeration of the spec's own auth boundary
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list — no disclosure beyond published contract, same rejection as the prior query-param binder finding
+- 2026-10-14 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: the 37-path baseline is a schema-only stripped snapshot (no openapi/info/paths headers), so it CANNOT cleanly corroborate a "first declaration of securitySchemes" claim; the live JSON is the only authoritative comparator
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for the 47th cycle
+- 2026-10-14 ACCEPTED INFO @ apis.alfaview.com: first full read of `info.description` yields the auth contract — 1h token TTL, optional `Bearer ` prefix, RFC 9457
+- 2026-10-14 ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (`06231fad`→`25522f857`) with identical 38 paths/57 ops/69 schemas and iden
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish `/v2/audit-log` (still the live-but-unpublished 39th path) and did not resolve the dang
+- 2026-10-14 ACCEPTED PROCEDURAL @ recon-notes: the promised `recon-notes/alfaview-openapi-2026-10-06.json` snapshot was never committed, so exact attribution of thi
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted besides the spec rotation — every standing endpoint byte-identical.
+- 2026-10-14 ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken; the 4 no-security ops are exactly the authentication operations.
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation exposes only published required-property list, no disclosure beyond contract.
+- 2026-10-14 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for rotations.
+- 2026-10-14 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.

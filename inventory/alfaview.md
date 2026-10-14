@@ -1795,3 +1795,32 @@ www.alfaview.com
 - NEW `apis.alfaview.com/v2/audit-log` confirmed live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: `stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, 
 - CHANGED `app.alfaview.com/graphql`: `__typename` now returns 200/32B with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled — behavioral change
 - CHANGED `sso.alfaview.com/oauth2/introspect`: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both
+
+## 2026-10-14 17:40:05 UTC
+- CHANGED apis.alfaview.com/v2/docs/openapi.json rotated 174787B→176350B (MD5 06231fad→25522f857, +1563B) after 47 stable cycles — first declaration of auth scheme (components.securitySchemes.accessToken bearer
+- CHANGED app.alfaview.com/graphql: __typename now returns 200/32B with x-apollo-operation-name or apollo-require-preflight (was 400 CSRF guidance); introspection remains disabled
+- NEW apis.alfaview.com/v2/audit-log — live undocumented 39th path; pre-auth query binder complete (10 GET ops validate pre-auth)
+- NEW apis.alfaview.com/v2/users/me/company (GetOwnCompany) — 38th OpenAPI path; sole 200-response supplier of companyId across 57 ops
+- CHANGED sso.alfaview.com/oauth2/introspect — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2 base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on POST-
+- NEW tools.alfaview.com/whiteboard/ — second unmapped RPC backend (47B gRPC envelope) distinct from poll gateway (45B jsonpb); staging mirror byte-identical; zero client references in bundle
+- NEW client-diagnostics-ingest.alfaview.com — NXDOMAIN reversed; /health 200/16B, uniform 404s; equipment.alfaview.com + production-equipment.alfaview.com resolve+443 RST+80 empty-404; webclient mirrors by
+- NEW apis.alfaview.com GET /v2/audit-log — LIVE, UNDOCUMENTED 39th path. Absent from the 38-path
+- NEW apis.alfaview.com /v2/audit-log pre-auth query binder COMPLETE (per-operation, negative-controlled):
+- NEW Orphan schema family in the published contract: Event, Actor, Target, PaginatedBodyListEvent.
+- NEW Event.metadata description names an operation — "refer to the 'List Searchable metadata attributes' endpoint" —
+- CHANGED Pre-auth validation-before-auth class: 9 → 10 GET operations, the new member fully characterised.
+- CHANGED Whole-contract confirmation: grep for "audit|event|log" across all 132100B returns only
+- NEW apis.alfaview.com/v2/docs/openapi.json ROTATED after 47 stable cycles: 174787B / md5 06231fadca0b36c314476322337976db -> 176350B / md5 25522f8571f589c5cfba211ad2982b66 (+1563B), confirmed by 2 prod fe
+- NEW external historical comparators recovered via Wayback Machine (local dated snapshot was never committed): 2026-04-19 = 123887B / md5 28f4219d (36 paths / 63 schemas); 2026-07-12 = 125955B / md5 d98eee
+- CHANGED material invariants UNCHANGED across the rotation: securitySchemes.accessToken={type:http,scheme:bearer,bearerFormat:opaque}; 53/57 ops declare security, exactly 4 (/v2/auth/{api-key,group-link,guest-
+- CHANGED spec evolution Apr->Jul->now isolated via the two Wayback comparators: +GET /v2/users/me/company (GetOwnCompany, the companyId supplier); +5 orphan audit schemas Actor/Company/Event/PaginatedBodyListE
+- NEW material contract facts now recorded for the first time (info.description Quickstart, previously not in KB): "Access tokens are valid for 1 hour" (TTL); Bearer prefix explicitly optional ("Authorizati
+- CHANGED NO_NEW_SURFACE — every standing endpoint besides the spec is byte-identical; the rotation is the only delta (first after 47 stable cycles).
+- NEW OpenAPI spec at `apis.alfaview.com/v2/docs/openapi.json` rotated 174787B→176350B (md5 `06231fad`→`25522f857`, +1563B) after 47 stable cycles — first auth-scheme declaration (`components.securityScheme
+- NEW `apis.alfaview.com/v2/audit-log` confirmed live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: `stats`, `rooms/{id}/attendances`, `meetings`, `rooms?limit`, 
+- CHANGED `app.alfaview.com/graphql`: `__typename` now returns 200/32B with headers `x-apollo-operation-name` or `apollo-require-preflight`; introspection remains disabled — behavioral change
+- CHANGED `sso.alfaview.com/oauth2/introspect`: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on both
+- CHANGED `apis.alfaview.com/v2/users/me/company` (GetOwnCompany) confirmed as 38th path, sole 200-response supplier of `companyId` across 57 ops, token-gated (401)
+- CHANGED `app.alfaview.com` public bundle rotated to `app.min.26f05bcb3f94dc9a764b.js` (new hash), still contains `adminSwitchCompany` mutation + hardcoded tenant IDs (`alfatraining-internal`, `01FDY0986YK1BJF
+- CHANGED `tools.alfaview.com/whiteboard/`: second unmapped RPC backend confirmed — 47B gRPC status envelope vs poll's 45B jsonpb; distinct marshaller; no auth challenge; zero client references in bundle; stagi
+- CHANGED Inventory 100% probed — 55 dedicated hosts, 31 exhausted, zero genuinely-unprobed hosts remain
