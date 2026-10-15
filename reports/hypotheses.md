@@ -5903,3 +5903,26 @@
 - LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing exhausted — every standing endpoint byte-identical for 47th+ cycle
 - LEARN: ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck
 - LEARN: ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken, 4 no-security ops are exactly the authentication operati
+
+## RANKED HYPOTHESES 2026-10-15 01:49:48 UTC
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials (from art/lead_nemotron3.txt)
+- [88] apis.alfaview.com/v2/guest-links: Company-wide guest-link list yields live join credentials without expressible authorization check (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup(companyId,username,activationToken,password)) to 
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup(companyId,username,activationToken,password)) to 
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise is FALSE — live 176350B document contains "uuid" zero times and zero
+- LEARN: REJECTED IDOR @ apis.alfaview.com POST /v2/rooms/{roomId}/permissions: conflated Permissions (CREATE, atomic full-set) with PermissionsEdit (PATCH, partial) — r
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder reproduces public contract only (numeric bounds/enum/email/Go time layout); no disclosur
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken (bearerFormat:opaque); 4 no-security ops are exactly auth
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotated 174787B→176350B (06231fad→25522f857) after 47 stable cycles — declaration/prose-only, no new attack surf
+- LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/userinfo: JOSE algorithm confusion tested (alg=none, HS256 with RSA pubkey, HS256 random, RS256 self-signed) — all retur
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: client auth bypass is shape-dependent — JWT-shaped tokens enforce client auth; alfaview opaque base64 tokens
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com/whiteboard/: second unmapped RPC backend (47B gRPC envelope vs poll's 45B jsonpb), distinct marshaller, no auth challeng
+- LEARN: PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs; guessed URLs never become findings; delta claim
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: Validation-before-auth on 10/26 GET ops (query-param routes); path-param routes correctly 401; root cause: OpenAPI compo
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com/v2/users/invitation{s}: OpenAPI declares POST only; live server advertises Allow: DELETE,POST on /v2/users/invitation and
+- LEARN: REJECTED IDOR @ apis.alfaview.com: "OpenAPI spec confirms path-param UUID patterns" premise FALSE — live document contains "uuid" zero times, zero `pattern` key
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder as standalone finding — reproduces public spec only (numeric bounds, enum values, RFC-53
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: introspect client-auth bypass stable across 30+ cycles — not flaky, genuinely unenforced
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing exhausted — every standing endpoint byte-identical for 47th+ cycle
+- LEARN: ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken, 4 no-security ops are exactly the authentication operati

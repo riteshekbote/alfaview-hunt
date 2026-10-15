@@ -1874,3 +1874,14 @@ www.alfaview.com
 - CHANGED spec evolution Apr->Jul->now isolated via the two Wayback comparators: +GET /v2/users/me/company (GetOwnCompany, the companyId supplier); +5 orphan audit schemas Actor/Company/Event/PaginatedBodyListE
 - NEW material contract facts now recorded for the first time (info.description Quickstart, previously not in KB): "Access tokens are valid for 1 hour" (TTL); Bearer prefix explicitly optional ("Authorizati
 - CHANGED NO_NEW_SURFACE — every standing endpoint besides the spec is byte-identical; the rotation is the only delta (first after 47 stable cycles).
+
+## 2026-10-15 01:49:48 UTC
+- CHANGED apis.alfaview.com /v2/docs/openapi.json rotated 174787B→176350B (MD5 06231fad→25522f857) after 47 stable cycles — first declaration of auth scheme (components.securitySchemes.accessToken, bearerFormat
+- CHANGED app.alfaview.com/graphql — __typename now returns 200/32B with headers `x-apollo-operation-name` or `apollo-require-preflight` (was 400 CSRF guidance); introspection remains disabled.
+- CHANGED apis.alfaview.com GET /v2/audit-log — live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: stats, rooms/{id}/attendances, meetings, rooms?limit, users?emailAd
+- NEW apis.alfaview.com GET /v2/users/me/company (GetOwnCompany) — 38th path; sole 200-response supplier of companyId across 57 ops; token-gated (401).
+- NEW apis.alfaview.com/v2/auth/api-key — 4th unauthenticated credential endpoint (HEAD→405 allow:POST, OPTIONS→405/19B); declares unique 403 account-status tier.
+- NEW tools.alfaview.com/whiteboard/ — second unmapped RPC backend (47B gRPC envelope vs poll's 45B jsonpb), distinct marshaller, no auth challenge observed, zero client references in bundle, staging mirror
+- NEW client-diagnostics-ingest.alfaview.com — NXDOMAIN reversed; /health=200/16B (md5 3a0386dd), uniform 404s.
+- NEW equipment.alfaview.com + production-equipment.alfaview.com — "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair.
+- NEW webclient.alfaview.com / product-webclient.alfaview.com — byte-identical root (md5 6825f39c); deployment mirrors (COOP/COEP same-origin+require-corp).
