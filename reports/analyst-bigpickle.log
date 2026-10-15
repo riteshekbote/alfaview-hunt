@@ -114130,3 +114130,78 @@ Let me keep it reasonably concise but complete. This is a detailed analysis requ
 - Unchanged exposure; concentrated on auth-gated chains. Program is well-hardened (introspection off in discovery, GraphQL introspection off, CSRF preflight, GC'd client bearers). Primary new risk is **process**: the standing plan conflicts with `account_creation: restricted` and the triage validator is broken.
 
 **Blocking question:** May I create a throwaway `free-business` tenant via the live self-service signup to unblock the IDOR/guest-authz/introspect-impact chains, or should I stay passive-only / wait for a program-issued test account?
+===== ANALYST bigpickle 2026-10-15 12:05:20 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll start by exploring the repository to understand the current state and see if there are recent artifacts (inventory, probe results, hypotheses) that might not be fully captured in the provided KB tail.
+[0m$ [0mfind /home/runner/work/alfaview-hunt/alfaview-hunt -name "*.md" -not -path "*/node_modules/*" 2>&1 | head -20
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/reposcan-alfaview.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-mimo.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-laguna.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-ling3.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-longcat.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-bigpickle.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-nemotron3.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/probe-results.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/valid-bugs.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/DEEPER-FINDINGS.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/SCOPE-CONFIRMATION.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/CORPUS-ALFAVIEW.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/recon-notes/DEDICATED-DEEP.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/knowledge/index.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/README.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-19-00-36.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-09-17-19-44.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/triage/run-2026-10-11-18-25.md
+[0m
+## Objective
+- Continue bug bounty attack-surface mapping and validation for alfaview gmbh against in-scope assets (alfaview.com + company-operated subdomains + web/desktop/mobile/apps/APIs/backend/support/customer portals).
+- Validate the top 3 hypotheses (introspect metadata disclosure, guest-links enumeration/IDOR, adminSwitchCompany cross-tenant mint) while enforcing read-only, passive-first, <=1 rps constraints and all program out-of-scope exclusions.
+
+## Important Details
+- **Scope:** All company-owned infrastructure operated by alfaview gmbh per `scope.yml` and `inventory/alfaview.md` (alfaview.com + company-operated subdomains + web/desktop/mobile/apps/APIs/backend/support/customer portals).
+- **Top survivors:** `sso.alfaview.com/oauth2/introspect` (conf 94, AUTH); `apis.alfaview.com/v2/guest-links` (conf 88, IDOR); `app.alfaview.com/graphql` `adminSwitchCompany` (conf 85, AUTH).
+- **Auth model:** Opaque base64 access tokens (1h TTL). `components.securitySchemes.accessToken` with `bearerFormat: opaque` declared in OpenAPI; Bearer prefix explicitly optional per `info.description`. 53/57 ops declare security, 4 auth ops declare none. 
+- **OpenAPI (current):** `apis.alfaview.com/v2/docs/openapi.json` = 176350B, MD5 `25522f8571f589c5cfba211ad2982b66` (38 paths/57 ops/69 schemas), prod == beta byte-identical. YAML twin `apis.alfaview.com/v2/docs/openapi.yaml` byte-equivalent. `/v2/audit-log` = live undocumented 39th path. `/v2/users/me/company` (GetOwnCompany) = sole 200-response supplier of `companyId` across 57 ops.
+- **Introspect (sso.alfaview.com/oauth2/introspect):** Client auth enforced only for JWT-shaped tokens (3 segments, seg2 = base64-decoded JSON). Alfaview opaque base64 tokens bypass `client_id` validation on POST-body and HTTP Basic (fabricated client_id + any secret returns `200 {"active":false}` for invalid tokens); `token_endpoint_auth_methods_supported` advertises `client_secret_basic/post/none`. `introspection_endpoint` absent/oscillates in OIDC discovery (`issuer=acme.com`, JWKS = 7 RSA keys at `/.well-known/jwks.json`).
+- **GraphQL (app.alfaview.com/graphql):** `__typename` returns 200/32B only with headers `x-apollo-operation-name` or `apollo-require-preflight` (bare GET 400 CSRF guidance); introspection disabled. `Signup`/`FinishSignup` = sole unauthenticated path to legit bearer token (email-gated, HUMAN_ONLY). `guestAuthenticate`/`guestJoin` unauthenticated-reachable (`BAD_USER_INPUT`) with no `accessKey` (divergent from REST 3-field). Public bundle contains `adminSwitchCompany($nextCompanyId:String!)` returning `{companyId,accessToken,permissions}` from caller token only; hardcoded tenant IDs `alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`.
+- **Tools/RPC:** `tools.alfaview.com/poll/pollservice/<verb>` (8 verbs) uses header `Grpc-Metadata-alfaview.token` (b64url→b64, opaque). `tools.alfaview.com/whiteboard/*` = second unmapped RPC backend (47B gRPC status envelope) distinct from poll (45B compact jsonpb); staging mirror byte-identical; zero client references in public bundle.
+- **Inventory:** 55 dedicated hosts 100% probed, 31 exhausted. Mirrors byte-identical (webclient/product-webclient). `client-diagnostics-ingest.alfaview.com/health` 200/16B; `equipment.alfaview.com` + `production-equipment.alfaview.com` resolve + 443 RST + 80 empty-404. `test.alfaview.com` serves alfacheck v483102 (4 platforms), unsigned, no sha256/signatures.
+- **Constraints/notes:** GET/HEAD/OPTIONS only for live probes, <=1 rps, no mutating tests against live customer data, sha256 any secret. **Blocker:** triage validation loop failing (UnknownError) since 2026-09-24 (last good verdict `triage/run-2026-09-24-17-56.md`).
+
+## Work State
+### Completed
+- **Surface mapping:** Full inventory of 55 dedicated hosts with HTTP verdicts; identified mirrors, unmapped RPC (`/whiteboard/*`), undocumented live endpoints (`/v2/audit-log`, `/v2/users/me/company`).
+- **Contract analysis:** OpenAPI rotation tracked (174787B→176350B, MD5 `06231fad`→`25522f857`), first declaration of auth scheme + per-op security (53/57). Proved path params unconstrained (`type:string`, zero `pattern`/`uuid`), query-param pre-auth binder on 10 GET ops, mass assignment closed (`additionalProperties:false`) across write surface.
+- **Auth findings (passive):** Introspect shape-dependent bypass characterized (opaque base64 bypass vs JWT-shaped enforce). SSO discovery states: issuer `acme.com`, grant_types include `password` (ROPC) while `client_credentials` returns `not_licensed`, introspection_endpoint oscillates, JWKS RSA-only vs advertised algs. GraphQL signup-only unauth path to bearer token identified.
+- **IDOR/BOLA contract facts:** `apis.alfaview.com/v2/guest-links` un-narrowable company-wide (only `pageToken`+`limit`), returns `accessKey`, `joinUrl`, `dialInCode`, `emailAddress`; `TokenUserPermissions` lacks guest-link axis; `CreatePermissions` (CREATE, atomic full-set) has polymorphic unconstrained `participantId` (user/guest/group link). `adminSwitchCompany` signature extracted from public bundle (caller token + `nextCompanyId` only), hardcoded tenant IDs present.
+- **Negative/closed:** Access tokens opaque/base64 (JWT alg-confusion closed). Guest-link `displayName` not required (3-field `accessKey+companyId+roomId`). Many prior descriptive-only claims retracted with evidence.
+
+### Active
+- **Hypothesis validation readiness:** Top 3 hypotheses written with exact verify_steps (read-only). Need a valid bearer access token from `app.alfaview.com/graphql` `Signup` → email → `FinishSignup(companyId,username,activationToken,password)` to execute `sso.alfaview.com/oauth2/introspect` (with valid opaque token) and `apis.alfaview.com/v2/guest-links` (with `Authorization: <token>`) as specified (<=1 rps).
+- **Contract hygiene:** `recon-notes/alfaview-openapi-2026-10-06.json` snapshot not committed yet (promised) to attribute future OpenAPI rotations exactly; live JSON remains authoritative comparator.
+- **Standing probes:** All 55 hosts byte-stable for 47th+ consecutive cycle; no new unauthenticated exploit surface detected by passive probes.
+
+### Blocked
+- **Triage validation:** Validation loop failing with `UnknownError` since 2026-09-24; last good verdict `triage/run-2026-09-24-17-56.md`. Recon surface mapped but validation pipeline unavailable (affects automated verdict emission, not passive recon).
+- **Token acquisition (HUMAN_ONLY):** Cannot programmatically complete email-based `FinishSignup` (activation token delivered via email). All HIGH-value chains gate on obtaining a single valid bearer token.
+- **Live POSTs gated:** `sso.alfaview.com/oauth2/introspect` and `apis.alfaview.com/v2/guest-links` require `Authorization` with valid token; introspect proof requires submitting a valid opaque token (`POST` form) — read-only but token-dependent.
+- **External CT tooling intermittency:** `crt.sh`/`certspotter` occasionally 502/504 (recorded as unavailable, retry window noted).
+
+## Next Move
+1. **Immediate (HUMAN_ONLY):** Execute unauthenticated signup flow at `app.alfaview.com/graphql` — call `Signup` mutation → receive activation email → call `FinishSignup(companyId,username,activationToken,password)` to obtain a valid bearer access token. Record token (non-secret in verification context as instructed) for step 2. 
+2. **Next (AUTH_HELPED, read-only, <=1 rps):** Using that token, run verification for top hypotheses in order: (a) `POST https://sso.alfaview.com/oauth2/introspect` (form) with `token=<valid-access-token>&client_id=fake-123` and HTTP Basic `Basic base64('fake-123:any')` → expect `200 {"active":true,...}` if bypass holds; (b) `GET https://apis.alfaview.com/v2/guest-links` with `Authorization: <valid-access-token>` → expect `200` with `GuestLink[]` including `accessKey`, `joinUrl`, `dialInCode`, `emailAddress`. Do not mutate state. If (a)/(b) confirm, proceed to `adminSwitchCompany` against `app.alfaview.com/graphql` with foreign `nextCompanyId` as specified.
+
+## Relevant Files
+- `scope.yml`: Program scope/allowed assets (why: defines in-scope boundary)
+- `inventory/alfaview.md`: Canonical host inventory, per-host verdicts, mirrors, CT subdomains (why: authoritative host list; canonical URLs required for delta claims)
+- `recon-notes/alfaview-openapi.yaml`: 37-path schema-only baseline (predates rotations; live JSON is authoritative) (why: rotation attribution context)
+- `recon-notes/alfaview-openapi-2026-10-06.json`: Missing dated snapshot (promised but not committed) — should be created from live `apis.alfaview.com/v2/docs/openapi.json` to enable exact future diffing (why: prevents false “first declaration” claims)
+- `triage/run-2026-09-24-17-56.md`: Last good validation verdict (why: reference point for current UnknownError blocker)
+- `art/hypotheses-bigpickle.txt` + `art/lead_bigpickle.md`: Top hypotheses, verify_steps, ranked list (why: execution checklist for step 2)
+- `knowledge_base` (seed entries in conversation): Longitudinal KB of ACCEPTED/REJECTED findings with dates/hosts/endpoints (why: traceable audit trail, prevents re-introducing retracted claims e.g. “UUID pattern” premise)
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Mapped 55 hosts (alfaview.com + subdomains), analyzed OpenAPI (176KB, 38 paths/57 ops), identified top 3: sso introspect, guest-links IDOR, adminSwitchCompany. Awaiting HUMAN_ONLY bearer token via GraphQL Signup→FinishSignup to validate; triage pipeline failing since 2026-09-24 blocks automated verdicts.
