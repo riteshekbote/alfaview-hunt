@@ -1902,3 +1902,16 @@ www.alfaview.com
 - NEW client-diagnostics-ingest.alfaview.com — NXDOMAIN reversed; /health=200/16B (md5 3a0386dd), uniform 404s
 - NEW equipment.alfaview.com + production-equipment.alfaview.com — "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
 - NEW webclient.alfaview.com / product-webclient.alfaview.com — byte-identical root (md5 6825f39c); deployment mirrors (COOP/COEP same-origin+require-corp)
+
+## 2026-10-15 23:17:09 UTC
+- NEW apis.alfaview.com OpenAPI rotated 174787B→176350B (MD5 06231fad→25522f857, +1563B) after 47 stable cycles — first auth-scheme declaration (components.securitySchemes.accessToken, bearerFormat:opaque, 
+- NEW app.alfaview.com/graphql — __typename now returns 200/32B with headers `x-apollo-operation-name` or `apollo-require-preflight` (was 400 CSRF guidance); introspection remains disabled
+- NEW apis.alfaview.com GET /v2/audit-log — live undocumented 39th path; pre-auth query binder complete (10 GET ops now validate pre-auth: stats, rooms/{id}/attendances, meetings, rooms?limit, users?emailAd
+- NEW apis.alfaview.com GET /v2/users/me/company (GetOwnCompany) — 38th path; sole 200-response supplier of companyId across 57 ops; token-gated (401)
+- NEW apis.alfaview.com/v2/auth/api-key — 4th unauthenticated credential endpoint (HEAD→405 allow:POST, OPTIONS→405/19B); declares unique 403 account-status tier
+- NEW tools.alfaview.com/whiteboard/ — second unmapped RPC backend (47B gRPC envelope vs poll's 45B jsonpb), distinct marshaller, no auth challenge observed, zero client references in bundle, staging mirror
+- NEW client-diagnostics-ingest.alfaview.com — NXDOMAIN reversed; /health=200/16B (md5 3a0386dd), uniform 404s
+- NEW equipment.alfaview.com + production-equipment.alfaview.com — "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair
+- NEW webclient.alfaview.com / product-webclient.alfaview.com — byte-identical root (md5 6825f39c); deployment mirrors (COOP/COEP same-origin+require-corp)
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validatio
+- CHANGED NO_DELTA on all other standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics) for 48th+ consecutive cycle
