@@ -1434,3 +1434,12 @@
 - 2026-10-15 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing exhausted — every standing endpoint byte-identical for 47th+ cycle
 - 2026-10-15 ACCEPTED PROCEDURAL @ pipeline: triage validation still failing (UnknownError), last good verdict 2026-09-24 — validation loop, not recon, is the bottleneck
 - 2026-10-15 ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken, 4 no-security ops are exactly the authentication operations
+- 2026-10-15 ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (`06231fad`→`25522f857`) with identical 38 paths/57 ops/69 schemas — schema expansions only, no new attack surface
+- 2026-10-15 REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish `/v2/audit-log` (still the live-but-unpublished 39th path) and did not resolve the dang
+- 2026-10-15 ACCEPTED PROCEDURAL @ recon-notes: the promised `recon-notes/alfaview-openapi-2026-10-06.json` snapshot was never committed, so exact attribution of thi
+- 2026-10-15 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted besides the spec rotation — every standing endpoint byte-identical.
+- 2026-10-15 ACCEPTED INFO @ apis.alfaview.com: security model is now machine-readable — 53/57 ops declare accessToken; the 4 no-security ops are exactly the authentication
+- 2026-10-15 REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation exposes only published required-property list, no disclosure beyond contract.
+- 2026-10-15 ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for r
+- 2026-10-15 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 47th cycle.
+- 2026-10-15 ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI spec size grew 132100B→174787B→176350B (MD5 rotated twice) with identical 38 paths/57 ops — schema expansions on

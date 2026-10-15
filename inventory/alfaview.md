@@ -1885,3 +1885,5 @@ www.alfaview.com
 - NEW client-diagnostics-ingest.alfaview.com — NXDOMAIN reversed; /health=200/16B (md5 3a0386dd), uniform 404s.
 - NEW equipment.alfaview.com + production-equipment.alfaview.com — "timeout/unreachable" → resolves + 443 RST + 80 empty-404; byte-identical mirror pair.
 - NEW webclient.alfaview.com / product-webclient.alfaview.com — byte-identical root (md5 6825f39c); deployment mirrors (COOP/COEP same-origin+require-corp).
+
+## 2026-10-15 06:40:43 UTC
