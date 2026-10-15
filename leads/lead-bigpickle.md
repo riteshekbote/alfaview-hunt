@@ -10399,3 +10399,4 @@ testability: AUTH_HELPED
 [RISK] alfaview gmbh: 88/100. Broad 100%-probed inventory; APIs auth-gated by opaque 1h tokens behind uniform 401 gateway; OpenAPI now declares auth scheme (declaration-only). Three contract-proven chains: introspect metadata disclosure (94), guest-links enumeration (88), adminSwitchCompany minting (85) — all AUTH_HELPED and require single valid token. Unmapped RPC surface (tools/whiteboard) and undocumented audit-log exist; passive re-probing exhausted, recon stable. Triage validation loop remains broken (UnknownError since 2026-09-24) but recon surface fully mapped and byte-stable.
 ## 2026-10-15 06:40:33 UTC [target] (model bigpickle)
 ## 2026-10-15 12:04:25 UTC [target] (model bigpickle)
+## 2026-10-15 17:05:17 UTC [target] (model bigpickle)
