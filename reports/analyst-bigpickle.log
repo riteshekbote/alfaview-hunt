@@ -114998,3 +114998,74 @@ Stable surface re-confirmed this cycle: OpenAPI 176350B/`25522f85`, OIDC 2169B/`
 ```
 
 I have no safe next action within passive-only constraints. What would you like: pause the loop, or do you have a bearer token / signup completion to unblock HYP 94/88/85?
+===== ANALYST bigpickle 2026-10-16 15:49:32 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/openapi.json -w "%{http_code} %{size_download}\n" --max-time 15 "https://apis.alfaview.com/v2/docs/openapi.json" && md5sum /tmp/opencode/openapi.json
+200 176350
+25522f8571f589c5cfba211ad2982b66  /tmp/opencode/openapi.json
+[0m
+[0m$ [0mcurl -s -o /tmp/opencode/usersme.txt -w "%{http_code} %{size_download}\n" --max-time 15 "https://apis.alfaview.com/v2/users/me" && md5sum /tmp/opencode/usersme.txt
+401 107
+60ed2f29d492ec872c598cc7d36aa37e  /tmp/opencode/usersme.txt
+[0m
+## Objective
+- Act as senior bug-bounty analyst for the alfaview gmbh program (report channel: bugs.olivermaicher.eu), running a 7-step per-cycle analysis (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARN → RISK) over a passive-first recon loop against in-scope alfaview infrastructure.
+- Advance the three standing AUTH_HELPED hypotheses (introspect metadata disclosure 94, guest-links enumeration 88, adminSwitchCompany minting 85) — all blocked on obtaining one valid bearer token.
+
+## Important Details
+- Scope: only company-owned alfaview infrastructure per scope.yml + inventory/alfaview.md; single asset target `api` (phase: POC).
+- Probe rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass/mutating tests against live customer data; no POST without explicit human approval (graphql/introspect POST idle by rule).
+- REJECTED classes (never report): brute-force/rate-limit, descriptive errors only, username enumeration, TLS best practice, clickjacking w/o exploit, OPTIONS/TRACE, etc.
+- Standing procedural rules: contract text quoted only after per-field lookup (two prior fabrications: false "UUID path pattern" premise; misattributed `Permissions.admin` scope sentence → `PermissionsEdit.admin`); guessed URLs never become findings (recover canonical URL from `inventory/alfaview.md:1096` or `leads/lead-bigpickle.md` verify_steps); delta claims require two methods (DNS getent + HTTP); every standing-probe line must carry size AND md5 together; bare-GET graphql 400 must never be compared to header-qualified `__typename` 200; never probe apis for graphql (404 — GraphQL only on app.alfaview.com); host-attributed baselines probed per-host.
+- Key standing facts: OpenAPI at `/v2/docs/openapi.json` now 176350B md5 `25522f857` (174787B/`06231fad` before, 132100B/`284a3383` before that) — 38 paths/57 ops/69 schemas, declares `components.securitySchemes.accessToken` (bearerFormat: opaque) on 53/57 ops; audit-log still live-but-unpublished 39th path; OIDC md5 `f78a08fc`/2169B (issuer=acme.com, introspection_endpoint oscillates absent); JWKS `3f8d456c`/16257B (7×RS256) at `/.well-known/jwks.json`; `/oauth2/introspect` OPTIONS 405, client-auth bypass shape-dependent (JWT-shaped tokens enforce; alfaview opaque base64 tokens bypass); `users/me` 401/107B md5 `60ed2f29`; app graphql GET 400/406B (CSRF header-keyed: `x-apollo-operation-name` flips to 200/32B `c2b4dd58`); tools poll list 501/55B, `/whiteboard/` 404/47B gRPC envelope; client-diagnostics-ingest `/health` 200/16B `3a0386dd` (NXDOMAIN fact retired).
+- Gate: single blocker across all three HYPs is absence of one valid bearer token; sole unauth path is email-gated GraphQL signup (HUMAN_ONLY).
+- Triage validation pipeline broken: 91/223 runs `UnknownError`, last good verdict 2026-09-24.
+- Idle-loop risk: 51st consecutive NO_DELTA; recommend pausing automated cycles pending HUMAN token.
+
+## Work State
+### Completed
+- 100% host inventory probed (55 dedicated hosts, 31 exhausted); full standing probe set byte-stable 51 consecutive cycles.
+- Three contract-proven chains documented with verify_steps: introspect bypass (94), guest-links un-narrowable credential list (88), adminSwitchCompany cross-tenant minting (85).
+- Closed/rejected classes: JWT alg-confusion (opaque tokens; userinfo alg=none/HS256/RS256 all byte-identical), OAuth redirect_uri (client_id-gated), accessKey existence oracle, SSRF (no URL-typed params), mass assignment (all 21 body schemas additionalProperties:false), GraphQL introspection (disabled), subdomain takeover (CT exhausted), open redirect on logout.
+- Parked: tools `/whiteboard/` BOLA (surface discovery only), `/v2/audit-log` IDOR (no disclosure evidence).
+
+### Active
+- Emitting per-cycle NO_DELTA reports; last cycle (2026-10-16 11:51) confirmed 51st NO_DELTA with unchanged PRIO/HYP/PARKED/NEXT blocks.
+
+### Blocked
+- All three top hypotheses are AUTH_HELPED/HUMAN_ONLY — need one valid bearer token from human-executed signup flow (Signup → email → FinishSignup).
+- Triage validation pipeline failing (UnknownError since 2026-09-24) — flagged as bottleneck, not recon.
+- CT tooling (crt.sh/certspotter) intermittently down (502/504) — record as unavailable, never as "no new subdomains".
+
+## Next Move
+1. [NEXT] HUMAN: execute unauthenticated signup at `POST https://app.alfaview.com/graphql` (mutations Signup → FinishSignup(companyId, username, activationToken, password)) to obtain one valid bearer access token.
+2. With token: run verify_steps for introspect (`POST https://sso.alfaview.com/oauth2/introspect` form `token=<valid>&client_id=fake` + HTTP Basic variant → expect `{"active":true,...}`), then guest-links (`GET https://apis.alfaview.com/v2/guest-links` with `Authorization: <token>` → expect accessKey present) — read-only, ≤1 rps.
+
+## Relevant Files
+- `inventory/alfaview.md`: canonical host inventory + probe baselines; line 1096 holds canonical probe URLs (guessed-URL recovery).
+- `leads/lead-bigpickle.md`: verify_steps for standing leads (e.g., JWKS canonical path `/.well-known/jwks.json`).
+- `recon-notes/alfaview-openapi.yaml`: 37-path schema-only stripped snapshot — NOT a valid comparator for securitySchemes/rotation claims; live JSON is authoritative.
+- `recon-notes/alfaview-openapi-2026-10-06.json`: promised dated snapshot — never committed (recorded 2026-10-12).
+- `triage/run-2026-09-24-17-56.md`: last successful triage verdict.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+## Summary of progress
+
+**Standing state:** 51+ consecutive NO_DELTA cycles; surface is byte-stable. Just re-probed two standing endpoints — OpenAPI (`176350B / 25522f85`) and `users/me` (`401 / 107B / 60ed2f29`) — both match baselines exactly.
+
+**Three AUTH_HELPED leads carried forward (all gated on one blocker):**
+
+| # | Lead | Score | Status |
+|---|------|-------|--------|
+| 1 | Introspect client-auth bypass — `POST /oauth2/introspect` returns `{"active":true,...}` for opaque tokens even with `client_id=fake` | 94 | verify_steps ready |
+| 2 | Guest-links enumeration — `GET /v2/guest-links` with any valid bearer returns credential objects (no narrowing params) | 88 | verify_steps ready |
+| 3 | `adminSwitchCompany` cross-tenant minting — OpenAPI confirms it accepts arbitrary `companyId` | 85 | verify_steps ready |
+
+**Single blocker across all three:** need one valid bearer token from the email-gated GraphQL signup flow (`Signup → FinishSignup`).
+
+**Also closed:** JWT alg-confusion, OAuth redirect_uri, SSRF, mass assignment, GraphQL introspection, subdomain takeover, open redirect. **Parked:** tools BOLA, audit-log IDOR.
+
+**Bottleneck is not recon — it's validation.** Every additional read-only cycle is noise. 
+
+**Recommended next step:** pause automated cycles; you execute the signup flow at `app.alfaview.com` and hand me the token, then I run verify_steps for leads 1–3 immediately. Want me to draft the exact signup sequence for you to run, or is there a different angle you'd like prioritised?
