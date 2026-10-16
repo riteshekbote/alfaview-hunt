@@ -38409,3 +38409,8 @@ testability: HUMAN_ONLY
 [0m
 > build · nemotron-3-ultra-free
 [0m
+===== ANALYST nemotron3 2026-10-16 21:57:57 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[91m[1mError: [0mUpstream request failed: [400] Provider returned error

@@ -2047,3 +2047,13 @@ https://app.alfaview.com/graphql -> HTTP 400
 
 ## 2026-10-16 19:18:38 UTC
 
+
+## 2026-10-16 21:58:08 UTC
+https://beta-apis.alfaview.com/v2/languages -> HTTP 401
+https://beta-apis.alfaview.com/v2/languages` -> HTTP 404
+https://apis.alfaview.com/v2/languages` -> HTTP 404
+https://demo-company.alfaview.com/ -> 200 len=1381
+https://demo-company.alfaview.com/api/v1/users -> 200 len=1381
+https://demo-company.alfaview.com/api/v1/users` -> 200 len=1381
+https://insider-webclient.alfaview.com/ -> 200 len=4396
+https://insider-webclient.alfaview.com/api/health -> HTTP 404

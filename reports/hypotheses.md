@@ -6033,3 +6033,16 @@
 ## RANKED HYPOTHESES 2026-10-16 19:18:38 UTC
 - NEXT(hypotheses-bigpickle.txt): HUMAN: run the unauthenticated signup at app.alfaview.com/graphql (Signup mutation → email → FinishSignup(companyId, username, activationToken, password)) to mi
 - LEARN: Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; t
+
+## RANKED HYPOTHESES 2026-10-16 21:57:57 UTC
+- [72] apis.alfaview.com: IDOR on room permissions and user deletion (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET `https://beta-apis.alfaview.com/v2/languages` — no Authorization header, compare response code/body vs production `https://apis.alfaview.com/v2/langu
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- LEARN: REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected c
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+- LEARN: Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; t
+- LEARN: Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; t

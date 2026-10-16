@@ -115174,3 +115174,453 @@ All 10 standing probes match established baselines byte-for-byte — no delta. E
 ```
 
 Stopping here — the cycle is complete and the next action requires a human to complete email-gated signup. No further work is possible without that token or a change in scope.
+===== ANALYST bigpickle 2026-10-16 21:57:57 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la /home/runner/work/alfaview-hunt/alfaview-hunt
+total 1404
+drwxr-xr-x 12 runner runner   4096 Oct 16 21:53 .
+drwxr-xr-x  3 runner runner   4096 Oct 16 21:53 ..
+drwxr-xr-x  7 runner runner   4096 Oct 16 21:53 .git
+drwxr-xr-x  3 runner runner   4096 Oct 16 21:53 .github
+-rw-r--r--  1 runner runner   1883 Oct 16 21:53 README.md
+-rw-r--r--  1 runner runner     32 Oct 16 21:53 analyst-out.txt
+-rw-r--r--  1 runner runner 621963 Oct 16 21:53 analyst-prompt.txt
+-rw-r--r--  1 runner runner 618053 Oct 16 21:53 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 16 21:53 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 16 21:53 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 16 21:53 leads
+-rw-r--r--  1 runner runner  98104 Oct 16 21:53 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 16 21:53 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 16 21:53 reports
+drwxr-xr-x  2 runner runner   4096 Oct 16 21:53 reposcan-raw
+-rw-r--r--  1 runner runner   3323 Oct 16 21:53 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 16 21:53 scripts
+-rw-r--r--  1 runner runner     33 Oct 16 21:53 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 16 21:53 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 16 21:53 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 16 21:53 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 16 21:53 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 16 21:53 state_nemotron3.json
+drwxr-xr-x  2 runner runner  16384 Oct 16 21:53 triage
+[0m
+## Objective
+- Continue passive-first bug bounty recon of **alfaview gmbh** in-scope assets to identify real logic/auth flaws.
+- Focus on the three standing AUTH_HELPED hypotheses: OAuth2 introspection metadata disclosure (94), company-wide guest-links enumeration (88), and `adminSwitchCompany` cross-tenant token minting (85).
+
+## Important Details
+- **Scope**: Only company-owned infrastructure, alfaview web/desktop/mobile apps, APIs, backend, support, customer portals, websites/domains operated by alfaview gmbh (including `alfaview.com` and company-operated subdomains). Out of scope: DoS, brute-force/rate-limit policy, scanner-only, social engineering, self-XSS, etc.
+- **Constraints**: GET/HEAD/OPTIONS only for live probes, <=1 rps, no mutating tests against live customer data, sha256 any secret, facts vs hypotheses strictly separated.
+- **Auth model**: alfaview API access tokens are **opaque base64** (not JWT). 
+- **OpenAPI**: `https://apis.alfaview.com/v2/docs/openapi.json` = `176350B` MD5 `25522f8571f589c5cfba211ad2982b66` (38 paths / 57 ops). First time declaring `components.securitySchemes.accessToken` with `bearerFormat: opaque` + per-op `security` on 53/57 ops. `/v2/audit-log` is a live but **undocumented** 39th path. `/v2/users/me/company` is the 38th path and sole supplier of `companyId`.
+- **SSO**: `https://sso.alfaview.com/oauth2/introspect` — for opaque base64 tokens, client authentication is **bypassed** on POST-body and HTTP Basic (fabricated `client_id` accepted -> `200 {"active":false}`); JWT-shaped tokens enforce client auth. `introspection_endpoint` absent from OIDC discovery while endpoint is live. `issuer=acme.com`. JWKS `https://sso.alfaview.com/.well-known/jwks.json` = 7 RSA keys (MD5 `3f8d456c7fd92c6107f3fd77732bd0f4`).
+- **GraphQL**: `https://app.alfaview.com/graphql` — `__typename` returns `200` with `x-apollo-operation-name` or `apollo-require-preflight` headers (CSRF-guarded); introspection disabled. `signup` mutation is the **sole unauthenticated path** to obtain a legit bearer token. `adminSwitchCompany($nextCompanyId: String!)` exists in public bundle and returns `{companyId, accessToken, permissions}` using caller token only.
+- **Tools/RPC**: `https://tools.alfaview.com/poll/pollservice/<verb>` uses custom `Grpc-Metadata-alfaview.token` (b64url->b64). `https://tools.alfaview.com/whiteboard/` is a second unmapped RPC backend (47B gRPC envelope vs 45B jsonpb) with staging mirror.
+- **State**: 52nd consecutive **NO_DELTA** on standing probes. Triage validation failing (91/223 `UnknownError`), last good verdict `2026-09-24`. Passive recon effectively exhausted.
+
+## Work State
+
+### Completed
+- **Inventory**: All 55 dedicated hosts mapped with HTTP verdict. Mirrors identified (`webclient`/`product-webclient`, `equipment`/`production-equipment`).
+- **API surface**: OpenAPI diffed across rotations; `/v2/audit-log` and `/v2/users/me/company` identified and characterized.
+- **Auth boundary**: Introspect shape-dependence proven. Guest-link auth confirmed **3-field** (`accessKey`, `companyId`, `roomId`), not 4-field.
+- **GraphQL mapping**: Public bundles parsed; `signup`/`finishSignup` identified as email-gated unauth path; `adminSwitchCompany` signature extracted.
+- **RPC mapping**: `poll/pollservice/*` (8 verbs) and unmapped `whiteboard/*` differential confirmed on prod+staging.
+- **Hypotheses ranked**: H1 introspect (94), H2 guest-links (88), H3 adminSwitchCompany (85). Many classes rejected via read-only probes.
+- **Procedural fixes**: Stopped guessing URLs, require DNS+HTTP, compare header-qualified vs bare responses, quote contract fields after per-field lookup.
+
+### Active
+- **Awaiting token**: All three top hypotheses are `AUTH_HELPED`. Cannot advance without a valid opaque bearer token from `app.alfaview.com/graphql` `signup` -> `finishSignup`.
+- **Standing verification**: Periodic byte-stable checks of `apis.alfaview.com/v2/docs/openapi.json`, `sso.alfaview.com/.well-known/*`, `app.alfaview.com/graphql`, `tools.alfaview.com/*`, `client-diagnostics-ingest.alfaview.com/health`.
+
+### Blocked
+- **Triage pipeline**: 91/223 runs `UnknownError`, last good verdict `2026-09-24`. Validation loop broken, not recon.
+- **Token acquisition**: `signup` mutation is email-gated; requires human interaction to receive/submit `activationToken` via `finishSignup({companyId, username, activationToken, password})`.
+- **Active testing**: Forbidden to mutate live customer data; introspect/guest-links/adminSwitchCompany require exercising with a controlled token only if authorized.
+- **Further passive cycles**: Yield zero expected signal (52nd NO_DELTA). Continuing read-only sweeps is noise.
+
+## Next Move
+1. **Immediate**: HUMAN_ONLY — Obtain one valid bearer access token via unauthenticated flow:
+   - `POST https://app.alfaview.com/graphql` with `{"operationName":"Signup","variables":{"email":"<valid-test-email>"}, ...}` to `signup`
+   - Use received `activationToken` + `companyId` + `username` to call `finishSignup` at `POST https://app.alfaview.com/graphql` -> extract `accessToken` from response
+2. **Next**: With token, test at <=1 rps in this order (read-only where possible):
+   - `(a)` `POST https://sso.alfaview.com/oauth2/introspect` form: `token=<valid>&client_id=fake-123` and HTTP Basic `Basic base64('fake-123:any')` -> expect `active:true` if bypass holds
+   - `(b)` `GET https://apis.alfaview.com/v2/guest-links` with `Authorization: <token>` -> inspect scope (company-wide vs narrowed)
+   - `(c)` `POST https://app.alfaview.com/graphql` adminSwitchCompany with foreign `nextCompanyId` + `token` header -> verify returned `accessToken` against `GET https://apis.alfaview.com/v2/users/me`
+
+## Relevant Files
+- `inventory/alfaview.md` — Canonical host list, HTTP verdicts, mirrors, CT findings (used to avoid guessed URLs)
+- `recon-notes/alfaview-openapi.yaml` — 37-path baseline snapshot (schema-only; live JSON is authoritative)
+- `recon-notes/alfaview-openapi-2026-10-06.json` — Dated snapshot to attribute future OpenAPI rotations exactly
+- `art/lead_bigpickle.txt` — Full running lead log with hypotheses, retractions, procedural corrections
+- `art/lead_nemotron3.txt` — Ranked hypotheses + verification steps for top items
+- `hypotheses-bigpickle.txt` — Current ranked hypotheses with confidence/testability
+- `hypotheses-nemotron3.txt` — Concise NEXT/HYP set aligned with token gate
+- `probe-results.md` — Historical read-only probe results with size+md5 (prevents false deltas)
+- `leads/lead-bigpickle.md` — Canonical verify_steps for introspect/guest-links/adminSwitchCompany
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/leads/lead-bigpickle.md | head -100
+## 2026-09-03 14:06:59 UTC [target] (model bigpickle)
+[PRIO] beta-apis.alfaview.com, 8.8, a:7 b:8 t:9(API+OpenAPI) g:6(cloud:3,auth-gate:3) c:3 f:5
+[PRIO] demo-company.alfaview.com, 8.3, a:9 b:8 t:6(web app) g:8(no basic auth gate) c:3 f:5
+[PRIO] internal.alfaview.com, 7.0, a:6 b:9 t:5(Basic auth) g:3(closed) c:3 f:5
+[HYP] IDOR on room permissions and user deletion
+class: IDOR
+asset: apis.alfaview.com
+confidence: 72
+reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
+evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
+verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
+testability: AUTH_HELPED
+[HYP] Guest link access key enumeration via auth oracle
+class: AUTH
+asset: apis.alfaview.com/v2/auth/group-link
+confidence: 65
+reasoning: Group/guest link auth requires companyId + roomId + accessKey. The auth endpoint returns distinct errors: 401 "A guest with the provided information could not be found and authenticated" vs 422 if wrong endpoint type used. If accessKeys are low-entropy or sequential, and rate-limiting is absent per-scope, brute force of accessKey for a known companyId+roomId yields a guest session token.
+evidence_needed: Rate-limited probe of /v2/auth/group-link with a known companyId+roomId and random accessKeys; observe response timing or 429 after N requests confirming (or not) brute-force feasibility.
+verify_steps: POST /v2/auth/group-link with companyId=<known>, roomId=<known>, accessKey=<random-12-char>, displayName="test" — note 401 response time. Repeat 10x at 1 rps to detect rate limiting.
+impact: Guest session impersonation; access to private meeting rooms; severity MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Beta API environment weaker auth enforcement
+class: MISCONFIG
+asset: beta-apis.alfaview.com
+confidence: 55
+reasoning: beta-apis resolves to a separate IP pool (185.127.28.102, 185.245.100.219, 195.201.44.172) from production apis. Beta environments commonly have relaxed validation, disabled features, or test credentials. If the same OpenAPI spec applies but auth middleware differs, unauthenticated access or test API keys may work.
+evidence_needed: Comparison of /v2/languages or /v2/room-types response on beta-apis vs apis without Authorization header; check for different error bodies or 200 vs 401.
+verify_steps: GET https://beta-apis.alfaview.com/v2/languages (no auth) — compare response code and body against the same request on apis.alfaview.com (401).
+impact: Unauthenticated API access to user data, room data, and meeting statistics; severity HIGH.
+testability: PASSIVE (no auth needed to probe response codes)
+[PARKED] IDOR on room permissions: requires valid API credentials to confirm. Confidence 72 is justified by the explicit path-param UUID pattern in the spec but server-side authorization is unverified without auth testing. Remains as highest-priority authenticated test.
+[PARKED] Guest link access key enumeration: needs valid companyId+roomId to confirm rate limiting. Confidence 65 reflects the speculative brute-force angle. Keep for authenticated phase.
+[FINAL] Beta API weaker auth enforcement — **RANK 1 for next probe**. PASSIVE, no auth required, directly testable.
+[NEXT] PROBE: GET `https://beta-apis.alfaview.com/v2/languages` — no Authorization header, compare response code/body vs production `https://apis.alfaview.com/v2/languages` (known 401).
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+[LEARN] REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected class).
+[RISK] alfaview: 65/100. Scope is broad ("all company-owned infrastructure") but active testing on production APIs requires an API key or guest account. 1 rps rate limit constrains brute-force. All high-value endpoints are auth-gated. Realistic path: obtain a developer account, test IDOR and guest-link flows.
+## 2026-09-03 15:10:59 UTC [target] (model bigpickle)
+[CHANGED] beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+[NEW] beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+[NEW] insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+[PRIO] demo-company.alfaview.com, 8.7, a:9 b:9 t:6(web app) g:9(no auth gate) c:3 f:5
+[PRIO] beta-webclient.alfaview.com, 8.2, a:7 b:8 t:7(web client) g:7(no basic auth) c:3 f:4
+[PRIO] apis.alfaview.com, 8.0, a:8 b:8 t:9(API) g:6(cloud:3,auth-gate:3) c:3 f:5
+[HYP] IDOR on room permissions and user deletion
+class: IDOR
+asset: apis.alfaview.com
+confidence: 72
+reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
+evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
+verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
+testability: AUTH_HELPED
+[HYP] Guest link access key enumeration via auth oracle
+class: AUTH
+asset: apis.alfaview.com/v2/auth/group-link
+confidence: 65
+reasoning: Group/guest link auth requires companyId + roomId + accessKey. The auth endpoint returns distinct errors: 401 "A guest with the provided information could not be found and authenticated" vs 422 if wrong endpoint type used. If accessKeys are low-entropy or sequential, and rate-limiting is absent per-scope, brute force of accessKey for a known companyId+roomId yields a guest session token.
+evidence_needed: Rate-limited probe of /v2/auth/group-link with a known companyId+roomId and random accessKeys; observe response timing or 429 after N requests confirming (or not) brute-force feasibility.
+verify_steps: POST /v2/auth/group-link with companyId=<known>, roomId=<known>, accessKey=<random-12-char>, displayName="test" — note 401 response time. Repeat 10x at 1 rps to detect rate limiting.
+impact: Guest session impersonation; access to private meeting rooms; severity MEDIUM-HIGH.
+testability: AUTH_HELPED
+[HYP] Demo company exposes test user data via unauthenticated API
+class: MISCONFIG
+asset: demo-company.alfaview.com
+confidence: 60
+reasoning: demo-company.alfaview.com serves HTTP 200 without authentication. Demo/test environments often have weakened security controls, default credentials, or exposed test data. If this is a publicly accessible demo instance, it may leak test user information, company structures, or internal API endpoints.
+evidence_needed: Probe common endpoints (/api, /v1, /v2, /graphql) on demo-company.alfaview.com without auth; check for exposed user lists, company data, or debug interfaces.
+verify_steps: GET https://demo-company.alfaview.com/ and observe response; then GET https://demo-company.alfaview.com/api/v1/users (or similar) to test for unauthenticated data access.
+impact: Exposure of test/demo user data, company structures; severity MEDIUM.
+testability: PASSIVE (no auth needed)
+[PARKED] Beta API weaker auth enforcement — disconfirmed by identical 401 responses.
+[FINAL] IDOR on room permissions: 72% confidence, highest value, AUTH_HELPED.
+[FINAL] Guest link access key enumeration: 65% confidence, requires valid credentials.
+[FINAL] Demo company test data exposure: 60% confidence, PASSIVE, immediate testability.
+[NEXT] PROBE: GET `https://demo-company.alfaview.com/api/v1/users` — no auth, check for exposed user list or test data.
+[LEARN] REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+[LEARN] ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+[LEARN] ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+[LEARN] ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+[RISK] alfaview: 62/100. Scope is broad but all high-value endpoints are auth-gated. Beta API disconfirmed as weaker. Demo company presents immediate passive test opportunity. Realistic path: obtain demo/test account, test IDOR and guest-link flows; meanwhile probe demo-company for exposed test data.
+## 2026-09-03 18:41:01 UTC [target] (model bigpickle)
+[PRIO] insider-webclient.alfaview.com, 7.2, a:8 b:9 t:7 g:8 c:3 f:4
+[PRIO] beta-webclient.alfaview.com, 6.4, a:6 b:7 t:7 g:7 c:3 f:4
+[PRIO] alfatraining.alfaview.com, 6.3, a:7 b:6 t:5 g:7 c:3 f:3
+[PRIO] demo-company.alfaview.com, 5.5, a:4 b:4 t:3 g:9 c:3 f:5 (SPA disconfirmed)
+[PRIO] bhc.alfaview.com, 5.0, a:5 b:5 t:3 g:5 c:3 f:3
+[HYP] Insider web client exposes internal admin panel without auth
+class: MISCONFIG
+asset: insider-webclient.alfaview.com
+confidence: 55
+reasoning: Returns HTTP 200 with no auth gate. Name explicitly says "insider" — likely internal tooling for employees/admins. Internal tools are frequently deployed with weaker auth controls, debug modes, or default sessions. If this is a React/Vue SPA, client-side routes may expose admin functionality hidden behind JS routing but accessible via direct path.
+evidence_needed: Response body content-type and HTML structure; presence of API base URL, admin routes, or debug flags in bundled JS; probe /api, /admin, /graphql, /internal paths.
+verify_steps: GET https://insider-webclient.alfaview.com/ — observe content-type, title, script tags. GET https://insider-webclient.alfaview.com/api/health or /api/config for exposed backend routes.
+impact: Exposure of internal admin tooling, potential access to user management, room administration, or meeting data; severity MEDIUM-HIGH.
+testability: PASSIVE
+[HYP] Beta web client exposes debug/test routes or weaker CSP
+class: MISCONFIG
+[0m
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/art/lead_bigpickle.txt | head -200
+cat: /home/runner/work/alfaview-hunt/alfaview-hunt/art/lead_bigpickle.txt: No such file or directory
+[0m
+[0m$ [0mfind /home/runner/work/alfaview-hunt/alfaview-hunt/art 2>/dev/null | head -10
+(no output)
+[0m
+[0m$ [0mfind /home/runner/work/alfaview-hunt/alfaview-hunt -name "*lead_bigpickle*" 2>&1 | head -15
+(no output)
+[0m
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/hypotheses-bigpickle.txt 2>&1 | head -120
+cat: /home/runner/work/alfaview-hunt/alfaview-hunt/hypotheses-bigpickle.txt: No such file or directory
+[0m
+[0m$ [0mfind /home/runner/work/alfaview-hunt/alfaview-hunt -name "*hypotheses*" 2>&1 | head -15
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses.md
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-ling3.txt
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-laguna.txt
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-bigpickle.txt
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-nemotron3.txt
+/home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-longcat.txt
+[0m
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-bigpickle.txt 2>&1 | head -140
+## 2026-10-16 18:59:56 UTC [target] (model bigpickle)
+[CHANGED] none — 52nd consecutive NO_DELTA. Standing baselines verified 2026-10-16: OpenAPI 176350B/25522f857, users+audit-log 401/107B/60ed2f29, OIDC 2169B/f78a08fc, JWKS 16257B/3f8d456c, graphql 400/406B/2fd0a1d0, tools poll 501/55B/ace9390a, whiteboard 404/47B/ddd33510, ingest health 16B/3a0386dd, introspect OPTIONS 405/0B.
+[PRIO] 1 (unchanged) — [HYP] introspect client-auth bypass (94). AUTH_HELPED. 30+ stable cycles.
+[PRIO] 2 (unchanged) — [HYP] /v2/guest-links company-wide credential leak (88). AUTH_HELPED.
+[PRIO] 3 (unchanged) — [HYP] adminSwitchCompany cross-tenant token mint (85). AUTH_HELPED.
+[PARKED] All previously parked classes (SSRF, JWT alg-confusion, redirect_uri, subdomain takeover, introspection enum, whiteboard RPC, audit-log IDOR, accessKey oracle, device_authorize, 403-asymmetry, pre-auth binder). No new class surfaced.
+[FINAL] No independent finding this cycle. Surface is stable and fully characterized. Passive and unauth-active exploration is exhausted; the ranked set cannot progress past the token gate.
+[NEXT] HUMAN: run the unauthenticated signup at app.alfaview.com/graphql (Signup mutation → email → FinishSignup(companyId, username, activationToken, password)) to mint one valid read-only session token. With that token, verify at ≤1 rps: (a) POST sso…/oauth2/introspect with token=<valid>&client_id=fake — expect token_active=true if the client-auth bypass holds; (b) GET apis…/v2/guest-links with Authorization: <token> — record whether the response is company-wide or scope-narrowed. Do not mutate, do not enumerate customer data. Pause automated cycles until a token exists — continued NO_DELTA cycles add no signal.
+[LEARN] Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; this asymmetry is a supporting detail for HYP 1, not a standalone finding.
+[RISK] alfaview gmbh 88/100 (unchanged; score is contingent on HYP 1–3 confirming).
+[0m
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/inventory/alfaview.md 2>&1 | head -200
+# alfaview gmbh inventory (discovery seed 2026-09-02)
+# NOTE: hosts below are discovery candidates from passive DNS/CT; confirm in-scope vs program scope before active testing.
+alfaview.com
+app.alfaview.com
+dev.alfaview.com
+sso.alfaview.com
+staging.alfaview.com
+support.alfaview.com
+test.alfaview.com
+www.alfaview.com
+
+## PASSIVE RECON 2026-09-02 (read-only, non-intrusive)
+
+> Recon observations only. These are NOT confirmed vulnerabilities; ownership/in-scope of each host must be confirmed against the program scope before any active testing. Hosts resolve + serve HTTP — investigation requires scoped authorization.
+
+**Probed:** 8 hosts | **Live HTTP:** 2
+
+| Host | Status | Server/Tech |
+|---|---|---|
+| `support.alfaview.com` | 301 | Server: myracloud -> https://support.alfaview.com/en/ |
+| `staging.alfaview.com` | 301 | Server: myracloud -> https://staging.alfaview.com/en |
+
+**CNAME review signals (2):**
+- `support.alfaview.com` -> `support-alfaview-com.ax4z.com`
+- `staging.alfaview.com` -> `staging-alfaview-com.ax4z.com`
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `staging.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `support.alfaview.com` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP ENUM (wildcard-cleaned) 2026-09-03
+**Root zone:** `alfaview.com` | **dedicated hosts after wildcard-filter: 55**
+> Audit: brute+passive subfinder produced 10,083 resolving hostnames; zone-wildcard + IP-fingerprint filtering dropped 9,973 (98.9%) DNS-wildcard noise (random labels resolving to shared wildcard IPs e.g. account.cineplex.de, a.hypofriend.de, account.live-manager.de, docker.jtl-software.de, *.ggamdom.com, *.dev.alfaview.com). Only genuine dedicated hosts listed below. These are surface-map observations; live HTTP status captured read-only (GET / via curl). No findings claimed; scope must be confirmed with the program.
+- `alfacheck-audio.alfaview.com`  [HTTP unprobed]
+- `alfacheck-engine.alfaview.com`  [HTTP unprobed]
+- `alfacheck-video.alfaview.com`  [HTTP unprobed]
+- `alfatraining.alfaview.com`  [HTTP 200]
+- `alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `apis.alfaview.com`  [HTTP 200]
+- `app.alfaview.com`  [HTTP 200]
+- `appstats.alfaview.com`  [HTTP unprobed]
+- `assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-assets.alfaview.com`  [HTTP 403]
+- `beta-alfaview-com-assets.alfaview.com`  [HTTP 403]
+- `beta-apis.alfaview.com`  [HTTP 200]
+- `beta-app.alfaview.com`  [HTTP 401]
+- `beta-hcloud-19-beta-audio-4xstl.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-audio-8xnz9.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-9m62k.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-engine-vlhwd.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`  [HTTP 200]
+- `beta-hcloud-19-beta-video-xjl6p.alfaview.com`  [HTTP 404]
+- `beta-hcloud-19-beta-video-zhjvl.alfaview.com`  [HTTP 404]
+- `beta-ionoscloud-21-beta-audio-65st7.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-audio-bdtmf.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-gw4qw.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-engine-kzmvv.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-6pp2m.alfaview.com`  [HTTP unprobed]
+- `beta-ionoscloud-21-beta-video-l5mbv.alfaview.com`  [HTTP unprobed]
+- `beta-noris-33-beta-audio-ljj9x.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-audio-xr4mw.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-engine-cr5rs.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-engine-w84qw.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-hydra-2zm7t.alfaview.com`  [HTTP 200]
+- `beta-noris-33-beta-video-2f9jw.alfaview.com`  [HTTP 404]
+- `beta-noris-33-beta-video-vbvn5.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-audio-j5qgh.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-audio-vldgf.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-engine-dxvt4.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-engine-k7khj.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-hydra-z4tf8.alfaview.com`  [HTTP 200]
+- `beta-ovh-29-beta-video-8zvvm.alfaview.com`  [HTTP 404]
+- `beta-ovh-29-beta-video-gbbw4.alfaview.com`  [HTTP 404]
+- `beta-webclient.alfaview.com`  [HTTP 200]
+- `bhc.alfaview.com`  [HTTP 200]
+- `client-diagnostics-ingest.alfaview.com`  [HTTP 404]
+- `clone.staging-wordpress.alfaview.com`  [HTTP 303]
+- `consul-monitoring.alfaview.com`  [HTTP unprobed]
+- `demo-company.alfaview.com`  [HTTP 200]
+- `design-assets.alfaview.com`  [HTTP 404]
+- `design-tokens.alfaview.com`  [HTTP 404]
+- `equipment.alfaview.com`  [HTTP unprobed]
+- `hello-world.atlas-spike.atlas.alfaview.com`  [HTTP 404]
+- `insider-webclient.alfaview.com`  [HTTP 200]
+- `internal.alfaview.com`  [HTTP 401]
+- `ip-185-245-101-240.alfaview.com`  [HTTP unprobed]
+- `kh-freiburg.alfaview.com`  [HTTP 200]
+
+## 2026-09-03 11:40:30 UTC
+
+## 2026-09-03 14:23:21 UTC
+
+## 2026-09-03 15:21:33 UTC
+- NEW 55 dedicated hosts confirmed after wildcard filtering (was 8 in initial recon) — inventory/alfaview.md:35-92
+- NEW Probe result: `GET https://beta-apis.alfaview.com/v2/languages` (no auth) → HTTP 401; `GET https://apis.alfaview.com/v2/languages` → HTTP 404 — probe-results.md:6-8
+- CHANGED Beta API weaker auth hypothesis **disproven** — beta returns 401 (endpoint exists, auth required), production returns 404 (endpoint missing) — version drift confirmed
+- CHANGED Production API lacks `/v2/languages` endpoint present in beta — API version divergence
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
+
+## 2026-09-03 18:48:37 UTC
+- NEW OpenAPI specs at `https://apis.alfaview.com/v2/docs/openapi.json` and `https://beta-apis.alfaview.com/v2/docs/openapi.json` are **identical** (same endpoints, schemas, auth requirements) — confirms ve
+- NEW `GET https://apis.alfaview.com/v2/languages` returns 404 (endpoint absent in production); `GET https://beta-apis.alfaview.com/v2/languages` returns 401 (endpoint exists, auth enforced) — confirmed API
+- NEW OpenAPI spec exposes `DELETE /v2/users/{id}` and `PATCH/DELETE /v2/rooms/{roomId}/permissions/{userId}` with UUID path params — direct evidence for IDOR hypothesis
+- NEW `demo-company.alfaview.com/api/v1/users` returns 302 redirect to `/` — no unauthenticated user enumeration
+- CHANGED Beta API weaker auth hypothesis **fully disproven** — OpenAPI specs identical, both enforce auth identically
+- CHANGED API version drift scope narrowed: only `/v2/languages` endpoint differs (beta has it, prod doesn't)
+
+## 2026-09-03 21:22:00 UTC
+
+## 2026-09-03 23:24:23 UTC
+- CHANGED Production API `apis.alfaview.com/v2/languages` now returns **401** (was 404) — endpoint added to production, aligns with beta; OpenAPI specs now identical including `/v2/languages` path
+- CHANGED Beta API `beta-apis.alfaview.com/v2/languages` returns **401** (consistent) — both environments now enforce auth identically on this endpoint
+- NEW `insider-webclient.alfaview.com` and `beta-webclient.alfaview.com` both serve identical SPA shells (4396 bytes, same HTML structure, `/health`=204, `/api|/admin|/debug|/internal|/v2|/docs`=404) — no i
+- NEW `demo-company.alfaview.com` serves SPA (HTTP 200) — unauthenticated web surface confirmed
+- NEW 55 dedicated hosts confirmed after wildcard filtering; 48 remain HTTP-unprobed (e.g., `alfacheck-*`, `beta-hcloud-*`, `beta-ionoscloud-*`, `beta-noris-*`, `beta-ovh-*`, `consul-monitoring`, `equipment
+
+## 2026-09-04 01:12:26 UTC
+- NEW Production API `apis.alfaview.com/v2/languages` now returns **401** (was 404) — endpoint added to production, aligns with beta; OpenAPI specs now identical including `/v2/languages` path
+- NEW `insider-webclient.alfaview.com` and `beta-webclient.alfaview.com` both serve identical SPA shells (4396 bytes, same HTML structure, `/health`=204, `/api|/admin|/debug|/internal|/v2|/docs`=404) — no i
+- NEW `demo-company.alfaview.com` serves SPA (HTTP 200) — unauthenticated web surface confirmed
+- NEW 55 dedicated hosts confirmed after wildcard filtering; 48 remain HTTP-unprobed (e.g., `alfacheck-*`, `beta-hcloud-*`, `beta-ionoscloud-*`, `beta-noris-*`, `beta-ovh-*`, `consul-monitoring`, `equipment
+- NEW Live HTTP 200 on previously unprobed: `alfatraining.alfaview.com`, `bhc.alfaview.com`, `kh-freiburg.alfaview.com`, `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`, `beta-noris-33-beta-hydra-2zm7t.alfav
+- NEW `beta-app.alfaview.com` and `internal.alfaview.com` both return HTTP 401 (auth-gated)
+- NEW `appstats.alfaview.com`, `consul-monitoring.alfaview.com`, `equipment.alfaview.com`, `ip-185-245-101-240.alfaview.com` timeout/unreachable
+- CHANGED Beta API weaker auth hypothesis **fully disproven** — OpenAPI specs identical, both enforce auth identically (401 on `/v2/languages`)
+- CHANGED API version drift **resolved** — both beta and production now expose `/v2/languages` with identical auth enforcement
+- CHANGED Cross-tenant IDOR on room permissions and user deletion via UUID path params confirmed as highest-priority authenticated target (confidence 80)
+
+## 2026-09-04 06:00:56 UTC
+- CHANGED alfacheck-engine.alfaview.com: Was "HTTP unprobed" → now confirmed UNREACHABLE (3 timeout probes: root, /health, /status)
+- CHANGED alfacheck-audio.alfaview.com: Was "HTTP unprobed" → now confirmed UNREACHABLE (3 timeout probes: root, /media, /recordings)
+- CHANGED alfacheck-video.alfaview.com: Was "HTTP unprobed" → now confirmed UNREACHABLE (1 timeout probe: root)
+- NEW beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: HTTP 200 with 9-byte body; trailing slash returns HTTP 400 — minimal surface, likely health-check endpoint
+
+## 2026-09-04 10:12:15 UTC
+
+## 2026-09-04 14:25:07 UTC
+- CHANGED beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: Was ACCEPTED MISCONFIG (health-check surface) → now REJECTED after probing — "Hi Client" body on all paths confirms media/signaling server, not OIDC/auth 
+- CHANGED beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — media server, REJECTED.
+- CHANGED beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — media server, REJECTED.
+- CHANGED All 3 alfacheck-* hosts: Confirmed UNREACHABLE via timeout (root, /health, /status, /media, /recordings). Internal/firewalled. REJECTED.
+- CHANGED RISK score dropped from 58 → 55 — all hydra/alfacheck surfaces resolved (rejected). Remaining surface is auth-gated.
+- CHANGED beta-hcloud-19-beta-hydra-dzwx8.alfaview.com: ACCEPTED MISCONFIG → REJECTED — media/signaling server ("Hi Client"), not OIDC.
+- CHANGED beta-noris-33-beta-hydra-2zm7t.alfaview.com: Same — REJECTED.
+- CHANGED beta-ovh-29-beta-hydra-z4tf8.alfaview.com: Same — REJECTED.
+- CHANGED alfacheck-engine.alfaview.com: UNREACHABLE confirmed (3 timeout probes).
+- CHANGED alfacheck-audio.alfaview.com: UNREACHABLE confirmed (3 timeout probes).
+- CHANGED alfacheck-video.alfaview.com: UNREACHABLE confirmed (1 timeout probe).
+- NEW Production API `apis.alfaview.com/v2/languages` now returns 401 (was 404) — endpoint added, aligns with beta; OpenAPI specs identical
+- NEW `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com`: HTTP 200 with 9-byte body ("Hi Client"); trailing slash returns HTTP 400 — minimal health-check surface
+- NEW Guest link auth flow updated to 4-field combo (companyId+roomId+accessKey+displayName) — rate-limit status unknown
+- CHANGED API version drift **resolved** — both beta and production expose `/v2/languages` with identical auth enforcement (401)
+- CHANGED `alfacheck-engine/audio/video.alfaview.com`: confirmed UNREACHABLE (timeout probes) — target exhausted
+- CHANGED `beta-hcloud-19-beta-hydra-dzwx8.alfaview.com` et al: confirmed media/signaling servers ("Hi Client") — no admin endpoints
+
+## 2026-09-04 17:51:04 UTC
+
+## 2026-09-04 20:04:20 UTC
+- NEW beta-ionoscloud-21-* fleet (7 hosts): `beta-ionoscloud-21-beta-audio-65st7`, `beta-ionoscloud-21-beta-audio-bdtmf`, `beta-ionoscloud-21-beta-engine-gw4qw`, `beta-ionoscloud-21-beta-engine-kzmvv`, `bet
+- NEW Main domain set from initial recon (6 hosts): `alfaview.com`, `app.alfaview.com`, `dev.alfaview.com`, `sso.alfaview.com`, `test.alfaview.com`, `www.alfaview.com` — only `support`/`staging` probed (301
+- CHANGED `apis.alfaview.com/v2/languages` now 401 (was 404) — endpoint added, aligns with beta; OpenAPI specs identical
+- CHANGED `alfatraining`/`bhc`/`kh-freiburg` XSS hypothesis REJECTED — byte-identical SPA shells (1381B, MD5 554a39), no tenant-specific rendering
+
+## 2026-09-04 22:09:53 UTC
+- NEW beta-ionoscloud-21-beta-hydra-7x5d5.alfaview.com: HTTP timeout (root + trailing slash) — unlike hcloud/noris/ovh hydra hosts which returned "Hi Client"
+- NEW alfaview.com: HTTP 200 — main marketing/auth entry point now confirmed live
+- NEW sso.alfaview.com: HTTP 200 len=0 — SSO endpoint live, empty body (likely redirects or SPA shell)
+- CHANGED beta-ionoscloud-21-* fleet (7 hosts): Previously "HTTP unprobed" → now 1/7 probed (hydra=timeout), 6 remain unprobed
+- CHANGED Main domain set (6 hosts): Previously only support/staging probed (301) → now alfaview.com + sso.alfaview.com confirmed HTTP 200, 4 remain unprobed (app, dev, test, www)
+
+## 2026-09-05 00:15:07 UTC
+
+## 2026-09-05 04:34:13 UTC
+- NEW sso.alfaview.com: FusionAuth 1.63.0 OIDC discovery live (issuer=acme.com, implicit flow, HS256 in supported algs but RSA-only JWKS) — confirmed 2026-09-05 00:15
+- NEW test.alfaview.com: Unauthenticated binary distribution (alfacheck v470079, 4 platforms) — no integrity verification visible
+- NEW alfaview.com: Marketing page live (301→/en, 177KB, strict CSP, matomo) — no SSO login links on marketing domain
+- CHANGED beta-ionoscloud-21-beta-engine-* (2 hosts): Confirmed timeout (000) — internal/firewalled like alfacheck-* fleet
+- CHANGED alfaview.com: Root now redirects to /en with nginx + Accept-Language vary header
+- CHANGED www.alfaview.com: 301→alfaview.com/en (no independent surface)
+
+## 2026-09-05 08:50:59 UTC
+- NEW app.alfaview.com/js/app.min.5b3949112f0cf682adc8.js (1.09MB) leaks FULL admin/company GraphQL schema: 60+ mutations + 45+ queries with exact args. Not just SDL strings — includes CreateCompany($compan
+- NEW GraphQL live at app.alfaview.com/graphql: __typename OK unauth; introspection disabled; sensitive ops return UNAUTHENTICATED. Resolver auth is INCONSISTENT: listIdentityProviders returns data unauth (
+- NEW CRITICAL DELTA: GraphQL guest path guestAuthenticate(userId,companyId,roomId) and guestJoin(userId,companyId,roomId,displayName) take NO accessKey — while REST guest-link flow requires 4-field combo i
+- NEW Hosts: webclient.alfaview.com=200/4396B(insider family); staging-webclient.alfaview.com=401 Basic realm=Protected (/health=204); plausible.alfaview.com=204; production-alfaview-assets/staging-alfaview
+- NEW sso.alfaview.com: FusionAuth 1.63.0 OIDC discovery confirmed with issuer=acme.com (misconfiguration), implicit flow enabled, HS256/HS384/HS512 in id_token_signing_alg_values_supported but JWKS contain
+- NEW test.alfaview.com: Unauthenticated binary distribution confirmed (alfacheck v470079, 4 platforms: linux/amd64, windows/amd64, mac/amd64, mac/arm64) — statically linked ELF, no integrity hashes/signatu
+- NEW app.alfaview.com: SPA loads from alfaview-com-assets.alfaview.com; no client_id discoverable in HTML/JS bundles; common client_id patterns (alfaview, app, web, client, spa, alfaview.com, app.alfaview.
+- CHANGED beta-app.alfaview.com: HTTP 401 with WWW-Authenticate: Basic (not OAuth) — different auth mechanism than main app
+- CHANGED alfaview.com: Marketing page now 301→/en with nginx + Accept-Language vary, 177KB, strict CSP, matomo analytics — no SSO login links
+- CHANGED www.alfaview.com: 301→alfaview.com/en (no independent surface)
+
+## 2026-09-05 12:20:10 UTC
+[0m
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-nemotron3.txt 2>&1 | head -80
+## 2026-10-16 19:18:27 UTC [target] (model nemotron3)
+[0m
+[0m$ [0mcat /home/runner/work/alfaview-hunt/alfaview-hunt/reports/hypotheses-bigpickle.txt 2>&1 | head -50
+## 2026-10-16 18:59:56 UTC [target] (model bigpickle)
+[CHANGED] none — 52nd consecutive NO_DELTA. Standing baselines verified 2026-10-16: OpenAPI 176350B/25522f857, users+audit-log 401/107B/60ed2f29, OIDC 2169B/f78a08fc, JWKS 16257B/3f8d456c, graphql 400/406B/2fd0a1d0, tools poll 501/55B/ace9390a, whiteboard 404/47B/ddd33510, ingest health 16B/3a0386dd, introspect OPTIONS 405/0B.
+[PRIO] 1 (unchanged) — [HYP] introspect client-auth bypass (94). AUTH_HELPED. 30+ stable cycles.
+[PRIO] 2 (unchanged) — [HYP] /v2/guest-links company-wide credential leak (88). AUTH_HELPED.
+[PRIO] 3 (unchanged) — [HYP] adminSwitchCompany cross-tenant token mint (85). AUTH_HELPED.
+[PARKED] All previously parked classes (SSRF, JWT alg-confusion, redirect_uri, subdomain takeover, introspection enum, whiteboard RPC, audit-log IDOR, accessKey oracle, device_authorize, 403-asymmetry, pre-auth binder). No new class surfaced.
+[FINAL] No independent finding this cycle. Surface is stable and fully characterized. Passive and unauth-active exploration is exhausted; the ranked set cannot progress past the token gate.
+[NEXT] HUMAN: run the unauthenticated signup at app.alfaview.com/graphql (Signup mutation → email → FinishSignup(companyId, username, activationToken, password)) to mint one valid read-only session token. With that token, verify at ≤1 rps: (a) POST sso…/oauth2/introspect with token=<valid>&client_id=fake — expect token_active=true if the client-auth bypass holds; (b) GET apis…/v2/guest-links with Authorization: <token> — record whether the response is company-wide or scope-narrowed. Do not mutate, do not enumerate customer data. Pause automated cycles until a token exists — continued NO_DELTA cycles add no signal.
+[LEARN] Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; this asymmetry is a supporting detail for HYP 1, not a standalone finding.
+[RISK] alfaview gmbh 88/100 (unchanged; score is contingent on HYP 1–3 confirming).
+[0m
+So far, we've done **extensive passive reconnaissance** of alfaview gmbh's in-scope assets. Key accomplishments:
+
+**Surface mapping**: Identified 55 dedicated hosts after DNS wildcard filtering, mapped HTTP behavior across web/API/RPC endpoints, confirmed mirrors (webclient/product-webclient, equipment/production-equipment).
+
+**API characterization**: Parsed OpenAPI at `apis.alfaview.com/v2/docs/openapi.json` (176KB, 38 paths/57 ops). Discovered undocumented endpoints (`/v2/audit-log`, `/v2/users/me/company` as sole source of `companyId`). Confirmed auth model uses opaque base64 tokens (not JWT) with `bearerFormat: opaque`.
+
+**Auth/SSO analysis**: Probed `sso.alfaview.com/oauth2/introspect` - found shape-dependent auth: opaque tokens bypass client authentication (fabricated `client_id` accepted returning `200 {"active":false}`), while JWT-shaped tokens enforce client auth. Confirmed introspection endpoint absent from OIDC discovery despite being live. Documented JWKS (7 RSA keys).
+
+**GraphQL/RPC mapping**: Analyzed `app.alfaview.com/graphql` (introspection disabled, CSRF-guarded). Identified `signup`/`finishSignup` as sole unauthenticated path to obtain tokens. Extracted `adminSwitchCompany($nextCompanyId: String!)` signature. Mapped `tools.alfaview.com/poll/pollservice/*` (8 verbs) and unmapped `whiteboard/*` RPC backends.
+
+**Hypothesis testing & ranking**: Generated ranked hypotheses - **H1** OAuth2 introspection client-auth bypass (94% conf), **H2** `/v2/guest-links` company-wide enumeration (88%), **H3** `adminSwitchCompany` cross-tenant token minting (85%). Systematically tested/rejected many classes (SSRF, JWT alg confusion, subdomain takeover, etc.). We're at **52nd consecutive NO_DELTA** - passive exploration exhausted.
+
+**Blocking**: All top 3 hypotheses are `AUTH_HELPED`. Need a valid opaque bearer token via GraphQL `signup` → email verification → `finishSignup`. With token, test (a) introspect with fake client_id, (b) `/v2/guest-links` scope, (c) `adminSwitchCompany` with foreign `companyId`.

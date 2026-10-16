@@ -1465,3 +1465,10 @@
 - 2026-10-16 PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs; guessed URLs never become findings; delta claims require DNS+HTTP; bare-GET vs header-qualified responses must not be conflated
 - 2026-10-16 Validation, not recon, is the bottleneck: 91/223 triage runs UnknownError, last good verdict 2026-09-24. Surface byte-stable; further passive probing has zero expected yield.
 - 2026-10-16 Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; this asymmetry is a supporting detail for HYP 1, not a standalone finding.
+- 2026-10-16 ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- 2026-10-16 ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- 2026-10-16 REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected class).
+- 2026-10-16 REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+- 2026-10-16 ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- 2026-10-16 ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- 2026-10-16 ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
