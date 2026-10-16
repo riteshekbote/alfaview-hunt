@@ -6022,3 +6022,8 @@
 - LEARN: PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs; guessed URLs never become findings; delta claim
 
 ## RANKED HYPOTHESES 2026-10-16 06:38:16 UTC
+
+## RANKED HYPOTHESES 2026-10-16 11:51:02 UTC
+- [0] ?: unchanged — all three remain AUTH_HELPED; single blocker identical (no valid bearer token). (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN ONLY — sole unauth token path is email-gated signup:
+- LEARN: Validation, not recon, is the bottleneck: 91/223 triage runs UnknownError, last good verdict 2026-09-24. Surface byte-stable; further passive probing has zero e
