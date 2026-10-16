@@ -1,1 +1,10 @@
-## 2026-10-16 15:34:41 UTC [target] (model bigpickle)
+## 2026-10-16 18:59:56 UTC [target] (model bigpickle)
+[CHANGED] none — 52nd consecutive NO_DELTA. Standing baselines verified 2026-10-16: OpenAPI 176350B/25522f857, users+audit-log 401/107B/60ed2f29, OIDC 2169B/f78a08fc, JWKS 16257B/3f8d456c, graphql 400/406B/2fd0a1d0, tools poll 501/55B/ace9390a, whiteboard 404/47B/ddd33510, ingest health 16B/3a0386dd, introspect OPTIONS 405/0B.
+[PRIO] 1 (unchanged) — [HYP] introspect client-auth bypass (94). AUTH_HELPED. 30+ stable cycles.
+[PRIO] 2 (unchanged) — [HYP] /v2/guest-links company-wide credential leak (88). AUTH_HELPED.
+[PRIO] 3 (unchanged) — [HYP] adminSwitchCompany cross-tenant token mint (85). AUTH_HELPED.
+[PARKED] All previously parked classes (SSRF, JWT alg-confusion, redirect_uri, subdomain takeover, introspection enum, whiteboard RPC, audit-log IDOR, accessKey oracle, device_authorize, 403-asymmetry, pre-auth binder). No new class surfaced.
+[FINAL] No independent finding this cycle. Surface is stable and fully characterized. Passive and unauth-active exploration is exhausted; the ranked set cannot progress past the token gate.
+[NEXT] HUMAN: run the unauthenticated signup at app.alfaview.com/graphql (Signup mutation → email → FinishSignup(companyId, username, activationToken, password)) to mint one valid read-only session token. With that token, verify at ≤1 rps: (a) POST sso…/oauth2/introspect with token=<valid>&client_id=fake — expect token_active=true if the client-auth bypass holds; (b) GET apis…/v2/guest-links with Authorization: <token> — record whether the response is company-wide or scope-narrowed. Do not mutate, do not enumerate customer data. Pause automated cycles until a token exists — continued NO_DELTA cycles add no signal.
+[LEARN] Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; this asymmetry is a supporting detail for HYP 1, not a standalone finding.
+[RISK] alfaview gmbh 88/100 (unchanged; score is contingent on HYP 1–3 confirming).

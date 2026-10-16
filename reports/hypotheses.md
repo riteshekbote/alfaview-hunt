@@ -6029,3 +6029,7 @@
 - LEARN: Validation, not recon, is the bottleneck: 91/223 triage runs UnknownError, last good verdict 2026-09-24. Surface byte-stable; further passive probing has zero e
 
 ## RANKED HYPOTHESES 2026-10-16 15:49:32 UTC
+
+## RANKED HYPOTHESES 2026-10-16 19:18:38 UTC
+- NEXT(hypotheses-bigpickle.txt): HUMAN: run the unauthenticated signup at app.alfaview.com/graphql (Signup mutation → email → FinishSignup(companyId, username, activationToken, password)) to mi
+- LEARN: Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; t
