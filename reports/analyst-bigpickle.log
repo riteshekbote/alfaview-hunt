@@ -114730,3 +114730,188 @@ I should emit the cycle block. Let me keep it tight and factual.</think>[NEW] no
 [RISK] Idle-loop risk — every additional read-only cycle is pure noise until a token exists or the triage pipeline is repaired. Recommend pausing automated cycles pending HUMAN token.
 
 I've confirmed the surface is feature-stable and all three chains are token-gated. I cannot perform the signup (email-gated, requires a human mailbox) or mutating tests, so I'm stopping here rather than burning cycles on the 50th NO_DELTA. Provide a valid bearer token (or repair the triage pipeline) to unblock.
+===== ANALYST bigpickle 2026-10-16 06:38:16 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/openapi.json -w "%{http_code} %{size_download}" "https://apis.alfaview.com/v2/docs/openapi.json" && echo && md5sum /tmp/opencode/openapi.json && wc -c < /tmp/opencode/openapi.json
+200 176350
+25522f8571f589c5cfba211ad2982b66  /tmp/opencode/openapi.json
+176350
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/oidc.json -w "%{http_code} %{size_download}" "https://sso.alfaview.com/.well-known/openid-configuration" && echo && md5sum /tmp/opencode/oidc.json
+200 2169
+f78a08fced8b042093396383b74d8458  /tmp/opencode/oidc.json
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/jwks.json -w "%{http_code} %{size_download}" "https://sso.alfaview.com/.well-known/jwks.json" && echo && md5sum /tmp/opencode/jwks.json
+200 16257
+3f8d456c7fd92c6107f3fd77732bd0f4  /tmp/opencode/jwks.json
+[0m
+## Objective
+- Run a passive-first bug bounty recon/analysis loop against the alfaview gmbh program (report channel: bugs.olivermaicher.eu), following the 8-step analyst workflow (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARNING → RISK), and emit only structured blocks each cycle.
+- Currently in phase "POC", target "api"; the three standing high-value chains all require one valid bearer token that only a HUMAN can mint (email-gated signup).
+
+## Important Details
+- In-scope assets: only company-owned alfaview infrastructure (alfaview.com and operated subdomains), per scope.yml + inventory/alfaview.md.
+- Live-probe constraints: passive-first, ≤1 rps, GET/HEAD/OPTIONS only; no auth-bypass or mutating tests against live customer data.
+- Out-of-scope (rejected) classes list is long: brute-force/rate-limit, descriptive errors, OPTIONS/TRACE, clickjacking w/o exploit, username enumeration, public login panels, etc. Full list in system directive; do not re-propose those classes.
+- Key standing facts (verified, byte-stable for 48+ cycles):
+  - `apis.alfaview.com/v2/docs/openapi.json`: 176350B, md5 `25522f8571f589c5cfba211ad2982b66` (rotated 2026-10-12 from 174787B/`06231fad`); 38 paths, 57 ops, 69 schemas; `components.securitySchemes.accessToken` = {type:http, scheme:bearer, bearerFormat:opaque}; 53/57 ops declare security; the 4 without are `POST /v2/auth/{api-key,group-link,guest-link,password}`. Byte-identical on beta-apis. YAML twin `/v2/docs/openapi.yaml` parity-confirmed.
+  - Live 39th path `GET /v2/audit-log` exists but is NOT in the published spec.
+  - `sso.alfaview.com` FusionAuth 1.63.0: OIDC 200/2169B md5 `f78a08fc` (issuer=acme.com, introspection_endpoint oscillates absent in discovery while `/oauth2/introspect` live, OPTIONS 405); JWKS `/.well-known/jwks.json` 200/16257B md5 `3f8d456c` (7×RS256); `/oauth2/introspect` accepts fabricated client_id on POST-body and HTTP Basic → 200 `{"active":false}`; client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64 JSON); alfaview tokens are opaque base64 → bypass applies to the actual product token type.
+  - `app.alfaview.com/graphql`: bare GET 400/406B (CSRF guard); `x-apollo-operation-name` or `apollo-require-preflight` headers flip `__typename` to 200/32B md5 `c2b4dd58`; introspection disabled; `adminSwitchCompany` mutation mints cross-tenant admin tokens (contract-level, needs valid admin token); hardcoded tenant IDs `alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB` in bundle `app.min.26f05bcb3f94dc9a764b.js`.
+  - `apis.alfaview.com` user-side: `/v2/users/me` 401/107B md5 `60ed2f29` (+`www-authenticate: Bearer`); `/v2/audit-log` 422/232B pre-auth binder (query.from, query.to); pre-auth query-param validation on ~10/26 GET ops; path params validate post-auth (401).
+  - `tools.alfaview.com`: poll RPC `POST /poll/pollservice/<verb>` (8 verbs, GET → 501/55B) with header `Grpc-Metadata-alfaview.token`; second unmapped RPC mount `/whiteboard/` → 404/47B gRPC envelope; staging mirror byte-identical; bundle md5 `b7f17c85` has zero whiteboard refs.
+  - `client-diagnostics-ingest.alfaview.com`: /health 200/16B md5 `3a0386dd`, `/` 404/39B md5 `d18415bd` (NXDOMAIN fact RETIRED — not NXDOMAIN).
+  - `apis.alfaview.com/v2/graphql` = 404 edge catch — GraphQL exists ONLY on app.alfaview.com; never probe apis for graphql.
+  - `apis.alfaview.com` tokens are opaque base64, NOT JWTs; token-info rejects all JWT variants.
+  - `POST /v2/rooms/{roomId}/permissions` (CreatePermissions): BOLA write, polymorphic unconstrained `participantId` (user/guest-link/group-link ID), scope only in path; `Permissions` (CREATE) is atomic 9-bool full set vs `PermissionsEdit` (PATCH) partial delta — do NOT conflate (past fabrication).
+  - Guest-link chain: `GET /v2/guest-links` company-wide un-narrowable, returns accessKey/joinUrl/dialInCode/emailAddress; `POST /v2/auth/guest-link` takes only 3 fields (accessKey, companyId, roomId).
+  - OpenAPI contains ZERO "uuid" strings and ZERO `pattern` keys — the "UUID path params" premise carried for 38 cycles is FALSE and permanently REJECTED.
+  - Two prior fabrications caught by self-audit: (1) UUID-pattern claim; (2) misattributed `Permissions.admin` scope sentence (lives on `PermissionsEdit.admin`). Always quote contract text only after per-field lookup.
+- Procedural rules: guessed URLs never become findings; delta claims require two methods (DNS getent + HTTP); standing probes must carry size AND md5; bare-GET vs header-qualified responses must not be conflated; contract text quoted only after per-field lookup.
+- Blocker: all three HIGH chains are AUTH_HELPED / HUMAN_ONLY — need one valid bearer token via signup flow.
+- Pipeline issue: triage validation broken — 91/223 runs `UnknownError`, last good verdict 2026-09-24 (triage/run-2026-09-24-17-56.md).
+- Current RISK: 88/100; ~49 consecutive NO_DELTA cycles; recommend pausing automated passive cycles.
+
+## Work State
+### Completed
+- Full 55-host inventory 100% probed (many exhausted/closed); CT-derived ~110 extra subdomains mostly firewalled.
+- OpenAPI fully structurally diffed (Wayback comparators 2026-04-19/2026-07-12 used since local snapshot never committed); security model enumerated (53/57 ops).
+- Three surviving ranked hypotheses locked in:
+  1. `[94]` sso.alfaview.com/oauth2/introspect — metadata disclosure for any leaked opaque token with zero valid client creds (AUTH).
+  2. `[88]` apis.alfaview.com/v2/guest-links — company-wide guest-link enumeration → live join credentials, no expressible authorization check (IDOR).
+  3. `[85]` app.alfaview.com/graphql adminSwitchCompany — cross-tenant admin token minting (AUTH).
+- Rejected/closed: JWT alg-confusion (userinfo + apis), OAuth logout open-redirect, accessKey existence oracle, SSRF class (REST), mass assignment (all 21 body schemas `additionalProperties:false`), pre-auth binder as standalone finding (reproduces public spec), anonymous GraphQL resolver slice, CT/subdomain takeover, `/oauth2/device_authorize` unregistered-client claim (retracted).
+
+### Active
+- Idle loop: 49th consecutive NO_DELTA; all standing probes byte-identical; no new lead crosses report floor.
+
+### Blocked
+- All three surviving hypotheses are AUTH_HELPED/HUMAN_ONLY — blocked on obtaining one valid bearer token (email-gated signup flow requires human).
+- Triage pipeline validation loop broken (UnknownError since 2026-09-24).
+
+## Next Move
+1. HUMAN: execute unauthenticated signup at `POST https://app.alfaview.com/graphql` (mutation Signup → email → FinishSignup(companyId, username, activationToken, password)) to obtain one valid bearer token.
+2. With token, run read-only verifies (≤1 rps): (a) `POST https://sso.alfaview.com/oauth2/introspect` form `token=<valid>&client_id=fake-123` and HTTP Basic `base64('fake-123:any')` → expect `{"active":true,...}`; (b) `GET https://apis.alfaview.com/v2/guest-links` with `Authorization: <token>` → expect 200 containing accessKey; (c) `POST https://app.alfaview.com/graphql` adminSwitchCompany with `nextCompanyId: "01FDY0986YK1BJF2K0F9DXR8EB"` and header `token: <admin-token>` → then validate returned accessToken via `GET https://apis.alfaview.com/v2/users/me`.
+
+## Relevant Files
+- inventory/alfaview.md: full host inventory + dated probe log (canonical URLs at ~line 1096); source for delta baselines.
+- recon-notes/alfaview-openapi.yaml: 37-path schema-only stripped snapshot; cannot corroborate rotation claims — live JSON is authoritative.
+- triage/run-2026-09-24-17-56.md: last successful triage verdict; validation pipeline broken since.
+- (Knowledge base + last leads as given in conversation; no other local files referenced.)
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcurl -sS -o /tmp/opencode/me.json -w "%{http_code} %{size_download}" "https://apis.alfaview.com/v2/users/me" && echo && md5sum /tmp/opencode/me.json && curl -sSI "https://apis.alfaview.com/v2/users/me" | grep -i www-authenticate
+401 107
+60ed2f29d492ec872c598cc7d36aa37e  /tmp/opencode/me.json
+www-authenticate: Bearer
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/introspect_opts.txt -w "%{http_code} %{size_download}" -X OPTIONS "https://sso.alfaview.com/oauth2/introspect" && echo && md5sum /tmp/opencode/introspect_opts.txt
+405 0
+d41d8cd98f00b204e9800998ecf8427e  /tmp/opencode/introspect_opts.txt
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/auditlog.json -w "%{http_code} %{size_download}" "https://apis.alfaview.com/v2/audit-log" && echo && md5sum /tmp/opencode/auditlog.json
+422 232
+b4adcd157348f493646c0196c185bd34  /tmp/opencode/auditlog.json
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/gql_bare.json -w "%{http_code} %{size_download}\n" "https://app.alfaview.com/graphql"; curl -sS -o /tmp/opencode/gql_hdr.json -w "%{http_code} %{size_download}\n" -H "x-apollo-operation-name: IntrospectionQuery" "https://app.alfaview.com/graphql"; md5sum /tmp/opencode/gql_bare.json /tmp/opencode/gql_hdr.json
+400 406
+400 148
+2fd0a1d014e411aeea2d5dc41ceba835  /tmp/opencode/gql_bare.json
+39c0b2ada7bfd919f888b598c5993337  /tmp/opencode/gql_hdr.json
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/tools_root.bin -w "%{http_code} %{size_download}\n" -X OPTIONS "https://tools.alfaview.com/"; curl -sS -o /tmp/opencode/tools_poll.bin -w "%{http_code} %{size_download}\n" -X OPTIONS "https://tools.alfaview.com/poll/pollservice/getSubscriptions"; md5sum /tmp/opencode/tools_root.bin /tmp/opencode/tools_poll.bin
+405 0
+404 45
+d41d8cd98f00b204e9800998ecf8427e  /tmp/opencode/tools_root.bin
+c5ad5139ffcee8b234217dcf60d08cba  /tmp/opencode/tools_poll.bin
+[0m
+[0m$ [0mgetent hosts client-diagnostics-ingest.alfaview.com; curl -sS -o /tmp/opencode/diag_health.bin -w "%{http_code} %{size_download}\n" "https://client-diagnostics-ingest.alfaview.com/health"; curl -sS -o /tmp/opencode/diag_root.bin -w "%{http_code} %{size_download}\n" "https://client-diagnostics-ingest.alfaview.com/"; md5sum /tmp/opencode/diag_health.bin /tmp/opencode/diag_root.bin
+159.69.103.169  client-diagnostics-ingest.alfaview.com
+88.198.106.96   client-diagnostics-ingest.alfaview.com
+200 16
+404 39
+3a0386dd403566b954d2c0610133f6c8  /tmp/opencode/diag_health.bin
+d18415bd06ff3ca6d472bdf5ed65b32b  /tmp/opencode/diag_root.bin
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/gql_preflight.json -w "%{http_code} %{size_download}\n" -H "apollo-require-preflight: true" "https://app.alfaview.com/graphql"; md5sum /tmp/opencode/gql_preflight.json /tmp/opencode/gql_bare.json /tmp/opencode/gql_hdr.json; cat /tmp/opencode/gql_hdr.json; echo; cat /tmp/opencode/gql_preflight.json
+400 148
+39c0b2ada7bfd919f888b598c5993337  /tmp/opencode/gql_preflight.json
+2fd0a1d014e411aeea2d5dc41ceba835  /tmp/opencode/gql_bare.json
+39c0b2ada7bfd919f888b598c5993337  /tmp/opencode/gql_hdr.json
+{"errors":[{"message":"GraphQL operations must contain a non-empty `query` or a `persistedQuery` extension.","extensions":{"code":"BAD_REQUEST"}}]}
+
+{"errors":[{"message":"GraphQL operations must contain a non-empty `query` or a `persistedQuery` extension.","extensions":{"code":"BAD_REQUEST"}}]}
+[0m
+[0m$ [0mcat /tmp/opencode/gql_bare.json; echo; curl -sS -o /tmp/opencode/gql_hdr2.json -w "%{http_code} %{size_download}\n" -H "x-apollo-operation-name: Test" "https://app.alfaview.com/graphql"; md5sum /tmp/opencode/gql_hdr2.json; cat /tmp/opencode/gql_hdr2.json
+{"errors":[{"message":"This operation has been blocked as a potential Cross-Site Request Forgery (CSRF). Please either specify a 'content-type' header (with a type that is not one of application/x-www-form-urlencoded, multipart/form-data, text/plain) or provide a non-empty value for one of the following headers: x-apollo-operation-name, apollo-require-preflight\n","extensions":{"code":"BAD_REQUEST"}}]}
+
+400 148
+39c0b2ada7bfd919f888b598c5993337  /tmp/opencode/gql_hdr2.json
+{"errors":[{"message":"GraphQL operations must contain a non-empty `query` or a `persistedQuery` extension.","extensions":{"code":"BAD_REQUEST"}}]}
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/gql_tn.json -w "%{http_code} %{size_download}\n" -G --data-urlencode "query={__typename}" -H "x-apollo-operation-name: t" "https://app.alfaview.com/graphql"; md5sum /tmp/opencode/gql_tn.json; cat /tmp/opencode/gql_tn.json; echo; curl -sS -o /tmp/opencode/gql_tn_bare.json -w "%{http_code} %{size_download}\n" -G --data-urlencode "query={__typename}" "https://app.alfaview.com/graphql"; md5sum /tmp/opencode/gql_tn_bare.json
+200 32
+c2b4dd586b0b294977f7def837302227  /tmp/opencode/gql_tn.json
+{"data":{"__typename":"Query"}}
+
+400 406
+2fd0a1d014e411aeea2d5dc41ceba835  /tmp/opencode/gql_tn_bare.json
+[0m
+[0m$ [0mcurl -sS -o /tmp/opencode/audit2.json -w "%{http_code} %{size_download}\n" "https://apis.alfaview.com/v2/audit-log?from=2026-01-01T00:00:00Z&to=2026-10-16T00:00:00Z"; md5sum /tmp/opencode/audit2.json; cat /tmp/opencode/audit2.json; echo; curl -sS -o /tmp/opencode/gl.json -w "%{http_code} %{size_download}\n" "https://apis.alfaview.com/v2/guest-links"; md5sum /tmp/opencode/gl.json; cat /tmp/opencode/gl.json
+401 107
+60ed2f29d492ec872c598cc7d36aa37e  /tmp/opencode/audit2.json
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+
+401 107
+60ed2f29d492ec872c598cc7d36aa37e  /tmp/opencode/gl.json
+{"title":"Unauthorized","status":401,"detail":"No access token was provided in the Authorization header."}
+[0m
+All standing probes re-verified byte-identical. No delta.
+
+---
+
+## DELTA
+NO_DELTA (50th consecutive). Every standing probe returned md5-identical responses to baseline:
+- `GET /v2/docs/openapi.json` — 200/176350B md5 `25522f8571f589c5cfba211ad2982b66`
+- OIDC discovery — 200/2169B md5 `f7a08fc…` (`f78a08fc`); JWKS — 200/16257B md5 `3f8d456c`
+- `GET /v2/users/me` — 401/107B md5 `60ed2f29`; `www-authenticate: Bearer` present
+- `OPTIONS /oauth2/introspect` — 405/0B
+- `GET /v2/audit-log` (valid params) — 401/107B md5 `60ed2f29` (binder not triggered without malformed query params)
+- `GET /v2/guest-links` — 401/107B md5 `60ed2f29`
+- GraphQL: bare GET with query → 400/406B CSRF md5 `2fd0a1d0`; header-qualified → 200/32B md5 `c2b4dd58`
+- tools: OPTIONS root → 405/0; OPTIONS poll verb → 404/45B md5 `c5ad5139` (gRPC envelope)
+- diagnostics: DNS `159.69.103.169`+`88.198.106.96`; /health 200/16 md5 `3a0386dd`; / 404/39 md5 `d18415bd`
+
+One self-correction: a bare OPTIONS on the poll verb was probed without the `Grpc-Metadata-alfaview.token` header path; this does not change the recorded baseline (GET→501, POST-with-token is the live path; mutating methods not exercised).
+
+## PRIORITIZE
+No change. Ranked queue (all AUTH_HELPED / HUMAN_ONLY):
+1. `[94]` sso.alfaview.com/oauth2/introspect — client-auth bypass for opaque tokens
+2. `[88]` apis.alfaview.com/v2/guest-links — company-wide guest-link enumeration
+3. `[85]` app.alfaview.com/graphql `adminSwitchCompany` — cross-tenant admin token minting
+
+All three remain blocked on a single valid bearer token. No candidate below the report floor.
+
+## HYPOTHESES
+No new hypotheses. Existing three unchanged and untested pending token. Standing negative beliefs reaffirmed: published spec stable since 2026-10-12 rotation; no pre-auth information leak beyond public contract; no class in the rejected list has reopened.
+
+## SELF-CRITIQUE
+- Method-drift caught and corrected mid-cycle: probing GraphQL with `x-apollo-operation-name` but *without* a query string initially returned 400/148B (`BAD_REQUEST`), not the recorded 200/32B. Re-ran with `query={__typename}` + header → byte-identical to baseline. The baseline is the query-qualified probe; bare-header-no-query was never the baseline. Not a delta.
+- `audit-log` with well-formed date params returned 401, confirming the 422 binder only fires on malformed query params and that auth is checked before binding on well-formed requests. No finding.
+- No fabricated contract quotes this cycle; no schema claims made without live lookup.
+- Risk of idle-loop confirmation bias is acknowledged: 50 NO_DELTA cycles means the passive surface is exhausted, not that the target is clean.
+
+## NEXT
+1. **HUMAN (only unblocking action):** run unauthenticated signup at `POST https://app.alfaview.com/graphql` → `Signup(email)` → retrieve email → `FinishSignup(companyId, username, activationToken, password)` → capture bearer token.
+2. With token, read-only verifies at ≤1 rps:
+   - `POST https://sso.alfaview.com/oauth2/introspect` form `token=<valid>&client_id=fake-123`, and HTTP Basic `fake-123:any` → expect `{"active":true,…}`
+   - `GET https://apis.alfaview.com/v2/guest-links` with `Authorization: <token>` → expect 200 with accessKey/joinUrl
+   - `POST https://app.alfaview.com/graphql` `adminSwitchCompany` with `nextCompanyId: "01FDY0986YK1BJF2K0F9DXR8EB"`, header `token: <admin-token>` → validate returned accessToken via `/v2/users/me`
+3. Do **not** run another passive delta cycle. Recommend pausing the idle loop.
+
+## LEARNING
+The CSRF-guard behavior on `app.alfaview.com/graphql` is a three-state machine: (a) no preflight header → 400/406 CSRF; (b) preflight header, no query → 400/148 BAD_REQUEST; (c) preflight header + query → 200. Baselines must always record which of the three states was probed, or method-drift will masquerade as a delta. This tri-state mapping is now fixed knowledge and any future GraphQL baseline must specify all three.
+
+## RISK
+88/100 (unchanged). 50 consecutive NO_DELTA. Passive surface for all reachable in-scope hosts is exhausted. Marginal value of further automated cycles ≈ 0. Standing recommendation: suspend automated passive recon; resume only after (a) HUMAN obtains a bearer token, or (b) triage pipeline is repaired (validation broken since run-2026-09-24).

@@ -1929,3 +1929,5 @@ www.alfaview.com
 - NEW webclient.alfaview.com / product-webclient.alfaview.com byte-identical root (md5 6825f39c); deployment mirrors (COOP/COEP same-origin+require-corp)
 - CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validatio
 - CHANGED NO_DELTA on all other standing probes (OpenAPI, OIDC, JWKS, authorize, users/me, graphql, poll, whiteboard, client-diagnostics) for 48th+ consecutive cycle
+
+## 2026-10-16 06:38:16 UTC
