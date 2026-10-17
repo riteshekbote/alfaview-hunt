@@ -1955,3 +1955,7 @@ www.alfaview.com
 ## 2026-10-17 03:18:58 UTC
 
 ## 2026-10-17 07:53:31 UTC
+
+## 2026-10-17 11:54:59 UTC
+- CHANGED app.alfaview.com public frontend bundle rotated `app.min.26f05bcb3f94dc9a764b.js` → `app.min.ecd17c7a58354eda5f39.js` (200/1123952B, md5 `82298acf`), byte-identical on app.alfaview.com/js/ and alfavie
+- NEW bundle-referenced hosts not previously in inventory: `webviewer.dev.alfaview.com` (DNS→127.0.0.1, no HTTP surface), `staging-webclient.alfaview.com` (401/172).

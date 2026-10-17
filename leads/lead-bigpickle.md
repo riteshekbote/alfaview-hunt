@@ -10787,3 +10787,85 @@ testability: PASSIVE
 [FINAL] Beta hydra orchestration exposure: confidence 45. Three separate cloud provider instances returning 200 — unusual pattern for internal service. Passive probe in next step.
 ## 2026-10-17 03:18:37 UTC [target] (model bigpickle)
 ## 2026-10-17 07:53:21 UTC [target] (model bigpickle)
+## 2026-10-17 11:54:50 UTC [target] (model bigpickle)
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[PRIO] apis.alfaview.com, 7.45, attack_surface/business_value
+[PRIO] sso.alfaview.com/oauth2, 7.05, tech_exposure (OAuth/FusionAuth)
+[PRIO] app.alfaview.com/graphql, 6.95, tech_exposure (GraphQL)
+[HYP] OAuth client-auth bypass on token introspection for opaque tokens
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 94
+reasoning: client authentication enforced only for JWT-shaped tokens (3 segments, seg2 base64 JSON); alfaview opaque base64 tokens reach introspection without client_id validation on POST-body and Basic paths; 30+ cycles stable; same FusionAuth 1.63.0 build tiers /oauth2/userinfo correctly (control).
+evidence_needed: server response to introspect with an alfaview opaque token and no/foreign client credentials that distinguishes token-valid vs client-auth-fail (200 active=true/false vs 401 invalid_client).
+verify_steps: POST /oauth2/introspect with Content-Type application/x-www-form-urlencoded, body token=<opaque>&token_type_hint=access_token, no Authorization; repeat with Authorization: Basic <random id:secret>; compare JWT-shaped token control.
+impact: any holder of a captured opaque access token can introspect it without client secrets; enables token validation/replay oracle from unauthenticated position; severity medium (no direct data).
+testability: HUMAN_ONLY
+[HYP] company-wide guest-link enumeration / non-narrowable list
+class: IDOR
+asset: apis.alfaview.com GET /v2/guest-links
+confidence: 80
+reasoning: list op returns credential-bearing records (accessKey/joinUrl/dialInCode/emailAddress); TokenUserPermissions permission model has no link-scoping axis (closed 7-bool); no query narrowing observed in contract.
+evidence_needed: authenticated 200 body showing links outside caller's own rooms/company scope.
+verify_steps: GET /v2/guest-links with bearer token; inspect returned companyId/roomId distribution vs token's own company.
+impact: cross-tenant credential-bearing meeting-link harvest → meeting join / ATO-adjacent; high.
+testability: HUMAN_ONLY (needs bearer).
+[HYP] tools poll RPC object-level authz across room/company ids
+class: IDOR
+asset: tools.alfaview.com (8-verb RPC, Grpc-Metadata-alfaview.token)
+confidence: 70
+reasoning: 8-verb RPC surface keyed by Grpc-Metadata-alfaview.token; no client references in bundle; /whiteboard/ unmapped mount returns 47B gRPC envelope; no auth challenge on OPTIONS.
+evidence_needed: authenticated RPC call returning another company's poll/whiteboard object.
+verify_steps: obtain token (HUMAN), call tools RPC list with token and foreign object id.
+impact: cross-tenant read of poll/board objects.
+testability: HUMAN_ONLY
+[CHANGED] app.alfaview.com public frontend bundle rotated `app.min.26f05bcb3f94dc9a764b.js` → `app.min.ecd17c7a58354eda5f39.js` (200/1123952B, md5 `82298acf`), byte-identical on app.alfaview.com/js/ and alfaview-com-assets.alfaview.com/production/alfaview-com-frontend/js/; admin session flow (AdminTokenAuthenticate ×5, adminSession ×10, AdminSwitchCompany ×3) + hardcoded tenants (`alfatraining-internal`, `01FDY0986YK1BJF2K0F9DXR8EB`) + 90-mutation/58-query surface retained — content materially unchanged.
+[NEW] bundle-referenced hosts not previously in inventory: `webviewer.dev.alfaview.com` (DNS→127.0.0.1, no HTTP surface), `staging-webclient.alfaview.com` (401/172).
+[PRIO]
+[PRIO] apis.alfaview.com, 7.45, attack_surface+business_value (57 ops, 39 live paths)
+[PRIO] sso.alfaview.com/oauth2, 7.05, tech_exposure (FusionAuth 1.63.0, opaque-token introspection)
+[PRIO] app.alfaview.com/graphql, 6.95, tech_exposure (90 mutations/58 queries)
+[HYP] OAuth client-authentication bypass on token introspection for opaque tokens
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 94
+reasoning: client authentication is enforced only for JWT-shaped tokens (3 segments, seg2 = base64 JSON); alfaview opaque base64 tokens reach introspection without client_id validation on both POST-body and HTTP Basic paths; stable 30+ cycles; same FusionAuth 1.63.0 build tiers /oauth2/userinfo correctly (negative control).
+evidence_needed: introspect response for an alfaview opaque token with no/foreign client credentials that distinguishes token state (200 active=true/false) from client-auth failure (401 invalid_client).
+verify_steps: POST /oauth2/introspect (application/x-www-form-urlencoded), body `token=<opaque>&token_type_hint=access_token`, no Authorization → record; repeat with `Authorization: Basic <random_id:random_secret>`; compare against JWT-shaped token control.
+impact: holder of a leaked opaque access token can validate/replay it without client secrets from an unauthenticated position; medium (oracle, no direct data).
+testability: HUMAN_ONLY
+[HYP] Company-wide guest-link list is non-narrowable and credential-bearing (BOLA)
+class: IDOR
+asset: apis.alfaview.com GET /v2/guest-links
+confidence: 80
+reasoning: list op returns accessKey/joinUrl/dialInCode/emailAddress; TokenUserPermissions is a closed 7-bool set with no link-scoping axis; contract exposes no query narrowing; sibling /v2/group-links identical shape.
+evidence_needed: authenticated 200 body containing links whose companyId/roomId differ from the caller's own company.
+verify_steps: GET /v2/guest-links with bearer token; inspect returned companyId/roomId against token's company (via GET /v2/users/me/company).
+impact: cross-tenant harvest of credential-bearing meeting links → meeting join / ATO-adjacent; high.
+testability: HUMAN_ONLY
+[HYP] tools poll RPC object-level authorization across room/company ids
+class: IDOR
+asset: tools.alfaview.com (8-verb RPC, Grpc-Metadata-alfaview.token)
+confidence: 70
+reasoning: 8-verb RPC keyed by `Grpc-Metadata-alfaview.token`, zero client references in public bundle; unmapped /whiteboard/ mount returns 47B gRPC status envelope; no auth challenge on OPTIONS.
+evidence_needed: authenticated RPC call returning another company's poll/whiteboard object.
+verify_steps: obtain token (HUMAN); call tools RPC list verb with foreign object/company id header.
+impact: cross-tenant read of poll/whiteboard state; medium-high.
+testability: HUMAN_ONLY
+[PARKED] app bundle rotation: info-only — admin flow + hardcoded tenants already recorded, no new security content.
+[PARKED] webviewer.dev.alfaview.com: DNS→127.0.0.1, no HTTP surface.
+[PARKED] staging-webclient.alfaview.com: 401-gated staging mirror, no unauthenticated surface.
+[PARKED] tools /list SPA 200/615: static May-13 catch-all shell, not a behavioral delta.
+[FINAL] 1) introspect client-auth bypass (94) 2) guest-links BOLA (80) 3) tools RPC BOLA (70)
+[NEXT] HUMAN: complete the unauthenticated email signup chain at app.alfaview.com/graphql (Signup → emailed activation code → FinishSignup with a controlled inbox) to mint one legitimate bearer token, then verify H2 (GET /v2/guest-links) and H1 (opaque-token introspect) in the POC phase.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: public frontend bundle rotates on an asset-freshness cadence (26f05bcb → ecd17c7a) while retaining admin session flow and hardcoded production tenant IDs — monitor as an axis, not a standalone finding.
+[LEARN] REJECTED MISCONFIG @ tools.alfaview.com/list: GET any path returns the static 615B SPA shell (last-modified 2026-05-13); the 501/55B poll-gateway response is verb/method-specific, not a GET-path delta.
+[RISK] alfaview gmbh: 62 — 55 hosts inventoried, 31 exhausted; every remaining chain (introspect 94, guest-links 80, tools RPC 70) is HUMAN-gated on one signup, and the validation pipeline has produced no verdict since 2026-09-24 (91/223 UnknownError runs). Bottleneck is validation + human token capture, not recon.

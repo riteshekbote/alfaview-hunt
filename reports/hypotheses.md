@@ -6088,3 +6088,9 @@
 - LEARN: PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs; guessed URLs never become findings; delta claim
 
 ## RANKED HYPOTHESES 2026-10-17 07:53:31 UTC
+
+## RANKED HYPOTHESES 2026-10-17 11:54:59 UTC
+- [94] <host/endpoint>: <title> (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: complete the unauthenticated email signup chain at app.alfaview.com/graphql (Signup → emailed activation code → FinishSignup with a controlled inbox) to 
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com: public frontend bundle rotates on an asset-freshness cadence (26f05bcb → ecd17c7a) while retaining admin session flow and
+- LEARN: REJECTED MISCONFIG @ tools.alfaview.com/list: GET any path returns the static 615B SPA shell (last-modified 2026-05-13); the 501/55B poll-gateway response is ve
