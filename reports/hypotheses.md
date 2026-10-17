@@ -6094,3 +6094,13 @@
 - NEXT(hypotheses-bigpickle.txt): HUMAN: complete the unauthenticated email signup chain at app.alfaview.com/graphql (Signup → emailed activation code → FinishSignup with a controlled inbox) to 
 - LEARN: ACCEPTED MISCONFIG @ app.alfaview.com: public frontend bundle rotates on an asset-freshness cadence (26f05bcb → ecd17c7a) while retaining admin session flow and
 - LEARN: REJECTED MISCONFIG @ tools.alfaview.com/list: GET any path returns the static 615B SPA shell (last-modified 2026-05-13); the 501/55B poll-gateway response is ve
+
+## RANKED HYPOTHESES 2026-10-17 14:51:23 UTC
+- [45] <host/endpoint>: <title> (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET `https://sso.alfaview.com/oauth2/register` (checks open tenant self-registration on prod IAM — if live, also maps default-registration surface); foll
+- LEARN: ACCEPTED MISCONFIG @ sso.alfaview.com: Production IAM is FusionAuth with default tenant issuer "acme.com" (OIDC `issuer` + JWK CN=acme.com, self-signed 2021-12-
+- LEARN: ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_i
+- LEARN: REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), no
+- LEARN: ACCEPTED MISCONFIG @ alfaview.com: root now 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO l
+- LEARN: ACCEPTED MISCONFIG @ app.alfaview.com: public frontend bundle rotates on an asset-freshness cadence (26f05bcb → ecd17c7a) while retaining admin session flow and
+- LEARN: REJECTED MISCONFIG @ tools.alfaview.com/list: GET any path returns the static 615B SPA shell (last-modified 2026-05-13); the 501/55B poll-gateway response is ve

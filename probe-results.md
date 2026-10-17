@@ -2084,3 +2084,6 @@ https://app.alfaview.com/graphql -> HTTP 400
 
 ## 2026-10-17 11:54:59 UTC
 
+
+## 2026-10-17 14:51:25 UTC
+https://sso.alfaview.com/oauth2/register` -> HTTP 404
