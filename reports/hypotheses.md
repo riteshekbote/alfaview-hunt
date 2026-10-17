@@ -6072,3 +6072,17 @@
 - LEARN: REJECTED MISCONFIG @ demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root (len=1381). No unauthenticated data
 - LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI specs identical beta/prod. UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId
 - LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth requires 3-field combo. Rate-limit status unknown — needs authenticated probe.
+
+## RANKED HYPOTHESES 2026-10-17 03:18:58 UTC
+- [94] sso.alfaview.com/oauth2/introspect: OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup(companyId, username, activationToken, password)) 
+- LEARN: ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (06231fad→25522f857, +1563B) after 47 stable cycles — first auth-scheme declaration (co
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish /v2/audit-log (still live-but-unpublished 39th path) and did not resolve the dangling Event.met
+- LEARN: ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken (bearerFormat:opaque); 4 no-security ops are exactly the 
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list 
+- LEARN: ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for r
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 48th+ cycle
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base
+- LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/userinfo: JOSE algorithm confusion tested (alg=none, HS256 with RSA pubkey, HS256 random, RS256 self-signed) — all byte-
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com/whiteboard/: second unmapped RPC backend (47B gRPC envelope vs poll's 45B jsonpb), distinct marshaller, no auth challeng
+- LEARN: PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs; guessed URLs never become findings; delta claim
