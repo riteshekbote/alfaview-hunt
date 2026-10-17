@@ -6046,3 +6046,29 @@
 - LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
 - LEARN: Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; t
 - LEARN: Introspection endpoint remains absent from OIDC discovery while /oauth2/introspect answers OPTIONS 405 — consistent with a deliberately unadvertised endpoint; t
+
+## RANKED HYPOTHESES 2026-10-17 00:20:11 UTC
+- [94] sso.alfaview.com/oauth2/introspect: sso.alfaview.com/oauth2/introspect client-auth bypass (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: run the unauthenticated signup at app.alfaview.com/graphql (Signup mutation → email → FinishSignup(companyId, username, activationToken, password)) to mi
+- LEARN: ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: client authentication enforced only for JWT-shaped tokens; opaque base64 tokens bypass client_id validation 
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com/v2/guest-links: company-wide list un-narrowable (no roomId/companyId bound), returns accessKey/joinUrl/dialInCode/emailAddress
+- LEARN: ACCEPTED IDOR @ app.alfaview.com/graphql: adminSwitchCompany mutation returns companyId/accessToken/permissions from caller token with no documented administrat
+- LEARN: REJECTED MISCONFIG @ apis.alfaview.com: pre-auth query-parameter binder reproduces public contract only (numeric bounds/enum/email/Go time layout); no disclosur
+- LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com/whiteboard: second unmapped RPC backend (47B gRPC envelope vs poll’s 45B jsonpb) distinct marshaller, no auth challenge 
+- LEARN: PROCEDURAL: contract text quoted only after per-field lookup; guessed URLs never become findings; delta claims require DNS+HTTP; bare-GET vs header-qualified re
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI spec confirms path-param UUID patterns for permission and user delete — highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: guest link auth flow requires 3-field combo (companyId+roomId+accessKey) — rate-limit testing needed.
+- LEARN: REJECTED MISCONFIG @ internal.alfaview.com: HTTP Basic auth gate confirmed; default credential testing is out of scope per program rules (brute-force rejected c
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta environment has same auth enforcement.
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- LEARN: ACCEPTED MISCONFIG @ demo-company.alfaview.com: Unauthenticated web surface, testable immediately.
+- LEARN: REJECTED MISCONFIG @ demo-company.alfaview.com: SPA confirmed — /api/v1/users serves same HTML shell as root. No real data exposure.
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: Highest-priority authenticated test target.
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth flow requires 3-field combo.
+- LEARN: ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift confirmed — beta has /v2/languages absent in production.
+- LEARN: REJECTED MISCONFIG @ beta-apis.alfaview.com: Undocumented endpoints (/v2/debug, /v2/admin, /v2/internal, /v2/test, /v2/health) all 404. Beta surface fully enume
+- LEARN: ACCEPTED MISCONFIG @ beta-apis.alfaview.com: API version drift limited to /v2/languages only — confirmed after full endpoint probe.
+- LEARN: REJECTED MISCONFIG @ demo-company.alfaview.com: SPA catch-all confirmed — /api/v1/users returns identical HTML shell as root (len=1381). No unauthenticated data
+- LEARN: ACCEPTED IDOR @ apis.alfaview.com: OpenAPI specs identical beta/prod. UUID path params on DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId
+- LEARN: ACCEPTED AUTH @ apis.alfaview.com: Guest link auth requires 3-field combo. Rate-limit status unknown — needs authenticated probe.

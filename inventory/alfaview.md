@@ -1946,3 +1946,8 @@ www.alfaview.com
 - NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
 - CHANGED none — 52nd consecutive NO_DELTA. Standing baselines verified 2026-10-16: OpenAPI 176350B/25522f857, users+audit-log 401/107B/60ed2f29, OIDC 2169B/f78a08fc, JWKS 16257B/3f8d456c, graphql 400/406B/2fd0
 - CHANGED none — 52nd consecutive NO_DELTA. Standing baselines verified 2026-10-16: OpenAPI 176350B/25522f857, users+audit-log 401/107B/60ed2f29, OIDC 2169B/f78a08fc, JWKS 16257B/3f8d456c, graphql 400/406B/2fd0
+
+## 2026-10-17 00:20:11 UTC
+- CHANGED beta-apis.alfaview.com: Auth response identical to production (401 + same error body). Beta weaker auth hypothesis disconfirmed.
+- NEW beta-webclient.alfaview.com (HTTP 200): High-value web client surface, untested.
+- NEW insider-webclient.alfaview.com (HTTP 200): Internal tooling potentially exposed.
