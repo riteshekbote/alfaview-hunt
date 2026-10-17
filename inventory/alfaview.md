@@ -1963,3 +1963,10 @@ www.alfaview.com
 ## 2026-10-17 14:51:23 UTC
 - CHANGED app.alfaview.com public frontend bundle rotated `app.min.26f05bcb3f94dc9a764b.js` → `app.min.ecd17c7a58354eda5f39.js` (200/1123952B, md5 `82298acf`), byte-identical on app.alfaview.com/js/ and alfavie
 - NEW bundle-referenced hosts not previously in inventory: `webviewer.dev.alfaview.com` (DNS→127.0.0.1, no HTTP surface), `staging-webclient.alfaview.com` (401/172).
+
+## 2026-10-17 17:50:38 UTC
+- NEW app.alfaview.com public frontend bundle rotated `app.min.26f05bcb3f94dc9a764b.js` → `app.min.ecd17c7a58354eda5f39.js` (200/1123952B, md5 `82298acf`), byte-identical on app.alfaview.com/js/ and alfavie
+- NEW Bundle-referenced hosts not previously in inventory: `webviewer.dev.alfaview.com` (DNS→127.0.0.1, no HTTP surface), `staging-webclient.alfaview.com` (401/172)
+- CHANGED sso.alfaview.com/oauth2/introspect: 30+ cycles stable — client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validatio
+- CHANGED apis.alfaview.com/v2/audit-log: live undocumented 39th path; pre-auth query binder complete (10 GET ops validate pre-auth)
+- CHANGED apis.alfaview.com/v2/users/me/company (GetOwnCompany): 38th OpenAPI path, sole 200-response supplier of companyId across 57 ops, token-gated (401)

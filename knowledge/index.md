@@ -1510,3 +1510,4 @@
 - 2026-10-17 ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_id`) — redirect_uri testing requires a registered client_id.
 - 2026-10-17 REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), not raw JWTs — crafted-HS256-JWT with JWKS public key as HMAC secret rejected at decode; JWT alg-confusion against API gateway closed.
 - 2026-10-17 ACCEPTED MISCONFIG @ alfaview.com: root now 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login links present on marketing domain.
+- 2026-10-17 REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 48th cycle

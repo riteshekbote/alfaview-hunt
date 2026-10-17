@@ -10970,3 +10970,156 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: public frontend bundle rotates on an asset-freshness cadence (26f05bcb → ecd17c7a) while retaining admin session flow and hardcoded production tenant IDs — monitor as an axis, not a standalone finding.
 [LEARN] REJECTED MISCONFIG @ tools.alfaview.com/list: GET any path returns the static 615B SPA shell (last-modified 2026-05-13); the 501/55B poll-gateway response is verb/method-specific, not a GET-path delta.
 [RISK] alfaview gmbh: 62 — 55 hosts inventoried, 31 exhausted; every remaining chain (introspect 94, guest-links 80, tools RPC 70) is HUMAN-gated on one signup, and the validation pipeline has produced no verdict since 2026-09-24 (91/223 UnknownError runs). Bottleneck is validation + human token capture, not recon.
+## 2026-10-17 17:50:27 UTC [target] (model bigpickle)
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 94
+reasoning: client authentication is enforced only for JWT-shaped tokens (3 segments, seg2 = base64 JSON); alfaview opaque base64 tokens reach introspection without client_id validation on both POST-body and HTTP Basic paths; stable 30+ cycles; same FusionAuth 1.63.0 build tiers /oauth2/userinfo correctly (negative control).
+evidence_needed: introspect response for an alfaview opaque token with no/foreign client credentials that distinguishes token state (200 active=true/false) from client-auth failure (401 invalid_client).
+verify_steps: POST /oauth2/introspect (application/x-www-form-urlencoded), body `token=<opaque>&token_type_hint=access_token`, no Authorization → record; repeat with `Authorization: Basic <random_id:random_secret>`; compare against JWT-shaped token control.
+impact: holder of a leaked opaque access token can validate/replay it without client secrets from an unauthenticated position; medium (oracle, no direct data).
+testability: HUMAN_ONLY
+[HYP] Company-wide guest-link list is non-narrowable and credential-bearing (BOLA)
+class: IDOR
+asset: apis.alfaview.com GET /v2/guest-links
+confidence: 80
+reasoning: list op returns accessKey/joinUrl/dialInCode/emailAddress; TokenUserPermissions is a closed 7-bool set with no link-scoping axis; contract exposes no query narrowing; sibling /v2/group-links identical shape.
+evidence_needed: authenticated 200 body containing links whose companyId/roomId differ from the caller's own company.
+verify_steps: GET /v2/guest-links with bearer token; inspect returned companyId/roomId against token's company (via GET /v2/users/me/company).
+impact: cross-tenant harvest of credential-bearing meeting links → meeting join / ATO-adjacent; high.
+testability: HUMAN_ONLY
+[HYP] tools poll RPC object-level authorization across room/company ids
+class: IDOR
+asset: tools.alfaview.com (8-verb RPC, Grpc-Metadata-alfaview.token)
+confidence: 70
+reasoning: 8-verb RPC keyed by `Grpc-Metadata-alfaview.token`, zero client references in public bundle; unmapped /whiteboard/ mount returns 47B gRPC status envelope; no auth challenge on OPTIONS.
+evidence_needed: authenticated RPC call returning another company's poll/whiteboard object.
+verify_steps: obtain token (HUMAN); call tools RPC list verb with foreign object/company id header.
+impact: cross-tenant read of poll/whiteboard state; medium-high.
+testability: HUMAN_ONLY
+[PARKED] app bundle rotation: info-only — admin flow + hardcoded tenants already recorded, no new security content.
+[PARKED] webviewer.dev.alfaview.com: DNS→127.0.0.1, no HTTP surface.
+[PARKED] staging-webclient.alfaview.com: 401-gated staging mirror, no unauthenticated surface.
+[PARKED] tools /list SPA 200/615: static May-13 catch-all shell, not a behavioral delta.
+[FINAL] 1) introspect client-auth bypass (94) 2) guest-links BOLA (80) 3) tools RPC BOLA (70)
+[NEXT] HUMAN: complete the unauthenticated email signup chain at app.alfaview.com/graphql (Signup → emailed activation code → FinishSignup with a controlled inbox) to mint one legitimate bearer token, then verify H2 (GET /v2/guest-links) and H1 (opaque-token introspect) in the POC phase.
+[LEARN] ACCEPTED MISCONFIG @ app.alfaview.com: public frontend bundle rotates on an asset-freshness cadence (26f05bcb → ecd17c7a) while retaining admin session flow and hardcoded production tenant IDs — monitor as an axis, not a standalone finding.
+[LEARN] REJECTED MISCONFIG @ tools.alfaview.com/list: GET any path returns the static 615B SPA shell (last-modified 2026-05-13); the 501/55B poll-gateway response is verb/method-specific, not a GET-path delta.
+[RISK] alfaview gmbh: 62 — 55 hosts inventoried, 31 exhausted; every remaining chain (introspect 94, guest-links 80, tools RPC 70) is HUMAN-gated on one signup, and the validation pipeline has produced no verdict since 2026-09-24 (91/223 UnknownError runs). Bottleneck is validation + human token capture, not recon.
+[HYP] OAuth client-authentication bypass on token introspection for opaque tokens
+[HYP] Company-wide guest-link list is non-narrowable and credential-bearing (BOLA)
+[HYP] tools poll RPC object-level authorization across room/company ids
+[PRIO] beta-apis.alfaview.com, 8.8, a:7 b:8 t:9(API+OpenAPI) g:6(cloud:3,auth-gate:3) c:3 f:5
+[PRIO] demo-company.alfaview.com, 8.3, a:9 b:8 t:6(web app) g:8(no basic auth gate) c:3 f:5
+[PRIO] internal.alfaview.com, 7.0, a:6 b:9 t:5(Basic auth) g:3(closed) c:3 f:5
+[HYP] IDOR on room permissions and user deletion
+class: IDOR
+asset: apis.alfaview.com
+confidence: 72
+reasoning: OpenAPI spec exposes DELETE /v2/users/{id} and PATCH /v2/rooms/{roomId}/permissions/{userId} — both accept UUID path params. Auth model uses company-scoped tokens; server-side authorization (room membership vs global admin) is unverified. Classic IDOR pattern if the API trusts token-issued companyId without checking room-level permission grants.
+evidence_needed: Authenticated requests with a valid token modifying roomId/userId belonging to a different company; different 403 vs 200/204 response confirming cross-tenant enforcement.
+verify_steps: POST /v2/auth/api-key with valid creds → PATCH /v2/rooms/{roomId}/permissions/{userId} with a userId from a different company account; observe 403 (enforced) vs 204 (broken). Also DELETE /v2/users/{id} with a foreign userId.
+impact: Cross-tenant permission manipulation or user deletion; severity HIGH (broken access control = OWASP A01).
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+class: AUTH
+asset: sso.alfaview.com/oauth2/device_authorize
+confidence: 45
+reasoning: discovery advertises device_authorization_endpoint; grant device_code enabled; GET=405 POST-only (endpoint live). If alfaview ships a public (non-secret) native client_id (mobile/desktop), attacker can initiate device flow, phish the user_code approval page, then redeem victim's authorization → session/account hijack.
+evidence_needed: a registered public client_id (no secret) that device_authorize accepts.
+verify_steps: POST device_authorize with harvested public client_id; if device/user codes returned without client_secret, phishing-to-account-takeover path confirmed. Requires client_id harvest first.
+impact: user session/account takeover via device-code phishing; severity HIGH if exploitable.
+testability: AUTH_HELPED
+[PARKED] Device-flow abuse (45): below momentum — needs a public client_id, phishing precondition, POST-only; parked pending client_id harvest.
+[PARKED] JWT alg-confusion on apis gateway: REJECTED this session — token oracle proves opaque/base64 access tokens (not raw JWTs); crafted HS256-JWT (RS256-modulus-as-HMAC) rejected at base64-decode. Reframable to SSO id_token consumers but not passively testable.
+[FINAL] redirect_uri bypass: 65. Survives — rank 1, now grounded on confirmed FusionAuth + exact `invalid_client` gate. Blocked on client_id harvest.
+[FINAL] issuer=acme.com drift: 90. Survives — direct read-only evidence, low severity baselined for reporting.
+[NEXT] PROBE: GET `https://sso.alfaview.com/oauth2/register` (checks open tenant self-registration on prod IAM — if live, also maps default-registration surface); follow-up HUMAN: extract registered client_id from desktop client's public config/bundle to unlock redirect_uri + device-flow testing on `/oauth2/authorize`.
+[LEARN] ACCEPTED MISCONFIG @ sso.alfaview.com: Production IAM is FusionAuth with default tenant issuer "acme.com" (OIDC `issuer` + JWK CN=acme.com, self-signed 2021-12-03+10y); /api/status 200 `{"status":"Ok"}` unauthenticated; device endpoint live (405 GET).
+[LEARN] ACCEPTED OATH @ sso.alfaview.com: /oauth2/authorize enforces client_id registration before any redirect_uri handling (`invalid_client`, reason `invalid_client_id`) — redirect_uri testing requires a registered client_id.
+[LEARN] REJECTED AUTH @ apis.alfaview.com: Access tokens are opaque/base64 (distinct 401 "No base64 encoded access token was provided in the Authorization header."), not raw JWTs — crafted-HS256-JWT with JWKS public key as HMAC secret rejected at decode; JWT alg-confusion against API gateway closed.
+[LEARN] ACCEPTED MISCONFIG @ alfaview.com: root now 301→/en (nginx, Accept-Language vary), /en 177KB marketing page with strict CSP and matomo; no unauthenticated SSO login links present on marketing domain.
+[RISK] alfaview: 48/100. Newly exposed FusionAuth IAM is the highest-value remaining surface (identity = crown jewels) with concrete drift (issuer acme.com) and live OAuth/device endpoints, but every exploit path (redirect_uri, device-flow, api-key IDOR) still resolves to a valid client_id or account — auth-gated. CLI-side JWT/alg avenues closed by the opaque-token oracle. Risk rises if a public client_id or test account is obtained; until then, passive yield is near exhausted.
+[HYP] Authz-gap on guest-link/company GraphQL ops after free-tenant self-signup
+class: IDOR
+asset: app.alfaview.com/graphql
+[PRIO] app.alfaview.com/graphql, 6.95, tech_exposure (GraphQL)
+[HYP] OAuth client-auth bypass on token introspection for opaque tokens
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 94
+reasoning: client authentication enforced only for JWT-shaped tokens (3 segments, seg2 base64 JSON); alfaview opaque base64 tokens reach introspection without client_id validation on POST-body and Basic paths; 30+ cycles stable; same FusionAuth 1.63.0 build tiers /oauth2/userinfo correctly (control).
+evidence_needed: server response to introspect with an alfaview opaque token and no/foreign client credentials that distinguishes token-valid vs client-auth-fail (200 active=true/false vs 401 invalid_client).
+verify_steps: POST /oauth2/introspect with Content-Type application/x-www-form-urlencoded, body token=<opaque>&token_type_hint=access_token, no Authorization; repeat with Authorization: Basic <random id:secret>; compare JWT-shaped token control.
+impact: any holder of a captured opaque access token can introspect it without client secrets; enables token validation/replay oracle from unauthenticated position; severity medium (no direct data).
+testability: HUMAN_ONLY
+[HYP] company-wide guest-link enumeration / non-narrowable list
+class: IDOR
+asset: apis.alfaview.com GET /v2/guest-links
+confidence: 80
+reasoning: list op returns credential-bearing records (accessKey/joinUrl/dialInCode/emailAddress); TokenUserPermissions permission model has no link-scoping axis (closed 7-bool); no query narrowing observed in contract.
+evidence_needed: authenticated 200 body showing links outside caller's own rooms/company scope.
+verify_steps: GET /v2/guest-links with bearer token; inspect returned companyId/roomId distribution vs token's own company.
+impact: cross-tenant credential-bearing meeting-link harvest → meeting join / ATO-adjacent; high.
+testability: HUMAN_ONLY (needs bearer).
+[LEARN] REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list — no disclosure beyond published contract
+[LEARN] ACCEPTED PROCEDURAL @ recon-notes/alfaview-openapi.yaml: 37-path baseline is schema-only stripped snapshot; live JSON is the only authoritative comparator for rotations
+[LEARN] REJECTED MISCONFIG @ apis.alfaview.com: passive-only re-probing remains exhausted — every standing endpoint byte-identical for 48th cycle
+[LEARN] ACCEPTED AUTH @ sso.alfaview.com/oauth2/introspect: client auth enforced ONLY for JWT-shaped tokens (3 segments, seg2=base64-decoded JSON); alfaview opaque base64 tokens bypass client_id validation entirely on POST-body and HTTP Basic (30+ cycles stable)
+[LEARN] REJECTED AUTH @ sso.alfaview.com/oauth2/userinfo: JOSE algorithm confusion tested (alg=none, HS256 with RSA pubkey, HS256 random, RS256 self-signed) — all byte-identical access_token_failed_processing; no third tier, no signature oracle
+[LEARN] ACCEPTED MISCONFIG @ tools.alfaview.com/whiteboard/: second unmapped RPC backend (47B gRPC envelope vs poll's 45B jsonpb), distinct marshaller, no auth challenge observed, zero client references, staging mirror byte-identical — surface discovery only, no exploit demonstrated
+[LEARN] PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs; guessed URLs never become findings; delta claims require DNS+HTTP; bare-GET vs header-qualified responses must not be conflated
+[RISK] alfaview: 88/100. Broad scope (55 dedicated hosts + 6 main domains + ~110 CT subdomains, 100% probed). Production APIs auth-gated (401 opaque tokens). Critical IDOR: company-wide guest-link/group-link lists return live credentials under token vocabulary with no expressible permission; unscoped update mutations (PATCH /v2/guest-links/{id}, /v2/group-links/{id}) enable credential rebinding + permissionGroupId escalation; CreatePermissions BOLA write with polymorphic participantId closes chain on guest-links enumeration. OAuth/SSO: sso.alfaview.com (FusionAuth 1.63.0) exposes OIDC metadata with issuer=acme.com misconfiguration, implicit flow, HS256/384/512/ES256/384/512 support vs JWKS RSA-only, /oauth2/introspect client auth fully unenforced (30+ cycles), JWKS oscillates (404↔200), introspection_endpoint advertisement oscillates, password grant (ROPC) advertised alongside non-licensed client_credentials. app.alfaview.com primary client: GraphQL schema fully leaked, inconsistent resolver auth, divergent guest path (no accessKey), passwordless magic-token auth-gated, admin surface in public bundle (adminSwitchCompany cross-tenant minting with hardcoded tenant IDs). test.alfaview.com distributes unsigned binaries v483102. tools.alfaview.com exposes verb-based JSON RPC with custom gRPC-metadata auth; second unmapped RPC mount at /whiteboard/* proven. 31 hosts exhausted. Realistic path: obtain dev account via HUMAN signup → test IDOR cross-tenant guest enumeration + adminSwitchCompany cross-tenant minting + introspect token metadata disclosure + poll/whiteboard BOLA.
+[PRIO] sso.alfaview.com/oauth2/introspect,9.25,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=7,freshness=10
+[PRIO] apis.alfaview.com/v2/guest-links + /v2/group-links,8.45,attack_surface=9,business_value=10,tech_exposure=9,gate_ease=1,cloud_surface=6,freshness=6
+[PRIO] app.alfaview.com/graphql (adminSwitchCompany),8.20,attack_surface=9,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=6,freshness=6
+[PRIO] apis.alfaview.com/v2/rooms/{roomId}/permissions (CreatePermissions),7.75,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=1,cloud_surface=5,freshness=3
+[PRIO] apis.alfaview.com/v2/audit-log,6.55,attack_surface=6,business_value=7,tech_exposure=7,gate_ease=10,cloud_surface=5,freshness=8
+[PRIO] tools.alfaview.com/whiteboard/,6.50,attack_surface=6,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=4,freshness=6
+[PRIO] apis.alfaview.com/v2/meetings,6.25,attack_surface=6,business_value=8,tech_exposure=7,gate_ease=1,cloud_surface=4,freshness=3
+[PRIO] apis.alfaview.com/v2/auth/api-key,5.50,attack_surface=5,business_value=6,tech_exposure=6,gate_ease=10,cloud_surface=3,freshness=5
+[HYP] OAuth2 introspection discloses metadata for any leaked opaque alfaview token with zero valid client credentials
+class: AUTH
+asset: sso.alfaview.com/oauth2/introspect
+confidence: 94
+reasoning: 30+ consecutive cycles confirm POST-body and HTTP Basic auth accept ANY fabricated client_id → 200 {"active":false} for invalid tokens; token_endpoint_auth_methods_supported advertises client_secret_basic, client_secret_post, none — runtime secret verification absent; only residual check is Basic-vs-body client_id_mismatch (401); same-deployment /oauth2/userinfo correctly tiers and enforces token validation, proving introspect omission not architectural; alfaview API tokens are opaque base64 (AccessToken schema: "base64-encoded string"; /v2/auth/token-info rejects all JWT variants with 422); new OpenAPI declares bearerFormat: opaque confirming token format
+evidence_needed: Valid access token from signup→finishSignup flow; POST to introspect with token=<valid>&client_id=fake-123 → observe active:true + token metadata (scope, exp, sub, client_id)
+verify_steps: POST https://sso.alfaview.com/oauth2/introspect with token=<valid-access-token>&client_id=fake-123 → 200 {"active":true, "scope":"...", "exp":..., "sub":..., "client_id":...}; repeat with HTTP Basic auth: Authorization: Basic <base64(fake-123:any)> → 200 same metadata; add token_type_hint=refresh_token → 401 (forces validation on any token shape)
+impact: OAuth token metadata disclosure (scope, exp, sub, client_id) for any leaked opaque token
+testability: AUTH_HELPED
+[HYP] Company-wide guest-link enumeration yields live join credentials without expressible authorization check
+class: IDOR
+asset: apis.alfaview.com/v2/guest-links, apis.alfaview.com/v2/group-links
+confidence: 88
+reasoning: ListGuestLinks takes only pageToken+limit (no roomId/companyId filter); room-scoped sibling /v2/rooms/{roomId}/guest-links exists separately; response includes accessKey (documented required for POST /v2/auth/guest-link), joinUrl, dialInCode, emailAddress; TokenUserPermissions (7 fields, additionalProperties:false) has NO guest-link axis; InviteUserPermissions identical; platform names permission for every other company-wide list (roomList, userList) but NOT for guest-links; GuestLink is additionalProperties:false with 12 required fields including accessKey/joinUrl/dialInCode; guest links are first-class permission-bearing principals (RoomPermissions.guestLinkPermissions[], PermissionsEdit.admin="manage guests"); GetOwnCompany (/v2/users/me/company) now supplies companyId for authorized testers; pre-auth binder proves roomId/companyId NOT bound on unscoped routes (422 errors array contains only query.limit)
+evidence_needed: Authenticated GET /v2/guest-links with valid bearer → observe 200 with GuestLink[] including accessKey; GET /v2/group-links → 200 with GroupLink[]; POST /v2/auth/guest-link with {companyId, roomId, accessKey} from enumeration → 200 GuestLinkAuthenticationInfo with accessToken
+verify_steps: GET https://apis.alfaview.com/v2/guest-links (with valid Authorization: <token>) → 200 with GuestLink[] including accessKey; GET https://apis.alfaview.com/v2/group-links → 200 with GroupLink[]; POST https://apis.alfaview.com/v2/auth/guest-link with {companyId, roomId, accessKey} from enumeration → 200 GuestLinkAuthenticationInfo with accessToken
+impact: Cross-tenant guest credential harvesting → room access via stolen accessKey, dial-in codes, join URLs (CRITICAL, OWASP A01:2021)
+testability: AUTH_HELPED
+[HYP] Unauthenticated signup → valid bearer token → cross-tenant admin token minting via adminSwitchCompany
+class: AUTH
+asset: app.alfaview.com/graphql (mutation Signup, FinishSignup, adminSwitchCompany)
+confidence: 85
+reasoning: Public bundle (md5 2cb91283) exposes Signup (no token header), FinishSignup (email-gated), adminSwitchCompany($nextCompanyId:String!)→{companyId,accessToken,permissions} with no administration proof; hardcoded production tenant IDs (alfatraining-internal, 01FDY0986YK1BJF2K0F9DXR8EB); edge-proxy 401 uniform (www-authenticate: AccessToken) indicates admin GraphQL token header and REST Authorization share gateway
+evidence_needed: Valid bearer from signup→finishSignup; adminSwitchCompany with foreign companyId returns 200 with new accessToken/permissions; returned token works on apis.alfaview.com/v2/users/me
+verify_steps: POST https://app.alfaview.com/graphql {query:"mutation{signup(email:\"test@attacker.com\"){success}}"} → 200; wait email → POST {query:"mutation{finishSignup(companyId:\"...\",username:\"...\",activationToken:\"...\",password:\"...\"){accessToken}}"} → 200 with token; POST {query:"mutation{adminSwitchCompany(nextCompanyId:\"01FDY0986YK1BJF2K0F9DXR8EB\"){companyId,accessToken,permissions}}", headers:{token:<token>}} → 200 with cross-tenant token
+impact: Cross-tenant admin takeover → full company administration via minted token (CRITICAL, OWASP A01:2021)
+testability: HUMAN_ONLY
+[PARKED] tools.alfaview.com/whiteboard/ BOLA: No service/method enumeration oracle exists (flat code:5 for all verbs); no auth challenge observed but no credential to test; zero client references in bundle — attack surface unmapped but unverifiable without valid token
+[PARKED] apis.alfaview.com/v2/rooms/{roomId}/permissions CreatePermissions IDOR chain: Requires valid participantId from guest-links enumeration (itself AUTH_HELPED) + roomId; chain confidence capped by guest-links gate
+[PARKED] apis.alfaview.com/v2/meetings bulk credential issuance: Requires authenticated caller with roomId + permissionGroupId from /v2/permission-groups; gated on token acquisition
+[PARKED] apis.alfaview.com/v2/auth/api-key: Declares unique 403 tier but no live test without credentials; opaque token format same as other auth endpoints
+[PARKED] apis.alfaview.com/v2/audit-log: Pre-auth validation confirmed (10th GET op), but undocumented path mirrors GraphQL ListAuditEvents(flag:companyId) — authorization behavior unmeasured without token; flag param may restrict to own company
+[FINAL] Ranked survivors:
+[NEXT] HUMAN: Execute unauthenticated signup flow at app.alfaview.com/graphql (mutation Signup → email → FinishSignup(companyId, username, activationToken, password)) to obtain a valid bearer token; then test introspect with real token (POST /oauth2/introspect token=<token>&client_id=fake-123) and test guest-links enumeration (GET /v2/guest-links with Authorization header). All HIGH-value chains gate on this single token acquisition.
+[LEARN] ACCEPTED MISCONFIG @ apis.alfaview.com: OpenAPI rotation 174787B→176350B (06231fad→25522f857, +1563B) after 47 stable cycles — first auth-scheme declaration (components.securitySchemes.accessToken, bearerFormat:opaque, per-op security on 53/57 ops); no new attack surface
+[LEARN] REJECTED MISCONFIG @ apis.alfaview.com: rotation did not publish /v2/audit-log (still live-but-unpublished 39th path) and did not resolve the dangling Event.metadata reference to "List Searchable metadata attributes" endpoint
+[LEARN] ACCEPTED INFO @ apis.alfaview.com: security model now machine-readable — 53/57 ops declare accessToken (bearerFormat:opaque); 4 no-security ops are exactly the authentication operations (/v2/auth/*)
+[LEARN] REJECTED MISCONFIG @ apis.alfaview.com: unauthenticated 422 body-schema validation on secured POST /v2/rooms exposes only the spec's own required-property list — no disclosure beyond published contract
