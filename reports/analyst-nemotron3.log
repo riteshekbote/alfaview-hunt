@@ -38602,3 +38602,8 @@ Done. All 7 structured blocks emitted. The analysis confirms:
 - **Cross-tenant admin minting**: adminSwitchCompany mutation in public bundle with hardcoded tenant IDs (85 confidence, HUMAN_ONLY)
 
 The program bottleneck is token acquisition, not recon. Passive probing exhausted.
+===== ANALYST nemotron3 2026-10-17 07:53:31 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[91m[1mError: [0m{"message":"Streaming response failed: [503] Upstream error from Nvidia: Service temporarily overloaded","type":"server_error"}

@@ -6086,3 +6086,5 @@
 - LEARN: REJECTED AUTH @ sso.alfaview.com/oauth2/userinfo: JOSE algorithm confusion tested (alg=none, HS256 with RSA pubkey, HS256 random, RS256 self-signed) — all byte-
 - LEARN: ACCEPTED MISCONFIG @ tools.alfaview.com/whiteboard/: second unmapped RPC backend (47B gRPC envelope vs poll's 45B jsonpb), distinct marshaller, no auth challeng
 - LEARN: PROCEDURAL: contract text must be quoted only after per-field lookup; schema must be traced to actual path refs; guessed URLs never become findings; delta claim
+
+## RANKED HYPOTHESES 2026-10-17 07:53:31 UTC
